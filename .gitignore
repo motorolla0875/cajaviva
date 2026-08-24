@@ -3,3 +3,5 @@ node_modules/
 *.db
 *.db-journal
 *.log
+cajaviva.db-shm
+cajaviva.db-wal
