@@ -298,7 +298,7 @@
   }
   .btn-nuevo.gris {
     border-color: var(--line); background: var(--panel); color: var(--text);
-    flex: 0 0 auto; padding: 14px 18px;
+    flex: 0 0 auto; padding: 14px 14px; font-size: 14px;
   }
   .btn-nuevo.solo { width: 100%; margin-bottom: 14px; flex: none; }
 
@@ -551,6 +551,7 @@
       <div class="dos-arriba">
         <button class="btn-nuevo" id="btnNuevo">+ Nuevo producto</button>
         <button class="btn-nuevo gris" id="btnCategorias">Categorias</button>
+        <button class="btn-nuevo gris" id="btnProveedores">Proveedores</button>
       </div>
       <div class="buscador">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
@@ -650,6 +651,33 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalProveedores">
+  <div class="modal">
+    <h3>Proveedores</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">A quien le compras la mercaderia. Al reponer stock podes elegirlo y queda registrado cuanto le compraste.</p>
+    <div id="msgProv"></div>
+    <label>Nuevo proveedor</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="provNombre" placeholder="Ej: Distribuidora Norte">
+      <button class="btn-pago" id="btnAgregarProv" style="border:none; border-radius:10px; padding:0 18px; font-weight:500;">Agregar</button>
+    </div>
+    <div id="listaProv" style="margin-top:16px;"></div>
+    <button class="btn-sec" id="btnCerrarProveedores">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCompras">
+  <div class="modal">
+    <h3 id="tituloCompras">Compras</h3>
+    <div class="saldo-box">
+      <div class="lbl">Le compraste</div>
+      <div class="val ok" id="totalCompras">$0</div>
+    </div>
+    <div id="listaCompras" style="max-height:300px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarCompras" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalCategorias">
   <div class="modal">
     <h3>Categorias</h3>
@@ -710,6 +738,8 @@
       <label>Precio de costo por unidad</label>
       <input type="text" id="sCosto" inputmode="decimal" placeholder="0">
       <div class="hint" id="hintGasto"></div>
+      <label>A quien le compraste (opcional)</label>
+      <select id="sProveedor"><option value="">Sin proveedor</option></select>
     </div>
     <button class="btn-ppal" id="btnGuardarStock">Confirmar</button>
     <button class="btn-sec" id="btnCerrarStock">Cancelar</button>
@@ -777,7 +807,7 @@
 const API = '/api';
 let token = localStorage.getItem('cajaviva_token') || null;
 let usuario = null, negocio = null;
-let productos = [], clientes = [], categorias = [];
+let productos = [], clientes = [], categorias = [], proveedores = [];
 let carrito = [];
 let medioPago = 'efectivo';
 let catFiltro = '';
@@ -961,6 +991,7 @@ async function arrancarApp() {
   aplicarCapacidades();
   pintarCarrito();
   await cargarCategorias();
+  await cargarProveedores();
   await cargarProductos();
   await cargarClientes();
   await cargarResumen();
@@ -1462,6 +1493,7 @@ function abrirStock(id, modo) {
   $('sCantidad').value = '';
   $('sCosto').value = p.precio_costo != null ? p.precio_costo : '';
   $('wrapCosto').style.display = modo === 'reponer' ? 'block' : 'none';
+  pintarSelectProv();
   calcularGasto();
   $('modalStock').classList.add('on');
 }
@@ -1476,17 +1508,107 @@ $('btnGuardarStock').onclick = async function () {
     if (stockModo === 'reponer') {
       await api('POST', '/productos/' + stockProdId + '/reponer', {
         cantidad: cantidad,
-        costoUnitario: $('sCosto').value.trim() === '' ? null : num($('sCosto').value)
+        costoUnitario: $('sCosto').value.trim() === '' ? null : num($('sCosto').value),
+        proveedorId: $('sProveedor').value || null
       });
     } else {
       await api('POST', '/productos/' + stockProdId + '/quitar', { cantidad: cantidad });
     }
     await cargarProductos();
+    if (stockModo === 'reponer') await cargarProveedores();
     $('modalStock').classList.remove('on');
     avisar(stockModo === 'reponer' ? 'Stock repuesto' : 'Stock descontado');
   } catch (e) { $('msgStock').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Confirmar';
 };
+
+/* ══ Proveedores ══ */
+
+async function cargarProveedores() {
+  proveedores = await api('GET', '/proveedores');
+  pintarListaProv();
+  pintarSelectProv();
+}
+
+function pintarSelectProv() {
+  const sel = $('sProveedor');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Sin proveedor</option>' +
+    proveedores.map(function (p) { return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>'; }).join('');
+}
+
+function pintarListaProv() {
+  if (proveedores.length === 0) {
+    $('listaProv').innerHTML = '<div class="vacio">Todavia no cargaste proveedores.</div>'; return;
+  }
+  $('listaProv').innerHTML = proveedores.map(function (p) {
+    const det = p.compras > 0
+      ? p.compras + (p.compras === 1 ? ' compra - ' : ' compras - ') + plata(p.total_comprado)
+      : 'sin compras';
+    return '<div class="cat-item"><div class="n">' + esc(p.nombre) +
+      '<div class="c">' + det + '</div></div>' +
+      '<button onclick="verCompras(\'' + p.id + '\')">$</button>' +
+      '<button onclick="renombrarProv(\'' + p.id + '\')">&#9998;</button>' +
+      '<button onclick="borrarProv(\'' + p.id + '\')">&#10005;</button></div>';
+  }).join('');
+}
+
+$('btnProveedores').onclick = function () {
+  $('msgProv').innerHTML = ''; $('provNombre').value = '';
+  pintarListaProv();
+  $('modalProveedores').classList.add('on');
+};
+$('btnCerrarProveedores').onclick = function () { $('modalProveedores').classList.remove('on'); };
+
+$('btnAgregarProv').onclick = async function () {
+  const nombre = $('provNombre').value.trim();
+  if (!nombre) { $('msgProv').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
+  try {
+    await api('POST', '/proveedores', { nombre: nombre });
+    $('provNombre').value = ''; $('msgProv').innerHTML = '';
+    await cargarProveedores();
+    avisar('Proveedor creado');
+  } catch (e) { $('msgProv').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
+
+async function renombrarProv(id) {
+  const p = proveedores.filter(function (x) { return x.id === id; })[0];
+  const nombre = prompt('Nombre del proveedor:', p ? p.nombre : '');
+  if (!nombre || !nombre.trim()) return;
+  try {
+    await api('PUT', '/proveedores/' + id, { nombre: nombre.trim(), whatsapp: p ? p.whatsapp : null });
+    await cargarProveedores();
+    avisar('Proveedor actualizado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function borrarProv(id) {
+  if (!confirm('Borrar este proveedor? Las compras ya hechas no se borran.')) return;
+  try {
+    await api('DELETE', '/proveedores/' + id);
+    await cargarProveedores();
+    avisar('Proveedor borrado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function verCompras(id) {
+  try {
+    const d = await api('GET', '/proveedores/' + id + '/compras');
+    $('tituloCompras').textContent = 'Compras a ' + d.proveedor.nombre;
+    const total = d.compras.reduce(function (s, c) { return s + c.monto; }, 0);
+    $('totalCompras').textContent = plata(total);
+    $('listaCompras').innerHTML = d.compras.length
+      ? d.compras.map(function (c) {
+          return '<div class="mov"><div class="info"><div class="n">' + esc(c.descripcion) + '</div>' +
+            '<div class="d">' + fechaCorta(c.fecha) + '</div></div>' +
+            '<div class="monto gasto">' + plata(c.monto) + '</div></div>';
+        }).join('')
+      : '<div class="vacio">Todavia no le compraste nada.</div>';
+    $('modalCompras').classList.add('on');
+  } catch (e) { avisar(e.message, true); }
+}
+
+$('btnCerrarCompras').onclick = function () { $('modalCompras').classList.remove('on'); };
 
 /* ══ Clientes ══ */
 
