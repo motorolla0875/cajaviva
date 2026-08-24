@@ -17,6 +17,7 @@ db.prepare(`INSERT OR IGNORE INTO negocio (id, user_id, nombre, rubro)
 app.use('/api', (req, res, next) => { req.userId = USER_DEMO; next(); });
 
 app.use('/api/productos', require('./routes/productos'));
+app.use('/api/ventas', require('./routes/ventas'));
 
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true, app: 'CajaViva', hora: new Date().toISOString() });
