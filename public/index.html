@@ -1,8 +1,423 @@
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><title>CajaViva</title></head>
-<body style="font-family:sans-serif; background:#FAFAF7; color:#2C2C2A; padding:40px;">
-  <h1 style="color:#1D9E75;">CajaViva</h1>
-  <p>El servidor está andando.</p>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CajaViva</title>
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --panel: #FFFFFF;
+    --panel-2: #F3F2EE;
+    --line: #E4E2DA;
+    --text: #2C2C2A;
+    --muted: #6E6D67;
+    --accent: #1D9E75;
+    --accent-dark: #0F6E56;
+    --accent-soft: #E1F5EE;
+    --danger: #C0392B;
+    --warn: #B87514;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input, select { font-family: inherit; }
+
+  /* ══ Estructura ══ */
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  header .marca { font-size: 17px; font-weight: 500; }
+  header .marca span { color: var(--accent); }
+  header .hoy {
+    margin-left: auto; text-align: right; font-size: 12px; color: var(--muted);
+  }
+  header .hoy b { display: block; font-size: 17px; color: var(--text); font-weight: 500; }
+
+  .cuerpo { flex: 1; display: flex; min-height: 0; }
+
+  .izq { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 16px; }
+  .der {
+    width: 340px; flex-shrink: 0;
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+
+  /* ══ Buscador ══ */
+  .buscador { position: relative; margin-bottom: 14px; flex-shrink: 0; }
+  .buscador input {
+    width: 100%; padding: 13px 14px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); color: var(--text); font-size: 15px;
+  }
+  .buscador input:focus { outline: none; border-color: var(--accent); }
+
+  /* ══ Grilla de productos ══ */
+  .grilla {
+    flex: 1; overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
+  .prod {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    text-align: left;
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 92px;
+    transition: border-color .12s;
+  }
+  .prod:active { border-color: var(--accent); background: var(--accent-soft); }
+  .prod .n { font-weight: 500; font-size: 14px; line-height: 1.3; }
+  .prod .p { color: var(--accent); font-weight: 500; font-size: 16px; margin-top: auto; }
+  .prod .s { color: var(--muted); font-size: 12px; }
+  .prod.sin-stock { opacity: .45; }
+
+  /* ══ Carrito ══ */
+  .der h2 {
+    margin: 0; padding: 16px 18px 12px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  .lineas { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .linea {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .linea .info { flex: 1; min-width: 0; }
+  .linea .info .n { font-size: 14px; font-weight: 500; }
+  .linea .info .d { font-size: 12px; color: var(--muted); }
+  .linea .cant { display: flex; align-items: center; gap: 6px; }
+  .linea .cant button {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 16px; line-height: 1;
+  }
+  .linea .cant span { min-width: 26px; text-align: center; font-weight: 500; }
+  .linea .sub { width: 74px; text-align: right; font-weight: 500; font-size: 14px; }
+
+  .pie { border-top: 1px solid var(--line); padding: 16px 18px 18px; flex-shrink: 0; }
+  .total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .total-row .lbl { color: var(--muted); font-size: 13px; }
+  .total-row .val { font-size: 28px; font-weight: 500; }
+
+  .medios { display: flex; gap: 6px; margin-bottom: 12px; }
+  .medios button {
+    flex: 1; padding: 10px 4px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--muted);
+    font-size: 12.5px; font-weight: 500;
+  }
+  .medios button.on {
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark);
+  }
+
+  .btn-cobrar {
+    width: 100%; padding: 16px;
+    border: none; border-radius: var(--radius);
+    background: var(--accent); color: #fff;
+    font-size: 16px; font-weight: 500;
+  }
+  .btn-cobrar:disabled { background: var(--line); color: var(--muted); }
+
+  .btn-limpiar {
+    width: 100%; padding: 10px; margin-top: 8px;
+    border: none; background: none; color: var(--muted); font-size: 13px;
+  }
+
+  .vacio { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+
+  .aviso {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+    background: var(--accent); color: #fff;
+    padding: 13px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+    z-index: 50;
+  }
+  .aviso.ver { opacity: 1; }
+  .aviso.err { background: var(--danger); }
+
+  /* ══ Mobile ══ */
+  @media (max-width: 860px) {
+    .cuerpo { flex-direction: column; }
+    .der {
+      width: 100%; border-left: none; border-top: 1px solid var(--line);
+      max-height: 52dvh;
+    }
+    .izq { padding: 12px; }
+    .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    header { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="marca">Caja<span>Viva</span></div>
+    <div class="hoy">
+      Vendido hoy
+      <b id="hVendido">$0</b>
+    </div>
+  </header>
+
+  <div class="cuerpo">
+    <div class="izq">
+      <div class="buscador">
+        <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
+      </div>
+      <div class="grilla" id="grilla"></div>
+    </div>
+
+    <div class="der">
+      <h2>Venta actual</h2>
+      <div class="lineas" id="lineas"></div>
+      <div class="pie">
+        <div class="total-row">
+          <span class="lbl">Total</span>
+          <span class="val" id="total">$0</span>
+        </div>
+        <div class="medios" id="medios">
+          <button data-medio="efectivo" class="on">Efectivo</button>
+          <button data-medio="transferencia">Transfer.</button>
+          <button data-medio="cuenta_corriente">Fiado</button>
+        </div>
+        <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
+        <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="aviso" id="aviso"></div>
+
+<script>
+const API = '/api';
+let productos = [];
+let carrito = [];
+let medioPago = 'efectivo';
+
+const $ = id => document.getElementById(id);
+
+function plata(n) {
+  return '$' + Math.round(n || 0).toLocaleString('es-AR');
+}
+
+function normalizar(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function escapar(s) {
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
+async function api(metodo, ruta, cuerpo) {
+  const r = await fetch(API + ruta, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json' },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'Error de conexion');
+  return data;
+}
+
+function avisar(texto, esError) {
+  const el = $('aviso');
+  el.textContent = texto;
+  el.className = 'aviso ver' + (esError ? ' err' : '');
+  setTimeout(() => { el.className = 'aviso'; }, 2200);
+}
+
+// ══ Productos ══
+
+async function cargarProductos() {
+  productos = await api('GET', '/productos');
+  pintarGrilla();
+}
+
+function pintarGrilla() {
+  const t = normalizar($('buscar').value.trim());
+  const lista = t
+    ? productos.filter(p => normalizar(p.nombre).includes(t) || (p.codigo_barras || '').includes(t))
+    : productos;
+
+  if (lista.length === 0) {
+    $('grilla').innerHTML = '<div class="vacio">' +
+      (productos.length === 0 ? 'Todavia no cargaste productos.' : 'Ningun producto coincide.') +
+      '</div>';
+    return;
+  }
+
+  $('grilla').innerHTML = lista.map(p => {
+    const sinStock = p.stock <= 0;
+    return '<button class="prod' + (sinStock ? ' sin-stock' : '') + '" ' +
+      'onclick="agregar(\'' + p.id + '\')"' + (sinStock ? ' disabled' : '') + '>' +
+      '<div class="n">' + escapar(p.nombre) + '</div>' +
+      '<div class="s">' + (sinStock ? 'Sin stock' : p.stock + ' ' + (p.unidad === 'unidad' ? 'u.' : p.unidad)) + '</div>' +
+      '<div class="p">' + plata(p.precio_venta) + '</div>' +
+      '</button>';
+  }).join('');
+}
+
+$('buscar').addEventListener('input', pintarGrilla);
+
+// ══ Carrito ══
+
+function agregar(productoId) {
+  const p = productos.find(x => x.id === productoId);
+  if (!p) return;
+
+  const linea = carrito.find(l => l.productoId === productoId);
+  const yaHay = linea ? linea.cantidad : 0;
+
+  if (yaHay + 1 > p.stock) {
+    avisar('No hay mas stock de ' + p.nombre, true);
+    return;
+  }
+
+  if (linea) linea.cantidad += 1;
+  else carrito.push({ productoId, nombre: p.nombre, precio: p.precio_venta, cantidad: 1 });
+
+  pintarCarrito();
+}
+
+function cambiarCantidad(productoId, delta) {
+  const linea = carrito.find(l => l.productoId === productoId);
+  if (!linea) return;
+
+  const p = productos.find(x => x.id === productoId);
+  const nueva = linea.cantidad + delta;
+
+  if (nueva <= 0) {
+    carrito = carrito.filter(l => l.productoId !== productoId);
+  } else if (p && nueva > p.stock) {
+    avisar('No hay mas stock de ' + p.nombre, true);
+    return;
+  } else {
+    linea.cantidad = nueva;
+  }
+  pintarCarrito();
+}
+
+function totalCarrito() {
+  return carrito.reduce((s, l) => s + l.precio * l.cantidad, 0);
+}
+
+function pintarCarrito() {
+  if (carrito.length === 0) {
+    $('lineas').innerHTML = '<div class="vacio">Toca un producto para empezar</div>';
+  } else {
+    $('lineas').innerHTML = carrito.map(l =>
+      '<div class="linea">' +
+        '<div class="info">' +
+          '<div class="n">' + escapar(l.nombre) + '</div>' +
+          '<div class="d">' + plata(l.precio) + ' c/u</div>' +
+        '</div>' +
+        '<div class="cant">' +
+          '<button onclick="cambiarCantidad(\'' + l.productoId + '\', -1)">-</button>' +
+          '<span>' + l.cantidad + '</span>' +
+          '<button onclick="cambiarCantidad(\'' + l.productoId + '\', 1)">+</button>' +
+        '</div>' +
+        '<div class="sub">' + plata(l.precio * l.cantidad) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  $('total').textContent = plata(totalCarrito());
+  $('btnCobrar').disabled = carrito.length === 0;
+}
+
+// ══ Medio de pago ══
+
+$('medios').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  medioPago = btn.dataset.medio;
+  [...$('medios').children].forEach(b => b.classList.toggle('on', b === btn));
+});
+
+// ══ Cobrar ══
+
+$('btnCobrar').onclick = async () => {
+  if (carrito.length === 0) return;
+
+  const btn = $('btnCobrar');
+  btn.disabled = true;
+  btn.textContent = 'Cobrando...';
+
+  try {
+    const total = totalCarrito();
+    await api('POST', '/ventas', {
+      items: carrito.map(l => ({ productoId: l.productoId, cantidad: l.cantidad })),
+      medioPago,
+      montoPagado: medioPago === 'cuenta_corriente' ? 0 : total
+    });
+
+    carrito = [];
+    pintarCarrito();
+    await cargarProductos();
+    await cargarResumen();
+    avisar('Venta cobrada: ' + plata(total));
+  } catch (e) {
+    avisar(e.message, true);
+  }
+
+  btn.textContent = 'Cobrar';
+  btn.disabled = carrito.length === 0;
+};
+
+$('btnLimpiar').onclick = () => {
+  carrito = [];
+  pintarCarrito();
+};
+
+// ══ Resumen ══
+
+async function cargarResumen() {
+  try {
+    const r = await api('GET', '/ventas/resumen');
+    $('hVendido').textContent = plata(r.vendido);
+  } catch (e) {}
+}
+
+// ══ Arranque ══
+
+(async function iniciar() {
+  pintarCarrito();
+  try {
+    await cargarProductos();
+    await cargarResumen();
+  } catch (e) {
+    avisar('No se pudo conectar con el servidor', true);
+  }
+})();
+</script>
+
 </body>
 </html>
