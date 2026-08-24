@@ -219,6 +219,19 @@
   .total-row .lbl { color: var(--muted); font-size: 13px; }
   .total-row .val { font-size: 28px; font-weight: 500; }
 
+  .cobrar-fila {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .cobrar-fila label { font-size: 12.5px; color: var(--muted); flex-shrink: 0; }
+  .cobrar-fila input {
+    flex: 1; min-width: 0; padding: 10px 12px; text-align: right;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--text); font-size: 15px; font-weight: 500;
+  }
+  .cobrar-fila input:focus { outline: none; border-color: var(--accent); }
+  .nota-desc { font-size: 12px; color: var(--accent-dark); margin: -6px 0 12px; }
+  .nota-desc.vacia { display: none; }
+
   .medios { display: flex; gap: 6px; margin-bottom: 12px; }
   .medios button {
     flex: 1; padding: 10px 4px; border: 1px solid var(--line);
@@ -513,6 +526,11 @@
       <div class="lineas" id="lineas"></div>
       <div class="pie">
         <div class="total-row"><span class="lbl">Total</span><span class="val" id="total">$0</span></div>
+        <div class="cobrar-fila">
+          <label>Cobrar</label>
+          <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="nota-desc vacia" id="notaDesc"></div>
         <div class="medios" id="medios">
           <button data-medio="efectivo" class="on">Efectivo</button>
           <button data-medio="transferencia">Transfer.</button>
@@ -1246,8 +1264,25 @@ function pintarCarrito() {
         '<div class="sub">' + plata(l.precio * l.cantidad) + '</div></div>';
     }).join('');
   }
-  $('total').textContent = plata(totalCarrito());
+  const t = totalCarrito();
+  $('total').textContent = plata(t);
+  $('totalFinal').value = t > 0 ? Math.round(t) : '';
+  actualizarNotaDesc();
   $('btnCobrar').disabled = carrito.length === 0;
+}
+
+function actualizarNotaDesc() {
+  const bruto = totalCarrito();
+  const final = num($('totalFinal').value);
+  const el = $('notaDesc');
+  if (bruto <= 0 || final <= 0 || Math.abs(final - bruto) < 1) {
+    el.className = 'nota-desc vacia'; el.textContent = ''; return;
+  }
+  const dif = bruto - final;
+  el.className = 'nota-desc';
+  el.textContent = dif > 0
+    ? 'Descuento de ' + plata(dif) + ' (' + Math.round(dif / bruto * 100) + '%)'
+    : 'Recargo de ' + plata(-dif);
 }
 
 function pintarSelectClientes() {
@@ -1276,10 +1311,13 @@ $('btnCobrar').onclick = async function () {
   const btn = $('btnCobrar');
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
-    const total = totalCarrito();
+    const bruto = totalCarrito();
+    const manual = num($('totalFinal').value);
+    const total = manual > 0 ? manual : bruto;
     await api('POST', '/ventas', {
       items: carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; }),
       medioPago: medioPago, clienteId: clienteId,
+      totalFinal: total,
       montoPagado: esFiado ? 0 : total
     });
     carrito = []; pintarCarrito();
@@ -1290,6 +1328,8 @@ $('btnCobrar').onclick = async function () {
   btn.textContent = 'Cobrar';
   btn.disabled = carrito.length === 0;
 };
+
+$('totalFinal').addEventListener('input', actualizarNotaDesc);
 
 $('btnLimpiar').onclick = function () { carrito = []; pintarCarrito(); };
 

@@ -37,6 +37,13 @@ router.post('/', (req, res) => {
   const pct = parseFloat(descuentoPct) || 0;
   if (pct > 0) total = total * (1 - Math.min(100, pct) / 100);
 
+  // total manual: el vendedor redondea o hace un descuento a ojo
+  const manual = req.body?.totalFinal;
+  if (manual != null && manual !== '') {
+    const tm = parseFloat(manual);
+    if (!isNaN(tm) && tm >= 0) total = tm;
+  }
+
   const ventaId = uuidv4();
   const pagado = montoPagado != null ? parseFloat(montoPagado) : total;
   const estado = pagado >= total ? 'cobrada' : 'pendiente';
