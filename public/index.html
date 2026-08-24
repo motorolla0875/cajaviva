@@ -30,7 +30,46 @@
   button { font-family: inherit; cursor: pointer; }
   input, select, textarea { font-family: inherit; }
 
-  .app { display: flex; flex-direction: column; height: 100dvh; }
+  /* ══ Arranque y login ══ */
+  .pantalla-centro {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    height: 100dvh; padding: 24px;
+  }
+  .pantalla-centro.on { display: flex; }
+  .logo-grande { font-size: 30px; font-weight: 500; margin-bottom: 6px; }
+  .logo-grande span { color: var(--accent); }
+  .logo-sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; text-align: center; }
+  .caja-login {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 16px; padding: 24px; width: 100%; max-width: 380px;
+  }
+  .caja-login label {
+    display: block; font-size: 12.5px; color: var(--muted);
+    margin: 12px 0 5px; font-weight: 500;
+  }
+  .caja-login label:first-of-type { margin-top: 0; }
+  .caja-login input {
+    width: 100%; padding: 12px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--text); font-size: 15px;
+  }
+  .caja-login input:focus { outline: none; border-color: var(--accent); }
+  .caja-login .btn-ppal {
+    width: 100%; padding: 14px; margin-top: 18px;
+    border: none; border-radius: var(--radius);
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 500;
+  }
+  .caja-login .btn-sec {
+    width: 100%; padding: 12px; margin-top: 10px;
+    border: none; background: none; color: var(--accent-dark); font-size: 13.5px;
+  }
+  .msg {
+    font-size: 13px; padding: 10px 12px; border-radius: 9px;
+    margin-bottom: 12px; background: var(--danger-soft); color: var(--danger);
+  }
+
+  .app { display: none; flex-direction: column; height: 100dvh; }
+  .app.on { display: flex; }
 
   header {
     display: flex; align-items: center; gap: 12px;
@@ -41,6 +80,23 @@
   header .marca span { color: var(--accent); }
   header .hoy { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); }
   header .hoy b { display: block; font-size: 17px; color: var(--text); font-weight: 500; }
+  header .yo {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent); color: #fff; border: none;
+    font-size: 15px; font-weight: 500; text-transform: uppercase;
+  }
+
+  .aviso-asegurar {
+    background: var(--accent-soft); border-bottom: 1px solid var(--accent);
+    padding: 10px 18px; font-size: 12.5px; color: var(--accent-dark);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .aviso-asegurar span { flex: 1; }
+  .aviso-asegurar button {
+    border: 1px solid var(--accent); background: var(--panel);
+    color: var(--accent-dark); border-radius: 8px;
+    padding: 6px 12px; font-size: 12.5px; font-weight: 500; flex-shrink: 0;
+  }
 
   nav {
     display: flex; background: var(--panel);
@@ -265,10 +321,6 @@
     width: 100%; padding: 12px; margin-top: 8px;
     border: none; background: none; color: var(--danger); font-size: 13.5px;
   }
-  .modal .msg {
-    font-size: 13px; padding: 10px 12px; border-radius: 9px;
-    margin-bottom: 12px; background: var(--danger-soft); color: var(--danger);
-  }
 
   .saldo-box { text-align: center; padding: 6px 0 18px; }
   .saldo-box .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
@@ -276,9 +328,7 @@
   .saldo-box .val.ok { color: var(--accent-dark); }
 
   .dos-btn { display: flex; gap: 8px; margin-top: 12px; }
-  .dos-btn button {
-    flex: 1; padding: 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500;
-  }
+  .dos-btn button { flex: 1; padding: 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500; }
   .btn-pago { border: none; background: var(--accent); color: #fff; }
   .btn-dev { border: 1px solid var(--line); background: var(--panel); color: var(--text); }
 
@@ -305,11 +355,36 @@
 </head>
 <body>
 
-<div class="app">
+<div class="pantalla-centro on" id="pantallaCarga">
+  <div class="logo-grande">Caja<span>Viva</span></div>
+  <div class="logo-sub">Preparando tu cuenta...</div>
+</div>
+
+<div class="pantalla-centro" id="pantallaLogin">
+  <div class="logo-grande">Caja<span>Viva</span></div>
+  <div class="logo-sub">Tu negocio en orden, todos los dias</div>
+  <div class="caja-login">
+    <div id="msgLogin"></div>
+    <label>Usuario</label>
+    <input type="text" id="lUsuario" autocomplete="username">
+    <label>Contrasena</label>
+    <input type="password" id="lPassword" autocomplete="current-password">
+    <button class="btn-ppal" id="btnEntrar">Entrar</button>
+    <button class="btn-sec" id="btnCuentaNueva">Empezar con una cuenta nueva</button>
+  </div>
+</div>
+
+<div class="app" id="app">
   <header>
     <div class="marca">Caja<span>Viva</span></div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
+    <button class="yo" id="btnYo">?</button>
   </header>
+
+  <div class="aviso-asegurar" id="avisoAsegurar" style="display:none;">
+    <span>Tu cuenta solo funciona en este dispositivo. Ponele usuario y contrasena para no perderla.</span>
+    <button id="btnAsegurarDesdeAviso">Asegurar</button>
+  </div>
 
   <nav>
     <button data-vista="vender" class="on">Vender</button>
@@ -410,6 +485,29 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCuentaUsuario">
+  <div class="modal">
+    <h3 id="tituloAsegurar">Asegurar mi cuenta</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="txtAsegurar">
+      Tu cuenta se creo sola y hoy solo funciona en este dispositivo. Si le ponés usuario y contrasena, vas a poder entrar desde la compu o desde otro celular.
+    </p>
+    <div id="msgAsegurar"></div>
+    <div id="camposAsegurar">
+      <label>Usuario</label>
+      <input type="text" id="aUsuario" autocomplete="username">
+      <label>Email (para recuperar la contrasena)</label>
+      <input type="email" id="aEmail" autocomplete="email">
+      <label>Contrasena</label>
+      <input type="password" id="aPassword" autocomplete="new-password">
+      <label>Repetir contrasena</label>
+      <input type="password" id="aPassword2" autocomplete="new-password">
+      <button class="btn-ppal" id="btnAsegurar">Guardar</button>
+    </div>
+    <button class="btn-del" id="btnSalir">Cerrar sesion</button>
+    <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalProd">
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
@@ -501,7 +599,6 @@
       <div class="val" id="valSaldo">$0</div>
     </div>
     <div id="msgCuenta"></div>
-
     <label>Registrar un movimiento</label>
     <input type="text" id="ccMonto" inputmode="decimal" placeholder="Monto">
     <input type="text" id="ccNota" placeholder="Nota (opcional)" style="margin-top:8px;">
@@ -509,10 +606,8 @@
       <button class="btn-pago" id="btnPago">Recibi un pago</button>
       <button class="btn-dev" id="btnDev">Le devolvi plata</button>
     </div>
-
     <div class="seccion">Movimientos</div>
     <div id="ccMovimientos" style="max-height:280px; overflow-y:auto;"></div>
-
     <button class="btn-sec" id="btnCerrarCuenta" style="margin-top:14px;">Cerrar</button>
   </div>
 </div>
@@ -521,6 +616,9 @@
 
 <script>
 const API = '/api';
+let token = localStorage.getItem('cajaviva_token') || null;
+let usuario = null;
+let negocio = null;
 let productos = [];
 let clientes = [];
 let carrito = [];
@@ -565,12 +663,14 @@ function horaDe(ts) {
 }
 
 async function api(metodo, ruta, cuerpo) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
   const r = await fetch(API + ruta, {
-    method: metodo,
-    headers: { 'Content-Type': 'application/json' },
+    method: metodo, headers: headers,
     body: cuerpo ? JSON.stringify(cuerpo) : undefined
   });
   const data = await r.json().catch(function () { return {}; });
+  if (r.status === 401) { cerrarSesion(); throw new Error('Se cerro la sesion.'); }
   if (!r.ok) throw new Error(data.error || 'Error de conexion');
   return data;
 }
@@ -581,6 +681,113 @@ function avisar(texto, esError) {
   el.className = 'aviso ver' + (esError ? ' err' : '');
   setTimeout(function () { el.className = 'aviso'; }, 2200);
 }
+
+/* ══ Sesion ══ */
+
+function mostrar(cual) {
+  $('pantallaCarga').classList.toggle('on', cual === 'carga');
+  $('pantallaLogin').classList.toggle('on', cual === 'login');
+  $('app').classList.toggle('on', cual === 'app');
+}
+
+function cerrarSesion() {
+  localStorage.removeItem('cajaviva_token');
+  token = null; usuario = null;
+  location.reload();
+}
+
+function aplicarUsuario(d) {
+  usuario = d.user; negocio = d.negocio;
+  const nombre = usuario.username || 'Mi negocio';
+  $('btnYo').textContent = nombre.charAt(0);
+  const sinAsegurar = !usuario.username;
+  $('avisoAsegurar').style.display = sinAsegurar ? 'flex' : 'none';
+  $('camposAsegurar').style.display = sinAsegurar ? 'block' : 'none';
+  $('tituloAsegurar').textContent = sinAsegurar ? 'Asegurar mi cuenta' : 'Mi cuenta';
+  $('txtAsegurar').textContent = sinAsegurar
+    ? 'Tu cuenta se creo sola y hoy solo funciona en este dispositivo. Si le ponés usuario y contrasena, vas a poder entrar desde la compu o desde otro celular.'
+    : 'Entraste como ' + usuario.username + '.';
+}
+
+async function arrancarApp() {
+  mostrar('app');
+  pintarCarrito();
+  await cargarProductos();
+  await cargarClientes();
+  await cargarResumen();
+}
+
+$('btnEntrar').onclick = async function () {
+  const username = $('lUsuario').value.trim();
+  const password = $('lPassword').value;
+  if (!username || !password) { $('msgLogin').innerHTML = '<div class="msg">Completa usuario y contrasena.</div>'; return; }
+  const btn = $('btnEntrar');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const d = await api('POST', '/auth/entrar', { username: username, password: password });
+    token = d.token; localStorage.setItem('cajaviva_token', token);
+    aplicarUsuario(d);
+    await arrancarApp();
+  } catch (e) {
+    $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Entrar';
+};
+
+$('btnCuentaNueva').onclick = async function () {
+  const btn = $('btnCuentaNueva');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try {
+    const d = await api('POST', '/auth/nueva');
+    token = d.token; localStorage.setItem('cajaviva_token', token);
+    localStorage.setItem('cajaviva_ya_uso', '1');
+    aplicarUsuario(d);
+    await arrancarApp();
+  } catch (e) {
+    $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Empezar con una cuenta nueva';
+};
+
+$('btnYo').onclick = function () {
+  $('msgAsegurar').innerHTML = '';
+  $('aUsuario').value = ''; $('aEmail').value = '';
+  $('aPassword').value = ''; $('aPassword2').value = '';
+  $('modalCuentaUsuario').classList.add('on');
+};
+$('btnAsegurarDesdeAviso').onclick = function () { $('btnYo').click(); };
+$('btnCerrarCuentaUsuario').onclick = function () { $('modalCuentaUsuario').classList.remove('on'); };
+$('btnSalir').onclick = function () {
+  const extra = usuario && !usuario.username
+    ? '\n\nOJO: esta cuenta no tiene usuario ni contrasena. Si salis, no vas a poder volver a entrar.'
+    : '';
+  if (confirm('Cerrar sesion?' + extra)) cerrarSesion();
+};
+
+$('btnAsegurar').onclick = async function () {
+  const username = $('aUsuario').value.trim();
+  const password = $('aPassword').value;
+  if (!username) { $('msgAsegurar').innerHTML = '<div class="msg">Elegi un usuario.</div>'; return; }
+  if (password.length < 6) { $('msgAsegurar').innerHTML = '<div class="msg">La contrasena tiene que tener al menos 6 caracteres.</div>'; return; }
+  if (password !== $('aPassword2').value) { $('msgAsegurar').innerHTML = '<div class="msg">Las contrasenas no coinciden.</div>'; return; }
+
+  const btn = $('btnAsegurar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const d = await api('POST', '/auth/asegurar', {
+      username: username, password: password, email: $('aEmail').value.trim() || null
+    });
+    token = d.token; localStorage.setItem('cajaviva_token', token);
+    aplicarUsuario(d);
+    $('modalCuentaUsuario').classList.remove('on');
+    avisar('Cuenta asegurada');
+  } catch (e) {
+    $('msgAsegurar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+/* ══ Navegacion ══ */
 
 document.querySelectorAll('nav button').forEach(function (b) {
   b.onclick = function () {
@@ -594,14 +801,12 @@ document.querySelectorAll('nav button').forEach(function (b) {
 
 async function cargarProductos() {
   productos = await api('GET', '/productos');
-  pintarGrilla();
-  pintarLista();
+  pintarGrilla(); pintarLista();
 }
 
 async function cargarClientes() {
   clientes = await api('GET', '/clientes');
-  pintarClientes();
-  pintarSelectClientes();
+  pintarClientes(); pintarSelectClientes();
 }
 
 async function cargarResumen() {
@@ -648,13 +853,9 @@ function cambiarCantidad(id, delta) {
   if (!l) return;
   const p = productos.filter(function (x) { return x.id === id; })[0];
   const nueva = l.cantidad + delta;
-  if (nueva <= 0) {
-    carrito = carrito.filter(function (x) { return x.productoId !== id; });
-  } else if (p && nueva > p.stock) {
-    avisar('No hay mas stock de ' + p.nombre, true); return;
-  } else {
-    l.cantidad = nueva;
-  }
+  if (nueva <= 0) carrito = carrito.filter(function (x) { return x.productoId !== id; });
+  else if (p && nueva > p.stock) { avisar('No hay mas stock de ' + p.nombre, true); return; }
+  else l.cantidad = nueva;
   pintarCarrito();
 }
 
@@ -681,10 +882,7 @@ function pintarCarrito() {
 
 function pintarSelectClientes() {
   const sel = $('clienteVenta');
-  if (clientes.length === 0) {
-    sel.innerHTML = '<option value="">No hay clientes cargados</option>';
-    return;
-  }
+  if (clientes.length === 0) { sel.innerHTML = '<option value="">No hay clientes cargados</option>'; return; }
   sel.innerHTML = '<option value="">Elegi un cliente...</option>' +
     clientes.map(function (c) {
       return '<option value="' + c.id + '">' + esc(c.nombre) +
@@ -698,12 +896,10 @@ $('medios').addEventListener('click', function (e) {
   medioPago = b.dataset.medio;
   Array.prototype.forEach.call($('medios').children, function (x) { x.classList.toggle('on', x === b); });
   $('selCliente').classList.toggle('on', medioPago === 'cuenta_corriente');
-  if (medioPago === 'cuenta_corriente' && clientes.length === 0) cargarClientes();
 });
 
 $('btnCobrar').onclick = async function () {
   if (carrito.length === 0) return;
-
   const esFiado = medioPago === 'cuenta_corriente';
   const clienteId = esFiado ? $('clienteVenta').value : null;
   if (esFiado && !clienteId) { avisar('Elegi a quien le fias', true); return; }
@@ -714,8 +910,7 @@ $('btnCobrar').onclick = async function () {
     const total = totalCarrito();
     await api('POST', '/ventas', {
       items: carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; }),
-      medioPago: medioPago,
-      clienteId: clienteId,
+      medioPago: medioPago, clienteId: clienteId,
       montoPagado: esFiado ? 0 : total
     });
     carrito = []; pintarCarrito();
@@ -800,8 +995,7 @@ $('btnGuardarProd').onclick = async function () {
   if (venta <= 0) { $('msgProd').innerHTML = '<div class="msg">El precio de venta tiene que ser mayor a 0.</div>'; return; }
 
   const cuerpo = {
-    nombre: nombre,
-    precioVenta: venta,
+    nombre: nombre, precioVenta: venta,
     precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
     unidad: $('pUnidad').value,
     codigoBarras: $('pBarras').value.trim() || null,
@@ -811,18 +1005,12 @@ $('btnGuardarProd').onclick = async function () {
   const btn = $('btnGuardarProd');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    if (editandoId) {
-      await api('PUT', '/productos/' + editandoId, cuerpo);
-    } else {
-      cuerpo.stockInicial = num($('pStock').value);
-      await api('POST', '/productos', cuerpo);
-    }
+    if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
+    else { cuerpo.stockInicial = num($('pStock').value); await api('POST', '/productos', cuerpo); }
     await cargarProductos();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
-  } catch (e) {
-    $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Guardar';
 };
 
@@ -868,7 +1056,6 @@ $('btnCerrarStock').onclick = function () { $('modalStock').classList.remove('on
 $('btnGuardarStock').onclick = async function () {
   const cantidad = num($('sCantidad').value);
   if (cantidad <= 0) { $('msgStock').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
-
   const btn = $('btnGuardarStock');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
@@ -883,9 +1070,7 @@ $('btnGuardarStock').onclick = async function () {
     await cargarProductos();
     $('modalStock').classList.remove('on');
     avisar(stockModo === 'reponer' ? 'Stock repuesto' : 'Stock descontado');
-  } catch (e) {
-    $('msgStock').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgStock').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Confirmar';
 };
 
@@ -901,15 +1086,14 @@ function pintarClientes() {
 
   if (lista.length === 0) {
     $('listaCli').innerHTML = '<div class="vacio">' +
-      (clientes.length === 0 ? 'Cargá un cliente para poder fiarle.' : 'Ninguno coincide.') + '</div>';
+      (clientes.length === 0 ? 'Carga un cliente para poder fiarle.' : 'Ninguno coincide.') + '</div>';
     return;
   }
 
   const ordenados = lista.slice().sort(function (a, b) { return (b.saldo || 0) - (a.saldo || 0); });
 
   $('listaCli').innerHTML = ordenados.map(function (c) {
-    const debe = c.saldo > 0;
-    const aFavor = c.saldo < 0;
+    const debe = c.saldo > 0, aFavor = c.saldo < 0;
     return '<div class="fila"><div class="datos">' +
       '<div class="n">' + esc(c.nombre) + '</div>' +
       (c.whatsapp ? '<div class="d">' + esc(c.whatsapp) + '</div>' : '') +
@@ -942,14 +1126,12 @@ $('btnCerrarCliente').onclick = function () { $('modalCliente').classList.remove
 $('btnGuardarCliente').onclick = async function () {
   const nombre = $('cNombre').value.trim();
   if (!nombre) { $('msgCliente').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
-
   const cuerpo = {
     nombre: nombre,
     whatsapp: $('cWhatsapp').value.trim() || null,
     direccion: $('cDireccion').value.trim() || null,
     notas: $('cNotas').value.trim() || null
   };
-
   const btn = $('btnGuardarCliente');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
@@ -958,9 +1140,7 @@ $('btnGuardarCliente').onclick = async function () {
     await cargarClientes();
     $('modalCliente').classList.remove('on');
     avisar(editandoCli ? 'Cliente actualizado' : 'Cliente creado');
-  } catch (e) {
-    $('msgCliente').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgCliente').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Guardar';
 };
 
@@ -977,9 +1157,7 @@ $('btnBorrarCliente').onclick = async function () {
 
 async function abrirCuenta(id) {
   cuentaCliId = id;
-  $('msgCuenta').innerHTML = '';
-  $('ccMonto').value = '';
-  $('ccNota').value = '';
+  $('msgCuenta').innerHTML = ''; $('ccMonto').value = ''; $('ccNota').value = '';
   $('modalCuenta').classList.add('on');
   await refrescarCuenta();
 }
@@ -988,7 +1166,6 @@ async function refrescarCuenta() {
   try {
     const d = await api('GET', '/clientes/' + cuentaCliId + '/cuenta');
     $('tituloCuenta').textContent = 'Cuenta de ' + d.cliente.nombre;
-
     const saldo = d.cliente.saldo || 0;
     $('lblSaldo').textContent = saldo < 0 ? 'A favor del cliente' : 'Debe';
     const v = $('valSaldo');
@@ -998,25 +1175,19 @@ async function refrescarCuenta() {
     const movs = [];
     d.ventas.forEach(function (venta) {
       const detalle = venta.items.map(function (i) { return i.cantidad + ' x ' + i.nombre; }).join(', ');
-      movs.push({
-        orden: venta.created_at,
-        html: '<div class="mov"><div class="info">' +
-          '<div class="n">' + esc(detalle) + '</div>' +
-          '<div class="d">' + fechaCorta(venta.fecha) + ' &middot; fiado</div>' +
-          '</div><div class="monto gasto">+' + plata(venta.deuda) + '</div></div>'
-      });
+      movs.push({ orden: venta.created_at,
+        html: '<div class="mov"><div class="info"><div class="n">' + esc(detalle) + '</div>' +
+          '<div class="d">' + fechaCorta(venta.fecha) + ' &middot; fiado</div></div>' +
+          '<div class="monto gasto">+' + plata(venta.deuda) + '</div></div>' });
     });
     d.pagos.forEach(function (p) {
       const esPago = p.tipo === 'pago';
-      movs.push({
-        orden: p.created_at,
+      movs.push({ orden: p.created_at,
         html: '<div class="mov"><div class="info">' +
           '<div class="n">' + (esPago ? 'Pago recibido' : 'Devolucion') + '</div>' +
-          '<div class="d">' + fechaCorta(p.fecha) + (p.nota ? ' &middot; ' + esc(p.nota) : '') + '</div>' +
-          '</div><div class="monto ' + (esPago ? 'pago' : 'gasto') + '">' +
-          (esPago ? '-' : '+') + plata(p.monto) + '</div>' +
-          '<button class="x" onclick="borrarPago(\'' + p.id + '\')">&#10005;</button></div>'
-      });
+          '<div class="d">' + fechaCorta(p.fecha) + (p.nota ? ' &middot; ' + esc(p.nota) : '') + '</div></div>' +
+          '<div class="monto ' + (esPago ? 'pago' : 'gasto') + '">' + (esPago ? '-' : '+') + plata(p.monto) + '</div>' +
+          '<button class="x" onclick="borrarPago(\'' + p.id + '\')">&#10005;</button></div>' });
     });
 
     movs.sort(function (a, b) { return String(b.orden).localeCompare(String(a.orden)); });
@@ -1033,18 +1204,12 @@ async function registrarMovimiento(tipo) {
   if (monto <= 0) { $('msgCuenta').innerHTML = '<div class="msg">Pone un monto mayor a 0.</div>'; return; }
   try {
     await api('POST', '/clientes/' + cuentaCliId + '/pagos', {
-      monto: monto,
-      nota: $('ccNota').value.trim() || null,
-      tipo: tipo
+      monto: monto, nota: $('ccNota').value.trim() || null, tipo: tipo
     });
-    $('ccMonto').value = ''; $('ccNota').value = '';
-    $('msgCuenta').innerHTML = '';
-    await cargarClientes();
-    await refrescarCuenta();
+    $('ccMonto').value = ''; $('ccNota').value = ''; $('msgCuenta').innerHTML = '';
+    await cargarClientes(); await refrescarCuenta();
     avisar(tipo === 'pago' ? 'Pago registrado' : 'Devolucion registrada');
-  } catch (e) {
-    $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
 }
 $('btnPago').onclick = function () { registrarMovimiento('pago'); };
 $('btnDev').onclick = function () { registrarMovimiento('devolucion'); };
@@ -1053,8 +1218,7 @@ async function borrarPago(pagoId) {
   if (!confirm('Borrar este movimiento?')) return;
   try {
     await api('DELETE', '/clientes/' + cuentaCliId + '/pagos/' + pagoId);
-    await cargarClientes();
-    await refrescarCuenta();
+    await cargarClientes(); await refrescarCuenta();
     avisar('Movimiento borrado');
   } catch (e) { avisar(e.message, true); }
 }
@@ -1096,11 +1260,10 @@ async function cargarCaja() {
         const medio = v.medio_pago === 'efectivo' ? 'Efectivo'
           : v.medio_pago === 'transferencia' ? 'Transferencia'
           : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
-        return '<div class="mov"><div class="info">' +
-          '<div class="n">' + esc(detalle) + '</div>' +
+        return '<div class="mov"><div class="info"><div class="n">' + esc(detalle) + '</div>' +
           '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
-            (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') + '</div>' +
-          '</div><div class="monto">' + plata(v.total) + '</div>' +
+            (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') + '</div></div>' +
+          '<div class="monto">' + plata(v.total) + '</div>' +
           '<button class="x" onclick="anularVenta(\'' + v.id + '\')">&#10005;</button></div>';
       }).join('');
     }
@@ -1112,10 +1275,9 @@ async function cargarCaja() {
       $('listaGastos').innerHTML = '<div class="vacio">No hay gastos en este periodo.</div>';
     } else {
       $('listaGastos').innerHTML = gastos.map(function (g) {
-        return '<div class="mov"><div class="info">' +
-          '<div class="n">' + esc(g.descripcion) + '</div>' +
-          '<div class="d">' + fechaCorta(g.fecha) + (g.automatico ? ' &middot; automatico' : '') + '</div>' +
-          '</div><div class="monto gasto">-' + plata(g.monto) + '</div>' +
+        return '<div class="mov"><div class="info"><div class="n">' + esc(g.descripcion) + '</div>' +
+          '<div class="d">' + fechaCorta(g.fecha) + (g.automatico ? ' &middot; automatico' : '') + '</div></div>' +
+          '<div class="monto gasto">-' + plata(g.monto) + '</div>' +
           (g.automatico ? '' : '<button class="x" onclick="borrarGasto(\'' + g.id + '\')">&#10005;</button>') +
           '</div>';
       }).join('');
@@ -1127,10 +1289,8 @@ async function anularVenta(id) {
   if (!confirm('Anular esta venta? El stock vuelve a su lugar.')) return;
   try {
     await api('DELETE', '/ventas/' + id);
-    await cargarProductos();
-    await cargarResumen();
-    await cargarClientes();
-    await cargarCaja();
+    await cargarProductos(); await cargarResumen();
+    await cargarClientes(); await cargarCaja();
     avisar('Venta anulada');
   } catch (e) { avisar(e.message, true); }
 }
@@ -1146,8 +1306,7 @@ async function borrarGasto(id) {
 
 $('btnGasto').onclick = function () {
   $('msgGasto').innerHTML = '';
-  $('gDescripcion').value = '';
-  $('gMonto').value = '';
+  $('gDescripcion').value = ''; $('gMonto').value = '';
   $('gFecha').value = hoyISO();
   $('modalGasto').classList.add('on');
 };
@@ -1158,7 +1317,6 @@ $('btnGuardarGasto').onclick = async function () {
   if (!descripcion) { $('msgGasto').innerHTML = '<div class="msg">Ponele una descripcion.</div>'; return; }
   const monto = num($('gMonto').value);
   if (monto <= 0) { $('msgGasto').innerHTML = '<div class="msg">El monto tiene que ser mayor a 0.</div>'; return; }
-
   const btn = $('btnGuardarGasto');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
@@ -1166,20 +1324,40 @@ $('btnGuardarGasto').onclick = async function () {
     $('modalGasto').classList.remove('on');
     await cargarCaja();
     avisar('Gasto anotado');
-  } catch (e) {
-    $('msgGasto').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgGasto').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Guardar';
 };
 
+/* ══ Arranque ══ */
+
 (async function iniciar() {
-  pintarCarrito();
+  if (token) {
+    try {
+      const d = await api('GET', '/auth/yo');
+      aplicarUsuario(d);
+      await arrancarApp();
+      return;
+    } catch (e) {
+      localStorage.removeItem('cajaviva_token');
+      token = null;
+    }
+  }
+
+  if (localStorage.getItem('cajaviva_ya_uso') === '1') {
+    mostrar('login');
+    return;
+  }
+
   try {
-    await cargarProductos();
-    await cargarClientes();
-    await cargarResumen();
+    const d = await api('POST', '/auth/nueva');
+    token = d.token;
+    localStorage.setItem('cajaviva_token', token);
+    localStorage.setItem('cajaviva_ya_uso', '1');
+    aplicarUsuario(d);
+    await arrancarApp();
   } catch (e) {
-    avisar('No se pudo conectar con el servidor', true);
+    mostrar('login');
+    $('msgLogin').innerHTML = '<div class="msg">No se pudo crear la cuenta automatica. Entra con tu usuario.</div>';
   }
 })();
 </script>
