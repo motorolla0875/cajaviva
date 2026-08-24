@@ -108,8 +108,13 @@
     padding: 14px 18px; background: var(--panel);
     border-bottom: 1px solid var(--line); flex-shrink: 0;
   }
-  header .marca { font-size: 17px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  header .hoy { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  header .marca { font-size: 17px; font-weight: 500; flex-shrink: 0; }
+  header .marca span { color: var(--accent); }
+  header .negocio {
+    flex: 1; text-align: center; font-size: 14px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px;
+  }
+  header .hoy { text-align: right; font-size: 12px; color: var(--muted); flex-shrink: 0; }
   header .hoy b { display: block; font-size: 17px; color: var(--text); font-weight: 500; }
   header .yo {
     width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
@@ -477,7 +482,8 @@
 
 <div class="app" id="app">
   <header>
-    <div class="marca" id="nombreNegocio">CajaViva</div>
+    <div class="marca">Caja<span>Viva</span></div>
+    <div class="negocio" id="nombreNegocio"></div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
     <button class="yo" id="btnYo">?</button>
   </header>
