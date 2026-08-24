@@ -30,7 +30,6 @@
   button { font-family: inherit; cursor: pointer; }
   input, select, textarea { font-family: inherit; }
 
-  /* ══ Arranque y login ══ */
   .pantalla-centro {
     display: none; flex-direction: column; align-items: center; justify-content: center;
     height: 100dvh; padding: 24px;
@@ -119,13 +118,25 @@
     display: flex; flex-direction: column;
   }
 
-  .buscador { margin-bottom: 14px; flex-shrink: 0; }
+  .buscador { margin-bottom: 12px; flex-shrink: 0; }
   .buscador input {
     width: 100%; padding: 13px 14px;
     border: 1px solid var(--line); border-radius: var(--radius);
     background: var(--panel); color: var(--text); font-size: 15px;
   }
   .buscador input:focus { outline: none; border-color: var(--accent); }
+
+  .chips {
+    display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
+    margin-bottom: 4px; flex-shrink: 0; scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap;
+  }
+  .chips button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
   .grilla {
     flex: 1; overflow-y: auto; display: grid;
@@ -213,6 +224,11 @@
   .fila .datos .margen { color: var(--accent-dark); font-size: 12.5px; }
   .fila .datos .debe { color: var(--danger); font-size: 13px; font-weight: 500; margin-top: 2px; }
   .fila .datos .aldia { color: var(--accent-dark); font-size: 12.5px; margin-top: 2px; }
+  .etiqueta {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; background: var(--panel-2);
+    color: var(--muted); margin-top: 4px;
+  }
   .fila .stock { text-align: right; font-size: 13px; min-width: 66px; }
   .fila .stock b { display: block; font-size: 17px; font-weight: 500; }
   .fila .stock.bajo b { color: var(--warn); }
@@ -224,12 +240,18 @@
     color: var(--text); font-size: 15px;
   }
 
+  .dos-arriba { display: flex; gap: 8px; margin-bottom: 14px; flex-shrink: 0; }
   .btn-nuevo {
-    width: 100%; padding: 14px; margin-bottom: 14px;
+    flex: 1; padding: 14px;
     border: 1px solid var(--accent); border-radius: var(--radius);
     background: var(--accent-soft); color: var(--accent-dark);
-    font-size: 15px; font-weight: 500; flex-shrink: 0;
+    font-size: 15px; font-weight: 500;
   }
+  .btn-nuevo.gris {
+    border-color: var(--line); background: var(--panel); color: var(--text);
+    flex: 0 0 auto; padding: 14px 18px;
+  }
+  .btn-nuevo.solo { width: 100%; margin-bottom: 14px; flex: none; }
 
   .banner-deuda {
     background: var(--panel); border: 1px solid var(--danger);
@@ -322,6 +344,18 @@
     border: none; background: none; color: var(--danger); font-size: 13.5px;
   }
 
+  .cat-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .cat-item .n { flex: 1; font-size: 14.5px; }
+  .cat-item .c { color: var(--muted); font-size: 12.5px; }
+  .cat-item button {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 13px;
+  }
+
   .saldo-box { text-align: center; padding: 6px 0 18px; }
   .saldo-box .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
   .saldo-box .val { font-size: 32px; font-weight: 500; color: var(--danger); }
@@ -345,7 +379,7 @@
 
   @media (max-width: 860px) {
     .vista.on { flex-direction: column; }
-    .der { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 52dvh; }
+    .der { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 50dvh; }
     .izq, .lista-wrap { padding: 12px; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     header { padding: 12px 14px; }
@@ -398,6 +432,7 @@
       <div class="buscador">
         <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
       </div>
+      <div class="chips" id="chipsCat"></div>
       <div class="grilla" id="grilla"></div>
     </div>
     <div class="der">
@@ -422,7 +457,10 @@
 
   <div class="vista" id="v-productos">
     <div class="lista-wrap">
-      <button class="btn-nuevo" id="btnNuevo">+ Nuevo producto</button>
+      <div class="dos-arriba">
+        <button class="btn-nuevo" id="btnNuevo">+ Nuevo producto</button>
+        <button class="btn-nuevo gris" id="btnCategorias">Categorias</button>
+      </div>
       <div class="buscador">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
       </div>
@@ -435,7 +473,7 @@
       <div class="banner-deuda" id="bannerDeuda" style="display:none;">
         <div><div class="lbl">Total que te deben</div><div class="val" id="totalDeuda">$0</div></div>
       </div>
-      <button class="btn-nuevo" id="btnNuevoCliente">+ Nuevo cliente</button>
+      <button class="btn-nuevo solo" id="btnNuevoCliente">+ Nuevo cliente</button>
       <div class="buscador">
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
@@ -474,7 +512,7 @@
         </div>
       </div>
 
-      <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
+      <button class="btn-nuevo solo" id="btnGasto">+ Anotar un gasto</button>
 
       <div class="seccion">Ventas</div>
       <div id="listaVentas"></div>
@@ -488,9 +526,7 @@
 <div class="modal-bg" id="modalCuentaUsuario">
   <div class="modal">
     <h3 id="tituloAsegurar">Asegurar mi cuenta</h3>
-    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="txtAsegurar">
-      Tu cuenta se creo sola y hoy solo funciona en este dispositivo. Si le ponés usuario y contrasena, vas a poder entrar desde la compu o desde otro celular.
-    </p>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="txtAsegurar"></p>
     <div id="msgAsegurar"></div>
     <div id="camposAsegurar">
       <label>Usuario</label>
@@ -508,12 +544,29 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCategorias">
+  <div class="modal">
+    <h3>Categorias</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Sirven para agrupar los productos y encontrarlos rapido al vender.</p>
+    <div id="msgCat"></div>
+    <label>Nueva categoria</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="catNombre" placeholder="Ej: Bebidas">
+      <button class="btn-pago" id="btnAgregarCat" style="border:none; border-radius:10px; padding:0 18px; font-weight:500;">Agregar</button>
+    </div>
+    <div id="listaCat" style="margin-top:16px;"></div>
+    <button class="btn-sec" id="btnCerrarCategorias">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalProd">
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
     <div id="msgProd"></div>
     <label>Nombre</label>
     <input type="text" id="pNombre" placeholder="Ej: Coca Cola 500ml">
+    <label>Categoria</label>
+    <select id="pCategoria"><option value="">Sin categoria</option></select>
     <div class="fila2">
       <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
       <div><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
@@ -617,17 +670,13 @@
 <script>
 const API = '/api';
 let token = localStorage.getItem('cajaviva_token') || null;
-let usuario = null;
-let negocio = null;
-let productos = [];
-let clientes = [];
+let usuario = null, negocio = null;
+let productos = [], clientes = [], categorias = [];
 let carrito = [];
 let medioPago = 'efectivo';
-let editandoId = null;
-let editandoCli = null;
-let cuentaCliId = null;
-let stockProdId = null;
-let stockModo = 'reponer';
+let catFiltro = '';
+let editandoId = null, editandoCli = null, editandoCat = null;
+let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
 let periodo = 'hoy';
 
 const $ = id => document.getElementById(id);
@@ -641,8 +690,7 @@ function hoyISO() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function menosDias(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
+  const d = new Date(); d.setDate(d.getDate() - n);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function rango() {
@@ -712,25 +760,22 @@ function aplicarUsuario(d) {
 async function arrancarApp() {
   mostrar('app');
   pintarCarrito();
+  await cargarCategorias();
   await cargarProductos();
   await cargarClientes();
   await cargarResumen();
 }
 
 $('btnEntrar').onclick = async function () {
-  const username = $('lUsuario').value.trim();
-  const password = $('lPassword').value;
+  const username = $('lUsuario').value.trim(), password = $('lPassword').value;
   if (!username || !password) { $('msgLogin').innerHTML = '<div class="msg">Completa usuario y contrasena.</div>'; return; }
   const btn = $('btnEntrar');
   btn.disabled = true; btn.textContent = 'Entrando...';
   try {
     const d = await api('POST', '/auth/entrar', { username: username, password: password });
     token = d.token; localStorage.setItem('cajaviva_token', token);
-    aplicarUsuario(d);
-    await arrancarApp();
-  } catch (e) {
-    $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+    aplicarUsuario(d); await arrancarApp();
+  } catch (e) { $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Entrar';
 };
 
@@ -741,11 +786,8 @@ $('btnCuentaNueva').onclick = async function () {
     const d = await api('POST', '/auth/nueva');
     token = d.token; localStorage.setItem('cajaviva_token', token);
     localStorage.setItem('cajaviva_ya_uso', '1');
-    aplicarUsuario(d);
-    await arrancarApp();
-  } catch (e) {
-    $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+    aplicarUsuario(d); await arrancarApp();
+  } catch (e) { $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Empezar con una cuenta nueva';
 };
 
@@ -759,18 +801,15 @@ $('btnAsegurarDesdeAviso').onclick = function () { $('btnYo').click(); };
 $('btnCerrarCuentaUsuario').onclick = function () { $('modalCuentaUsuario').classList.remove('on'); };
 $('btnSalir').onclick = function () {
   const extra = usuario && !usuario.username
-    ? '\n\nOJO: esta cuenta no tiene usuario ni contrasena. Si salis, no vas a poder volver a entrar.'
-    : '';
+    ? '\n\nOJO: esta cuenta no tiene usuario ni contrasena. Si salis, no vas a poder volver a entrar.' : '';
   if (confirm('Cerrar sesion?' + extra)) cerrarSesion();
 };
 
 $('btnAsegurar').onclick = async function () {
-  const username = $('aUsuario').value.trim();
-  const password = $('aPassword').value;
+  const username = $('aUsuario').value.trim(), password = $('aPassword').value;
   if (!username) { $('msgAsegurar').innerHTML = '<div class="msg">Elegi un usuario.</div>'; return; }
   if (password.length < 6) { $('msgAsegurar').innerHTML = '<div class="msg">La contrasena tiene que tener al menos 6 caracteres.</div>'; return; }
   if (password !== $('aPassword2').value) { $('msgAsegurar').innerHTML = '<div class="msg">Las contrasenas no coinciden.</div>'; return; }
-
   const btn = $('btnAsegurar');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
@@ -781,9 +820,7 @@ $('btnAsegurar').onclick = async function () {
     aplicarUsuario(d);
     $('modalCuentaUsuario').classList.remove('on');
     avisar('Cuenta asegurada');
-  } catch (e) {
-    $('msgAsegurar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgAsegurar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Guardar';
 };
 
@@ -798,6 +835,94 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'clientes') cargarClientes();
   };
 });
+
+/* ══ Categorias ══ */
+
+async function cargarCategorias() {
+  categorias = await api('GET', '/categorias');
+  pintarChips();
+  pintarSelectCategorias();
+  pintarListaCat();
+}
+
+function pintarChips() {
+  if (categorias.length === 0) { $('chipsCat').innerHTML = ''; return; }
+  $('chipsCat').innerHTML =
+    '<button class="' + (catFiltro === '' ? 'on' : '') + '" onclick="filtrarCat(\'\')">Todos</button>' +
+    categorias.filter(function (c) { return c.cantidad > 0; }).map(function (c) {
+      return '<button class="' + (catFiltro === c.id ? 'on' : '') + '" onclick="filtrarCat(\'' + c.id + '\')">' +
+        esc(c.nombre) + '</button>';
+    }).join('');
+}
+
+function filtrarCat(id) {
+  catFiltro = id;
+  pintarChips();
+  pintarGrilla();
+}
+
+function pintarSelectCategorias() {
+  $('pCategoria').innerHTML = '<option value="">Sin categoria</option>' +
+    categorias.map(function (c) { return '<option value="' + c.id + '">' + esc(c.nombre) + '</option>'; }).join('');
+}
+
+function pintarListaCat() {
+  if (categorias.length === 0) {
+    $('listaCat').innerHTML = '<div class="vacio">Todavia no creaste categorias.</div>';
+    return;
+  }
+  $('listaCat').innerHTML = categorias.map(function (c) {
+    return '<div class="cat-item">' +
+      '<div class="n">' + esc(c.nombre) + '<div class="c">' + c.cantidad +
+        (c.cantidad === 1 ? ' producto' : ' productos') + '</div></div>' +
+      '<button onclick="renombrarCat(\'' + c.id + '\')">&#9998;</button>' +
+      '<button onclick="borrarCat(\'' + c.id + '\')">&#10005;</button></div>';
+  }).join('');
+}
+
+$('btnCategorias').onclick = function () {
+  $('msgCat').innerHTML = ''; $('catNombre').value = '';
+  pintarListaCat();
+  $('modalCategorias').classList.add('on');
+};
+$('btnCerrarCategorias').onclick = function () { $('modalCategorias').classList.remove('on'); };
+
+$('btnAgregarCat').onclick = async function () {
+  const nombre = $('catNombre').value.trim();
+  if (!nombre) { $('msgCat').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
+  try {
+    await api('POST', '/categorias', { nombre: nombre });
+    $('catNombre').value = ''; $('msgCat').innerHTML = '';
+    await cargarCategorias();
+    avisar('Categoria creada');
+  } catch (e) { $('msgCat').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
+
+async function renombrarCat(id) {
+  const c = categorias.filter(function (x) { return x.id === id; })[0];
+  const nombre = prompt('Nuevo nombre para la categoria:', c ? c.nombre : '');
+  if (!nombre || !nombre.trim()) return;
+  try {
+    await api('PUT', '/categorias/' + id, { nombre: nombre.trim() });
+    await cargarCategorias(); await cargarProductos();
+    avisar('Categoria renombrada');
+  } catch (e) { $('msgCat').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+}
+
+async function borrarCat(id) {
+  const c = categorias.filter(function (x) { return x.id === id; })[0];
+  const extra = c && c.cantidad > 0
+    ? ' Los ' + c.cantidad + ' productos quedan sin categoria, no se borran.' : '';
+  if (!confirm('Borrar esta categoria?' + extra)) return;
+  try {
+    await api('DELETE', '/categorias/' + id);
+    if (catFiltro === id) catFiltro = '';
+    await cargarCategorias(); await cargarProductos();
+    avisar('Categoria borrada');
+  } catch (e) { avisar(e.message, true); }
+}
+
+/* ══ Datos ══ */
 
 async function cargarProductos() {
   productos = await api('GET', '/productos');
@@ -818,9 +943,11 @@ async function cargarResumen() {
 
 function pintarGrilla() {
   const t = norm($('buscar').value.trim());
-  const lista = t ? productos.filter(function (p) {
+  let lista = productos;
+  if (catFiltro) lista = lista.filter(function (p) { return p.categoria_id === catFiltro; });
+  if (t) lista = lista.filter(function (p) {
     return norm(p.nombre).indexOf(t) >= 0 || (p.codigo_barras || '').indexOf(t) >= 0;
-  }) : productos;
+  });
 
   if (lista.length === 0) {
     $('grilla').innerHTML = '<div class="vacio">' +
@@ -903,7 +1030,6 @@ $('btnCobrar').onclick = async function () {
   const esFiado = medioPago === 'cuenta_corriente';
   const clienteId = esFiado ? $('clienteVenta').value : null;
   if (esFiado && !clienteId) { avisar('Elegi a quien le fias', true); return; }
-
   const btn = $('btnCobrar');
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
@@ -943,6 +1069,7 @@ function pintarLista() {
       '<div class="d">' + plata(p.precio_venta) +
         (tieneCosto ? ' &middot; costo ' + plata(p.precio_costo) : ' &middot; sin costo cargado') + '</div>' +
       (margen !== null ? '<div class="margen">Ganas ' + plata(p.precio_venta - p.precio_costo) + ' (' + margen + '%)</div>' : '') +
+      (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
       '</div>' +
       '<div class="stock ' + clase + '"><b>' + p.stock + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>' +
       '<div class="acc">' +
@@ -974,6 +1101,8 @@ function abrirProd(id) {
   $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
   $('msgProd').innerHTML = '';
   $('pNombre').value = p ? p.nombre : '';
+  pintarSelectCategorias();
+  $('pCategoria').value = p && p.categoria_id ? p.categoria_id : '';
   $('pVenta').value = p ? p.precio_venta : '';
   $('pCosto').value = p && p.precio_costo != null ? p.precio_costo : '';
   $('pUnidad').value = p ? p.unidad : 'unidad';
@@ -996,6 +1125,7 @@ $('btnGuardarProd').onclick = async function () {
 
   const cuerpo = {
     nombre: nombre, precioVenta: venta,
+    categoriaId: $('pCategoria').value || null,
     precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
     unidad: $('pUnidad').value,
     codigoBarras: $('pBarras').value.trim() || null,
@@ -1007,7 +1137,7 @@ $('btnGuardarProd').onclick = async function () {
   try {
     if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
     else { cuerpo.stockInicial = num($('pStock').value); await api('POST', '/productos', cuerpo); }
-    await cargarProductos();
+    await cargarProductos(); await cargarCategorias();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
   } catch (e) { $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
@@ -1019,7 +1149,7 @@ $('btnBorrarProd').onclick = async function () {
   if (!confirm('Eliminar este producto? Las ventas ya hechas no se borran.')) return;
   try {
     await api('DELETE', '/productos/' + editandoId);
-    await cargarProductos();
+    await cargarProductos(); await cargarCategorias();
     $('modalProd').classList.remove('on');
     avisar('Producto eliminado');
   } catch (e) { avisar(e.message, true); }
@@ -1194,9 +1324,7 @@ async function refrescarCuenta() {
     $('ccMovimientos').innerHTML = movs.length
       ? movs.map(function (m) { return m.html; }).join('')
       : '<div class="vacio">Todavia no hay movimientos.</div>';
-  } catch (e) {
-    $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
+  } catch (e) { $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
 }
 
 async function registrarMovimiento(tipo) {
@@ -1343,10 +1471,7 @@ $('btnGuardarGasto').onclick = async function () {
     }
   }
 
-  if (localStorage.getItem('cajaviva_ya_uso') === '1') {
-    mostrar('login');
-    return;
-  }
+  if (localStorage.getItem('cajaviva_ya_uso') === '1') { mostrar('login'); return; }
 
   try {
     const d = await api('POST', '/auth/nueva');

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const db = require('./db');
@@ -19,5 +20,6 @@ app.use('/api/productos', requiereAuth, require('./routes/productos'));
 app.use('/api/ventas', requiereAuth, require('./routes/ventas'));
 app.use('/api/gastos', requiereAuth, require('./routes/gastos'));
 app.use('/api/clientes', requiereAuth, require('./routes/clientes'));
+app.use('/api/categorias', requiereAuth, require('./routes/categorias'));
 
 app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));
