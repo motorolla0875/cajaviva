@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CajaViva</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1D9E75">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CajaViva">
 <style>
   :root {
     --bg: #FAFAF7;
@@ -804,6 +810,12 @@
 <div class="aviso" id="aviso"></div>
 
 <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+
 const API = '/api';
 let token = localStorage.getItem('cajaviva_token') || null;
 let usuario = null, negocio = null;
