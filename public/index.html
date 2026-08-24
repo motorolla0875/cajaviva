@@ -47,8 +47,8 @@
     border-bottom: 1px solid var(--line); flex-shrink: 0;
   }
   nav button {
-    flex: 1; padding: 13px 8px; border: none; background: none;
-    color: var(--muted); font-size: 14px; font-weight: 500;
+    flex: 1; padding: 13px 4px; border: none; background: none;
+    color: var(--muted); font-size: 13.5px; font-weight: 500;
     border-bottom: 2px solid transparent;
   }
   nav button.on { color: var(--accent-dark); border-bottom-color: var(--accent); }
@@ -121,6 +121,19 @@
   }
   .medios button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
+  .selector-cliente {
+    display: none; margin-bottom: 12px;
+    padding: 12px; border-radius: 10px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+  }
+  .selector-cliente.on { display: block; }
+  .selector-cliente label { font-size: 12px; color: var(--accent-dark); font-weight: 500; display: block; margin-bottom: 6px; }
+  .selector-cliente select {
+    width: 100%; padding: 10px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--text); font-size: 14px;
+  }
+
   .btn-cobrar {
     width: 100%; padding: 16px; border: none; border-radius: var(--radius);
     background: var(--accent); color: #fff; font-size: 16px; font-weight: 500;
@@ -142,6 +155,8 @@
   .fila .datos .n { font-weight: 500; font-size: 15px; }
   .fila .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
   .fila .datos .margen { color: var(--accent-dark); font-size: 12.5px; }
+  .fila .datos .debe { color: var(--danger); font-size: 13px; font-weight: 500; margin-top: 2px; }
+  .fila .datos .aldia { color: var(--accent-dark); font-size: 12.5px; margin-top: 2px; }
   .fila .stock { text-align: right; font-size: 13px; min-width: 66px; }
   .fila .stock b { display: block; font-size: 17px; font-weight: 500; }
   .fila .stock.bajo b { color: var(--warn); }
@@ -160,7 +175,14 @@
     font-size: 15px; font-weight: 500; flex-shrink: 0;
   }
 
-  /* Caja */
+  .banner-deuda {
+    background: var(--panel); border: 1px solid var(--danger);
+    border-radius: var(--radius); padding: 15px 16px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .banner-deuda .lbl { font-size: 12.5px; color: var(--muted); }
+  .banner-deuda .val { font-size: 24px; font-weight: 500; color: var(--danger); }
+
   .periodos { display: flex; gap: 6px; margin-bottom: 16px; }
   .periodos button {
     flex: 1; padding: 10px; border: 1px solid var(--line);
@@ -193,6 +215,7 @@
   .mov .info .d { font-size: 12px; color: var(--muted); }
   .mov .monto { font-weight: 500; font-size: 15px; }
   .mov .monto.gasto { color: var(--danger); }
+  .mov .monto.pago { color: var(--accent-dark); }
   .mov .x {
     width: 32px; height: 32px; border-radius: 8px;
     border: 1px solid var(--line); background: var(--panel-2);
@@ -208,7 +231,7 @@
   .modal-bg.on { display: flex; }
   .modal {
     background: var(--panel); border-radius: 16px;
-    width: 100%; max-width: 420px; padding: 22px;
+    width: 100%; max-width: 440px; padding: 22px;
   }
   .modal h3 { margin: 0 0 16px; font-size: 18px; font-weight: 500; }
   .modal label {
@@ -247,6 +270,18 @@
     margin-bottom: 12px; background: var(--danger-soft); color: var(--danger);
   }
 
+  .saldo-box { text-align: center; padding: 6px 0 18px; }
+  .saldo-box .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .saldo-box .val { font-size: 32px; font-weight: 500; color: var(--danger); }
+  .saldo-box .val.ok { color: var(--accent-dark); }
+
+  .dos-btn { display: flex; gap: 8px; margin-top: 12px; }
+  .dos-btn button {
+    flex: 1; padding: 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500;
+  }
+  .btn-pago { border: none; background: var(--accent); color: #fff; }
+  .btn-dev { border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+
   .vacio { text-align: center; color: var(--muted); padding: 34px 20px; font-size: 14px; }
 
   .aviso {
@@ -260,10 +295,11 @@
 
   @media (max-width: 860px) {
     .vista.on { flex-direction: column; }
-    .der { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 50dvh; }
+    .der { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 52dvh; }
     .izq, .lista-wrap { padding: 12px; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     header { padding: 12px 14px; }
+    nav button { font-size: 12.5px; }
   }
 </style>
 </head>
@@ -278,6 +314,7 @@
   <nav>
     <button data-vista="vender" class="on">Vender</button>
     <button data-vista="productos">Productos</button>
+    <button data-vista="clientes">Fiado</button>
     <button data-vista="caja">Caja</button>
   </nav>
 
@@ -298,6 +335,10 @@
           <button data-medio="transferencia">Transfer.</button>
           <button data-medio="cuenta_corriente">Fiado</button>
         </div>
+        <div class="selector-cliente" id="selCliente">
+          <label>A nombre de quien queda</label>
+          <select id="clienteVenta"></select>
+        </div>
         <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
         <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
       </div>
@@ -311,6 +352,19 @@
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
       </div>
       <div class="lista" id="listaProd"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-clientes">
+    <div class="lista-wrap">
+      <div class="banner-deuda" id="bannerDeuda" style="display:none;">
+        <div><div class="lbl">Total que te deben</div><div class="val" id="totalDeuda">$0</div></div>
+      </div>
+      <button class="btn-nuevo" id="btnNuevoCliente">+ Nuevo cliente</button>
+      <div class="buscador">
+        <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
+      </div>
+      <div class="lista" id="listaCli"></div>
     </div>
   </div>
 
@@ -421,14 +475,59 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCliente">
+  <div class="modal">
+    <h3 id="tituloCliente">Nuevo cliente</h3>
+    <div id="msgCliente"></div>
+    <label>Nombre</label>
+    <input type="text" id="cNombre" placeholder="Ej: Juan del 3ro B">
+    <label>WhatsApp (opcional)</label>
+    <input type="text" id="cWhatsapp" inputmode="tel" placeholder="Ej: 1150250011">
+    <label>Direccion (opcional)</label>
+    <input type="text" id="cDireccion">
+    <label>Notas (opcional)</label>
+    <input type="text" id="cNotas">
+    <button class="btn-ppal" id="btnGuardarCliente">Guardar</button>
+    <button class="btn-del" id="btnBorrarCliente" style="display:none;">Eliminar cliente</button>
+    <button class="btn-sec" id="btnCerrarCliente">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCuenta">
+  <div class="modal">
+    <h3 id="tituloCuenta">Cuenta</h3>
+    <div class="saldo-box">
+      <div class="lbl" id="lblSaldo">Debe</div>
+      <div class="val" id="valSaldo">$0</div>
+    </div>
+    <div id="msgCuenta"></div>
+
+    <label>Registrar un movimiento</label>
+    <input type="text" id="ccMonto" inputmode="decimal" placeholder="Monto">
+    <input type="text" id="ccNota" placeholder="Nota (opcional)" style="margin-top:8px;">
+    <div class="dos-btn">
+      <button class="btn-pago" id="btnPago">Recibi un pago</button>
+      <button class="btn-dev" id="btnDev">Le devolvi plata</button>
+    </div>
+
+    <div class="seccion">Movimientos</div>
+    <div id="ccMovimientos" style="max-height:280px; overflow-y:auto;"></div>
+
+    <button class="btn-sec" id="btnCerrarCuenta" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
 <div class="aviso" id="aviso"></div>
 
 <script>
 const API = '/api';
 let productos = [];
+let clientes = [];
 let carrito = [];
 let medioPago = 'efectivo';
 let editandoId = null;
+let editandoCli = null;
+let cuentaCliId = null;
 let stockProdId = null;
 let stockModo = 'reponer';
 let periodo = 'hoy';
@@ -460,8 +559,7 @@ function fechaCorta(iso) {
 }
 function horaDe(ts) {
   if (!ts) return '';
-  const t = String(ts).replace(' ', 'T') + 'Z';
-  const d = new Date(t);
+  const d = new Date(String(ts).replace(' ', 'T') + 'Z');
   if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
@@ -490,6 +588,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     document.querySelectorAll('.vista').forEach(function (v) { v.classList.remove('on'); });
     $('v-' + b.dataset.vista).classList.add('on');
     if (b.dataset.vista === 'caja') cargarCaja();
+    if (b.dataset.vista === 'clientes') cargarClientes();
   };
 });
 
@@ -497,6 +596,12 @@ async function cargarProductos() {
   productos = await api('GET', '/productos');
   pintarGrilla();
   pintarLista();
+}
+
+async function cargarClientes() {
+  clientes = await api('GET', '/clientes');
+  pintarClientes();
+  pintarSelectClientes();
 }
 
 async function cargarResumen() {
@@ -574,15 +679,35 @@ function pintarCarrito() {
   $('btnCobrar').disabled = carrito.length === 0;
 }
 
+function pintarSelectClientes() {
+  const sel = $('clienteVenta');
+  if (clientes.length === 0) {
+    sel.innerHTML = '<option value="">No hay clientes cargados</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Elegi un cliente...</option>' +
+    clientes.map(function (c) {
+      return '<option value="' + c.id + '">' + esc(c.nombre) +
+        (c.saldo > 0 ? ' (debe ' + plata(c.saldo) + ')' : '') + '</option>';
+    }).join('');
+}
+
 $('medios').addEventListener('click', function (e) {
   const b = e.target.closest('button');
   if (!b) return;
   medioPago = b.dataset.medio;
   Array.prototype.forEach.call($('medios').children, function (x) { x.classList.toggle('on', x === b); });
+  $('selCliente').classList.toggle('on', medioPago === 'cuenta_corriente');
+  if (medioPago === 'cuenta_corriente' && clientes.length === 0) cargarClientes();
 });
 
 $('btnCobrar').onclick = async function () {
   if (carrito.length === 0) return;
+
+  const esFiado = medioPago === 'cuenta_corriente';
+  const clienteId = esFiado ? $('clienteVenta').value : null;
+  if (esFiado && !clienteId) { avisar('Elegi a quien le fias', true); return; }
+
   const btn = $('btnCobrar');
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
@@ -590,11 +715,13 @@ $('btnCobrar').onclick = async function () {
     await api('POST', '/ventas', {
       items: carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; }),
       medioPago: medioPago,
-      montoPagado: medioPago === 'cuenta_corriente' ? 0 : total
+      clienteId: clienteId,
+      montoPagado: esFiado ? 0 : total
     });
     carrito = []; pintarCarrito();
     await cargarProductos(); await cargarResumen();
-    avisar('Venta cobrada: ' + plata(total));
+    if (esFiado) await cargarClientes();
+    avisar(esFiado ? 'Fiado anotado: ' + plata(total) : 'Venta cobrada: ' + plata(total));
   } catch (e) { avisar(e.message, true); }
   btn.textContent = 'Cobrar';
   btn.disabled = carrito.length === 0;
@@ -762,6 +889,178 @@ $('btnGuardarStock').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Confirmar';
 };
 
+/* ══ Clientes ══ */
+
+function pintarClientes() {
+  const totalDeuda = clientes.reduce(function (s, c) { return s + (c.saldo > 0 ? c.saldo : 0); }, 0);
+  $('bannerDeuda').style.display = totalDeuda > 0 ? 'flex' : 'none';
+  $('totalDeuda').textContent = plata(totalDeuda);
+
+  const t = norm($('buscarCli').value.trim());
+  const lista = t ? clientes.filter(function (c) { return norm(c.nombre).indexOf(t) >= 0; }) : clientes;
+
+  if (lista.length === 0) {
+    $('listaCli').innerHTML = '<div class="vacio">' +
+      (clientes.length === 0 ? 'Cargá un cliente para poder fiarle.' : 'Ninguno coincide.') + '</div>';
+    return;
+  }
+
+  const ordenados = lista.slice().sort(function (a, b) { return (b.saldo || 0) - (a.saldo || 0); });
+
+  $('listaCli').innerHTML = ordenados.map(function (c) {
+    const debe = c.saldo > 0;
+    const aFavor = c.saldo < 0;
+    return '<div class="fila"><div class="datos">' +
+      '<div class="n">' + esc(c.nombre) + '</div>' +
+      (c.whatsapp ? '<div class="d">' + esc(c.whatsapp) + '</div>' : '') +
+      (debe ? '<div class="debe">Debe ' + plata(c.saldo) + '</div>'
+        : aFavor ? '<div class="aldia">A favor ' + plata(Math.abs(c.saldo)) + '</div>'
+        : '<div class="aldia">Al dia</div>') +
+      '</div><div class="acc">' +
+        '<button onclick="abrirCuenta(\'' + c.id + '\')">$</button>' +
+        '<button onclick="abrirCliente(\'' + c.id + '\')">&#9998;</button>' +
+      '</div></div>';
+  }).join('');
+}
+$('buscarCli').addEventListener('input', pintarClientes);
+
+function abrirCliente(id) {
+  editandoCli = id || null;
+  const c = id ? clientes.filter(function (x) { return x.id === id; })[0] : null;
+  $('tituloCliente').textContent = c ? 'Editar cliente' : 'Nuevo cliente';
+  $('msgCliente').innerHTML = '';
+  $('cNombre').value = c ? c.nombre : '';
+  $('cWhatsapp').value = c && c.whatsapp ? c.whatsapp : '';
+  $('cDireccion').value = c && c.direccion ? c.direccion : '';
+  $('cNotas').value = c && c.notas ? c.notas : '';
+  $('btnBorrarCliente').style.display = c ? 'block' : 'none';
+  $('modalCliente').classList.add('on');
+}
+$('btnNuevoCliente').onclick = function () { abrirCliente(null); };
+$('btnCerrarCliente').onclick = function () { $('modalCliente').classList.remove('on'); };
+
+$('btnGuardarCliente').onclick = async function () {
+  const nombre = $('cNombre').value.trim();
+  if (!nombre) { $('msgCliente').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
+
+  const cuerpo = {
+    nombre: nombre,
+    whatsapp: $('cWhatsapp').value.trim() || null,
+    direccion: $('cDireccion').value.trim() || null,
+    notas: $('cNotas').value.trim() || null
+  };
+
+  const btn = $('btnGuardarCliente');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (editandoCli) await api('PUT', '/clientes/' + editandoCli, cuerpo);
+    else await api('POST', '/clientes', cuerpo);
+    await cargarClientes();
+    $('modalCliente').classList.remove('on');
+    avisar(editandoCli ? 'Cliente actualizado' : 'Cliente creado');
+  } catch (e) {
+    $('msgCliente').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+$('btnBorrarCliente').onclick = async function () {
+  if (!editandoCli) return;
+  if (!confirm('Eliminar este cliente?')) return;
+  try {
+    await api('DELETE', '/clientes/' + editandoCli);
+    await cargarClientes();
+    $('modalCliente').classList.remove('on');
+    avisar('Cliente eliminado');
+  } catch (e) { avisar(e.message, true); }
+};
+
+async function abrirCuenta(id) {
+  cuentaCliId = id;
+  $('msgCuenta').innerHTML = '';
+  $('ccMonto').value = '';
+  $('ccNota').value = '';
+  $('modalCuenta').classList.add('on');
+  await refrescarCuenta();
+}
+
+async function refrescarCuenta() {
+  try {
+    const d = await api('GET', '/clientes/' + cuentaCliId + '/cuenta');
+    $('tituloCuenta').textContent = 'Cuenta de ' + d.cliente.nombre;
+
+    const saldo = d.cliente.saldo || 0;
+    $('lblSaldo').textContent = saldo < 0 ? 'A favor del cliente' : 'Debe';
+    const v = $('valSaldo');
+    v.textContent = plata(Math.abs(saldo));
+    v.className = 'val' + (saldo > 0 ? '' : ' ok');
+
+    const movs = [];
+    d.ventas.forEach(function (venta) {
+      const detalle = venta.items.map(function (i) { return i.cantidad + ' x ' + i.nombre; }).join(', ');
+      movs.push({
+        orden: venta.created_at,
+        html: '<div class="mov"><div class="info">' +
+          '<div class="n">' + esc(detalle) + '</div>' +
+          '<div class="d">' + fechaCorta(venta.fecha) + ' &middot; fiado</div>' +
+          '</div><div class="monto gasto">+' + plata(venta.deuda) + '</div></div>'
+      });
+    });
+    d.pagos.forEach(function (p) {
+      const esPago = p.tipo === 'pago';
+      movs.push({
+        orden: p.created_at,
+        html: '<div class="mov"><div class="info">' +
+          '<div class="n">' + (esPago ? 'Pago recibido' : 'Devolucion') + '</div>' +
+          '<div class="d">' + fechaCorta(p.fecha) + (p.nota ? ' &middot; ' + esc(p.nota) : '') + '</div>' +
+          '</div><div class="monto ' + (esPago ? 'pago' : 'gasto') + '">' +
+          (esPago ? '-' : '+') + plata(p.monto) + '</div>' +
+          '<button class="x" onclick="borrarPago(\'' + p.id + '\')">&#10005;</button></div>'
+      });
+    });
+
+    movs.sort(function (a, b) { return String(b.orden).localeCompare(String(a.orden)); });
+    $('ccMovimientos').innerHTML = movs.length
+      ? movs.map(function (m) { return m.html; }).join('')
+      : '<div class="vacio">Todavia no hay movimientos.</div>';
+  } catch (e) {
+    $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+}
+
+async function registrarMovimiento(tipo) {
+  const monto = num($('ccMonto').value);
+  if (monto <= 0) { $('msgCuenta').innerHTML = '<div class="msg">Pone un monto mayor a 0.</div>'; return; }
+  try {
+    await api('POST', '/clientes/' + cuentaCliId + '/pagos', {
+      monto: monto,
+      nota: $('ccNota').value.trim() || null,
+      tipo: tipo
+    });
+    $('ccMonto').value = ''; $('ccNota').value = '';
+    $('msgCuenta').innerHTML = '';
+    await cargarClientes();
+    await refrescarCuenta();
+    avisar(tipo === 'pago' ? 'Pago registrado' : 'Devolucion registrada');
+  } catch (e) {
+    $('msgCuenta').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+}
+$('btnPago').onclick = function () { registrarMovimiento('pago'); };
+$('btnDev').onclick = function () { registrarMovimiento('devolucion'); };
+
+async function borrarPago(pagoId) {
+  if (!confirm('Borrar este movimiento?')) return;
+  try {
+    await api('DELETE', '/clientes/' + cuentaCliId + '/pagos/' + pagoId);
+    await cargarClientes();
+    await refrescarCuenta();
+    avisar('Movimiento borrado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+$('btnCerrarCuenta').onclick = function () { $('modalCuenta').classList.remove('on'); };
+
 /* ══ Caja ══ */
 
 $('periodos').addEventListener('click', function (e) {
@@ -799,7 +1098,8 @@ async function cargarCaja() {
           : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
         return '<div class="mov"><div class="info">' +
           '<div class="n">' + esc(detalle) + '</div>' +
-          '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio + '</div>' +
+          '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
+            (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') + '</div>' +
           '</div><div class="monto">' + plata(v.total) + '</div>' +
           '<button class="x" onclick="anularVenta(\'' + v.id + '\')">&#10005;</button></div>';
       }).join('');
@@ -829,6 +1129,7 @@ async function anularVenta(id) {
     await api('DELETE', '/ventas/' + id);
     await cargarProductos();
     await cargarResumen();
+    await cargarClientes();
     await cargarCaja();
     avisar('Venta anulada');
   } catch (e) { avisar(e.message, true); }
@@ -875,6 +1176,7 @@ $('btnGuardarGasto').onclick = async function () {
   pintarCarrito();
   try {
     await cargarProductos();
+    await cargarClientes();
     await cargarResumen();
   } catch (e) {
     avisar('No se pudo conectar con el servidor', true);

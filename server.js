@@ -19,6 +19,7 @@ app.use('/api', (req, res, next) => { req.userId = USER_DEMO; next(); });
 app.use('/api/productos', require('./routes/productos'));
 app.use('/api/ventas', require('./routes/ventas'));
 app.use('/api/gastos', require('./routes/gastos'));
+app.use('/api/clientes', require('./routes/clientes'));
 
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true, app: 'CajaViva', hora: new Date().toISOString() });
