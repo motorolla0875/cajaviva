@@ -189,7 +189,7 @@
   #lectorCam { width: 100%; border-radius: 12px; overflow: hidden; }
   #lectorCam video { width: 100% !important; border-radius: 12px; }
 
-  .chips-wrap { position: relative; flex-shrink: 0; }
+  .chips-wrap { position: relative; flex-shrink: 0; min-height: 38px; }
   .chip-flecha {
     display: none; position: absolute; top: 0; z-index: 5;
     width: 30px; height: 36px; border: 1px solid var(--line);
@@ -211,7 +211,8 @@
   .chips::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
   .chips::-webkit-scrollbar { display: none; }
   .chips button {
-    flex-shrink: 0; padding: 8px 14px; border-radius: 20px;
+    flex-shrink: 0; padding: 8px 14px; border-radius: 20px; min-height: 34px;
+    display: inline-flex; align-items: center;
     border: 1px solid var(--line); background: var(--panel);
     color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap;
   }
