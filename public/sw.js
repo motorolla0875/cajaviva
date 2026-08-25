@@ -1,4 +1,4 @@
-const CACHE = 'cajaviva-v2';
+const CACHE = 'cajaviva-v3';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -36,13 +36,14 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
+  // red primero, guardado como respaldo
   e.respondWith(
-    caches.match(e.request).then(function (guardado) {
-      return guardado || fetch(e.request).then(function (r) {
-        const copia = r.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
-        return r;
-      });
+    fetch(e.request).then(function (r) {
+      const copia = r.clone();
+      caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
+      return r;
+    }).catch(function () {
+      return caches.match(e.request);
     })
   );
 });
