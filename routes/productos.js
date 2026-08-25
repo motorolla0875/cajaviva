@@ -64,6 +64,23 @@ router.put('/:id', (req, res) => {
   const prod = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!prod) return res.status(404).json({ error: 'Producto no encontrado.' });
 
+  // si cambio algun precio, queda registrado
+  const previo = db.prepare('SELECT precio_venta, precio_costo FROM productos WHERE id = ?').get(req.params.id);
+  const nuevaVenta = parseFloat(precioVenta) || 0;
+  const nuevoCosto = precioCosto === '' || precioCosto == null ? null : parseFloat(precioCosto);
+
+  if (previo && (previo.precio_venta !== nuevaVenta ||
+      (nuevoCosto != null && previo.precio_costo !== nuevoCosto))) {
+    db.exec(`CREATE TABLE IF NOT EXISTS historial_precios (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL, producto_id TEXT NOT NULL,
+      precio_venta REAL, precio_costo REAL, motivo TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    db.prepare(`INSERT INTO historial_precios (id, user_id, producto_id, precio_venta, precio_costo, motivo)
+                VALUES (?, ?, ?, ?, ?, 'edicion')`)
+      .run(uuidv4(), req.userId, req.params.id, nuevaVenta, nuevoCosto);
+  }
+
   db.prepare(`
     UPDATE productos SET nombre = ?, categoria_id = ?, codigo_barras = ?,
       precio_venta = ?, precio_costo = ?, unidad = ?, stock_minimo = ?,
@@ -273,6 +290,29 @@ router.post('/precios-deshacer', (req, res) => {
   db.prepare('DELETE FROM cambios_precio WHERE id = ?').run(ultimo.id);
 
   res.json({ restaurados: datos.length });
+});
+
+
+// ── historial de precios de un producto ──
+router.get('/:id/historial', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!p) return res.status(404).json({ error: 'Producto no encontrado.' });
+
+  let filas = [];
+  try {
+    filas = db.prepare(`
+      SELECT * FROM historial_precios
+      WHERE producto_id = ? AND user_id = ?
+      ORDER BY created_at DESC LIMIT 30
+    `).all(req.params.id, req.userId);
+  } catch (e) {}
+
+  res.json({
+    producto: { nombre: p.nombre, precio_venta: p.precio_venta, precio_costo: p.precio_costo },
+    historial: filas
+  });
 });
 
 module.exports = router;

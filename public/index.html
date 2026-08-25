@@ -538,6 +538,19 @@
   }
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
+  #modalHistorial { z-index: 130; }
+  .hist-fila {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 0; border-bottom: 1px solid var(--line);
+  }
+  .hist-fila .fec { font-size: 12.5px; color: var(--muted); }
+  .hist-fila .fec b { display: block; color: var(--text); font-weight: 500; font-size: 13px; }
+  .hist-fila .prec { text-align: right; font-size: 13.5px; }
+  .hist-fila .prec .v { font-weight: 500; }
+  .hist-fila .prec .c { color: var(--muted); font-size: 12px; }
+  .hist-sube { color: var(--danger); font-size: 12px; }
+  .hist-baja { color: var(--accent-dark); font-size: 12px; }
+
   .cheque {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -1301,6 +1314,7 @@
     <label>Avisar cuando el stock baje de</label>
     <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
     <button class="btn-ppal" id="btnGuardarProd">Guardar</button>
+    <button class="btn-sec" id="btnHistorialPrecio" style="display:none;">Ver historial de precios</button>
     <button class="btn-del" id="btnBorrarProd" style="display:none;">Eliminar producto</button>
     <button class="btn-sec" id="btnCerrarProd">Cancelar</button>
   </div>
@@ -1433,6 +1447,15 @@
 
     <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
     <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalHistorial">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="tituloHist">Historial de precios</h3>
+    <div id="actualHist"></div>
+    <div id="listaHist" style="max-height:340px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarHist">Cerrar</button>
   </div>
 </div>
 
@@ -2532,6 +2555,7 @@ function abrirProd(id) {
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
+  $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
   calcularMargen();
   $('modalProd').classList.add('on');
 }
@@ -4565,6 +4589,50 @@ async function revisarCierre(fecha) {
       'Si cambias esta venta, ese cierre no se modifica.</div>';
   } catch (e) {}
 }
+
+/* ══ Historial de precios ══ */
+
+$('btnHistorialPrecio').onclick = async function () {
+  if (!editandoId) return;
+  $('listaHist').innerHTML = '<div class="vacio">Cargando...</div>';
+  $('modalHistorial').classList.add('on');
+
+  try {
+    const d = await api('GET', '/productos/' + editandoId + '/historial');
+    $('tituloHist').textContent = d.producto.nombre;
+    $('actualHist').innerHTML =
+      '<div class="rep-resumen"><div class="lbl">Precio actual</div>' +
+      '<div class="val">' + plata(d.producto.precio_venta) + '</div>' +
+      (d.producto.precio_costo > 0 ? '<div class="lbl">Costo ' + plata(d.producto.precio_costo) + '</div>' : '') +
+      '</div>';
+
+    if (d.historial.length === 0) {
+      $('listaHist').innerHTML = '<div class="vacio">Todavia no hay cambios registrados.</div>';
+      return;
+    }
+
+    $('listaHist').innerHTML = d.historial.map(function (h, i) {
+      const ant = d.historial[i + 1];
+      let cambio = '';
+      if (ant && ant.precio_venta > 0 && h.precio_venta !== ant.precio_venta) {
+        const pct = Math.round(((h.precio_venta - ant.precio_venta) / ant.precio_venta) * 100);
+        cambio = pct > 0
+          ? '<span class="hist-sube">+' + pct + '%</span>'
+          : '<span class="hist-baja">' + pct + '%</span>';
+      }
+      return '<div class="hist-fila">' +
+        '<div class="fec"><b>' + fechaCorta(h.created_at) + '</b>' +
+        (h.motivo === 'compra' ? 'al comprar' : 'editado') + '</div>' +
+        '<div class="prec"><span class="v">' + plata(h.precio_venta) + '</span> ' + cambio +
+        (h.precio_costo > 0 ? '<div class="c">costo ' + plata(h.precio_costo) + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+  } catch (e) {
+    $('listaHist').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+};
+
+$('btnCerrarHist').onclick = function () { $('modalHistorial').classList.remove('on'); };
 
 /* ══ Vuelto ══ */
 
