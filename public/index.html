@@ -506,9 +506,12 @@
     .vista.on { flex-direction: column; }
     .der {
       width: 100%; border-left: none; border-top: 1px solid var(--line);
-      flex: 0 0 auto; min-height: 0; height: 46dvh; max-height: 85dvh;
+      flex: 1 1 auto; min-height: 0;
       display: flex; flex-direction: column;
     }
+    /* abierto: el panel se lleva la pantalla, la grilla se achica */
+    #v-vender.vista.on .izq { flex: 0 0 auto; max-height: 0; overflow: hidden; padding: 0; }
+    #v-vender.vista.on.grilla-visible .izq { flex: 1 1 auto; max-height: none; overflow: visible; padding: 12px; }
     .manija {
       display: flex; align-items: center; justify-content: center;
       height: 26px; flex-shrink: 0; cursor: pointer;
@@ -527,7 +530,7 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    .der.chico { height: auto !important; }
+    .der.chico { flex: 0 0 auto; }
     .der.chico .pie { border-top: none; padding: 4px 16px 14px; }
     .der.chico .total-row { margin-bottom: 0; }
     .manija:active span { background: var(--accent); }
@@ -2113,15 +2116,20 @@ function encontroCodigo(codigo) {
 (function () {
   const manija = document.getElementById('manija');
   const panel = document.querySelector('#v-vender .der');
-  if (!manija || !panel) return;
+  const vista = document.getElementById('v-vender');
+  if (!manija || !panel || !vista) return;
 
   function aplicar(cerrado) {
     panel.classList.toggle('chico', cerrado);
+    vista.classList.toggle('grilla-visible', cerrado);
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  let cerrado = false;
-  try { cerrado = localStorage.getItem('cv_panelCerrado') === '1'; } catch (e) {}
+  let cerrado = true;
+  try {
+    const g = localStorage.getItem('cv_panelCerrado');
+    cerrado = g === null ? true : g === '1';
+  } catch (e) {}
   aplicar(cerrado);
 
   manija.addEventListener('click', function () {
