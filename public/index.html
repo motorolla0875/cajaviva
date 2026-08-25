@@ -1679,6 +1679,7 @@ $('btnCobrar').onclick = async function () {
     try {
       await api('POST', '/ventas', cuerpo);
       carrito = []; pintarCarrito();
+      if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       await cargarProductos(); await cargarResumen();
       if (esFiado) await cargarClientes();
       marcarConexion(true);
@@ -1692,6 +1693,7 @@ $('btnCobrar').onclick = async function () {
         if (cli) { cli.saldo = (cli.saldo || 0) + total; LOCAL.guardar('clientes', clientes); pintarClientes(); pintarSelectClientes(); }
       }
       carrito = []; pintarCarrito();
+      if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       marcarConexion(false);
       avisar('Guardada sin conexion: ' + plata(total));
     }
@@ -1702,7 +1704,7 @@ $('btnCobrar').onclick = async function () {
 
 $('totalFinal').addEventListener('input', function () { actualizarNotaDesc(); pintarRapidos(); calcularVuelto(); });
 
-$('btnLimpiar').onclick = function () { carrito = []; pintarCarrito(); };
+$('btnLimpiar').onclick = function () { carrito = []; pintarCarrito(); if (window.cerrarPanelVenta) window.cerrarPanelVenta(); };
 
 function pintarLista() {
   const t = norm($('buscarProd').value.trim());
@@ -2148,6 +2150,8 @@ function encontroCodigo(codigo) {
   manija.addEventListener('click', function () {
     aplicar(!panel.classList.contains('chico'));
   });
+
+  window.cerrarPanelVenta = function () { aplicar(true); };
 })();
 
 /* ══ Vuelto ══ */
