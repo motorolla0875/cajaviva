@@ -3796,13 +3796,17 @@ $('archivoImp').onchange = function (e) {
     try {
       impLibro = XLSX.read(ev.target.result, { type: 'array' });
 
-      if (impLibro.SheetNames.length > 1) {
-        $('hojaImp').innerHTML = impLibro.SheetNames.map(function (n, i) {
-          return '<option value="' + i + '">' + esc(n) + '</option>';
-        }).join('');
-        $('wrapHoja').style.display = 'block';
-      } else {
-        $('wrapHoja').style.display = 'none';
+      const selHoja = document.getElementById('hojaImp');
+      const wrapH = document.getElementById('wrapHoja');
+      if (selHoja && wrapH) {
+        if (impLibro.SheetNames.length > 1) {
+          selHoja.innerHTML = impLibro.SheetNames.map(function (n, i) {
+            return '<option value="' + i + '">' + esc(n) + '</option>';
+          }).join('');
+          wrapH.style.display = 'block';
+        } else {
+          wrapH.style.display = 'none';
+        }
       }
 
       const datos = leerHoja(0);
@@ -3820,13 +3824,13 @@ $('archivoImp').onchange = function (e) {
       }
 
       pintarMapeo();
-      if (impLibro.SheetNames.length > 1) {
-        $('pasoMapeo').insertBefore($('wrapHoja'), $('pasoMapeo').firstChild);
+      if (impLibro.SheetNames.length > 1 && wrapH) {
+        $('pasoMapeo').insertBefore(wrapH, $('pasoMapeo').firstChild);
       }
       $('pasoArchivo').style.display = 'none';
       $('pasoMapeo').style.display = 'block';
     } catch (err) {
-      $('msgImportar').innerHTML = '<div class="msg">No se pudo leer el archivo. Proba guardarlo como CSV o XLSX.</div>';
+      $('msgImportar').innerHTML = '<div class="msg">No se pudo leer el archivo: ' + esc(err.message) + '</div>';
     }
   };
   lector.readAsArrayBuffer(f);
