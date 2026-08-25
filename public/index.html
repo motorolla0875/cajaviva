@@ -128,6 +128,12 @@
     font-size: 15px; font-weight: 500; text-transform: uppercase;
   }
 
+  .contador-cola {
+    background: var(--accent-soft); border-bottom: 1px solid var(--accent);
+    padding: 8px 18px; font-size: 12.5px; color: var(--accent-dark);
+    display: none; align-items: center; gap: 8px; flex-shrink: 0; font-weight: 500;
+  }
+
   .aviso-offline {
     background: #FDF3E3; border-bottom: 1px solid var(--warn);
     padding: 9px 18px; font-size: 12.5px; color: #8A5A0F;
@@ -512,6 +518,8 @@
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
     <button class="yo" id="btnYo">?</button>
   </header>
+
+  <div class="contador-cola" id="contadorCola"></div>
 
   <div class="aviso-offline" id="avisoOffline">
     <span>Sin conexion. Estas viendo los ultimos datos guardados.</span>
@@ -953,7 +961,7 @@ function marcarConexion(hayRed) {
   if (el) el.style.display = hayRed ? 'none' : 'flex';
 }
 
-window.addEventListener('online', function () { marcarConexion(true); sincronizar(); });
+window.addEventListener('online', function () { marcarConexion(true); subirCola().then(sincronizar); });
 window.addEventListener('offline', function () { marcarConexion(false); });
 
 async function sincronizar() {
@@ -1129,6 +1137,8 @@ async function arrancarApp() {
   aplicarCapacidades();
   pintarCarrito();
   usarDatosGuardados();
+  pintarContadorCola();
+  subirCola();
   try {
     await cargarCategorias();
     await cargarProveedores();
