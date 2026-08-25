@@ -584,10 +584,7 @@
       display: flex; flex-direction: column;
     }
     /* abierto: el panel se lleva la pantalla, la grilla se achica */
-    #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; height: 100%; }
-    #v-vender.vista.on.grilla-visible .izq { flex: 1 1 auto; }
-    #v-vender .grilla { flex: 1 1 auto; min-height: 0; align-content: start; }
-    .prod { min-height: 96px; }
+    #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
     #v-vender.vista.on:not(.grilla-visible) .izq { display: none !important; }
     #v-vender.vista.on:not(.grilla-visible) .der {
       position: fixed; inset: 0; z-index: 60;
@@ -621,10 +618,13 @@
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
     .der.chico {
-      flex: 0 0 78px !important;
+      position: fixed !important; left: 0; right: 0; bottom: 0;
       height: 78px !important; min-height: 78px; max-height: 78px;
-      overflow: hidden;
+      flex: none !important; overflow: hidden; z-index: 40;
+      border-top: 1px solid var(--line); background: var(--panel);
     }
+    /* espacio para que la grilla no quede tapada por la barra */
+    #v-vender.vista.on.grilla-visible .izq { padding-bottom: 90px; }
     .der.chico .barra-resumen {
       height: 52px; padding: 0 18px; margin: 0;
     }
