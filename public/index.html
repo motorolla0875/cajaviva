@@ -841,6 +841,10 @@
       <label>Archivo (Excel o CSV)</label>
       <input type="file" id="archivoImp" accept=".xlsx,.xls,.csv" style="padding:10px;">
       <p class="hint">La primera fila tiene que tener los titulos de cada columna.</p>
+      <div id="wrapHoja" style="display:none;">
+        <label>Hoja del archivo</label>
+        <select id="hojaImp"></select>
+      </div>
     </div>
 
     <div id="pasoMapeo" style="display:none;">
@@ -2329,6 +2333,7 @@ $('btnSeguir').onclick = function () { $('modalHecho').classList.remove('on'); }
 let impTipo = 'productos';
 let impFilas = [];
 let impColumnas = [];
+let impLibro = null;
 
 const CAMPOS_PROD = [
   ['nombre', 'Nombre', true, ['nombre', 'producto', 'descripcion', 'articulo', 'detalle']],
@@ -2381,6 +2386,31 @@ $('btnVolverImp').onclick = function () {
   $('archivoImp').value = '';
 };
 
+function leerHoja(i) {
+  const hoja = impLibro.Sheets[impLibro.SheetNames[i]];
+  return XLSX.utils.sheet_to_json(hoja, { header: 1, blankrows: false, defval: '' });
+}
+
+function cargarHoja(datos) {
+  impColumnas = datos[0].map(function (c, i) { return String(c).trim() || ('Columna ' + (i + 1)); });
+  impFilas = datos.slice(1).filter(function (fila) {
+    return fila.some(function (c) { return String(c).trim() !== ''; });
+  });
+}
+
+$('hojaImp').onchange = function () {
+  const datos = leerHoja(parseInt($('hojaImp').value));
+  if (datos.length < 2) {
+    $('msgImportar').innerHTML = '<div class="msg">Esa hoja no tiene datos.</div>';
+    return;
+  }
+  $('msgImportar').innerHTML = '';
+  cargarHoja(datos);
+  pintarMapeo();
+  $('pasoArchivo').style.display = 'none';
+  $('pasoMapeo').style.display = 'block';
+};
+
 $('archivoImp').onchange = function (e) {
   const f = e.target.files[0];
   if (!f) return;
@@ -2389,19 +2419,25 @@ $('archivoImp').onchange = function (e) {
   const lector = new FileReader();
   lector.onload = function (ev) {
     try {
-      const libro = XLSX.read(ev.target.result, { type: 'array' });
-      const hoja = libro.Sheets[libro.SheetNames[0]];
-      const datos = XLSX.utils.sheet_to_json(hoja, { header: 1, blankrows: false, defval: '' });
+      impLibro = XLSX.read(ev.target.result, { type: 'array' });
+
+      if (impLibro.SheetNames.length > 1) {
+        $('hojaImp').innerHTML = impLibro.SheetNames.map(function (n, i) {
+          return '<option value="' + i + '">' + esc(n) + '</option>';
+        }).join('');
+        $('wrapHoja').style.display = 'block';
+      } else {
+        $('wrapHoja').style.display = 'none';
+      }
+
+      const datos = leerHoja(0);
 
       if (datos.length < 2) {
         $('msgImportar').innerHTML = '<div class="msg">El archivo no tiene datos suficientes.</div>';
         return;
       }
 
-      impColumnas = datos[0].map(function (c, i) { return String(c).trim() || ('Columna ' + (i + 1)); });
-      impFilas = datos.slice(1).filter(function (fila) {
-        return fila.some(function (c) { return String(c).trim() !== ''; });
-      });
+      cargarHoja(datos);
 
       if (impFilas.length === 0) {
         $('msgImportar').innerHTML = '<div class="msg">No se encontraron filas con datos.</div>';
@@ -2409,6 +2445,9 @@ $('archivoImp').onchange = function (e) {
       }
 
       pintarMapeo();
+      if (impLibro.SheetNames.length > 1) {
+        $('pasoMapeo').insertBefore($('wrapHoja'), $('pasoMapeo').firstChild);
+      }
       $('pasoArchivo').style.display = 'none';
       $('pasoMapeo').style.display = 'block';
     } catch (err) {
