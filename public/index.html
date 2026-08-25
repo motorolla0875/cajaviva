@@ -2454,6 +2454,34 @@ $('btnConfirmarPeso').onclick = function () {
   $('modalPeso').classList.remove('on');
 };
 
+/* ══ Sonidos del escaner ══ */
+
+let audioCtx = null;
+
+function pitido(frecuencia, duracion, volumen) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gan = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = frecuencia;
+    gan.gain.setValueAtTime(volumen || 0.12, audioCtx.currentTime);
+    gan.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracion);
+    osc.connect(gan); gan.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duracion);
+  } catch (e) {}
+}
+
+function sonidoOk() { pitido(1760, 0.09); }
+function sonidoError() { pitido(220, 0.22, 0.15); }
+
+function vibrar(ms) {
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+}
+
 /* ══ Escaner de codigo de barras ══ */
 // EAN-13 y EAN-8 traen un digito verificador al final.
 // Si no cierra, la lectura fue mala: se descarta y se sigue escaneando.
@@ -2531,6 +2559,7 @@ function encontroCodigo(codigo) {
 
   // desde el formulario de producto: solo copiar el codigo
   if (modoScan === 'campo') {
+    sonidoOk(); vibrar(40);
     cerrarScan();
     $('pBarras').value = limpio;
     avisar('Codigo ' + limpio);
@@ -2540,6 +2569,7 @@ function encontroCodigo(codigo) {
   const p = productos.filter(function (x) { return (x.codigo_barras || '') === limpio; })[0];
 
   if (!p) {
+    sonidoError(); vibrar([60, 40, 60]);
     cerrarScan();
     abrirProd(null);
     $('pBarras').value = limpio;
@@ -2548,6 +2578,7 @@ function encontroCodigo(codigo) {
     return;
   }
 
+  sonidoOk(); vibrar(40);
   cerrarScan();
 
   if (modoScan === 'reponer') { abrirStock(p.id, 'reponer'); return; }
