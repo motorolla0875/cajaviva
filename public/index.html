@@ -968,6 +968,70 @@ async function sincronizar() {
   } catch (e) { marcarConexion(false); }
 }
 
+/* ══ Cola de ventas sin conexion ══ */
+
+function colaLeer() { return LOCAL.leer('cola', []); }
+function colaGuardar(c) { LOCAL.guardar('cola', c); pintarContadorCola(); }
+
+function colaAgregar(venta) {
+  const c = colaLeer();
+  c.push({ id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), venta: venta });
+  colaGuardar(c);
+}
+
+function pintarContadorCola() {
+  const n = colaLeer().length;
+  const el = $('contadorCola');
+  if (!el) return;
+  if (n === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.textContent = n + (n === 1 ? ' venta sin subir' : ' ventas sin subir');
+}
+
+let subiendo = false;
+
+async function subirCola() {
+  if (subiendo || !token) return;
+  const c = colaLeer();
+  if (c.length === 0) return;
+
+  subiendo = true;
+  const quedan = [];
+
+  for (const item of c) {
+    try {
+      await api('POST', '/ventas', item.venta);
+    } catch (e) {
+      // si es error de red, se reintenta despues; si el servidor la rechazo, se descarta
+      if (String(e.message).indexOf('conexion') >= 0 || !navigator.onLine) quedan.push(item);
+    }
+  }
+
+  colaGuardar(quedan);
+  subiendo = false;
+
+  if (quedan.length === 0) {
+    try {
+      await cargarProductos();
+      await cargarClientes();
+      await cargarResumen();
+      avisar('Ventas sincronizadas');
+    } catch (e) {}
+  }
+}
+
+// descuenta stock en la copia local, para poder seguir vendiendo sin red
+function descontarStockLocal(items) {
+  items.forEach(function (it) {
+    const p = productos.filter(function (x) { return x.id === it.productoId; })[0];
+    if (p) p.stock = p.stock - it.cantidad;
+  });
+  LOCAL.guardar('productos', productos);
+  pintarGrilla(); pintarLista();
+}
+
+setInterval(function () { if (navigator.onLine) subirCola(); }, 30000);
+
 /* ══ Sesion ══ */
 
 function mostrar(cual) {
@@ -1428,16 +1492,33 @@ $('btnCobrar').onclick = async function () {
     const bruto = totalCarrito();
     const manual = num($('totalFinal').value);
     const total = manual > 0 ? manual : bruto;
-    await api('POST', '/ventas', {
-      items: carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; }),
+    const items = carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; });
+    const cuerpo = {
+      items: items,
       medioPago: medioPago, clienteId: clienteId,
       totalFinal: total,
       montoPagado: esFiado ? 0 : total
-    });
-    carrito = []; pintarCarrito();
-    await cargarProductos(); await cargarResumen();
-    if (esFiado) await cargarClientes();
-    avisar(esFiado ? 'Fiado anotado: ' + plata(total) : 'Venta cobrada: ' + plata(total));
+    };
+
+    try {
+      await api('POST', '/ventas', cuerpo);
+      carrito = []; pintarCarrito();
+      await cargarProductos(); await cargarResumen();
+      if (esFiado) await cargarClientes();
+      marcarConexion(true);
+      avisar(esFiado ? 'Fiado anotado: ' + plata(total) : 'Venta cobrada: ' + plata(total));
+    } catch (e) {
+      // sin red: se guarda y se sube cuando vuelva
+      colaAgregar(cuerpo);
+      descontarStockLocal(items);
+      if (esFiado && clienteId) {
+        const cli = clientes.filter(function (x) { return x.id === clienteId; })[0];
+        if (cli) { cli.saldo = (cli.saldo || 0) + total; LOCAL.guardar('clientes', clientes); pintarClientes(); pintarSelectClientes(); }
+      }
+      carrito = []; pintarCarrito();
+      marcarConexion(false);
+      avisar('Guardada sin conexion: ' + plata(total));
+    }
   } catch (e) { avisar(e.message, true); }
   btn.textContent = 'Cobrar';
   btn.disabled = carrito.length === 0;
