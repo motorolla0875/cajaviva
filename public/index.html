@@ -2379,6 +2379,13 @@ function encontroCodigo(codigo) {
     const barra = document.getElementById('barraResumen');
     if (barra) barra.style.display = cerrado ? 'block' : 'none';
 
+    // el panel entero desaparece cuando esta cerrado
+    if (window.innerWidth <= 1024) {
+      panel.style.display = cerrado ? 'none' : 'flex';
+    } else {
+      panel.style.display = '';
+    }
+
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
