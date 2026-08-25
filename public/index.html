@@ -217,6 +217,8 @@
   .prod .s { color: var(--muted); font-size: 12px; }
   .prod.sin-stock { opacity: .45; }
 
+  .manija { display: none; }
+
   .der h2 {
     margin: 0; padding: 16px 18px 12px; font-size: 13px;
     font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line);
@@ -504,8 +506,17 @@
     .vista.on { flex-direction: column; }
     .der {
       width: 100%; border-left: none; border-top: 1px solid var(--line);
-      flex: 0 0 auto; min-height: 0; max-height: 46dvh; display: flex; flex-direction: column;
+      flex: 0 0 auto; min-height: 0; height: 46dvh; max-height: 85dvh;
+      display: flex; flex-direction: column;
     }
+    .manija {
+      display: flex; align-items: center; justify-content: center;
+      height: 26px; flex-shrink: 0; cursor: pointer;
+    }
+    .manija span {
+      width: 42px; height: 4px; border-radius: 2px; background: var(--line);
+    }
+    .manija:active span { background: var(--accent); }
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
     #v-vender .grilla { overflow-y: auto; }
     .der h2 { padding: 10px 16px 8px; }
@@ -606,6 +617,7 @@
       <div class="grilla" id="grilla"></div>
     </div>
     <div class="der">
+      <div class="manija" id="manija"><span></span></div>
       <h2>Venta actual</h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
