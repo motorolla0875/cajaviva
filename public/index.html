@@ -619,17 +619,8 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    /* cerrado: fuera de la pantalla, invisible y sin ocupar lugar */
-    #v-vender .der {
-      position: fixed !important; inset: 0; z-index: 60;
-      width: 100% !important; height: 100dvh !important; max-height: none !important;
-      border: none; background: var(--panel);
-      display: flex !important; flex-direction: column;
-    }
-    #v-vender .der.chico {
-      visibility: hidden !important; pointer-events: none !important;
-      transform: translateY(100%);
-    }
+    /* con el panel cerrado, el panel entero desaparece */
+    .der.chico { display: none !important; }
 
     .barra-fija {
       display: block; position: fixed; left: 0; right: 0; bottom: 0;
@@ -2378,16 +2369,20 @@ function encontroCodigo(codigo) {
     vista.classList.toggle('grilla-visible', cerrado);
 
     // ocultar/mostrar a mano, sin depender del CSS
+    const ocultar = ['#tituloVenta', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
+                     '.medios', '.selector-cliente', '.btn-cobrar', '.btn-limpiar'];
+    ocultar.forEach(function (sel) {
+      const el = panel.querySelector(sel);
+      if (el) el.style.display = cerrado ? 'none' : '';
+    });
+
     const barra = document.getElementById('barraResumen');
     if (barra) barra.style.display = cerrado ? 'block' : 'none';
-
-
 
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  // siempre arranca cerrado
-  panel.classList.add('chico');
+  // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
   aplicar(true);
 
   const barraFija = document.getElementById('barraResumen');
