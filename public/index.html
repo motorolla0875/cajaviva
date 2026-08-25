@@ -502,7 +502,28 @@
 
   @media (max-width: 860px) {
     .vista.on { flex-direction: column; }
-    .der { width: 100%; border-left: none; border-top: 1px solid var(--line); max-height: 50dvh; }
+    .der {
+      width: 100%; border-left: none; border-top: 1px solid var(--line);
+      flex: 1 1 auto; min-height: 0; max-height: none;
+    }
+    #v-vender.vista.on .izq { flex: 0 0 auto; max-height: 38dvh; }
+    #v-vender .grilla { overflow-y: auto; }
+    .der h2 { padding: 10px 16px 8px; }
+    .lineas { flex: 1 1 auto; min-height: 60px; overflow-y: auto; }
+    .linea { padding: 8px 16px; }
+    .pie { padding: 12px 16px 14px; }
+    .total-row { margin-bottom: 8px; }
+    .total-row .val { font-size: 24px; }
+    .cobrar-fila { margin-bottom: 8px; }
+    .cobrar-fila input { padding: 8px 10px; }
+    .vuelto-box { padding: 9px 11px; margin-bottom: 8px; }
+    .vuelto-box .res { margin-top: 7px; padding-top: 7px; }
+    .vuelto-box .res .val { font-size: 20px; }
+    .rapidos { margin-top: 6px; }
+    .medios { margin-bottom: 8px; }
+    .medios button { padding: 8px 3px; }
+    .btn-cobrar { padding: 14px; }
+    .btn-limpiar { padding: 7px; margin-top: 4px; }
     .izq, .lista-wrap { padding: 12px; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     header { padding: 12px 14px; }
