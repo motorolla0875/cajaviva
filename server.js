@@ -21,7 +21,6 @@ app.get('/api/ping', (req, res) => {
 
 app.use('/api/auth', authRouter);
 app.get('/api/catalogo/publico/:slug', require('./routes/catalogo'));
-app.post('/api/pedidos/publico/:slug', require('./routes/pedidos'));
 app.use('/api/empleados', function (req, res, next) {
   // solo /entrar es publica; el resto necesita sesion
   if (req.path === '/entrar' || req.path === '/codigo' || req.path === '/registrar') return next();
@@ -40,7 +39,10 @@ app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
 app.use('/api/reportes', requiereAuth, require('./routes/reportes'));
 app.use('/api/devoluciones', requiereAuth, require('./routes/devoluciones'));
 app.use('/api/cheques', requiereAuth, require('./routes/cheques'));
-app.use('/api/pedidos', requiereAuth, require('./routes/pedidos'));
+app.use('/api/pedidos', function (req, res, next) {
+  if (req.path.indexOf('/publico/') === 0) return next();
+  return requiereAuth(req, res, next);
+}, require('./routes/pedidos'));
 app.use('/api/catalogo', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0) return next();
   return requiereAuth(req, res, next);
