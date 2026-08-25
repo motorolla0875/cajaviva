@@ -2019,8 +2019,11 @@ function encontroCodigo(codigo) {
   }
 
   cerrarScan();
+  if (p.stock <= 0) { avisar(p.nombre + ' esta sin stock', true); return; }
+  const antes = carrito.length + carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
   agregar(p.id);
-  avisar(p.nombre + ' agregado');
+  const despues = carrito.length + carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
+  if (despues > antes) avisar(p.nombre + ' agregado');
 }
 
 /* ══ Vuelto ══ */
