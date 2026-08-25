@@ -1983,8 +1983,9 @@ function codigoValido(c) {
 
 let lector = null;
 let escaneando = false;
+let modoScan = 'vender';
 
-$('btnEscanear').onclick = async function () {
+async function abrirScan() {
   if (typeof Html5Qrcode === 'undefined') {
     avisar('El lector no esta disponible sin conexion', true); return;
   }
@@ -2011,7 +2012,10 @@ $('btnEscanear').onclick = async function () {
     $('msgScan').innerHTML = '<div class="msg">No se pudo abrir la camara. Dale permiso al navegador.</div>';
     escaneando = false;
   }
-};
+}
+
+$('btnEscanear').onclick = function () { modoScan = 'vender'; abrirScan(); };
+$('btnEscanearProd').onclick = function () { modoScan = 'reponer'; abrirScan(); };
 
 async function cerrarScan() {
   if (lector && escaneando) {
@@ -2049,11 +2053,11 @@ function encontroCodigo(codigo) {
   }
 
   cerrarScan();
-  if (p.stock <= 0) { avisar(p.nombre + ' esta sin stock', true); return; }
-  const antes = carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
+
+  if (modoScan === 'reponer') { abrirStock(p.id, 'reponer'); return; }
+
   agregar(p.id);
-  const despues = carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
-  if (despues > antes) avisar(p.nombre + ' agregado');
+  avisar(p.nombre + ' agregado');
 }
 
 /* ══ Vuelto ══ */
