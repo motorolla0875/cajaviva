@@ -216,6 +216,15 @@
   .prod .p { color: var(--accent); font-weight: 500; font-size: 16px; margin-top: auto; }
   .prod .s { color: var(--muted); font-size: 12px; }
   .prod.sin-stock { opacity: .45; }
+  .prod { position: relative; }
+  .prod .en-carrito {
+    position: absolute; top: 8px; right: 8px;
+    min-width: 24px; height: 24px; padding: 0 6px;
+    border-radius: 12px; background: var(--accent); color: #fff;
+    font-size: 12.5px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .prod.en-venta { border-color: var(--accent); background: var(--accent-soft); }
 
   .manija { display: none; }
 
@@ -1557,7 +1566,10 @@ function pintarGrilla() {
 
   $('grilla').innerHTML = lista.map(function (p) {
     const sin = p.stock <= 0;
-    return '<button class="prod' + (sin ? ' sin-stock' : '') + '" onclick="agregar(\'' + p.id + '\')"' + (sin ? ' disabled' : '') + '>' +
+    const enCarrito = carrito.filter(function (l) { return l.productoId === p.id; })[0];
+    const cant = enCarrito ? enCarrito.cantidad : 0;
+    return '<button class="prod' + (sin ? ' sin-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
+      (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s">' + (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad)) + '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div></button>';
@@ -1624,6 +1636,7 @@ function pintarCarrito() {
   const t = totalCarrito();
   $('total').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
+  pintarGrilla();
   actualizarNotaDesc();
   actualizarVueltoBox();
   $('btnCobrar').disabled = carrito.length === 0;
