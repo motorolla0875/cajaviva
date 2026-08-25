@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CajaViva</title>
+<link rel="icon" href="/favicon.ico">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1D9E75">
 <link rel="apple-touch-icon" href="/icon-192.png">
@@ -113,6 +114,12 @@
     display: flex; align-items: center; gap: 12px;
     padding: 14px 18px; background: var(--panel);
     border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  .logo-app { height: 30px; width: auto; flex-shrink: 0; }
+  .logo-login { height: 52px; width: auto; margin-bottom: 10px; }
+  @media (max-width: 900px) {
+    .logo-app { height: 26px; }
+    .logo-login { height: 44px; }
   }
   header .marca { font-size: 17px; font-weight: 500; flex-shrink: 0; }
   header .marca span { color: var(--accent); }
@@ -973,12 +980,12 @@
 <body>
 
 <div class="pantalla-centro on" id="pantallaCarga">
-  <div class="logo-grande">Caja<span>Viva</span></div>
+  <img src="/logo-cajaviva.png" class="logo-login" alt="CajaViva">
   <div class="logo-sub">Preparando tu cuenta...</div>
 </div>
 
 <div class="pantalla-centro" id="pantallaLogin">
-  <div class="logo-grande">Caja<span>Viva</span></div>
+  <img src="/logo-cajaviva.png" class="logo-login" alt="CajaViva">
   <div class="logo-sub">Tu negocio en orden, todos los dias</div>
   <div class="caja-login">
     <div id="msgLogin"></div>
@@ -1014,7 +1021,7 @@
 
 <div class="app" id="app">
   <header>
-    <div class="marca">Caja<span>Viva</span></div>
+    <img src="/logo-cajaviva.png" class="logo-app" alt="CajaViva">
     <div class="negocio" id="nombreNegocio"></div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
     <button class="yo" id="btnYo">?</button>
