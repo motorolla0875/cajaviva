@@ -568,6 +568,8 @@
 
   .vacio { text-align: center; color: var(--muted); padding: 34px 20px; font-size: 14px; }
 
+  .capa-venta { display: contents; }
+
   .aviso {
     position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
     background: var(--accent); color: #fff; padding: 13px 22px;
@@ -611,8 +613,15 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    /* con el panel cerrado, el panel entero desaparece */
-    .der.chico { display: none !important; }
+    /* el panel es una capa por encima de todo */
+    .capa-venta .der {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      width: 100%; max-height: 100dvh;
+      z-index: 70; background: var(--panel);
+      display: flex; flex-direction: column;
+      box-shadow: 0 -2px 16px rgba(0,0,0,.12);
+    }
+    .capa-venta .der.chico { display: none !important; }
 
     .barra-fija {
       display: block; position: fixed; left: 0; right: 0; bottom: 0;
@@ -747,45 +756,6 @@
       </div>
       <div class="grilla" id="grilla"></div>
     </div>
-    <div class="der">
-      <h2 id="tituloVenta"></h2>
-      <div class="lineas" id="lineas"></div>
-      <div class="pie">
-        <div class="total-row">
-          <span class="lbl">Total</span>
-          <span class="cant-items" id="cantItems">0</span>
-          <span class="val" id="total">$0</span>
-        </div>
-        <div class="cobrar-fila">
-          <label>Cobrar</label>
-          <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
-        </div>
-        <div class="nota-desc vacia" id="notaDesc"></div>
-        <div class="vuelto-box" id="vueltoBox">
-          <div class="fila-v">
-            <label>Paga con</label>
-            <input type="text" id="pagaCon" inputmode="decimal" placeholder="0">
-          </div>
-          <div class="rapidos" id="rapidos"></div>
-          <div class="res">
-            <span class="lbl" id="lblVuelto">Vuelto</span>
-            <span class="val" id="valVuelto">$0</span>
-          </div>
-        </div>
-        <div class="medios" id="medios">
-          <button data-medio="efectivo" class="on">Efectivo</button>
-          <button data-medio="transferencia">Transfer.</button>
-          <button data-medio="cuenta_corriente">Fiado</button>
-        </div>
-        <div class="selector-cliente" id="selCliente">
-          <label>A nombre de quien queda</label>
-          <select id="clienteVenta"></select>
-        </div>
-        <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
-        <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
-      </div>
-    </div>
-
     <div class="barra-fija" id="barraResumen">
       <div class="bf-manija"><span></span></div>
       <div class="bf-datos">
@@ -1142,6 +1112,48 @@
     <div id="ccMovimientos" style="max-height:280px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarCuenta" style="margin-top:14px;">Cerrar</button>
   </div>
+</div>
+
+<div class="capa-venta" id="capaVenta">
+    <div class="der">
+      <h2 id="tituloVenta"></h2>
+      <div class="lineas" id="lineas"></div>
+      <div class="pie">
+        <div class="total-row">
+          <span class="lbl">Total</span>
+          <span class="cant-items" id="cantItems">0</span>
+          <span class="val" id="total">$0</span>
+        </div>
+        <div class="cobrar-fila">
+          <label>Cobrar</label>
+          <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="nota-desc vacia" id="notaDesc"></div>
+        <div class="vuelto-box" id="vueltoBox">
+          <div class="fila-v">
+            <label>Paga con</label>
+            <input type="text" id="pagaCon" inputmode="decimal" placeholder="0">
+          </div>
+          <div class="rapidos" id="rapidos"></div>
+          <div class="res">
+            <span class="lbl" id="lblVuelto">Vuelto</span>
+            <span class="val" id="valVuelto">$0</span>
+          </div>
+        </div>
+        <div class="medios" id="medios">
+          <button data-medio="efectivo" class="on">Efectivo</button>
+          <button data-medio="transferencia">Transfer.</button>
+          <button data-medio="cuenta_corriente">Fiado</button>
+        </div>
+        <div class="selector-cliente" id="selCliente">
+          <label>A nombre de quien queda</label>
+          <select id="clienteVenta"></select>
+        </div>
+        <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
+        <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
+      </div>
+    </div>
+
 </div>
 
 <div class="aviso" id="aviso"></div>
