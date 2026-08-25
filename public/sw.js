@@ -1,4 +1,4 @@
-const CACHE = 'cajaviva-v3';
+const CACHE = 'cajaviva-v4';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
