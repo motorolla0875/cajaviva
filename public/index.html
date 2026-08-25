@@ -427,6 +427,17 @@
   }
   .periodos button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
+  .rango-fechas {
+    display: none; gap: 8px; align-items: center; margin-bottom: 14px;
+  }
+  .rango-fechas.on { display: flex; }
+  .rango-fechas input {
+    flex: 1; min-width: 0; padding: 10px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--text); font-size: 14px;
+  }
+  .rango-fechas span { color: var(--muted); font-size: 13px; }
+
   .tarjetas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
   .tarjeta {
     background: var(--panel); border: 1px solid var(--line);
@@ -846,6 +857,17 @@
         <button data-periodo="hoy" class="on">Hoy</button>
         <button data-periodo="semana">Semana</button>
         <button data-periodo="mes">Mes</button>
+        <button data-periodo="rango">Elegir</button>
+      </div>
+
+      <div class="rango-fechas" id="rangoFechas">
+        <input type="date" id="fDesde">
+        <span>a</span>
+        <input type="date" id="fHasta">
+      </div>
+
+      <div class="buscador">
+        <input type="text" id="buscarCaja" placeholder="Buscar por producto, cliente o gasto..." autocomplete="off">
       </div>
       <div class="tarjetas">
         <div class="tarjeta">
@@ -1220,6 +1242,7 @@ let catFiltro = '';
 let editandoId = null, editandoCli = null;
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
 let periodo = 'hoy';
+let ventasCaja = [], gastosCaja = [];
 let rubroElegido = '';
 
 const RUBROS = [
@@ -1281,6 +1304,10 @@ function menosDias(n) {
 function rango() {
   if (periodo === 'semana') return { desde: menosDias(6), hasta: hoyISO() };
   if (periodo === 'mes') return { desde: menosDias(29), hasta: hoyISO() };
+  if (periodo === 'rango') {
+    const d = document.getElementById('fDesde'), h = document.getElementById('fHasta');
+    return { desde: (d && d.value) || menosDias(29), hasta: (h && h.value) || hoyISO() };
+  }
   return { desde: hoyISO(), hasta: hoyISO() };
 }
 function fechaCorta(iso) {
@@ -2662,6 +2689,35 @@ $('btnAnularVentaDet').onclick = async function () {
 
 $('btnCerrarVentaDet').onclick = function () { $('modalVenta').classList.remove('on'); };
 
+/* ══ Buscar en Caja ══ */
+
+function filtrarCaja() {
+  const t = norm($('buscarCaja').value.trim());
+
+  document.querySelectorAll('#listaVentas .mov').forEach(function (el, i) {
+    if (!t) { el.style.display = ''; return; }
+    const v = ventasCaja[i];
+    if (!v) { el.style.display = ''; return; }
+    const texto = norm(
+      v.items.map(function (x) { return x.nombre; }).join(' ') + ' ' +
+      (v.cliente_nombre || '') + ' ' + v.total
+    );
+    el.style.display = texto.indexOf(t) >= 0 ? '' : 'none';
+  });
+
+  document.querySelectorAll('#listaGastos .mov').forEach(function (el, i) {
+    if (!t) { el.style.display = ''; return; }
+    const g = gastosCaja[i];
+    if (!g) { el.style.display = ''; return; }
+    const texto = norm(g.descripcion + ' ' + g.monto);
+    el.style.display = texto.indexOf(t) >= 0 ? '' : 'none';
+  });
+}
+
+$('buscarCaja').addEventListener('input', filtrarCaja);
+$('fDesde').addEventListener('change', function () { if (periodo === 'rango') cargarCaja(); });
+$('fHasta').addEventListener('change', function () { if (periodo === 'rango') cargarCaja(); });
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -2867,6 +2923,11 @@ $('periodos').addEventListener('click', function (e) {
   if (!b) return;
   periodo = b.dataset.periodo;
   Array.prototype.forEach.call($('periodos').children, function (x) { x.classList.toggle('on', x === b); });
+  $('rangoFechas').classList.toggle('on', periodo === 'rango');
+  if (periodo === 'rango') {
+    if (!$('fDesde').value) $('fDesde').value = menosDias(29);
+    if (!$('fHasta').value) $('fHasta').value = hoyISO();
+  }
   cargarCaja();
 });
 
@@ -2887,6 +2948,7 @@ async function cargarCaja() {
 
   try {
     const ventas = await api('GET', '/ventas' + qs);
+    ventasCaja = ventas;
     if (ventas.length === 0) {
       $('listaVentas').innerHTML = '<div class="vacio">No hay ventas en este periodo.</div>';
     } else {
@@ -2907,6 +2969,7 @@ async function cargarCaja() {
 
   try {
     const gastos = await api('GET', '/gastos' + qs);
+    gastosCaja = gastos;
     if (gastos.length === 0) {
       $('listaGastos').innerHTML = '<div class="vacio">No hay gastos en este periodo.</div>';
     } else {
@@ -2919,6 +2982,8 @@ async function cargarCaja() {
       }).join('');
     }
   } catch (e) {}
+
+  filtrarCaja();
 }
 
 async function anularVenta(id) {
