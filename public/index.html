@@ -758,7 +758,6 @@
       <div class="grilla" id="grilla"></div>
     </div>
     <div class="der">
-      <div class="manija" id="manija"><span></span></div>
       <h2 id="tituloVenta"></h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
@@ -2359,10 +2358,9 @@ function encontroCodigo(codigo) {
 /* ══ Panel de venta: un toque lo abre o lo cierra ══ */
 
 (function () {
-  const manija = document.getElementById('manija');
   const panel = document.querySelector('#v-vender .der');
   const vista = document.getElementById('v-vender');
-  if (!manija || !panel || !vista) return;
+  if (!panel || !vista) return;
 
   function aplicar(cerrado) {
     panel.classList.toggle('chico', cerrado);
@@ -2387,14 +2385,6 @@ function encontroCodigo(codigo) {
 
   const barraFija = document.getElementById('barraResumen');
   if (barraFija) barraFija.addEventListener('click', function () {
-    if (typeof carrito === 'undefined' || carrito.length === 0) {
-      avisar('Toca un producto para empezar');
-      return;
-    }
-    aplicar(false);
-  });
-
-  manija.addEventListener('click', function () {
     const cerradoAhora = panel.classList.contains('chico');
     if (cerradoAhora && (typeof carrito === 'undefined' || carrito.length === 0)) {
       avisar('Toca un producto para empezar');
@@ -2402,6 +2392,8 @@ function encontroCodigo(codigo) {
     }
     aplicar(!cerradoAhora);
   });
+
+
 
   window.cerrarPanelVenta = function () { aplicar(true); };
 })();
