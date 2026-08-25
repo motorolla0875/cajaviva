@@ -253,6 +253,13 @@
 
   .manija { display: none; }
 
+  .barra-resumen {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 6px 18px 14px;
+  }
+  .barra-resumen .br-cant { font-size: 26px; font-weight: 500; color: var(--accent); }
+  .barra-resumen .br-total { font-size: 26px; font-weight: 500; color: var(--accent); }
+
   .der h2 {
     margin: 0; padding: 16px 18px 12px; font-size: 13px;
     font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line);
@@ -726,7 +733,11 @@
     </div>
     <div class="der">
       <div class="manija" id="manija"><span></span></div>
-      <h2>PRUEBA BORRAR</h2>
+      <div class="barra-resumen" id="barraResumen">
+        <span class="br-cant" id="brCant">0</span>
+        <span class="br-total" id="brTotal">$0</span>
+      </div>
+      <h2 id="tituloVenta">Venta actual</h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
         <div class="total-row">
@@ -1772,7 +1783,10 @@ function pintarCarrito() {
   }
   const t = totalCarrito();
   $('total').textContent = plata(t);
-  $('cantItems').textContent = fmtCant(carrito.reduce(function (s, l) { return s + l.cantidad; }, 0));
+  const nItems = fmtCant(carrito.reduce(function (a, l) { return a + l.cantidad; }, 0));
+  if ($('cantItems')) $('cantItems').textContent = nItems;
+  if ($('brCant')) $('brCant').textContent = nItems;
+  if ($('brTotal')) $('brTotal').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
   pintarGrilla();
   actualizarNotaDesc();
@@ -2325,17 +2339,17 @@ function encontroCodigo(codigo) {
     vista.classList.toggle('grilla-visible', cerrado);
 
     // ocultar/mostrar a mano, sin depender del CSS
-    const ocultar = ['h2', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
+    const ocultar = ['#tituloVenta', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
                      '.medios', '.selector-cliente', '.btn-cobrar', '.btn-limpiar'];
     ocultar.forEach(function (sel) {
       const el = panel.querySelector(sel);
       if (el) el.style.display = cerrado ? 'none' : '';
     });
 
-    const ci = document.getElementById('cantItems');
-    if (ci) ci.style.display = cerrado ? 'block' : 'none';
-    const lbl = panel.querySelector('.total-row .lbl');
-    if (lbl) lbl.style.display = cerrado ? 'none' : '';
+    const barra = document.getElementById('barraResumen');
+    if (barra) barra.style.display = cerrado ? 'flex' : 'none';
+    const pie = panel.querySelector('.pie');
+    if (pie) pie.style.display = cerrado ? 'none' : '';
 
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
