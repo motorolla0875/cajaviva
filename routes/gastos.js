@@ -27,7 +27,8 @@ router.post('/', (req, res) => {
   db.prepare(`
     INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, automatico)
     VALUES (?, ?, ?, ?, ?, ?, 0)
-  `).run(id, req.userId, proveedorId || null, descripcion.trim(), m, fecha || hoyISO());
+  `).run(id, req.userId, proveedorId || null, descripcion.trim(), m,
+         /^\d{4}-\d{2}-\d{2}$/.test(fecha || '') ? fecha : hoyISO());
 
   res.json({ id });
 });

@@ -48,12 +48,15 @@ router.post('/', (req, res) => {
   const pagado = montoPagado != null ? parseFloat(montoPagado) : total;
   const estado = pagado >= total ? 'cobrada' : 'pendiente';
 
+  // la fecha la manda el navegador: vale la del negocio, no la del servidor
+  const fechaVenta = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || '') ? req.body.fecha : hoyISO();
+
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, device_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(ventaId, req.userId, clienteId || null, clienteId ? 'reparto' : 'mostrador',
-         hoyISO(), estado, total, costoTotal, medioPago || 'efectivo',
+         fechaVenta, estado, total, costoTotal, medioPago || 'efectivo',
          pagado, pct, notas || null, deviceId || null);
 
   for (const l of lineas) {

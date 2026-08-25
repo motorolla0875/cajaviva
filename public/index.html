@@ -1583,6 +1583,7 @@ $('btnCobrar').onclick = async function () {
     const items = carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; });
     const cuerpo = {
       items: items,
+      fecha: hoyISO(),
       medioPago: medioPago, clienteId: clienteId,
       totalFinal: total,
       montoPagado: esFiado ? 0 : total
@@ -1759,7 +1760,7 @@ $('btnGuardarStock').onclick = async function () {
   try {
     if (stockModo === 'reponer') {
       await api('POST', '/productos/' + stockProdId + '/reponer', {
-        cantidad: cantidad,
+        cantidad: cantidad, fecha: hoyISO(),
         costoUnitario: $('sCosto').value.trim() === '' ? null : num($('sCosto').value),
         proveedorId: $('sProveedor').value || null
       });
