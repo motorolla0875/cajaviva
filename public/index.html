@@ -539,6 +539,32 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .foto-wrap {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  }
+  .foto-prev {
+    width: 88px; height: 88px; flex-shrink: 0; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; color: var(--muted); font-size: 12px;
+  }
+  .foto-prev img { width: 100%; height: 100%; object-fit: cover; }
+  .foto-btns { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .btn-foto {
+    padding: 10px; border-radius: 9px; font-size: 13.5px; font-weight: 500;
+    border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent-dark);
+  }
+  .btn-foto.borrar { border-color: var(--line); background: var(--panel); color: var(--danger); }
+
+  .prod .foto-mini {
+    width: 100%; height: 74px; border-radius: 8px; object-fit: cover;
+    margin-bottom: 6px; background: var(--panel-2);
+  }
+  .fila .foto-fila {
+    width: 46px; height: 46px; flex-shrink: 0; border-radius: 9px;
+    object-fit: cover; background: var(--panel-2);
+  }
+
   .pedido {
     background: var(--panel); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
@@ -1334,6 +1360,15 @@
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
     <div id="msgProd"></div>
+    <div class="foto-wrap">
+      <div class="foto-prev" id="previewFoto"><span>Sin foto</span></div>
+      <div class="foto-btns">
+        <button type="button" class="btn-foto" id="btnSubirFoto">Agregar foto</button>
+        <button type="button" class="btn-foto borrar" id="btnBorrarFoto" style="display:none;">Borrar</button>
+      </div>
+      <input type="file" id="archivoFoto" accept="image/*" style="display:none;">
+    </div>
+
     <label>Nombre</label>
     <input type="text" id="pNombre" placeholder="Ej: Coca Cola 500ml">
     <label>Categoria</label>
@@ -2641,6 +2676,7 @@ function abrirProd(id) {
   $('pBarras').value = p && p.codigo_barras ? p.codigo_barras : '';
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
+  mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
   $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
   $('pVence').value = p && p.vence ? p.vence : '';
   $('pAvisoDias').value = p && p.aviso_dias ? p.aviso_dias : 7;
@@ -4920,6 +4956,108 @@ setInterval(function () { revisarPedidos(true); }, 20000);
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden) revisarPedidos(true);
 });
+
+/* ══ Fotos de productos ══ */
+
+// Comprime en el navegador: el servidor recibe 40 KB en vez de 4 MB
+function comprimirImagen(archivo, ladoMax, calidad) {
+  return new Promise(function (resolver, fallar) {
+    const lector = new FileReader();
+    lector.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        let { width: w, height: h } = img;
+        if (w > h) { if (w > ladoMax) { h = h * (ladoMax / w); w = ladoMax; } }
+        else { if (h > ladoMax) { w = w * (ladoMax / h); h = ladoMax; } }
+
+        const c = document.createElement('canvas');
+        c.width = Math.round(w); c.height = Math.round(h);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+
+        c.toBlob(function (blob) {
+          if (blob) resolver(blob); else fallar(new Error('No se pudo procesar'));
+        }, 'image/webp', calidad);
+      };
+      img.onerror = function () { fallar(new Error('No se pudo leer la imagen')); };
+      img.src = e.target.result;
+    };
+    lector.onerror = function () { fallar(new Error('No se pudo abrir el archivo')); };
+    lector.readAsDataURL(archivo);
+  });
+}
+
+$('archivoFoto').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f || !editandoId) return;
+
+  if (!f.type.startsWith('image/')) {
+    avisar('Elegi una imagen', true); return;
+  }
+
+  const btn = $('btnSubirFoto');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+
+  try {
+    const grande = await comprimirImagen(f, 800, 0.8);
+    const mini = await comprimirImagen(f, 240, 0.75);
+
+    const fd = new FormData();
+    fd.append('grande', grande, 'g.webp');
+    fd.append('mini', mini, 'm.webp');
+
+    btn.textContent = 'Subiendo...';
+    const r = await fetch(API + '/fotos/producto/' + editandoId, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+
+    mostrarFotoProd(d.foto);
+    const p = productos.filter(function (x) { return x.id === editandoId; })[0];
+    if (p) { p.foto_url = d.foto; p.foto_mini = d.mini; }
+
+    const kb = Math.round((grande.size + mini.size) / 1024);
+    avisar('Foto guardada (' + kb + ' KB)');
+  } catch (err) {
+    avisar(err.message, true);
+  }
+
+  btn.disabled = false; btn.textContent = 'Cambiar foto';
+  e.target.value = '';
+};
+
+function mostrarFotoProd(url) {
+  if (url) {
+    $('previewFoto').innerHTML = '<img src="' + url + '?t=' + Date.now() + '">';
+    $('btnSubirFoto').textContent = 'Cambiar foto';
+    $('btnBorrarFoto').style.display = 'block';
+  } else {
+    $('previewFoto').innerHTML = '<span>Sin foto</span>';
+    $('btnSubirFoto').textContent = 'Agregar foto';
+    $('btnBorrarFoto').style.display = 'none';
+  }
+}
+
+$('btnSubirFoto').onclick = function () {
+  if (!editandoId) { avisar('Guarda el producto primero', true); return; }
+  $('archivoFoto').click();
+};
+
+$('btnBorrarFoto').onclick = async function () {
+  if (!editandoId || !confirm('Borrar la foto?')) return;
+  try {
+    await api('DELETE', '/fotos/producto/' + editandoId);
+    mostrarFotoProd(null);
+    const p = productos.filter(function (x) { return x.id === editandoId; })[0];
+    if (p) { p.foto_url = null; p.foto_mini = null; }
+    avisar('Foto borrada');
+  } catch (e) { avisar(e.message, true); }
+};
 
 /* ══ Vuelto ══ */
 
