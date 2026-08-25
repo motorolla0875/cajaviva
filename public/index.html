@@ -491,6 +491,15 @@
   }
   .switch.on::after { transform: translateX(20px); }
 
+  .tilde-ok {
+    width: 62px; height: 62px; margin: 4px auto 0;
+    border: 3px solid var(--accent); border-radius: 50%;
+    color: var(--accent); font-size: 32px; line-height: 56px;
+  }
+  .monto-hecho { font-size: 34px; font-weight: 500; color: var(--accent-dark); }
+  .detalle-hecho { color: var(--muted); font-size: 13.5px; margin: 8px 0 4px; line-height: 1.7; }
+  .detalle-hecho b { color: var(--text); font-weight: 500; }
+
   .saldo-box { text-align: center; padding: 6px 0 18px; }
   .saldo-box .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
   .saldo-box .val { font-size: 32px; font-weight: 500; color: var(--danger); }
@@ -797,6 +806,17 @@
 
     <button class="btn-ppal" id="btnGuardarNegocio">Guardar</button>
     <button class="btn-sec" id="btnCerrarNegocio">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalHecho">
+  <div class="modal" style="max-width:380px; text-align:center;">
+    <div class="tilde-ok">&#10003;</div>
+    <h3 style="text-align:center; margin:14px 0 4px; font-size:21px;">Venta cobrada</h3>
+    <div class="monto-hecho" id="hechoMonto">$0</div>
+    <div class="detalle-hecho" id="hechoDetalle"></div>
+    <button class="btn-ppal" id="btnCompartir">Compartir comprobante</button>
+    <button class="btn-sec" id="btnSeguir">Seguir vendiendo</button>
   </div>
 </div>
 
@@ -1687,6 +1707,11 @@ $('btnCobrar').onclick = async function () {
     const manual = num($('totalFinal').value);
     const total = manual > 0 ? manual : bruto;
     const items = carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; });
+    const itemsCopia = carrito.map(function (l) { return { nombre: l.nombre, cantidad: l.cantidad, precio: l.precio }; });
+    const ganancia = carrito.reduce(function (s, l) {
+      const pr = productos.filter(function (x) { return x.id === l.productoId; })[0];
+      return s + ((l.precio - (pr && pr.precio_costo ? pr.precio_costo : 0)) * l.cantidad);
+    }, 0);
     const cuerpo = {
       items: items,
       fecha: hoyISO(),
@@ -1702,7 +1727,13 @@ $('btnCobrar').onclick = async function () {
       await cargarProductos(); await cargarResumen();
       if (esFiado) await cargarClientes();
       marcarConexion(true);
-      avisar(esFiado ? 'Fiado anotado: ' + plata(total) : 'Venta cobrada: ' + plata(total));
+      mostrarHecho({
+        total: total, items: itemsCopia,
+        vuelto: Math.max(0, num($('pagaCon').value) - total),
+        ganancia: ganancia,
+        fiadoA: esFiado && clienteId ? (clientes.filter(function (c) { return c.id === clienteId; })[0] || {}).nombre : null,
+        sinConexion: false
+      });
     } catch (e) {
       // sin red: se guarda y se sube cuando vuelva
       colaAgregar(cuerpo);
@@ -1714,7 +1745,13 @@ $('btnCobrar').onclick = async function () {
       carrito = []; pintarCarrito();
       if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       marcarConexion(false);
-      avisar('Guardada sin conexion: ' + plata(total));
+      mostrarHecho({
+        total: total, items: itemsCopia,
+        vuelto: Math.max(0, num($('pagaCon').value) - total),
+        ganancia: ganancia,
+        fiadoA: esFiado && clienteId ? (clientes.filter(function (c) { return c.id === clienteId; })[0] || {}).nombre : null,
+        sinConexion: true
+      });
     }
   } catch (e) { avisar(e.message, true); }
   btn.textContent = 'Cobrar';
@@ -2186,6 +2223,52 @@ function encontroCodigo(codigo) {
 
   window.cerrarPanelVenta = function () { aplicar(true); };
 })();
+
+/* ══ Confirmacion despues de cobrar ══ */
+
+let ultimaVenta = null;
+
+function mostrarHecho(datos) {
+  ultimaVenta = datos;
+  $('hechoMonto').textContent = plata(datos.total);
+
+  let html = '';
+  if (datos.vuelto > 0) html += 'Vuelto: <b>' + plata(datos.vuelto) + '</b><br>';
+  if (datos.ganancia > 0) html += 'Ganaste <b>' + plata(datos.ganancia) + '</b><br>';
+  if (datos.fiadoA) html += 'Fiado a <b>' + esc(datos.fiadoA) + '</b><br>';
+  if (datos.sinConexion) html += '<span style="color:var(--warn);">Se sube cuando vuelva la conexion</span>';
+
+  $('hechoDetalle').innerHTML = html;
+  $('modalHecho').classList.add('on');
+}
+
+function textoComprobante() {
+  if (!ultimaVenta) return '';
+  const n = (negocio && negocio.nombre) ? negocio.nombre : 'CajaViva';
+  let t = n + '\n\n';
+  ultimaVenta.items.forEach(function (i) {
+    t += fmtCant(i.cantidad) + ' x ' + i.nombre + '   ' + plata(i.precio * i.cantidad) + '\n';
+  });
+  t += '\nTOTAL: ' + plata(ultimaVenta.total);
+  if (ultimaVenta.vuelto > 0) t += '\nVuelto: ' + plata(ultimaVenta.vuelto);
+  t += '\n' + new Date().toLocaleString('es-AR');
+  return t;
+}
+
+$('btnCompartir').onclick = async function () {
+  const texto = textoComprobante();
+  if (navigator.share) {
+    try { await navigator.share({ text: texto }); return; } catch (e) { return; }
+  }
+  try {
+    await navigator.clipboard.writeText(texto);
+    avisar('Comprobante copiado');
+  } catch (e) {
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+  }
+};
+
+$('btnSeguir').onclick = function () { $('modalHecho').classList.remove('on'); };
 
 /* ══ Vuelto ══ */
 
