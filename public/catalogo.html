@@ -34,15 +34,18 @@
 
   .cont { max-width: 640px; margin: 0 auto; padding: 16px; }
 
+  .grilla-prod { display: block; }
+
   @media (min-width: 820px) {
     .cont { max-width: 1000px; }
-    #lista { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 14px; }
-    .cat-titulo { grid-column: 1 / -1; }
+    .grilla-prod {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px;
+    }
     .prod { margin-bottom: 10px; }
   }
   @media (min-width: 1280px) {
     .cont { max-width: 1240px; }
-    #lista { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grilla-prod { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   .buscador { margin-bottom: 14px; }
@@ -196,15 +199,9 @@ function pintar() {
     return;
   }
 
-  let html = '', ultimaCat = null;
-  lista.forEach(function (p) {
-    const cat = p.categoria || 'Otros';
-    if (!filtro && cat !== ultimaCat) {
-      html += '<div class="cat-titulo">' + esc(cat) + '</div>';
-      ultimaCat = cat;
-    }
+  function tarjeta(p) {
     const c = pedido[p.id] || 0;
-    html += '<div class="prod"><div class="info">' +
+    return '<div class="prod"><div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div></div>' +
       '<div class="ctrl">' +
@@ -212,7 +209,25 @@ function pintar() {
         ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
         : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>') +
       '</div></div>';
-  });
+  }
+
+  let html = '';
+
+  if (filtro) {
+    html = '<div class="grilla-prod">' + lista.map(tarjeta).join('') + '</div>';
+  } else {
+    const grupos = {};
+    const orden = [];
+    lista.forEach(function (p) {
+      const cat = p.categoria || 'Otros';
+      if (!grupos[cat]) { grupos[cat] = []; orden.push(cat); }
+      grupos[cat].push(p);
+    });
+    orden.forEach(function (cat) {
+      html += '<div class="cat-titulo">' + esc(cat) + '</div>' +
+        '<div class="grilla-prod">' + grupos[cat].map(tarjeta).join('') + '</div>';
+    });
+  }
 
   $('lista').innerHTML = html;
 }
