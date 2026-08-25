@@ -894,7 +894,10 @@
       <div id="wrapStockIni"><label>Stock inicial</label><input type="text" id="pStock" inputmode="decimal" placeholder="0"></div>
     </div>
     <label>Codigo de barras (opcional)</label>
-    <input type="text" id="pBarras" inputmode="numeric">
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="pBarras" inputmode="numeric" style="flex:1; min-width:0;">
+      <button id="btnEscanearCampo" type="button" style="flex-shrink:0; width:52px; border:1px solid var(--line); border-radius:10px; background:var(--panel-2); color:var(--text); font-size:20px;">&#9974;</button>
+    </div>
     <label>Avisar cuando el stock baje de</label>
     <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
     <button class="btn-ppal" id="btnGuardarProd">Guardar</button>
@@ -2083,6 +2086,7 @@ async function abrirScan() {
 
 $('btnEscanear').onclick = function () { modoScan = 'vender'; abrirScan(); };
 $('btnEscanearProd').onclick = function () { modoScan = 'reponer'; abrirScan(); };
+$('btnEscanearCampo').onclick = function () { modoScan = 'campo'; abrirScan(); };
 
 async function cerrarScan() {
   if (lector && escaneando) {
@@ -2107,6 +2111,14 @@ function encontroCodigo(codigo) {
   else { ultimoCodigo = limpio; vecesCodigo = 1; return; }
   if (vecesCodigo < 2) return;
   ultimoCodigo = null; vecesCodigo = 0;
+
+  // desde el formulario de producto: solo copiar el codigo
+  if (modoScan === 'campo') {
+    cerrarScan();
+    $('pBarras').value = limpio;
+    avisar('Codigo ' + limpio);
+    return;
+  }
 
   const p = productos.filter(function (x) { return (x.codigo_barras || '') === limpio; })[0];
 
