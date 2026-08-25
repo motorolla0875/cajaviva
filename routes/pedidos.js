@@ -1,0 +1,154 @@
+const express = require('express');
+const { v4: uuidv4 } = require('uuid');
+const db = require('../db');
+
+const router = express.Router();
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pedidos_web (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    nombre TEXT NOT NULL,
+    telefono TEXT,
+    direccion TEXT,
+    nota TEXT,
+    total REAL NOT NULL DEFAULT 0,
+    forma_pago TEXT,
+    estado TEXT NOT NULL DEFAULT 'nuevo',
+    venta_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS pedido_web_items (
+    id TEXT PRIMARY KEY,
+    pedido_id TEXT NOT NULL,
+    producto_id TEXT,
+    nombre TEXT NOT NULL,
+    cantidad REAL NOT NULL,
+    precio_unitario REAL NOT NULL
+  );
+`);
+
+// datos de cobro del negocio
+try { db.exec('ALTER TABLE negocio ADD COLUMN alias_pago TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN titular_pago TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_transferencia INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_efectivo INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
+
+function hoyISO() { return new Date().toISOString().slice(0, 10); }
+
+// ── el cliente manda el pedido (publico) ──
+router.post('/publico/:slug', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'Catalogo no encontrado.' });
+
+  const { nombre, telefono, direccion, nota, items, formaPago } = req.body || {};
+  if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
+  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'El pedido esta vacio.' });
+
+  const id = uuidv4();
+  let total = 0;
+  const lineas = [];
+
+  for (const it of items) {
+    const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND activo = 1 AND en_catalogo = 1')
+      .get(it.productoId, n.user_id);
+    if (!p) continue;
+    const c = parseFloat(it.cantidad);
+    if (isNaN(c) || c <= 0) continue;
+    lineas.push({ p: p, cantidad: c });
+    total += p.precio_venta * c;
+  }
+
+  if (lineas.length === 0) return res.status(400).json({ error: 'No hay productos validos.' });
+
+  db.prepare(`
+    INSERT INTO pedidos_web (id, user_id, nombre, telefono, direccion, nota, total, forma_pago)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, n.user_id, nombre.trim(), telefono || null, direccion || null,
+         nota || null, total, formaPago || 'efectivo');
+
+  lineas.forEach(function (l) {
+    db.prepare(`
+      INSERT INTO pedido_web_items (id, pedido_id, producto_id, nombre, cantidad, precio_unitario)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), id, l.p.id, l.p.nombre, l.cantidad, l.p.precio_venta);
+  });
+
+  res.json({ id: id, total: total, numero: id.slice(0, 6).toUpperCase() });
+});
+
+// ── el comerciante ve sus pedidos ──
+router.get('/', (req, res) => {
+  const estado = req.query.estado || 'pendientes';
+  const cond = estado === 'pendientes' ? "AND estado IN ('nuevo','confirmado')"
+    : estado === 'listos' ? "AND estado = 'entregado'"
+    : estado === 'cancelados' ? "AND estado = 'cancelado'" : '';
+
+  const filas = db.prepare(`
+    SELECT * FROM pedidos_web WHERE user_id = ? ${cond}
+    ORDER BY created_at DESC LIMIT 60
+  `).all(req.userId);
+
+  for (const p of filas) {
+    p.items = db.prepare('SELECT * FROM pedido_web_items WHERE pedido_id = ?').all(p.id);
+  }
+
+  const nuevos = db.prepare("SELECT COUNT(*) AS n FROM pedidos_web WHERE user_id = ? AND estado = 'nuevo'").get(req.userId);
+  res.json({ items: filas, nuevos: nuevos.n });
+});
+
+// ── cambiar el estado ──
+router.put('/:id', (req, res) => {
+  const p = db.prepare('SELECT * FROM pedidos_web WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!p) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+  const estado = ['nuevo', 'confirmado', 'entregado', 'cancelado'].indexOf(req.body?.estado) >= 0
+    ? req.body.estado : p.estado;
+
+  db.prepare('UPDATE pedidos_web SET estado = ? WHERE id = ?').run(estado, p.id);
+  res.json({ ok: true });
+});
+
+// ── convertirlo en venta ──
+router.post('/:id/vender', (req, res) => {
+  const p = db.prepare('SELECT * FROM pedidos_web WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!p) return res.status(404).json({ error: 'Pedido no encontrado.' });
+  if (p.venta_id) return res.status(400).json({ error: 'Ese pedido ya se convirtio en venta.' });
+
+  const items = db.prepare('SELECT * FROM pedido_web_items WHERE pedido_id = ?').all(p.id);
+  const ventaId = uuidv4();
+  let costoTotal = 0;
+
+  items.forEach(function (i) {
+    const prod = i.producto_id
+      ? db.prepare('SELECT precio_costo FROM productos WHERE id = ?').get(i.producto_id) : null;
+    costoTotal += (prod && prod.precio_costo ? prod.precio_costo : 0) * i.cantidad;
+  });
+
+  db.prepare(`
+    INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
+      costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
+    VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, ?, ?, 0, ?, ?)
+  `).run(ventaId, req.userId, req.body?.fecha || hoyISO(), p.total, costoTotal,
+         p.forma_pago || 'efectivo', p.total,
+         'Pedido web de ' + p.nombre, req.empleadoId || null);
+
+  items.forEach(function (i) {
+    const prod = i.producto_id
+      ? db.prepare('SELECT precio_costo FROM productos WHERE id = ?').get(i.producto_id) : null;
+    db.prepare(`
+      INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), ventaId, i.producto_id, i.nombre, i.cantidad, i.precio_unitario,
+           prod && prod.precio_costo ? prod.precio_costo : 0);
+
+    if (i.producto_id) {
+      db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(i.cantidad, i.producto_id);
+    }
+  });
+
+  db.prepare("UPDATE pedidos_web SET estado = 'entregado', venta_id = ? WHERE id = ?").run(ventaId, p.id);
+  res.json({ ventaId: ventaId, total: p.total });
+});
+
+module.exports = router;

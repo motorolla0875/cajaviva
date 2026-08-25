@@ -87,7 +87,11 @@ router.get('/publico/:slug', (req, res) => {
     negocio: {
       nombre: n.nombre,
       whatsapp: n.whatsapp,
-      mensaje: n.catalogo_mensaje
+      mensaje: n.catalogo_mensaje,
+      alias_pago: n.alias_pago,
+      titular_pago: n.titular_pago,
+      acepta_transferencia: n.acepta_transferencia,
+      acepta_efectivo: n.acepta_efectivo
     },
     productos: productos
   });
