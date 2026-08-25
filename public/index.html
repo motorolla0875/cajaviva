@@ -190,18 +190,6 @@
   #lectorCam video { width: 100% !important; border-radius: 12px; }
 
   .chips-wrap { position: relative; flex-shrink: 0; min-height: 38px; }
-  .chip-flecha {
-    display: none; position: absolute; top: 0; z-index: 5;
-    width: 30px; height: 34px; border: 1px solid var(--line);
-    background: var(--panel); color: var(--muted);
-    font-size: 18px; line-height: 1; border-radius: 8px;
-    align-items: center; justify-content: center;
-  }
-  .chip-flecha.ver { display: flex; }
-  .chip-flecha.izq { left: 0; }
-  .chip-flecha.der { right: 0; }
-  .chips-wrap.con-izq .chips { padding-left: 34px; }
-  .chips-wrap.con-der .chips { padding-right: 34px; }
 
   .chips {
     display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
@@ -743,9 +731,7 @@
         <button id="btnEscanear" title="Escanear codigo">&#9974;</button>
       </div>
       <div class="chips-wrap">
-        <button class="chip-flecha izq" id="chipIzq">&#8249;</button>
         <div class="chips" id="chipsCat"></div>
-        <button class="chip-flecha der" id="chipDer">&#8250;</button>
       </div>
       <div class="grilla" id="grilla"></div>
     </div>
@@ -1631,7 +1617,7 @@ function pintarChips() {
 
 function filtrarCat(id) { catFiltro = id; pintarChips(); pintarGrilla(); }
 
-function refrescarFlechas() { if (window.actualizarFlechasChips) setTimeout(window.actualizarFlechasChips, 60); }
+function refrescarFlechas() {}
 
 function pintarSelectCategorias() {
   $('pCategoria').innerHTML = '<option value="">Sin categoria</option>' +
