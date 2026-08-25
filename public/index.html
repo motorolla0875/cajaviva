@@ -1573,6 +1573,7 @@
   <div class="modal">
     <h3>Detalle de la venta</h3>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subVentaDet"></p>
+    <div id="avisoCerrado"></div>
     <div id="msgVentaDet"></div>
     <div id="itemsVentaDet"></div>
     <div class="cierre-linea total"><span>Total</span><b id="totalVentaDet">$0</b></div>
@@ -3119,6 +3120,7 @@ async function verVenta(id) {
     ventaAbierta = v;
     pintarVentaDet();
     $('modalVenta').classList.add('on');
+    revisarCierre(v.fecha);
   } catch (e) { avisar(e.message, true); }
 }
 
@@ -4538,6 +4540,21 @@ $('btnGuardarCheque').onclick = async function () {
   }
   btn.disabled = false; btn.textContent = 'Guardar';
 };
+
+async function revisarCierre(fecha) {
+  const el = $('avisoCerrado');
+  if (!el) return;
+  el.innerHTML = '';
+  if (fecha === hoyISO()) return;
+
+  try {
+    const d = await api('GET', '/cierre/estado/' + fecha);
+    if (!d.cerrado) return;
+    el.innerHTML = '<div class="msg" style="background:#FDF3E3; color:#8A5A0F;">' +
+      '<b>Ojo</b><br>El ' + fechaCorta(fecha) + ' ya cerraste la caja con ' + plata(d.cierre.contado) + '. ' +
+      'Si cambias esta venta, ese cierre no se modifica.</div>';
+  } catch (e) {}
+}
 
 /* ══ Vuelto ══ */
 

@@ -101,4 +101,12 @@ router.get('/historial', (req, res) => {
   `).all(req.userId));
 });
 
+
+// ── saber si una fecha ya esta cerrada ──
+router.get('/estado/:fecha', (req, res) => {
+  const c = db.prepare('SELECT fecha, contado, esperado, created_at FROM cierres WHERE user_id = ? AND fecha = ?')
+    .get(req.userId, req.params.fecha);
+  res.json({ cerrado: !!c, cierre: c || null });
+});
+
 module.exports = router;
