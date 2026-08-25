@@ -944,6 +944,8 @@
     .dos-arriba .btn-nuevo.gris { padding: 13px 8px; }
     .dos-arriba .btn-nuevo:first-child { grid-column: 1 / -1; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .prod.con-foto { grid-column: 1 / -1; min-height: 0; }
+    .prod.con-foto .foto-mini { height: 110px; }
     header { padding: 12px 14px; }
     nav button { font-size: 12.5px; }
     .rubros { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
@@ -2434,7 +2436,8 @@ function pintarGrilla() {
     const bajo = !sin && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
     const enCarrito = carrito.filter(function (l) { return l.productoId === p.id; })[0];
     const cant = enCarrito ? enCarrito.cantidad : 0;
-    return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
+    const tieneFoto = !!(p.foto_mini || p.foto_url);
+    return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
