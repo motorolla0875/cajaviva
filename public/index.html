@@ -220,6 +220,21 @@
     border-radius: var(--radius); padding: 14px 12px; text-align: left;
     display: flex; flex-direction: column; gap: 4px; min-height: 92px;
   }
+  .grilla > .prod.con-foto {
+    grid-column: 1 / -1;
+    flex-direction: row; align-items: center; gap: 12px;
+    min-height: 0; padding: 12px 14px;
+  }
+  .grilla > .prod.con-foto .foto-mini {
+    width: 62px; height: 62px; flex-shrink: 0;
+    margin-bottom: 0; border-radius: 9px;
+  }
+  .grilla > .prod.con-foto .info-prod { flex: 1; min-width: 0; }
+  .grilla > .prod.con-foto .n { font-size: 15px; }
+  .grilla > .prod.con-foto .p { margin-top: 0; margin-left: auto; flex-shrink: 0; font-size: 16.5px; }
+  .grilla > .prod.con-foto .en-carrito { top: 50%; margin-top: -12px; right: 12px; }
+  .grilla > .prod.con-foto .reponer-rapido { bottom: 50%; margin-bottom: -13px; right: 50px; }
+
   .prod:active { border-color: var(--accent); background: var(--accent-soft); }
   .prod .n { font-weight: 500; font-size: 14px; line-height: 1.3; }
   .prod .p { color: var(--accent); font-weight: 500; font-size: 16px; margin-top: auto; }
@@ -2434,15 +2449,18 @@ function pintarGrilla() {
 
   $('grilla').innerHTML = lista.map(function (p) {
     const sin = p.stock <= 0;
+    const tieneFoto = !!(p.foto_mini || p.foto_url);
     const bajo = !sin && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
     const enCarrito = carrito.filter(function (l) { return l.productoId === p.id; })[0];
     const cant = enCarrito ? enCarrito.cantidad : 0;
-    return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
+    return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      (tieneFoto ? '<div class="info-prod">' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
+      (tieneFoto ? '</div>' : '') +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
