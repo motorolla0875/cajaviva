@@ -1981,9 +1981,6 @@ function aplicarCapacidades() {
     .classList.toggle('oculto', !cap('cap_mostrador') && !cap('cap_reparto'));
 
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
-  $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
-  $('pVence').value = p && p.vence ? p.vence : '';
-  $('pAvisoDias').value = p && p.aviso_dias ? p.aviso_dias : 7;
 
   const activo = document.querySelector('nav button.on');
   if (activo && activo.classList.contains('oculto')) {
@@ -2583,6 +2580,9 @@ function abrirProd(id) {
   $('pBarras').value = p && p.codigo_barras ? p.codigo_barras : '';
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
+  $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
+  $('pVence').value = p && p.vence ? p.vence : '';
+  $('pAvisoDias').value = p && p.aviso_dias ? p.aviso_dias : 7;
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
