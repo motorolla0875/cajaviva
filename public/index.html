@@ -2579,9 +2579,19 @@ $('btnBorrarProd').onclick = async function () {
 function calcularGasto() {
   const c = num($('sCantidad').value), pc = num($('sCosto').value);
   const el = $('hintGasto');
+
   if (c > 0 && pc > 0) {
+    let texto = 'Se va a anotar un gasto de ' + plata(c * pc) + ' automaticamente.';
+
+    // avisar como queda el costo promedio
+    const p = productos.filter(function (x) { return x.id === stockProdId; })[0];
+    if (p && p.stock > 0 && p.precio_costo > 0 && Math.abs(pc - p.precio_costo) > 0.5) {
+      const prom = ((p.stock * p.precio_costo) + (c * pc)) / (p.stock + c);
+      texto += ' El costo pasa de ' + plata(p.precio_costo) + ' a ' + plata(prom) + ' (promedio).';
+    }
+
     el.className = 'hint ok';
-    el.textContent = 'Se va a anotar un gasto de ' + plata(c * pc) + ' automaticamente.';
+    el.textContent = texto;
   } else {
     el.className = 'hint';
     el.textContent = 'Si cargas el costo, el gasto se anota solo.';

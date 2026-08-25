@@ -90,12 +90,33 @@ router.post('/:id/reponer', (req, res) => {
     ? parseFloat(req.body.costoUnitario)
     : prod.precio_costo;
 
-  db.prepare('UPDATE productos SET stock = stock + ?, updated_at = datetime(\'now\') WHERE id = ?')
-    .run(cantidad, prod.id);
+  // costo promedio ponderado: mezcla lo que ya habia con lo que entra
+  let costoFinal = prod.precio_costo;
+  if (costoUnitario != null && costoUnitario > 0) {
+    const stockPrevio = Math.max(0, prod.stock);
+    if (stockPrevio > 0 && prod.precio_costo > 0) {
+      const valorPrevio = stockPrevio * prod.precio_costo;
+      const valorNuevo = cantidad * costoUnitario;
+      costoFinal = (valorPrevio + valorNuevo) / (stockPrevio + cantidad);
+      costoFinal = Math.round(costoFinal * 100) / 100;
+    } else {
+      costoFinal = costoUnitario;
+    }
+  }
 
-  // si cambió el costo, lo actualizamos para las próximas ventas
-  if (costoUnitario != null && costoUnitario !== prod.precio_costo) {
-    db.prepare('UPDATE productos SET precio_costo = ? WHERE id = ?').run(costoUnitario, prod.id);
+  db.prepare('UPDATE productos SET stock = stock + ?, precio_costo = ?, updated_at = datetime(\'now\') WHERE id = ?')
+    .run(cantidad, costoFinal, prod.id);
+
+  // guardar el historial de precios
+  db.exec(`CREATE TABLE IF NOT EXISTS historial_precios (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL, producto_id TEXT NOT NULL,
+    precio_venta REAL, precio_costo REAL, motivo TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  if (costoUnitario != null && costoUnitario > 0 && costoUnitario !== prod.precio_costo) {
+    db.prepare(`INSERT INTO historial_precios (id, user_id, producto_id, precio_venta, precio_costo, motivo)
+                VALUES (?, ?, ?, ?, ?, 'compra')`)
+      .run(uuidv4(), req.userId, prod.id, prod.precio_venta, costoUnitario);
   }
 
   if (costoUnitario > 0) {
@@ -103,7 +124,7 @@ router.post('/:id/reponer', (req, res) => {
       INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, categoria, automatico)
       VALUES (?, ?, ?, ?, ?, ?, 'stock', 1)
     `).run(uuidv4(), req.userId, req.body?.proveedorId || null,
-           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, hoyISO());
+           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO());
   }
 
   res.json({ ok: true, stock: prod.stock + cantidad });
