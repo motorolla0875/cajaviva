@@ -1813,6 +1813,12 @@ function pintarCarrito() {
   }
   const t = totalCarrito();
   $('total').textContent = plata(t);
+  // el panel no debe reaparecer al agregar productos
+  const _p = document.querySelector('#v-vender .der');
+  if (_p && window.innerWidth <= 1024 && _p.classList.contains('chico')) {
+    _p.style.display = 'none';
+  }
+
   const nItems = fmtCant(carrito.reduce(function (a, l) { return a + l.cantidad; }, 0));
   if ($('cantItems')) $('cantItems').textContent = nItems;
   if ($('brCant')) $('brCant').textContent = nItems;
