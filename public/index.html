@@ -2326,12 +2326,8 @@ function encontroCodigo(codigo) {
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  let cerrado = true;
-  try {
-    const g = localStorage.getItem('cv_panelCerrado');
-    cerrado = g === null ? true : g === '1';
-  } catch (e) {}
-  aplicar(cerrado);
+  // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
+  aplicar(true);
 
   manija.addEventListener('click', function () {
     const cerradoAhora = panel.classList.contains('chico');
