@@ -262,6 +262,13 @@
   .barra-resumen .br-cant { font-size: 26px; font-weight: 500; color: var(--accent); }
   .barra-resumen .br-total { font-size: 26px; font-weight: 500; color: var(--accent); }
 
+  .cerrar-panel {
+    display: none; width: 100%; padding: 12px;
+    border: none; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); color: var(--muted);
+    font-size: 13.5px; font-weight: 500;
+  }
+
   .der h2 {
     margin: 0; padding: 16px 18px 12px; font-size: 13px;
     font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line);
@@ -619,14 +626,22 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    /* con el panel cerrado, el panel entero desaparece */
-    .der.chico { display: none !important; }
+    /* cerrado: el panel se va abajo, fuera de la pantalla */
+    #v-vender .der {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100dvh; max-height: none;
+      z-index: 50; background: var(--panel); border-top: none;
+      transition: transform .22s ease;
+    }
+    #v-vender .der.chico { transform: translateY(100%); }
+    #v-vender .der .manija { display: none; }
 
     .barra-fija {
       display: block; position: fixed; left: 0; right: 0; bottom: 0;
       height: 76px; background: var(--panel);
       border-top: 1px solid var(--line); z-index: 40;
     }
+    .cerrar-panel { display: block; }
     .bf-manija { display: flex; align-items: center; justify-content: center; height: 24px; }
     .bf-manija span { width: 42px; height: 4px; border-radius: 2px; background: var(--line); }
     .bf-datos {
@@ -759,6 +774,7 @@
     </div>
     <div class="der">
       <div class="manija" id="manija"><span></span></div>
+      <button class="cerrar-panel" id="cerrarPanel">&#8595; Cerrar</button>
       <h2 id="tituloVenta"></h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
@@ -2393,6 +2409,9 @@ function encontroCodigo(codigo) {
     }
     aplicar(false);
   });
+
+  const btnCerrar = document.getElementById('cerrarPanel');
+  if (btnCerrar) btnCerrar.addEventListener('click', function () { aplicar(true); });
 
   manija.addEventListener('click', function () {
     const cerradoAhora = panel.classList.contains('chico');
