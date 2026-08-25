@@ -620,9 +620,12 @@
     .der.chico {
       position: fixed !important; left: 0; right: 0; bottom: 0;
       height: 78px !important; min-height: 78px; max-height: 78px;
-      flex: none !important; overflow: hidden; z-index: 40;
+      flex: none !important; overflow: hidden !important; z-index: 40;
       border-top: 1px solid var(--line); background: var(--panel);
+      display: block !important;
     }
+    /* nada mas que la manija y la barra cuando esta cerrado */
+    .der.chico > *:not(.manija):not(.barra-resumen) { display: none !important; }
     /* espacio para que la grilla no quede tapada por la barra */
     #v-vender.vista.on.grilla-visible .izq { padding-bottom: 0; }
     #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
