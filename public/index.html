@@ -940,12 +940,15 @@ const RUBROS = [
 const CAPS_INFO = [
   ['cap_mostrador', 'Venta en mostrador', 'Cobrar a alguien que entra y se va'],
   ['cap_reparto', 'Reparto a domicilio', 'Clientes con dias y recorrido'],
-  ['cap_peso', 'Venta por peso', 'Cantidades con decimales'],
+  ['cap_peso', 'Productos por peso', 'Vender por kilo o por litro, con decimales'],
   ['cap_vencimientos', 'Vencimientos', 'Avisar antes de que se venza'],
   ['cap_variantes', 'Talles y colores', 'Un producto con variantes'],
   ['cap_recetas', 'Recetas', 'Descontar insumos al vender'],
   ['cap_turnos', 'Turnos', 'Agenda de citas']
 ];
+
+// sin ninguna de estas, el negocio no puede cobrar
+const CAPS_VENTA = ['cap_mostrador', 'cap_reparto'];
 
 const $ = id => document.getElementById(id);
 const plata = n => '$' + Math.round(n || 0).toLocaleString('es-AR');
@@ -1300,8 +1303,16 @@ function pintarCaps() {
 }
 
 async function alternarCap(nombre) {
+  const apagando = cap(nombre);
+  if (apagando && CAPS_VENTA.indexOf(nombre) >= 0) {
+    const otras = CAPS_VENTA.filter(function (c) { return c !== nombre && cap(c); });
+    if (otras.length === 0) {
+      avisar('Tu negocio necesita al menos una forma de vender', true);
+      return;
+    }
+  }
   try {
-    negocio = await api('PUT', '/negocio/capacidad', { cap: nombre, valor: cap(nombre) ? 0 : 1 });
+    negocio = await api('PUT', '/negocio/capacidad', { cap: nombre, valor: apagando ? 0 : 1 });
     pintarCaps();
     aplicarCapacidades();
   } catch (e) { avisar(e.message, true); }
