@@ -2376,6 +2376,68 @@ function irAVista(nombre) {
   window.cerrarPanelVenta = function () { irAVista('vender'); };
 })();
 
+/* ══ Confirmacion despues de cobrar ══ */
+
+let ultimaVenta = null;
+
+function mostrarHecho(datos) {
+  ultimaVenta = datos;
+  $('btnAnularUltima').style.display = datos.ventaId ? 'block' : 'none';
+  $('hechoMonto').textContent = plata(datos.total);
+
+  let html = '';
+  if (datos.vuelto > 0) html += 'Vuelto: <b>' + plata(datos.vuelto) + '</b><br>';
+  if (datos.ganancia > 0) html += 'Ganaste <b>' + plata(datos.ganancia) + '</b><br>';
+  if (datos.fiadoA) html += 'Fiado a <b>' + esc(datos.fiadoA) + '</b><br>';
+  if (datos.sinConexion) html += '<span style="color:var(--warn);">Se sube cuando vuelva la conexion</span>';
+
+  $('hechoDetalle').innerHTML = html;
+  $('modalHecho').classList.add('on');
+}
+
+function textoComprobante() {
+  if (!ultimaVenta) return '';
+  const n = (negocio && negocio.nombre) ? negocio.nombre : 'CajaViva';
+  let t = n + '\n\n';
+  ultimaVenta.items.forEach(function (i) {
+    t += fmtCant(i.cantidad) + ' x ' + i.nombre + '   ' + plata(i.precio * i.cantidad) + '\n';
+  });
+  t += '\nTOTAL: ' + plata(ultimaVenta.total);
+  if (ultimaVenta.vuelto > 0) t += '\nVuelto: ' + plata(ultimaVenta.vuelto);
+  t += '\n' + new Date().toLocaleString('es-AR');
+  return t;
+}
+
+$('btnCompartir').onclick = async function () {
+  const texto = textoComprobante();
+  if (navigator.share) {
+    try { await navigator.share({ text: texto }); return; } catch (e) { return; }
+  }
+  try {
+    await navigator.clipboard.writeText(texto);
+    avisar('Comprobante copiado');
+  } catch (e) {
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+  }
+};
+
+$('btnSeguir').onclick = function () { $('modalHecho').classList.remove('on'); };
+
+$('btnAnularUltima').onclick = async function () {
+  if (!ultimaVenta || !ultimaVenta.ventaId) return;
+  if (!confirm('Anular esta venta? El stock vuelve a su lugar.')) return;
+
+  const btn = $('btnAnularUltima');
+  btn.disabled = true; btn.textContent = 'Anulando...';
+  try {
+    await api('DELETE', '/ventas/' + ultimaVenta.ventaId);
+    await cargarProductos(); await cargarResumen(); await cargarClientes();
+    $('modalHecho').classList.remove('on');
+    avisar('Venta anulada');
+  } catch (e) { avisar(e.message, true); }
+  btn.disabled = false; btn.textContent = 'Me equivoque, anular';
+};
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
