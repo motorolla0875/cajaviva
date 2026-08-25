@@ -535,6 +535,14 @@
     color: var(--accent-dark); background: var(--accent-soft);
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
+  .pr-fila {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px;
+  }
+  .pr-fila .nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pr-fila .ant { color: var(--muted); text-decoration: line-through; margin-right: 8px; }
+  .pr-fila .nue { color: var(--accent-dark); font-weight: 500; }
+
   .emp-item {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 0; border-bottom: 1px solid var(--line);
@@ -551,6 +559,7 @@
   body.modo-empleado #btnCategorias,
   body.modo-empleado #btnProveedores,
   body.modo-empleado #btnImportarProd,
+  body.modo-empleado #btnPrecios,
   body.modo-empleado #btnImportarCli,
   body.modo-empleado #btnGasto,
   body.modo-empleado #btnCierre,
@@ -886,6 +895,7 @@
         <button class="btn-nuevo gris" id="btnCategorias">Categorias</button>
         <button class="btn-nuevo gris" id="btnProveedores">Proveedores</button>
         <button class="btn-nuevo gris" id="btnImportarProd" title="Importar desde Excel">&#8681;</button>
+        <button class="btn-nuevo gris" id="btnPrecios" title="Cambiar precios">$</button>
       </div>
       <div class="buscador buscador-con-scan">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
@@ -1187,6 +1197,50 @@
     </div>
     <button class="btn-ppal" id="btnGuardarStock">Confirmar</button>
     <button class="btn-sec" id="btnCerrarStock">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalPrecios">
+  <div class="modal">
+    <h3>Cambiar precios</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Actualiza varios productos de una vez. Podes deshacerlo despues.</p>
+    <div id="msgPrecios"></div>
+
+    <label>A que productos</label>
+    <select id="prCategoria"><option value="">Todos los productos</option></select>
+
+    <label>Que precio</label>
+    <div class="medios" style="margin-bottom:0;">
+      <button class="on" data-campo="venta" id="prCampoVenta">De venta</button>
+      <button data-campo="costo" id="prCampoCosto">De costo</button>
+    </div>
+
+    <label>Como</label>
+    <select id="prModo">
+      <option value="porcentaje">Aumentar un porcentaje</option>
+      <option value="monto">Sumar un monto fijo</option>
+      <option value="fijar">Poner un precio fijo</option>
+      <option value="margen">Calcular desde el costo con un margen</option>
+    </select>
+
+    <label id="prLabelValor">Porcentaje (usa negativo para bajar)</label>
+    <input type="text" id="prValor" inputmode="decimal" placeholder="Ej: 15">
+
+    <label>Redondear a</label>
+    <select id="prRedondeo">
+      <option value="0">Sin redondear</option>
+      <option value="10">Decenas ($10)</option>
+      <option value="50">$50</option>
+      <option value="100" selected>$100</option>
+      <option value="500">$500</option>
+    </select>
+
+    <div class="seccion">Como quedaria</div>
+    <div id="prPreview"><div class="vacio">Poné un valor para ver el resultado.</div></div>
+
+    <button class="btn-ppal" id="btnAplicarPrecios">Aplicar</button>
+    <button class="btn-sec" id="btnDeshacerPrecios">Deshacer el ultimo cambio</button>
+    <button class="btn-sec" id="btnCerrarPrecios">Cancelar</button>
   </div>
 </div>
 
@@ -3261,6 +3315,114 @@ function pasaFiltroProd(p) {
   }
   return true;
 }
+
+/* ══ Cambiar precios en lote ══ */
+
+let prCampo = 'venta';
+
+$('btnPrecios').onclick = function () {
+  $('msgPrecios').innerHTML = '';
+  $('prValor').value = '';
+  $('prCategoria').innerHTML = '<option value="">Todos los productos (' + productos.length + ')</option>' +
+    categorias.filter(function (c) { return c.cantidad > 0; }).map(function (c) {
+      return '<option value="' + c.id + '">' + esc(c.nombre) + ' (' + c.cantidad + ')</option>';
+    }).join('');
+  $('prPreview').innerHTML = '<div class="vacio">Poné un valor para ver el resultado.</div>';
+  $('modalPrecios').classList.add('on');
+};
+$('btnCerrarPrecios').onclick = function () { $('modalPrecios').classList.remove('on'); };
+
+$('prCampoVenta').onclick = function () {
+  prCampo = 'venta';
+  $('prCampoVenta').classList.add('on'); $('prCampoCosto').classList.remove('on');
+  verPreview();
+};
+$('prCampoCosto').onclick = function () {
+  prCampo = 'costo';
+  $('prCampoCosto').classList.add('on'); $('prCampoVenta').classList.remove('on');
+  verPreview();
+};
+
+$('prModo').onchange = function () {
+  const m = $('prModo').value;
+  $('prLabelValor').textContent = m === 'porcentaje' ? 'Porcentaje (usa negativo para bajar)'
+    : m === 'monto' ? 'Monto a sumar (usa negativo para restar)'
+    : m === 'fijar' ? 'Precio fijo para todos'
+    : 'Margen sobre el costo (%)';
+  $('prValor').placeholder = m === 'porcentaje' ? 'Ej: 15' : m === 'monto' ? 'Ej: 500' : m === 'fijar' ? 'Ej: 1200' : 'Ej: 40';
+  verPreview();
+};
+
+let timerPreview = null;
+function verPreview() {
+  clearTimeout(timerPreview);
+  timerPreview = setTimeout(pedirPreview, 300);
+}
+$('prValor').addEventListener('input', verPreview);
+$('prCategoria').addEventListener('change', verPreview);
+$('prRedondeo').addEventListener('change', verPreview);
+
+async function pedirPreview() {
+  const valor = num($('prValor').value);
+  if ($('prValor').value.trim() === '') {
+    $('prPreview').innerHTML = '<div class="vacio">Poné un valor para ver el resultado.</div>';
+    return;
+  }
+  try {
+    const r = await api('POST', '/productos/precios-preview', {
+      categoriaId: $('prCategoria').value || null,
+      campo: prCampo, modo: $('prModo').value,
+      valor: valor, redondeo: parseInt($('prRedondeo').value)
+    });
+    if (r.items.length === 0) {
+      $('prPreview').innerHTML = '<div class="vacio">No hay productos con ese precio cargado.</div>';
+      return;
+    }
+    $('prPreview').innerHTML = r.items.map(function (i) {
+      return '<div class="pr-fila"><span class="nom">' + esc(i.nombre) + '</span>' +
+        '<span><span class="ant">' + plata(i.antes) + '</span>' +
+        '<span class="nue">' + plata(i.despues) + '</span></span></div>';
+    }).join('') + '<p class="hint">Se muestran los primeros. Al aplicar se cambian todos.</p>';
+  } catch (e) {
+    $('prPreview').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnAplicarPrecios').onclick = async function () {
+  if ($('prValor').value.trim() === '') {
+    $('msgPrecios').innerHTML = '<div class="msg">Poné un valor.</div>'; return;
+  }
+  const cat = $('prCategoria').value;
+  const nombreCat = cat ? $('prCategoria').options[$('prCategoria').selectedIndex].text : 'todos los productos';
+  if (!confirm('Cambiar el precio de ' + nombreCat + '? Vas a poder deshacerlo.')) return;
+
+  const btn = $('btnAplicarPrecios');
+  btn.disabled = true; btn.textContent = 'Aplicando...';
+  try {
+    const r = await api('POST', '/productos/precios-lote', {
+      categoriaId: cat || null, campo: prCampo, modo: $('prModo').value,
+      valor: num($('prValor').value), redondeo: parseInt($('prRedondeo').value)
+    });
+    await cargarProductos();
+    $('modalPrecios').classList.remove('on');
+    avisar(r.cambiados + (r.cambiados === 1 ? ' precio actualizado' : ' precios actualizados'));
+  } catch (e) {
+    $('msgPrecios').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Aplicar';
+};
+
+$('btnDeshacerPrecios').onclick = async function () {
+  if (!confirm('Deshacer el ultimo cambio de precios?')) return;
+  try {
+    const r = await api('POST', '/productos/precios-deshacer');
+    await cargarProductos();
+    $('modalPrecios').classList.remove('on');
+    avisar(r.restaurados + ' precios restaurados');
+  } catch (e) {
+    $('msgPrecios').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+};
 
 /* ══ Vuelto ══ */
 

@@ -131,4 +131,127 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── actualizar precios en lote ──
+router.post('/precios-lote', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+
+  const { categoriaId, ids, campo, modo, valor, redondeo } = req.body || {};
+  const v = parseFloat(valor);
+  if (isNaN(v)) return res.status(400).json({ error: 'Poné un valor valido.' });
+
+  const col = campo === 'costo' ? 'precio_costo' : 'precio_venta';
+
+  let productos;
+  if (Array.isArray(ids) && ids.length > 0) {
+    const q = ids.map(function () { return '?'; }).join(',');
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND id IN (' + q + ')')
+      .all(req.userId, ...ids);
+  } else if (categoriaId) {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ?')
+      .all(req.userId, categoriaId);
+  } else {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1').all(req.userId);
+  }
+
+  if (productos.length === 0) return res.status(400).json({ error: 'No hay productos para actualizar.' });
+
+  function redondear(n) {
+    if (!redondeo || redondeo <= 0) return Math.round(n * 100) / 100;
+    return Math.round(n / redondeo) * redondeo;
+  }
+
+  let cambiados = 0;
+  const antes = [];
+
+  productos.forEach(function (p) {
+    const actual = p[col];
+    if (actual == null) return;
+
+    let nuevo;
+    if (modo === 'porcentaje') nuevo = actual * (1 + v / 100);
+    else if (modo === 'monto') nuevo = actual + v;
+    else if (modo === 'fijar') nuevo = v;
+    else if (modo === 'margen') {
+      // fijar el precio de venta segun un margen sobre el costo
+      if (!p.precio_costo) return;
+      nuevo = p.precio_costo * (1 + v / 100);
+    } else return;
+
+    nuevo = redondear(Math.max(0, nuevo));
+    if (nuevo === actual) return;
+
+    antes.push({ id: p.id, valor: actual });
+    db.prepare('UPDATE productos SET ' + col + ' = ?, updated_at = datetime(\'now\') WHERE id = ?')
+      .run(nuevo, p.id);
+    cambiados++;
+  });
+
+  // guardar para poder deshacer
+  if (cambiados > 0) {
+    db.exec(`CREATE TABLE IF NOT EXISTS cambios_precio (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL, campo TEXT NOT NULL,
+      datos TEXT NOT NULL, cantidad INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    db.prepare('INSERT INTO cambios_precio (id, user_id, campo, datos, cantidad) VALUES (?, ?, ?, ?, ?)')
+      .run(uuidv4(), req.userId, col, JSON.stringify(antes), cambiados);
+  }
+
+  res.json({ cambiados: cambiados, total: productos.length });
+});
+
+// ── vista previa antes de aplicar ──
+router.post('/precios-preview', (req, res) => {
+  const { categoriaId, campo, modo, valor, redondeo } = req.body || {};
+  const v = parseFloat(valor);
+  if (isNaN(v)) return res.json({ items: [] });
+
+  const col = campo === 'costo' ? 'precio_costo' : 'precio_venta';
+
+  const productos = categoriaId
+    ? db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ? LIMIT 8').all(req.userId, categoriaId)
+    : db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 LIMIT 8').all(req.userId);
+
+  function redondear(n) {
+    if (!redondeo || redondeo <= 0) return Math.round(n * 100) / 100;
+    return Math.round(n / redondeo) * redondeo;
+  }
+
+  const items = [];
+  productos.forEach(function (p) {
+    const actual = p[col];
+    if (actual == null) return;
+    let nuevo;
+    if (modo === 'porcentaje') nuevo = actual * (1 + v / 100);
+    else if (modo === 'monto') nuevo = actual + v;
+    else if (modo === 'fijar') nuevo = v;
+    else if (modo === 'margen') { if (!p.precio_costo) return; nuevo = p.precio_costo * (1 + v / 100); }
+    else return;
+    items.push({ nombre: p.nombre, antes: actual, despues: redondear(Math.max(0, nuevo)) });
+  });
+
+  res.json({ items: items });
+});
+
+// ── deshacer el ultimo cambio de precios ──
+router.post('/precios-deshacer', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  let ultimo;
+  try {
+    ultimo = db.prepare('SELECT * FROM cambios_precio WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(req.userId);
+  } catch (e) { return res.status(400).json({ error: 'No hay cambios para deshacer.' }); }
+  if (!ultimo) return res.status(400).json({ error: 'No hay cambios para deshacer.' });
+
+  const datos = JSON.parse(ultimo.datos);
+  datos.forEach(function (d) {
+    db.prepare('UPDATE productos SET ' + ultimo.campo + ' = ? WHERE id = ? AND user_id = ?')
+      .run(d.valor, d.id, req.userId);
+  });
+  db.prepare('DELETE FROM cambios_precio WHERE id = ?').run(ultimo.id);
+
+  res.json({ restaurados: datos.length });
+});
+
 module.exports = router;
