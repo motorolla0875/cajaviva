@@ -617,7 +617,11 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    .der.chico { flex: 0 0 auto; }
+    .der.chico {
+      flex: 0 0 auto; height: auto !important;
+      position: sticky; bottom: 0;
+    }
+    .der.chico .barra-resumen { padding: 8px 18px 16px; }
     .der.chico .pie { border-top: none; padding: 0 16px 12px; }
     .der.chico .total-row { margin-bottom: 0; align-items: center; }
     .der.chico .total-row .lbl { display: none; }
@@ -737,7 +741,7 @@
         <span class="br-cant" id="brCant">0</span>
         <span class="br-total" id="brTotal">$0</span>
       </div>
-      <h2 id="tituloVenta">Venta actual</h2>
+      <h2 id="tituloVenta"></h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
         <div class="total-row">
