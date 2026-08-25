@@ -2416,6 +2416,7 @@ function pintarGrilla() {
     const cant = enCarrito ? enCarrito.cantidad : 0;
     return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
+      (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
@@ -2627,7 +2628,9 @@ function pintarLista() {
     const tieneCosto = !esEmpleado && p.precio_costo > 0;
     const margen = tieneCosto ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo) * 100) : null;
     const clase = p.stock <= 0 ? 'cero' : (p.stock_minimo > 0 && p.stock <= p.stock_minimo ? 'bajo' : '');
-    return '<div class="fila"><div class="datos">' +
+    return '<div class="fila">' +
+      (p.foto_mini || p.foto_url ? '<img class="foto-fila" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      '<div class="datos">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="d">' + plata(p.precio_venta) +
         (tieneCosto ? ' &middot; costo ' + plata(p.precio_costo) : ' &middot; sin costo cargado') + '</div>' +

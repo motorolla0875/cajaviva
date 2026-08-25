@@ -74,6 +74,10 @@
     overflow: hidden; max-width: 100%;
   }
   .prod .info { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .foto-cat {
+    width: 56px; height: 56px; flex-shrink: 0; border-radius: 9px;
+    object-fit: cover; background: var(--panel-2); cursor: pointer;
+  }
   .prod .info .n { font-weight: 500; font-size: 15px; }
   .prod .info .p { color: var(--accent); font-weight: 500; font-size: 16px; margin-top: 2px; }
   .prod .ctrl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
@@ -245,7 +249,9 @@ function pintar() {
 
   function tarjeta(p) {
     const c = pedido[p.id] || 0;
-    return '<div class="prod"><div class="info">' +
+    return '<div class="prod">' +
+      (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy" onclick="verFoto(\'' + (p.foto_grande || p.foto) + '\')">' : '') +
+      '<div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div></div>' +
       '<div class="ctrl">' +
@@ -413,6 +419,14 @@ $('btnEnviarPedido').onclick = async function () {
   }
   btn.disabled = false; btn.textContent = 'Enviar el pedido';
 };
+
+function verFoto(url) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;';
+  d.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:100%;border-radius:12px;">';
+  d.onclick = function () { d.remove(); };
+  document.body.appendChild(d);
+}
 
 $('buscar').addEventListener('input', pintar);
 cargar();
