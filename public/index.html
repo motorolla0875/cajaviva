@@ -593,8 +593,6 @@
     }
     /* abierto: el panel se lleva la pantalla, la grilla se achica */
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
-    #v-vender.vista.on:not(.grilla-visible) .izq { display: none !important; }
-    #v-vender.vista.on:not(.grilla-visible) .der {
       position: fixed; inset: 0; z-index: 60;
       height: 100dvh !important; max-height: none;
       border-top: none; flex: 1 1 auto;
@@ -633,10 +631,7 @@
     .bf-datos .br-cant, .bf-datos .br-total {
       font-size: 26px; font-weight: 500; color: var(--accent);
     }
-    #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
     /* espacio para que la grilla no quede tapada por la barra */
-    #v-vender.vista.on.grilla-visible .izq { padding-bottom: 0; }
-    #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
     .der.chico .barra-resumen {
       height: 52px; padding: 0 18px; margin: 0;
     }
