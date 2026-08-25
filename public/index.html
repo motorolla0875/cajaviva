@@ -513,6 +513,27 @@
   .mapeo-fila label { flex: 0 0 130px; font-size: 13px; color: var(--muted); margin: 0; }
   .mapeo-fila select { flex: 1; min-width: 0; }
 
+  .cierre-linea {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+  }
+  .cierre-linea span { color: var(--muted); }
+  .cierre-linea b { font-weight: 500; }
+  .cierre-linea.gasto b { color: var(--danger); }
+  .cierre-linea.total {
+    border-bottom: none; border-top: 2px solid var(--line);
+    margin-top: 4px; padding-top: 12px;
+  }
+  .cierre-linea.total span { color: var(--text); font-weight: 500; }
+  .cierre-linea.total b { font-size: 22px; color: var(--accent-dark); }
+  .cierre-linea.chico { font-size: 13px; padding: 7px 0; }
+  .cierre-dif {
+    display: none; margin-top: 12px; padding: 12px 14px;
+    border-radius: 10px; font-size: 14px; font-weight: 500; text-align: center;
+  }
+  .cierre-dif.ok { display: block; background: var(--accent-soft); color: var(--accent-dark); }
+  .cierre-dif.mal { display: block; background: var(--danger-soft); color: var(--danger); }
+
   .cat-item {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 0; border-bottom: 1px solid var(--line);
@@ -848,7 +869,10 @@
           <div class="sub">entro menos salio</div>
         </div>
       </div>
-      <button class="btn-nuevo solo" id="btnGasto">+ Anotar un gasto</button>
+      <div class="dos-arriba">
+        <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
+        <button class="btn-nuevo gris" id="btnCierre">Cerrar caja</button>
+      </div>
       <div class="seccion">Ventas</div>
       <div id="listaVentas"></div>
       <div class="seccion">Gastos</div>
@@ -1078,6 +1102,35 @@
     </div>
     <button class="btn-ppal" id="btnGuardarStock">Confirmar</button>
     <button class="btn-sec" id="btnCerrarStock">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCierre">
+  <div class="modal">
+    <h3>Cierre de caja</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subCierre"></p>
+    <div id="msgCierre"></div>
+
+    <div class="cierre-linea"><span>Habia al abrir</span><b id="ciApertura">$0</b></div>
+    <div class="cierre-linea"><span>Ventas en efectivo</span><b id="ciEfectivo">$0</b></div>
+    <div class="cierre-linea"><span>Cobros de fiados</span><b id="ciPagos">$0</b></div>
+    <div class="cierre-linea gasto"><span>Gastos pagados</span><b id="ciGastos">$0</b></div>
+    <div class="cierre-linea total"><span>Deberia haber</span><b id="ciEsperado">$0</b></div>
+
+    <label>Cuanto contaste en la caja</label>
+    <input type="text" id="ciContado" inputmode="decimal" placeholder="0">
+
+    <div class="cierre-dif" id="ciDiferencia"></div>
+
+    <div class="seccion">No entra a la caja</div>
+    <div class="cierre-linea chico"><span>Transferencias</span><b id="ciTransfer">$0</b></div>
+    <div class="cierre-linea chico"><span>Quedo fiado hoy</span><b id="ciFiado">$0</b></div>
+
+    <label>Notas (opcional)</label>
+    <input type="text" id="ciNotas" placeholder="Ej: falto plata del cambio">
+
+    <button class="btn-ppal" id="btnGuardarCierre">Cerrar la caja</button>
+    <button class="btn-sec" id="btnCerrarCierre">Cancelar</button>
   </div>
 </div>
 
@@ -2424,6 +2477,94 @@ $('btnAnularUltima').onclick = async function () {
     avisar('Venta anulada');
   } catch (e) { avisar(e.message, true); }
   btn.disabled = false; btn.textContent = 'Me equivoque, anular';
+};
+
+/* ══ Cierre de caja ══ */
+
+let datosCierre = null;
+
+$('btnCierre').onclick = async function () {
+  $('msgCierre').innerHTML = '';
+  $('ciContado').value = '';
+  $('ciNotas').value = '';
+  $('ciDiferencia').className = 'cierre-dif';
+  $('modalCierre').classList.add('on');
+
+  try {
+    const d = await api('GET', '/cierre?fecha=' + hoyISO());
+    datosCierre = d;
+
+    $('subCierre').textContent = d.cantidadVentas +
+      (d.cantidadVentas === 1 ? ' venta hoy por ' : ' ventas hoy por ') + plata(d.totalVendido);
+
+    $('ciApertura').textContent = plata(d.apertura);
+    $('ciEfectivo').textContent = plata(d.efectivo);
+    $('ciPagos').textContent = plata(d.pagosRecibidos);
+    $('ciGastos').textContent = '-' + plata(d.gastos);
+    $('ciEsperado').textContent = plata(d.esperado);
+    $('ciTransfer').textContent = plata(d.transferencia);
+    $('ciFiado').textContent = plata(d.fiado);
+
+    if (d.cierre) {
+      $('ciContado').value = d.cierre.contado;
+      $('ciNotas').value = d.cierre.notas || '';
+      calcularDiferencia();
+      $('msgCierre').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Hoy ya cerraste la caja. Si guardas de nuevo, se reemplaza.</div>';
+    }
+  } catch (e) {
+    $('msgCierre').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+};
+
+function calcularDiferencia() {
+  if (!datosCierre) return;
+  const contado = num($('ciContado').value);
+  const el = $('ciDiferencia');
+
+  if ($('ciContado').value.trim() === '') { el.className = 'cierre-dif'; return; }
+
+  const dif = contado - datosCierre.esperado;
+  if (Math.abs(dif) < 1) {
+    el.className = 'cierre-dif ok';
+    el.textContent = 'Justo, la caja cierra perfecto';
+  } else if (dif > 0) {
+    el.className = 'cierre-dif ok';
+    el.textContent = 'Sobran ' + plata(dif);
+  } else {
+    el.className = 'cierre-dif mal';
+    el.textContent = 'Faltan ' + plata(-dif);
+  }
+}
+$('ciContado').addEventListener('input', calcularDiferencia);
+
+$('btnCerrarCierre').onclick = function () { $('modalCierre').classList.remove('on'); };
+
+$('btnGuardarCierre').onclick = async function () {
+  if (!datosCierre) return;
+  const contado = num($('ciContado').value);
+  if ($('ciContado').value.trim() === '') {
+    $('msgCierre').innerHTML = '<div class="msg">Poné cuanto contaste en la caja.</div>';
+    return;
+  }
+
+  const btn = $('btnGuardarCierre');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const r = await api('POST', '/cierre', {
+      fecha: datosCierre.fecha,
+      contado: contado,
+      esperado: datosCierre.esperado,
+      apertura: datosCierre.apertura,
+      notas: $('ciNotas').value.trim() || null
+    });
+    $('modalCierre').classList.remove('on');
+    avisar(Math.abs(r.diferencia) < 1 ? 'Caja cerrada, todo justo'
+      : r.diferencia > 0 ? 'Caja cerrada, sobraron ' + plata(r.diferencia)
+      : 'Caja cerrada, faltaron ' + plata(-r.diferencia));
+  } catch (e) {
+    $('msgCierre').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Cerrar la caja';
 };
 
 /* ══ Vuelto ══ */
