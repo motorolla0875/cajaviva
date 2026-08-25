@@ -116,4 +116,57 @@ router.get('/por-dia', (req, res) => {
   res.json(filas);
 });
 
+
+// ── rendimiento de los empleados ──
+router.get('/empleados', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const desde = req.query.desde || menosDias(29);
+  const hasta = req.query.hasta || hoyISO();
+
+  const filas = db.prepare(`
+    SELECT
+      COALESCE(e.id, 'dueno') AS id,
+      COALESCE(e.nombre, 'Vos (dueño)') AS nombre,
+      COUNT(v.id) AS ventas,
+      COALESCE(SUM(v.total), 0) AS facturado,
+      COALESCE(SUM(v.total - v.costo_total), 0) AS ganancia,
+      COALESCE(AVG(v.total), 0) AS promedio,
+      COUNT(DISTINCT v.fecha) AS dias
+    FROM ventas v
+    LEFT JOIN empleados e ON e.id = v.empleado_id
+    WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
+    GROUP BY COALESCE(e.id, 'dueno')
+    ORDER BY facturado DESC
+  `).all(req.userId, desde, hasta);
+
+  filas.forEach(function (f) {
+    f.porDia = f.dias > 0 ? f.facturado / f.dias : 0;
+  });
+
+  res.json(filas);
+});
+
+// ── detalle diario de un empleado ──
+router.get('/empleados/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const desde = req.query.desde || menosDias(29);
+  const hasta = req.query.hasta || hoyISO();
+  const cond = req.params.id === 'dueno' ? 'v.empleado_id IS NULL' : 'v.empleado_id = ?';
+  const args = req.params.id === 'dueno'
+    ? [req.userId, desde, hasta]
+    : [req.userId, desde, hasta, req.params.id];
+
+  const filas = db.prepare(`
+    SELECT v.fecha, COUNT(*) AS ventas,
+           COALESCE(SUM(v.total), 0) AS facturado
+    FROM ventas v
+    WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ? AND ${cond}
+    GROUP BY v.fecha ORDER BY v.fecha DESC
+  `).all(...args);
+
+  res.json(filas);
+});
+
 module.exports = router;

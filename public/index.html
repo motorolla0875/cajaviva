@@ -1053,6 +1053,7 @@
         <button class="on" data-tab="vendidos">Mas vendidos</button>
         <button data-tab="reponer">Que comprar</button>
         <button data-tab="quietos">No se venden</button>
+        <button data-tab="empleados">Por empleado</button>
       </div>
 
       <div id="repContenido"></div>
@@ -3848,6 +3849,21 @@ async function cargarReportes() {
             '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
         }).join('');
       window._listaReponer = d.items;
+
+    } else if (repTab === 'empleados') {
+      const d = await api('GET', '/reportes/empleados' + qs);
+      if (d.length === 0) { cont.innerHTML = '<div class="vacio">No hay ventas en este periodo.</div>'; return; }
+
+      cont.innerHTML = d.map(function (e, n) {
+        return '<div class="rep-item">' +
+          '<div class="rep-pos' + (n === 0 ? ' top' : '') + '">' + (n + 1) + '</div>' +
+          '<div class="datos"><div class="n">' + esc(e.nombre) + '</div>' +
+          '<div class="d">' + e.ventas + (e.ventas === 1 ? ' venta' : ' ventas') +
+            ' en ' + e.dias + (e.dias === 1 ? ' dia' : ' dias') +
+            ' - promedio ' + plata(e.promedio) + ' por venta</div>' +
+          '<div class="g">' + plata(e.porDia) + ' por dia trabajado</div></div>' +
+          '<div class="cifra"><b>' + plata(e.facturado) + '</b><span>vendido</span></div></div>';
+      }).join('');
 
     } else {
       const d = await api('GET', '/reportes/sin-movimiento' + qs);
