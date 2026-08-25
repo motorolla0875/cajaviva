@@ -128,6 +128,12 @@
     font-size: 15px; font-weight: 500; text-transform: uppercase;
   }
 
+  .aviso-offline {
+    background: #FDF3E3; border-bottom: 1px solid var(--warn);
+    padding: 9px 18px; font-size: 12.5px; color: #8A5A0F;
+    display: none; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+
   .aviso-asegurar {
     background: var(--accent-soft); border-bottom: 1px solid var(--accent);
     padding: 10px 18px; font-size: 12.5px; color: var(--accent-dark);
@@ -506,6 +512,10 @@
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
     <button class="yo" id="btnYo">?</button>
   </header>
+
+  <div class="aviso-offline" id="avisoOffline">
+    <span>Sin conexion. Estas viendo los ultimos datos guardados.</span>
+  </div>
 
   <div class="aviso-asegurar" id="avisoAsegurar" style="display:none;">
     <span>Tu cuenta solo funciona en este dispositivo. Ponele usuario y contrasena para no perderla.</span>
@@ -918,6 +928,46 @@ function avisar(texto, esError) {
   setTimeout(function () { el.className = 'aviso'; }, 2200);
 }
 
+/* ══ Guardado local (offline) ══ */
+
+const LOCAL = {
+  guardar: function (clave, valor) {
+    try { localStorage.setItem('cv_' + clave, JSON.stringify(valor)); } catch (e) {}
+  },
+  leer: function (clave, porDefecto) {
+    try {
+      const v = localStorage.getItem('cv_' + clave);
+      return v ? JSON.parse(v) : porDefecto;
+    } catch (e) { return porDefecto; }
+  },
+  borrar: function (clave) {
+    try { localStorage.removeItem('cv_' + clave); } catch (e) {}
+  }
+};
+
+let sinConexion = false;
+
+function marcarConexion(hayRed) {
+  sinConexion = !hayRed;
+  const el = $('avisoOffline');
+  if (el) el.style.display = hayRed ? 'none' : 'flex';
+}
+
+window.addEventListener('online', function () { marcarConexion(true); sincronizar(); });
+window.addEventListener('offline', function () { marcarConexion(false); });
+
+async function sincronizar() {
+  if (!token) return;
+  try {
+    await cargarCategorias();
+    await cargarProveedores();
+    await cargarProductos();
+    await cargarClientes();
+    await cargarResumen();
+    marcarConexion(true);
+  } catch (e) { marcarConexion(false); }
+}
+
 /* ══ Sesion ══ */
 
 function mostrar(cual) {
@@ -935,6 +985,7 @@ function cerrarSesion() {
 
 function aplicarUsuario(d) {
   usuario = d.user; negocio = d.negocio;
+  LOCAL.guardar('sesion', d);
   const nombre = usuario.username || 'Mi negocio';
   $('btnYo').textContent = nombre.charAt(0);
   const sinAsegurar = !usuario.username;
@@ -998,15 +1049,32 @@ $('btnEmpezar').onclick = async function () {
   }
 };
 
+function usarDatosGuardados() {
+  categorias = LOCAL.leer('categorias', []);
+  proveedores = LOCAL.leer('proveedores', []);
+  productos = LOCAL.leer('productos', []);
+  clientes = LOCAL.leer('clientes', []);
+  pintarChips(); pintarSelectCategorias(); pintarListaCat();
+  pintarListaProv(); pintarSelectProv();
+  pintarGrilla(); pintarLista();
+  pintarClientes(); pintarSelectClientes();
+}
+
 async function arrancarApp() {
   mostrar('app');
   aplicarCapacidades();
   pintarCarrito();
-  await cargarCategorias();
-  await cargarProveedores();
-  await cargarProductos();
-  await cargarClientes();
-  await cargarResumen();
+  usarDatosGuardados();
+  try {
+    await cargarCategorias();
+    await cargarProveedores();
+    await cargarProductos();
+    await cargarClientes();
+    await cargarResumen();
+    marcarConexion(true);
+  } catch (e) {
+    marcarConexion(false);
+  }
 }
 
 $('btnEntrar').onclick = async function () {
@@ -1136,6 +1204,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
 
 async function cargarCategorias() {
   categorias = await api('GET', '/categorias');
+  LOCAL.guardar('categorias', categorias);
   pintarChips(); pintarSelectCategorias(); pintarListaCat();
 }
 
@@ -1213,11 +1282,13 @@ async function borrarCat(id) {
 
 async function cargarProductos() {
   productos = await api('GET', '/productos');
+  LOCAL.guardar('productos', productos);
   pintarGrilla(); pintarLista();
 }
 
 async function cargarClientes() {
   clientes = await api('GET', '/clientes');
+  LOCAL.guardar('clientes', clientes);
   pintarClientes(); pintarSelectClientes();
 }
 
@@ -1538,6 +1609,7 @@ $('btnGuardarStock').onclick = async function () {
 
 async function cargarProveedores() {
   proveedores = await api('GET', '/proveedores');
+  LOCAL.guardar('proveedores', proveedores);
   pintarListaProv();
   pintarSelectProv();
 }
@@ -1884,6 +1956,16 @@ $('btnGuardarGasto').onclick = async function () {
       await arrancarApp();
       return;
     } catch (e) {
+      // sin red: entrar igual con lo ultimo guardado
+      const guardada = LOCAL.leer('sesion', null);
+      if (guardada && guardada.user) {
+        usuario = guardada.user; negocio = guardada.negocio;
+        const n = usuario.username || 'Mi negocio';
+        $('btnYo').textContent = n.charAt(0);
+        await arrancarApp();
+        marcarConexion(false);
+        return;
+      }
       localStorage.removeItem('cajaviva_token');
       token = null;
     }
