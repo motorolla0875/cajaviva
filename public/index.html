@@ -516,6 +516,20 @@
     .manija span {
       width: 42px; height: 4px; border-radius: 2px; background: var(--line);
     }
+
+    /* colapsado: solo se ve el total */
+    .der.chico h2,
+    .der.chico .lineas,
+    .der.chico .cobrar-fila,
+    .der.chico .nota-desc,
+    .der.chico .vuelto-box,
+    .der.chico .medios,
+    .der.chico .selector-cliente,
+    .der.chico .btn-cobrar,
+    .der.chico .btn-limpiar { display: none !important; }
+    .der.chico { height: auto !important; }
+    .der.chico .pie { border-top: none; padding: 4px 16px 14px; }
+    .der.chico .total-row { margin-bottom: 0; }
     .manija:active span { background: var(--accent); }
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
     #v-vender .grilla { overflow-y: auto; }
@@ -2094,28 +2108,24 @@ function encontroCodigo(codigo) {
 }
 
 
-/* ══ Panel de venta: un toque lo sube o lo baja ══ */
+/* ══ Panel de venta: un toque lo abre o lo cierra ══ */
 
 (function () {
   const manija = document.getElementById('manija');
   const panel = document.querySelector('#v-vender .der');
   if (!manija || !panel) return;
 
-  const CHICO = 30, GRANDE = 62;
-
-  function fijar(v) {
-    panel.style.height = v + 'dvh';
-    try { localStorage.setItem('cv_altoPanel', v); } catch (e) {}
+  function aplicar(cerrado) {
+    panel.classList.toggle('chico', cerrado);
+    try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  let inicial = CHICO;
-  try { inicial = parseInt(localStorage.getItem('cv_altoPanel')) || CHICO; } catch (e) {}
-  fijar(inicial);
+  let cerrado = false;
+  try { cerrado = localStorage.getItem('cv_panelCerrado') === '1'; } catch (e) {}
+  aplicar(cerrado);
 
   manija.addEventListener('click', function () {
-    let actual = CHICO;
-    try { actual = parseInt(localStorage.getItem('cv_altoPanel')) || CHICO; } catch (e) {}
-    fijar(actual === CHICO ? GRANDE : CHICO);
+    aplicar(!panel.classList.contains('chico'));
   });
 })();
 
