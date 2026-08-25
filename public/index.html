@@ -944,8 +944,28 @@
     .dos-arriba .btn-nuevo.gris { padding: 13px 8px; }
     .dos-arriba .btn-nuevo:first-child { grid-column: 1 / -1; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-    .prod.con-foto { grid-column: 1 / -1; min-height: 0; }
-    .prod.con-foto .foto-mini { height: 110px; }
+
+    /* con foto: una fila entera, imagen a la izquierda */
+    .prod.con-foto {
+      grid-column: 1 / -1;
+      flex-direction: row; align-items: center; gap: 12px;
+      min-height: 0; padding: 11px 13px; text-align: left;
+    }
+    .prod.con-foto .foto-mini {
+      width: 62px; height: 62px; flex-shrink: 0;
+      margin-bottom: 0; border-radius: 9px;
+    }
+    .prod.con-foto .n {
+      font-size: 14.5px; margin: 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .prod.con-foto .s { font-size: 12px; margin: 2px 0 0; }
+    .prod.con-foto .p {
+      font-size: 16.5px; margin: 0 0 0 auto; flex-shrink: 0; align-self: center;
+    }
+    .prod.con-foto .en-carrito { top: 50%; transform: translateY(-50%); right: 12px; }
+    .prod.con-foto .reponer-rapido { bottom: auto; top: 50%; transform: translateY(-50%); right: 50px; }
+    .prod.con-foto .datos-txt { flex: 1; min-width: 0; }
     header { padding: 12px 14px; }
     nav button { font-size: 12.5px; }
     .rubros { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
@@ -2439,10 +2459,12 @@ function pintarGrilla() {
     const tieneFoto = !!(p.foto_mini || p.foto_url);
     return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
-      (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      (tieneFoto ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      (tieneFoto ? '<div class="datos-txt">' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
+      (tieneFoto ? '</div>' : '') +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
