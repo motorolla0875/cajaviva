@@ -3389,8 +3389,21 @@ async function pedirPreview() {
 }
 
 $('btnAplicarPrecios').onclick = async function () {
-  if ($('prValor').value.trim() === '') {
-    $('msgPrecios').innerHTML = '<div class="msg">Poné un valor.</div>'; return;
+  const txt = $('prValor').value.trim();
+  if (txt === '') {
+    $('msgPrecios').innerHTML = '<div class="msg">Poné un valor antes de aplicar.</div>'; return;
+  }
+  const valorNum = num(txt);
+  const modo = $('prModo').value;
+
+  if ((modo === 'porcentaje' || modo === 'monto') && valorNum === 0) {
+    $('msgPrecios').innerHTML = '<div class="msg">El valor no puede ser 0.</div>'; return;
+  }
+  if ((modo === 'fijar' || modo === 'margen') && valorNum <= 0) {
+    $('msgPrecios').innerHTML = '<div class="msg">El valor tiene que ser mayor a 0.</div>'; return;
+  }
+  if (modo === 'porcentaje' && Math.abs(valorNum) > 100) {
+    if (!confirm('Un cambio de ' + valorNum + '% es muy grande. Seguro?')) return;
   }
   const cat = $('prCategoria').value;
   const nombreCat = cat ? $('prCategoria').options[$('prCategoria').selectedIndex].text : 'todos los productos';
@@ -3400,8 +3413,8 @@ $('btnAplicarPrecios').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Aplicando...';
   try {
     const r = await api('POST', '/productos/precios-lote', {
-      categoriaId: cat || null, campo: prCampo, modo: $('prModo').value,
-      valor: num($('prValor').value), redondeo: parseInt($('prRedondeo').value)
+      categoriaId: cat || null, campo: prCampo, modo: modo,
+      valor: valorNum, redondeo: parseInt($('prRedondeo').value)
     });
     await cargarProductos();
     $('modalPrecios').classList.remove('on');
