@@ -191,8 +191,11 @@
 
   .chips {
     display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
-    margin-bottom: 4px; flex-shrink: 0; scrollbar-width: none;
+    margin-bottom: 4px; flex-shrink: 0; scrollbar-width: thin;
+    max-width: 100%; -webkit-overflow-scrolling: touch;
   }
+  .chips::-webkit-scrollbar { height: 5px; }
+  .chips::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
   .chips::-webkit-scrollbar { display: none; }
   .chips button {
     flex-shrink: 0; padding: 8px 14px; border-radius: 20px;
