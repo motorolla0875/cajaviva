@@ -189,6 +189,19 @@
   #lectorCam { width: 100%; border-radius: 12px; overflow: hidden; }
   #lectorCam video { width: 100% !important; border-radius: 12px; }
 
+  .chips-wrap { position: relative; flex-shrink: 0; }
+  .chip-flecha {
+    display: none; position: absolute; top: 0; z-index: 5;
+    width: 30px; height: 36px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--muted);
+    font-size: 18px; line-height: 1; border-radius: 8px;
+  }
+  .chip-flecha.izq { left: 0; }
+  .chip-flecha.der { right: 0; }
+  .chip-flecha.ver { display: block; }
+  .chips-wrap.con-izq .chips { padding-left: 34px; }
+  .chips-wrap.con-der .chips { padding-right: 34px; }
+
   .chips {
     display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
     margin-bottom: 4px; flex-shrink: 0; scrollbar-width: thin;
@@ -684,7 +697,11 @@
         <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
         <button id="btnEscanear" title="Escanear codigo">&#9974;</button>
       </div>
-      <div class="chips" id="chipsCat"></div>
+      <div class="chips-wrap">
+        <button class="chip-flecha izq" id="chipIzq">&#8249;</button>
+        <div class="chips" id="chipsCat"></div>
+        <button class="chip-flecha der" id="chipDer">&#8250;</button>
+      </div>
       <div class="grilla" id="grilla"></div>
     </div>
     <div class="der">
@@ -1547,9 +1564,12 @@ function pintarChips() {
       return '<button class="' + (catFiltro === c.id ? 'on' : '') + '" onclick="filtrarCat(\'' + c.id + '\')">' +
         esc(c.nombre) + '</button>';
     }).join('');
+  refrescarFlechas();
 }
 
 function filtrarCat(id) { catFiltro = id; pintarChips(); pintarGrilla(); }
+
+function refrescarFlechas() { if (window.actualizarFlechasChips) setTimeout(window.actualizarFlechasChips, 60); }
 
 function pintarSelectCategorias() {
   $('pCategoria').innerHTML = '<option value="">Sin categoria</option>' +
@@ -2612,6 +2632,33 @@ $('btnConfirmarImp').onclick = async function () {
 
   btn.disabled = false; btn.textContent = 'Importar';
 };
+
+/* ══ Flechas para las categorias ══ */
+
+(function () {
+  const cont = document.querySelector('.chips-wrap');
+  const chips = document.getElementById('chipsCat');
+  const izq = document.getElementById('chipIzq');
+  const der = document.getElementById('chipDer');
+  if (!cont || !chips) return;
+
+  function actualizar() {
+    const hayIzq = chips.scrollLeft > 4;
+    const hayDer = chips.scrollLeft + chips.clientWidth < chips.scrollWidth - 4;
+    izq.classList.toggle('ver', hayIzq);
+    der.classList.toggle('ver', hayDer);
+    cont.classList.toggle('con-izq', hayIzq);
+    cont.classList.toggle('con-der', hayDer);
+  }
+
+  izq.onclick = function () { chips.scrollBy({ left: -220, behavior: 'smooth' }); };
+  der.onclick = function () { chips.scrollBy({ left: 220, behavior: 'smooth' }); };
+
+  chips.addEventListener('scroll', actualizar);
+  window.addEventListener('resize', actualizar);
+  window.actualizarFlechasChips = actualizar;
+  setTimeout(actualizar, 300);
+})();
 
 /* ══ Vuelto ══ */
 
