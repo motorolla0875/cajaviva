@@ -535,6 +535,25 @@
     color: var(--accent-dark); background: var(--accent-soft);
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
+  .pr-lista { max-height: 260px; overflow-y: auto; }
+  .pr-fila.sel { cursor: pointer; }
+  .pr-fila.off { opacity: .4; }
+  .pr-fila.off .nue { text-decoration: line-through; }
+  .pr-check {
+    width: 20px; height: 20px; flex-shrink: 0; margin-right: 10px;
+    border: 1.5px solid var(--line); border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #fff;
+  }
+  .pr-fila:not(.off) .pr-check { background: var(--accent); border-color: var(--accent); }
+  .pr-acciones {
+    display: flex; gap: 8px; margin: 10px 0 4px; font-size: 12.5px;
+  }
+  .pr-acciones button {
+    flex: 1; padding: 7px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--panel); color: var(--accent-dark);
+  }
+
   .pr-fila {
     display: flex; justify-content: space-between; align-items: center;
     padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px;
@@ -3323,6 +3342,7 @@ function pasaFiltroProd(p) {
 /* ══ Cambiar precios en lote ══ */
 
 let prCampo = 'venta';
+let prExcluidos = {};
 
 $('btnPrecios').onclick = function () {
   $('msgPrecios').innerHTML = '';
@@ -3331,6 +3351,7 @@ $('btnPrecios').onclick = function () {
     categorias.filter(function (c) { return c.cantidad > 0; }).map(function (c) {
       return '<option value="' + c.id + '">' + esc(c.nombre) + ' (' + c.cantidad + ')</option>';
     }).join('');
+  prExcluidos = {}; prItems = [];
   $('prPreview').innerHTML = '<div class="vacio">Poné un valor para ver el resultado.</div>';
   $('modalPrecios').classList.add('on');
 };
@@ -3363,7 +3384,7 @@ function verPreview() {
   timerPreview = setTimeout(pedirPreview, 300);
 }
 $('prValor').addEventListener('input', verPreview);
-$('prCategoria').addEventListener('change', verPreview);
+$('prCategoria').addEventListener('change', function () { prExcluidos = {}; verPreview(); });
 $('prRedondeo').addEventListener('change', verPreview);
 
 async function pedirPreview() {
@@ -3382,14 +3403,46 @@ async function pedirPreview() {
       $('prPreview').innerHTML = '<div class="vacio">No hay productos con ese precio cargado.</div>';
       return;
     }
-    $('prPreview').innerHTML = r.items.map(function (i) {
-      return '<div class="pr-fila"><span class="nom">' + esc(i.nombre) + '</span>' +
-        '<span><span class="ant">' + plata(i.antes) + '</span>' +
-        '<span class="nue">' + plata(i.despues) + '</span></span></div>';
-    }).join('') + '<p class="hint">Se muestran los primeros. Al aplicar se cambian todos.</p>';
+    $('prPreview').innerHTML =
+      '<div class="pr-acciones">' +
+        '<button onclick="marcarTodosPr(true)">Marcar todos</button>' +
+        '<button onclick="marcarTodosPr(false)">Desmarcar todos</button>' +
+      '</div>' +
+      '<div class="pr-lista">' + r.items.map(function (i) {
+        const off = prExcluidos[i.id] ? ' off' : '';
+        return '<div class="pr-fila sel' + off + '" onclick="alternarPr(\'' + i.id + '\')">' +
+          '<span class="pr-check">&#10003;</span>' +
+          '<span class="nom">' + esc(i.nombre) + '</span>' +
+          '<span><span class="ant">' + plata(i.antes) + '</span>' +
+          '<span class="nue">' + plata(i.despues) + '</span></span></div>';
+      }).join('') + '</div>' +
+      '<p class="hint" id="prContador"></p>';
+
+    prItems = r.items;
+    actualizarContadorPr();
   } catch (e) {
     $('prPreview').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
+}
+
+let prItems = [];
+
+function alternarPr(id) {
+  if (prExcluidos[id]) delete prExcluidos[id];
+  else prExcluidos[id] = true;
+  pedirPreview();
+}
+
+function marcarTodosPr(marcar) {
+  if (marcar) prExcluidos = {};
+  else prItems.forEach(function (i) { prExcluidos[i.id] = true; });
+  pedirPreview();
+}
+
+function actualizarContadorPr() {
+  const n = prItems.filter(function (i) { return !prExcluidos[i.id]; }).length;
+  const el = $('prContador');
+  if (el) el.textContent = n + ' de ' + prItems.length + ' productos se van a actualizar';
 }
 
 $('btnAplicarPrecios').onclick = async function () {
@@ -3416,8 +3469,13 @@ $('btnAplicarPrecios').onclick = async function () {
   const btn = $('btnAplicarPrecios');
   btn.disabled = true; btn.textContent = 'Aplicando...';
   try {
+    const elegidos = prItems.filter(function (i) { return !prExcluidos[i.id]; }).map(function (i) { return i.id; });
+    if (elegidos.length === 0) {
+      $('msgPrecios').innerHTML = '<div class="msg">No hay ningun producto marcado.</div>';
+      btn.disabled = false; btn.textContent = 'Aplicar'; return;
+    }
     const r = await api('POST', '/productos/precios-lote', {
-      categoriaId: cat || null, campo: prCampo, modo: modo,
+      ids: elegidos, campo: prCampo, modo: modo,
       valor: valorNum, redondeo: parseInt($('prRedondeo').value)
     });
     await cargarProductos();

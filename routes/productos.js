@@ -210,8 +210,8 @@ router.post('/precios-preview', (req, res) => {
   const col = campo === 'costo' ? 'precio_costo' : 'precio_venta';
 
   const productos = categoriaId
-    ? db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ? LIMIT 8').all(req.userId, categoriaId)
-    : db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 LIMIT 8').all(req.userId);
+    ? db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ? ORDER BY nombre').all(req.userId, categoriaId)
+    : db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 ORDER BY nombre').all(req.userId);
 
   function redondear(n) {
     if (!redondeo || redondeo <= 0) return Math.round(n * 100) / 100;
@@ -228,7 +228,7 @@ router.post('/precios-preview', (req, res) => {
     else if (modo === 'fijar') nuevo = v;
     else if (modo === 'margen') { if (!p.precio_costo) return; nuevo = p.precio_costo * (1 + v / 100); }
     else return;
-    items.push({ nombre: p.nombre, antes: actual, despues: redondear(Math.max(0, nuevo)) });
+    items.push({ id: p.id, nombre: p.nombre, antes: actual, despues: redondear(Math.max(0, nuevo)) });
   });
 
   res.json({ items: items });
