@@ -1964,9 +1964,10 @@ function agregar(id) {
   if (cap('cap_peso') && p.unidad !== 'unidad') { abrirPeso(id); return; }
   const l = carrito.filter(function (x) { return x.productoId === id; })[0];
   const paso = (cap('cap_peso') && p.unidad !== 'unidad') ? 1 : 1;
-  if ((l ? l.cantidad : 0) + paso > p.stock) { avisar('No hay mas stock de ' + p.nombre, true); return; }
+  const quedaria = (l ? l.cantidad : 0) + paso - p.stock;
   if (l) l.cantidad += paso;
   else carrito.push({ productoId: id, nombre: p.nombre, precio: p.precio_venta, cantidad: paso, unidad: p.unidad });
+  if (quedaria > 0) avisar(p.nombre + ': quedaria en -' + fmtCant(quedaria) + ', revisa el stock', true);
   pintarCarrito();
 }
 
@@ -1976,7 +1977,7 @@ function cambiarCantidad(id, delta) {
   const p = productos.filter(function (x) { return x.id === id; })[0];
   const nueva = l.cantidad + delta;
   if (nueva <= 0) carrito = carrito.filter(function (x) { return x.productoId !== id; });
-  else if (p && nueva > p.stock) { avisar('No hay mas stock de ' + p.nombre, true); return; }
+  else { if (p && nueva > p.stock) avisar(p.nombre + ': quedaria en -' + fmtCant(nueva - p.stock), true); }
   else l.cantidad = nueva;
   pintarCarrito();
 }
