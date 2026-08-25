@@ -183,6 +183,17 @@
     <h3 style="margin:14px 0 4px; font-size:20px; font-weight:500;">Pedido enviado</h3>
     <p style="color:var(--muted); font-size:14px; margin:0 0 6px;" id="numeroPedido"></p>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 18px;">Te van a contactar para confirmarlo.</p>
+
+    <div id="zonaComprobante" style="display:none; background:var(--accent-soft); border-radius:12px; padding:16px; margin-bottom:14px; text-align:left;">
+      <div style="font-size:13.5px; color:var(--accent-dark); font-weight:500; margin-bottom:4px;">Ya transferiste?</div>
+      <div style="font-size:12.5px; color:var(--accent-dark); margin-bottom:10px;">Mandanos el comprobante asi lo confirmamos mas rapido.</div>
+      <div id="prevComp" style="display:none; margin-bottom:10px;">
+        <img id="imgComp" style="width:100%; border-radius:9px;">
+      </div>
+      <button id="btnSubirComp" style="width:100%; padding:12px; border:1px solid var(--accent); border-radius:10px; background:var(--panel); color:var(--accent-dark); font-size:14px; font-weight:500;">Subir comprobante</button>
+      <input type="file" id="archComp" accept="image/*" style="display:none;">
+    </div>
+
     <button id="btnAvisarWpp" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Avisar por WhatsApp</button>
     <button onclick="location.reload()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Hacer otro pedido</button>
   </div>
@@ -404,7 +415,10 @@ $('btnEnviarPedido').onclick = async function () {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'No se pudo enviar');
 
+    pedidoCreado = d.id;
     $('numeroPedido').textContent = 'Numero ' + d.numero;
+    document.getElementById('zonaComprobante').style.display =
+      formaPago === 'transferencia' ? 'block' : 'none';
     $('modalPedido').style.display = 'none';
     $('modalListo').style.display = 'block';
 
@@ -418,6 +432,61 @@ $('btnEnviarPedido').onclick = async function () {
     $('msgPedido').innerHTML = '<div style="background:#FBEAEA; color:#C0392B; padding:10px 12px; border-radius:9px; font-size:13px; margin-bottom:12px;">' + esc(e.message) + '</div>';
   }
   btn.disabled = false; btn.textContent = 'Enviar el pedido';
+};
+
+let pedidoCreado = null;
+
+function comprimirComp(archivo, ladoMax, calidad) {
+  return new Promise(function (resolver, fallar) {
+    const lector = new FileReader();
+    lector.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > ladoMax) { h = h * (ladoMax / w); w = ladoMax; } }
+        else { if (h > ladoMax) { w = w * (ladoMax / h); h = ladoMax; } }
+        const c = document.createElement('canvas');
+        c.width = Math.round(w); c.height = Math.round(h);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (b) { b ? resolver(b) : fallar(new Error('error')); }, 'image/webp', calidad);
+      };
+      img.onerror = function () { fallar(new Error('No se pudo leer')); };
+      img.src = e.target.result;
+    };
+    lector.readAsDataURL(archivo);
+  });
+}
+
+document.getElementById('btnSubirComp').onclick = function () {
+  document.getElementById('archComp').click();
+};
+
+document.getElementById('archComp').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f || !pedidoCreado) return;
+
+  const btn = document.getElementById('btnSubirComp');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const chica = await comprimirComp(f, 900, 0.75);
+    const fd = new FormData();
+    fd.append('foto', chica, 'comp.webp');
+
+    const r = await fetch('/api/fotos/comprobante/' + pedidoCreado, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('No se pudo subir');
+
+    document.getElementById('imgComp').src = URL.createObjectURL(chica);
+    document.getElementById('prevComp').style.display = 'block';
+    btn.textContent = 'Comprobante enviado';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+  } catch (err) {
+    alert('No se pudo subir el comprobante');
+    btn.disabled = false; btn.textContent = 'Subir comprobante';
+  }
 };
 
 function verFoto(url) {

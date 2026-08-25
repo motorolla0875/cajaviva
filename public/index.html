@@ -582,6 +582,26 @@
     background: var(--panel-2); color: var(--text);
   }
   .pedido .acc button.ppal { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .comp-box {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel-2); border-radius: 10px;
+    padding: 10px; margin-bottom: 10px;
+  }
+  .comp-box.ok { background: var(--accent-soft); }
+  .comp-box img {
+    width: 52px; height: 52px; border-radius: 8px;
+    object-fit: cover; cursor: pointer; flex-shrink: 0;
+  }
+  .comp-box .comp-txt { flex: 1; min-width: 0; }
+  .comp-box .comp-txt .n { font-size: 13.5px; font-weight: 500; margin-bottom: 4px; }
+  .comp-box .comp-txt button {
+    padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+    border: 1px solid var(--accent); background: var(--panel); color: var(--accent-dark);
+  }
+  .comp-box.vacio-comp {
+    color: var(--muted); font-size: 13px; justify-content: center; padding: 12px;
+  }
+
   .badge-nuevo {
     display: inline-block; background: var(--accent); color: #fff;
     font-size: 10.5px; padding: 2px 7px; border-radius: 10px; margin-left: 6px;
@@ -4881,6 +4901,21 @@ async function cargarPedidos() {
         acc = '<button onclick="cambiarPedido(\'' + p.id + '\',\'nuevo\')">Reactivar</button>';
       }
 
+      let pago = '';
+      if (p.forma_pago === 'transferencia') {
+        if (p.comprobante) {
+          pago = '<div class="comp-box' + (p.pago_estado === 'verificado' ? ' ok' : '') + '">' +
+            '<img src="' + p.comprobante + '" onclick="verComprobante(\'' + p.comprobante + '\')">' +
+            '<div class="comp-txt"><div class="n">' +
+            (p.pago_estado === 'verificado' ? 'Pago verificado' : 'Mando el comprobante') + '</div>' +
+            (p.pago_estado !== 'verificado'
+              ? '<button onclick="verificarPago(\'' + p.id + '\')">Confirmar que llego</button>' : '') +
+            '</div></div>';
+        } else {
+          pago = '<div class="comp-box vacio-comp">Espera el comprobante de transferencia</div>';
+        }
+      }
+
       return '<div class="pedido' + (p.estado === 'nuevo' ? ' nuevo' : '') + '">' +
         '<div class="cab"><div><div class="n">' + esc(p.nombre) +
           (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') + '</div>' +
@@ -4889,7 +4924,7 @@ async function cargarPedidos() {
         (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
         (p.nota ? '<div class="d">Nota: ' + esc(p.nota) + '</div>' : '') +
         '</div><div class="m">' + plata(p.total) + '</div></div>' +
-        '<div class="items">' + detalle + '</div>' +
+        '<div class="items">' + detalle + '</div>' + pago +
         (acc ? '<div class="acc">' + acc + '</div>' : '') +
         '</div>';
     }).join('');
@@ -4907,6 +4942,22 @@ function pintarContadorPedidos(n) {
 function llamarPedido(tel) {
   const t = String(tel).replace(/\D/g, '');
   window.open('https://wa.me/54' + t, '_blank');
+}
+
+function verComprobante(url) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
+  d.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:100%;border-radius:12px;">';
+  d.onclick = function () { d.remove(); };
+  document.body.appendChild(d);
+}
+
+async function verificarPago(id) {
+  try {
+    await api('PUT', '/pedidos/' + id + '/pago', { estado: 'verificado' });
+    await cargarPedidos();
+    avisar('Pago confirmado');
+  } catch (e) { avisar(e.message, true); }
 }
 
 async function cambiarPedido(id, estado) {

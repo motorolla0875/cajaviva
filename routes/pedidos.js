@@ -34,6 +34,9 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN titular_pago TEXT'); } catch (e) {
 try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_transferencia INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_efectivo INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
+try { db.exec('ALTER TABLE pedidos_web ADD COLUMN comprobante TEXT'); } catch (e) {}
+try { db.exec("ALTER TABLE pedidos_web ADD COLUMN pago_estado TEXT NOT NULL DEFAULT 'pendiente'"); } catch (e) {}
+
 function hoyISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── el cliente manda el pedido (publico) ──
@@ -149,6 +152,19 @@ router.post('/:id/vender', (req, res) => {
 
   db.prepare("UPDATE pedidos_web SET estado = 'entregado', venta_id = ? WHERE id = ?").run(ventaId, p.id);
   res.json({ ventaId: ventaId, total: p.total });
+});
+
+
+// ── confirmar que la plata llego ──
+router.put('/:id/pago', (req, res) => {
+  const p = db.prepare('SELECT * FROM pedidos_web WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!p) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+  const estado = ['pendiente', 'enviado', 'verificado'].indexOf(req.body?.estado) >= 0
+    ? req.body.estado : 'verificado';
+
+  db.prepare('UPDATE pedidos_web SET pago_estado = ? WHERE id = ?').run(estado, p.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

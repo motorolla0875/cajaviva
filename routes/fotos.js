@@ -74,4 +74,23 @@ router.get('/uso', (req, res) => {
   res.json({ conFoto: conFoto.n });
 });
 
+
+// ── comprobante de pago de un pedido (publico) ──
+router.post('/comprobante/:pedidoId', subir.single('foto'), (req, res) => {
+  const ped = db.prepare('SELECT * FROM pedidos_web WHERE id = ?').get(req.params.pedidoId);
+  if (!ped) return res.status(404).json({ error: 'Pedido no encontrado.' });
+  if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
+
+  const nombre = uuidv4() + '-comp.webp';
+  guardarArchivo(req.file.buffer, nombre);
+
+  try { db.exec('ALTER TABLE pedidos_web ADD COLUMN comprobante TEXT'); } catch (e) {}
+  try { db.exec("ALTER TABLE pedidos_web ADD COLUMN pago_estado TEXT NOT NULL DEFAULT 'pendiente'"); } catch (e) {}
+
+  db.prepare("UPDATE pedidos_web SET comprobante = ?, pago_estado = 'enviado' WHERE id = ?")
+    .run('/fotos/' + nombre, ped.id);
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
