@@ -2323,6 +2323,20 @@ function encontroCodigo(codigo) {
   function aplicar(cerrado) {
     panel.classList.toggle('chico', cerrado);
     vista.classList.toggle('grilla-visible', cerrado);
+
+    // ocultar/mostrar a mano, sin depender del CSS
+    const ocultar = ['h2', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
+                     '.medios', '.selector-cliente', '.btn-cobrar', '.btn-limpiar'];
+    ocultar.forEach(function (sel) {
+      const el = panel.querySelector(sel);
+      if (el) el.style.display = cerrado ? 'none' : '';
+    });
+
+    const ci = document.getElementById('cantItems');
+    if (ci) ci.style.display = cerrado ? 'block' : 'none';
+    const lbl = panel.querySelector('.total-row .lbl');
+    if (lbl) lbl.style.display = cerrado ? 'none' : '';
+
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
