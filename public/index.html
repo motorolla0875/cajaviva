@@ -404,7 +404,7 @@
     color: var(--text); font-size: 15px;
   }
 
-  .dos-arriba { display: flex; gap: 8px; margin-bottom: 14px; flex-shrink: 0; }
+  .dos-arriba { display: flex; gap: 8px; margin-bottom: 14px; flex-shrink: 0; flex-wrap: wrap; }
   .btn-nuevo {
     flex: 1; padding: 14px;
     border: 1px solid var(--accent); border-radius: var(--radius);
@@ -746,6 +746,10 @@
     .btn-cobrar { padding: 14px; }
     .btn-limpiar { padding: 7px; margin-top: 4px; }
     .izq, .lista-wrap { padding: 12px; }
+    .dos-arriba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dos-arriba .btn-nuevo { flex: none; width: 100%; padding: 13px 8px; font-size: 14px; }
+    .dos-arriba .btn-nuevo.gris { padding: 13px 8px; }
+    .dos-arriba .btn-nuevo:first-child { grid-column: 1 / -1; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     header { padding: 12px 14px; }
     nav button { font-size: 12.5px; }
