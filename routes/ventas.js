@@ -144,4 +144,84 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── quitar un item de una venta ya hecha (devolucion parcial) ──
+router.delete('/:ventaId/items/:itemId', (req, res) => {
+  const venta = db.prepare('SELECT * FROM ventas WHERE id = ? AND user_id = ?').get(req.params.ventaId, req.userId);
+  if (!venta) return res.status(404).json({ error: 'Venta no encontrada.' });
+
+  const item = db.prepare('SELECT * FROM venta_items WHERE id = ? AND venta_id = ?').get(req.params.itemId, venta.id);
+  if (!item) return res.status(404).json({ error: 'Producto no encontrado en la venta.' });
+
+  const quedan = db.prepare('SELECT COUNT(*) AS n FROM venta_items WHERE venta_id = ?').get(venta.id);
+  if (quedan.n <= 1) return res.status(400).json({ error: 'Es el unico producto. Anula la venta entera.' });
+
+  // devolver el stock
+  if (item.producto_id) {
+    db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(item.cantidad, item.producto_id);
+  }
+
+  const resta = item.precio_unitario * item.cantidad;
+  const restaCosto = item.costo_unitario * item.cantidad;
+  const nuevoTotal = Math.max(0, venta.total - resta);
+
+  db.prepare('DELETE FROM venta_items WHERE id = ?').run(item.id);
+
+  // si era fiada, baja la deuda del cliente
+  if (venta.cliente_id && venta.monto_pagado < venta.total) {
+    const bajaDeuda = Math.min(resta, venta.total - venta.monto_pagado);
+    db.prepare('UPDATE clientes SET saldo = saldo - ? WHERE id = ?').run(bajaDeuda, venta.cliente_id);
+  }
+
+  const nuevoPagado = Math.min(venta.monto_pagado, nuevoTotal);
+
+  db.prepare(`
+    UPDATE ventas SET total = ?, costo_total = ?, monto_pagado = ?,
+      estado = CASE WHEN ? >= ? THEN 'cobrada' ELSE 'pendiente' END
+    WHERE id = ?
+  `).run(nuevoTotal, Math.max(0, venta.costo_total - restaCosto), nuevoPagado,
+         nuevoPagado, nuevoTotal, venta.id);
+
+  res.json({ ok: true, nuevoTotal: nuevoTotal });
+});
+
+// ── cambiar la cantidad de un item ──
+router.put('/:ventaId/items/:itemId', (req, res) => {
+  const venta = db.prepare('SELECT * FROM ventas WHERE id = ? AND user_id = ?').get(req.params.ventaId, req.userId);
+  if (!venta) return res.status(404).json({ error: 'Venta no encontrada.' });
+
+  const item = db.prepare('SELECT * FROM venta_items WHERE id = ? AND venta_id = ?').get(req.params.itemId, venta.id);
+  if (!item) return res.status(404).json({ error: 'Producto no encontrado.' });
+
+  const nueva = parseFloat(req.body?.cantidad);
+  if (isNaN(nueva) || nueva <= 0) return res.status(400).json({ error: 'Cantidad no valida.' });
+
+  const dif = nueva - item.cantidad;
+
+  if (item.producto_id) {
+    db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(dif, item.producto_id);
+  }
+
+  const restaPrecio = item.precio_unitario * dif;
+  const restaCosto = item.costo_unitario * dif;
+  const nuevoTotal = Math.max(0, venta.total + restaPrecio);
+
+  db.prepare('UPDATE venta_items SET cantidad = ? WHERE id = ?').run(nueva, item.id);
+
+  if (venta.cliente_id && venta.monto_pagado < venta.total) {
+    db.prepare('UPDATE clientes SET saldo = saldo + ? WHERE id = ?').run(restaPrecio, venta.cliente_id);
+  }
+
+  const nuevoPagado = Math.min(venta.monto_pagado, nuevoTotal);
+
+  db.prepare(`
+    UPDATE ventas SET total = ?, costo_total = ?, monto_pagado = ?,
+      estado = CASE WHEN ? >= ? THEN 'cobrada' ELSE 'pendiente' END
+    WHERE id = ?
+  `).run(nuevoTotal, Math.max(0, venta.costo_total + restaCosto), nuevoPagado,
+         nuevoPagado, nuevoTotal, venta.id);
+
+  res.json({ ok: true, nuevoTotal: nuevoTotal });
+});
+
 module.exports = router;

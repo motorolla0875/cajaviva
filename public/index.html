@@ -1105,6 +1105,18 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalVenta">
+  <div class="modal">
+    <h3>Detalle de la venta</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subVentaDet"></p>
+    <div id="msgVentaDet"></div>
+    <div id="itemsVentaDet"></div>
+    <div class="cierre-linea total"><span>Total</span><b id="totalVentaDet">$0</b></div>
+    <button class="btn-del" id="btnAnularVentaDet">Anular la venta entera</button>
+    <button class="btn-sec" id="btnCerrarVentaDet">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalCierre">
   <div class="modal">
     <h3>Cierre de caja</h3>
@@ -2567,6 +2579,89 @@ $('btnGuardarCierre').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Cerrar la caja';
 };
 
+/* ══ Ver y editar una venta ══ */
+
+let ventaAbierta = null;
+
+async function verVenta(id) {
+  const r = rango();
+  try {
+    const ventas = await api('GET', '/ventas?desde=' + r.desde + '&hasta=' + r.hasta);
+    const v = ventas.filter(function (x) { return x.id === id; })[0];
+    if (!v) { avisar('No se encontro la venta', true); return; }
+    ventaAbierta = v;
+    pintarVentaDet();
+    $('modalVenta').classList.add('on');
+  } catch (e) { avisar(e.message, true); }
+}
+
+function pintarVentaDet() {
+  const v = ventaAbierta;
+  const medio = v.medio_pago === 'efectivo' ? 'Efectivo'
+    : v.medio_pago === 'transferencia' ? 'Transferencia'
+    : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
+
+  $('subVentaDet').textContent = fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' - ' + medio +
+    (v.cliente_nombre ? ' - ' + v.cliente_nombre : '');
+  $('msgVentaDet').innerHTML = '';
+
+  $('itemsVentaDet').innerHTML = v.items.map(function (i) {
+    return '<div class="linea" style="padding:12px 0; border-bottom:1px solid var(--line);">' +
+      '<div class="info"><div class="n">' + esc(i.nombre) + '</div>' +
+      '<div class="d">' + plata(i.precio_unitario) + ' c/u</div></div>' +
+      '<div class="cant">' +
+        '<button onclick="cambiarItemVenta(\'' + i.id + '\', -1)">-</button>' +
+        '<span>' + fmtCant(i.cantidad) + '</span>' +
+        '<button onclick="cambiarItemVenta(\'' + i.id + '\', 1)">+</button>' +
+      '</div>' +
+      '<div class="sub">' + plata(i.precio_unitario * i.cantidad) + '</div>' +
+      '<button class="quitar-linea" onclick="quitarItemVenta(\'' + i.id + '\')">&#10005;</button></div>';
+  }).join('');
+
+  $('totalVentaDet').textContent = plata(v.total);
+}
+
+async function cambiarItemVenta(itemId, delta) {
+  const it = ventaAbierta.items.filter(function (x) { return x.id === itemId; })[0];
+  if (!it) return;
+  const nueva = it.cantidad + delta;
+  if (nueva <= 0) { quitarItemVenta(itemId); return; }
+
+  try {
+    await api('PUT', '/ventas/' + ventaAbierta.id + '/items/' + itemId, { cantidad: nueva });
+    await refrescarTrasEditar();
+  } catch (e) { $('msgVentaDet').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+}
+
+async function quitarItemVenta(itemId) {
+  if (!confirm('Sacar este producto de la venta? El stock vuelve.')) return;
+  try {
+    await api('DELETE', '/ventas/' + ventaAbierta.id + '/items/' + itemId);
+    await refrescarTrasEditar();
+  } catch (e) { $('msgVentaDet').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+}
+
+async function refrescarTrasEditar() {
+  const id = ventaAbierta.id;
+  await cargarProductos(); await cargarResumen(); await cargarClientes();
+  await cargarCaja();
+  await verVenta(id);
+  avisar('Venta actualizada');
+}
+
+$('btnAnularVentaDet').onclick = async function () {
+  if (!ventaAbierta) return;
+  if (!confirm('Anular la venta entera? Todo el stock vuelve.')) return;
+  try {
+    await api('DELETE', '/ventas/' + ventaAbierta.id);
+    await cargarProductos(); await cargarResumen(); await cargarClientes(); await cargarCaja();
+    $('modalVenta').classList.remove('on');
+    avisar('Venta anulada');
+  } catch (e) { avisar(e.message, true); }
+};
+
+$('btnCerrarVentaDet').onclick = function () { $('modalVenta').classList.remove('on'); };
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -2800,7 +2895,8 @@ async function cargarCaja() {
         const medio = v.medio_pago === 'efectivo' ? 'Efectivo'
           : v.medio_pago === 'transferencia' ? 'Transferencia'
           : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
-        return '<div class="mov"><div class="info"><div class="n">' + esc(detalle) + '</div>' +
+        return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="verVenta(\'' + v.id + '\')">' +
+          '<div class="n">' + esc(detalle) + '</div>' +
           '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
             (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') + '</div></div>' +
           '<div class="monto">' + plata(v.total) + '</div>' +
