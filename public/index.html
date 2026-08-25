@@ -871,6 +871,7 @@
     <div id="pasoMapeo" style="display:none;">
       <div class="seccion">Que columna es cada cosa</div>
       <div id="camposMapeo"></div>
+      <div id="avisoTipo"></div>
       <div class="seccion">Vista previa</div>
       <div id="vistaPrevia" style="overflow-x:auto; font-size:12.5px;"></div>
       <button class="btn-ppal" id="btnConfirmarImp">Importar</button>
@@ -2575,6 +2576,7 @@ function pintarPrevia() {
     (impFilas.length === 1 ? ' fila en el archivo' : ' filas en el archivo') + '</p>';
 
   $('vistaPrevia').innerHTML = html;
+  revisarCoherencia();
 }
 
 $('btnConfirmarImp').onclick = async function () {
@@ -2584,6 +2586,11 @@ $('btnConfirmarImp').onclick = async function () {
     $('msgImportar').innerHTML = '<div class="msg">Falta indicar: ' +
       faltan.map(function (c) { return c[1]; }).join(', ') + '</div>';
     return;
+  }
+
+  if (!revisarCoherencia()) {
+    const tipoTxt = impTipo === 'productos' ? 'productos' : 'clientes';
+    if (!confirm('El archivo no parece una lista de ' + tipoTxt + '. Importar igual?')) return;
   }
 
   const filas = impFilas.map(function (fila) {
@@ -2659,6 +2666,54 @@ $('btnConfirmarImp').onclick = async function () {
   window.actualizarFlechasChips = actualizar;
   setTimeout(actualizar, 300);
 })();
+
+// Avisa si el archivo no parece del tipo que se esta importando.
+// Ej: subir la lista de clientes desde Productos.
+function revisarCoherencia() {
+  const el = $('avisoTipo');
+  if (!el) return true;
+  el.innerHTML = '';
+
+  const iNombre = $('map_nombre') ? $('map_nombre').value : '';
+  if (iNombre === '') return true;
+
+  const muestra = impFilas.slice(0, 20);
+  let sospechas = [];
+
+  if (impTipo === 'productos') {
+    // sin precio real no es una lista de productos
+    const iPrecio = $('map_precioVenta') ? $('map_precioVenta').value : '';
+    if (iPrecio !== '') {
+      const conPrecio = muestra.filter(function (f) {
+        const v = parseFloat(String(f[parseInt(iPrecio)]).replace(/[^0-9.,-]/g, '').replace(',', '.'));
+        return !isNaN(v) && v > 0;
+      }).length;
+      if (conPrecio < muestra.length * 0.5) {
+        sospechas.push('La mitad de las filas no tiene un precio valido.');
+      }
+    }
+    // titulos que suenan a clientes
+    const pistas = ['cliente', 'telefono', 'celular', 'whatsapp', 'domicilio', 'deuda', 'debe', 'saldo'];
+    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
+    if (coinciden.length >= 2) {
+      sospechas.push('El archivo tiene columnas de clientes (' + coinciden.join(', ') + ').');
+    }
+  } else {
+    const pistas = ['precio', 'costo', 'stock', 'codigobarras', 'ean', 'categoria', 'rubro'];
+    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
+    if (coinciden.length >= 2) {
+      sospechas.push('El archivo tiene columnas de productos (' + coinciden.join(', ') + ').');
+    }
+  }
+
+  if (sospechas.length === 0) return true;
+
+  el.innerHTML = '<div class="msg" style="background:#FDF3E3; color:#8A5A0F;">' +
+    '<b>Revisa antes de importar</b><br>' + sospechas.join('<br>') +
+    '<br>Estas importando <b>' + (impTipo === 'productos' ? 'PRODUCTOS' : 'CLIENTES') + '</b>.' +
+    '</div>';
+  return false;
+}
 
 /* ══ Vuelto ══ */
 
