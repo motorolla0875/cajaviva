@@ -755,7 +755,7 @@
     <input type="password" id="lPassword" autocomplete="current-password">
     <button class="btn-ppal" id="btnEntrar">Entrar</button>
     <button class="btn-sec" id="btnCuentaNueva">Empezar con una cuenta nueva</button>
-    <button class="btn-sec" id="btnEntrarCodigo">Soy empleado, tengo un codigo</button>
+    <button class="btn-sec" id="btnEntrarCodigo">Soy empleado nuevo, tengo un codigo</button>
   </div>
 </div>
 
@@ -1677,12 +1677,22 @@ $('btnEntrar').onclick = async function () {
   if (!username || !password) { $('msgLogin').innerHTML = '<div class="msg">Completa usuario y contrasena.</div>'; return; }
   const btn = $('btnEntrar');
   btn.disabled = true; btn.textContent = 'Entrando...';
+
+  // primero como dueño; si no, como empleado
   try {
     const d = await api('POST', '/auth/entrar', { username: username, password: password });
     token = d.token; localStorage.setItem('cajaviva_token', token);
     localStorage.setItem('cajaviva_config', '1');
+    localStorage.removeItem('cajaviva_empleado');
     aplicarUsuario(d); await arrancarApp();
-  } catch (e) { $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  } catch (e) {
+    try {
+      const d = await pedir('/empleados/entrar', { username: username, password: password });
+      await entrarComoEmpleado(d);
+    } catch (e2) {
+      $('msgLogin').innerHTML = '<div class="msg">Usuario o contraseña incorrectos.</div>';
+    }
+  }
   btn.disabled = false; btn.textContent = 'Entrar';
 };
 
@@ -3027,7 +3037,7 @@ function mostrarPasoEmp(cual) {
 
 const _btnEmpBien = document.getElementById('btnEmpDesdeBienvenida');
 if (_btnEmpBien) _btnEmpBien.onclick = abrirIngresoEmpleado;
-$('btnEntrarCodigo').onclick = abrirIngresoEmpleado;
+$('btnEntrarCodigo').onclick = function () { abrirIngresoEmpleado(); mostrarPasoEmp('codigo'); };
 $('btnCerrarIngEmp').onclick = function () { $('modalIngresoEmp').classList.remove('on'); };
 $('btnIrACodigo').onclick = function () { $('msgIngEmp').innerHTML = ''; mostrarPasoEmp('codigo'); };
 $('btnVolverLoginEmp').onclick = function () { $('msgIngEmp').innerHTML = ''; mostrarPasoEmp('login'); };
