@@ -1531,7 +1531,8 @@ async function cargarClientes() {
 
 async function cargarResumen() {
   try {
-    const r = await api('GET', '/ventas/resumen');
+    const hoy = hoyISO();
+    const r = await api('GET', '/ventas/resumen?desde=' + hoy + '&hasta=' + hoy);
     $('hVendido').textContent = plata(r.vendido);
   } catch (e) {}
 }
