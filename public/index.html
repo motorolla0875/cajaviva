@@ -859,6 +859,7 @@
     <div id="pasoResultado" style="display:none;">
       <div id="resultadoImp"></div>
       <button class="btn-ppal" id="btnCerrarImpOk">Listo</button>
+      <button class="btn-del" id="btnDeshacerImp">Deshacer esta importacion</button>
     </div>
 
     <button class="btn-sec" id="btnCerrarImportar">Cancelar</button>
@@ -2334,6 +2335,7 @@ let impTipo = 'productos';
 let impFilas = [];
 let impColumnas = [];
 let impLibro = null;
+let ultimaImportacion = null;
 
 const CAMPOS_PROD = [
   ['nombre', 'Nombre', true, ['nombre', 'producto', 'descripcion', 'articulo', 'detalle']],
@@ -2380,6 +2382,25 @@ $('btnImportarProd').onclick = function () { abrirImportar('productos'); };
 $('btnImportarCli').onclick = function () { abrirImportar('clientes'); };
 $('btnCerrarImportar').onclick = function () { $('modalImportar').classList.remove('on'); };
 $('btnCerrarImpOk').onclick = function () { $('modalImportar').classList.remove('on'); };
+
+$('btnDeshacerImp').onclick = async function () {
+  if (!ultimaImportacion) return;
+  if (!confirm('Borrar todo lo que se acaba de importar? Lo que ya se vendio no se toca.')) return;
+
+  const btn = $('btnDeshacerImp');
+  btn.disabled = true; btn.textContent = 'Deshaciendo...';
+  try {
+    const r = await api('DELETE', '/importar/' + ultimaImportacion);
+    ultimaImportacion = null;
+    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
+    else { await cargarClientes(); }
+    $('modalImportar').classList.remove('on');
+    avisar(r.conVentas > 0
+      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' porque ya tienen ventas.'
+      : 'Se borraron ' + r.borrados);
+  } catch (e) { avisar(e.message, true); }
+  btn.disabled = false; btn.textContent = 'Deshacer esta importacion';
+};
 $('btnVolverImp').onclick = function () {
   $('pasoArchivo').style.display = 'block';
   $('pasoMapeo').style.display = 'none';
@@ -2538,6 +2559,11 @@ $('btnConfirmarImp').onclick = async function () {
     }
 
     $('resultadoImp').innerHTML = html;
+    try {
+      const u = await api('GET', '/importar/ultima');
+      ultimaImportacion = u && u.id ? u.id : null;
+    } catch (e) { ultimaImportacion = null; }
+    $('btnDeshacerImp').style.display = ultimaImportacion ? 'block' : 'none';
     $('pasoMapeo').style.display = 'none';
     $('pasoResultado').style.display = 'block';
     $('btnCerrarImportar').style.display = 'none';
