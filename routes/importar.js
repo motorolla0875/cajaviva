@@ -169,6 +169,15 @@ router.get('/ultima', (req, res) => {
   res.json(u || null);
 });
 
+// ── historial de importaciones ──
+router.get('/historial', (req, res) => {
+  const filas = db.prepare(`
+    SELECT id, tipo, cantidad, created_at FROM importaciones
+    WHERE user_id = ? ORDER BY created_at DESC LIMIT 15
+  `).all(req.userId);
+  res.json(filas);
+});
+
 // ── deshacer una importacion ──
 router.delete('/:id', (req, res) => {
   const imp = db.prepare('SELECT * FROM importaciones WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);

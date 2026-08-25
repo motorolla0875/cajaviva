@@ -841,6 +841,7 @@
     <div id="msgImportar"></div>
 
     <div id="pasoArchivo">
+      <div id="historialImp"></div>
       <label>Archivo (Excel o CSV)</label>
       <input type="file" id="archivoImp" accept=".xlsx,.xls,.csv" style="padding:10px;">
       <p class="hint">La primera fila tiene que tener los titulos de cada columna.</p>
@@ -2379,6 +2380,38 @@ function abrirImportar(tipo) {
   $('pasoResultado').style.display = 'none';
   $('btnCerrarImportar').style.display = 'block';
   $('modalImportar').classList.add('on');
+  pintarHistorialImp();
+}
+
+async function pintarHistorialImp() {
+  const el = $('historialImp');
+  el.innerHTML = '';
+  try {
+    const h = await api('GET', '/importar/historial');
+    const propias = h.filter(function (i) { return i.tipo === impTipo; });
+    if (propias.length === 0) return;
+
+    el.innerHTML = '<div class="seccion">Importaciones anteriores</div>' +
+      propias.map(function (i) {
+        return '<div class="cat-item"><div class="n">' + i.cantidad +
+          (impTipo === 'productos' ? ' productos' : ' clientes') +
+          '<div class="c">' + fechaCorta(i.created_at) + ' ' + horaDe(i.created_at) + '</div></div>' +
+          '<button onclick="deshacerImp(\'' + i.id + '\')" title="Deshacer">&#10005;</button></div>';
+      }).join('');
+  } catch (e) {}
+}
+
+async function deshacerImp(id) {
+  if (!confirm('Borrar todo lo que trajo esa importacion? Lo que ya se vendio no se toca.')) return;
+  try {
+    const r = await api('DELETE', '/importar/' + id);
+    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
+    else { await cargarClientes(); }
+    await pintarHistorialImp();
+    avisar(r.conVentas > 0
+      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' con ventas.'
+      : 'Se borraron ' + r.borrados);
+  } catch (e) { avisar(e.message, true); }
 }
 
 $('btnImportarProd').onclick = function () { abrirImportar('productos'); };
