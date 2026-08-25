@@ -10,11 +10,17 @@ const PORT = process.env.PORT || 5200;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// la pagina publica del catalogo
+app.get('/c/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
+});
+
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true, app: 'CajaViva', hora: new Date().toISOString() });
 });
 
 app.use('/api/auth', authRouter);
+app.get('/api/catalogo/publico/:slug', require('./routes/catalogo'));
 app.use('/api/empleados', function (req, res, next) {
   // solo /entrar es publica; el resto necesita sesion
   if (req.path === '/entrar' || req.path === '/codigo' || req.path === '/registrar') return next();
@@ -32,5 +38,9 @@ app.use('/api/importar', requiereAuth, require('./routes/importar'));
 app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
 app.use('/api/reportes', requiereAuth, require('./routes/reportes'));
 app.use('/api/devoluciones', requiereAuth, require('./routes/devoluciones'));
+app.use('/api/catalogo', function (req, res, next) {
+  if (req.path.indexOf('/publico/') === 0) return next();
+  return requiereAuth(req, res, next);
+}, require('./routes/catalogo'));
 
 app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));
