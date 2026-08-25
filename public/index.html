@@ -502,7 +502,7 @@
   .aviso.ver { opacity: 1; }
   .aviso.err { background: var(--danger); }
 
-  @media (max-width: 860px) {
+  @media (max-width: 1024px) {
     .vista.on { flex-direction: column; }
     .der {
       width: 100%; border-left: none; border-top: 1px solid var(--line);
@@ -511,8 +511,20 @@
     }
     /* abierto: el panel se lleva la pantalla, la grilla se achica */
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
-    #v-vender.vista.on:not(.grilla-visible) .der { flex: 1 1 auto; }
-    #v-vender.vista.on:not(.grilla-visible) .izq { flex: 0 0 auto; max-height: 22dvh; }
+    #v-vender.vista.on:not(.grilla-visible) .izq { display: none !important; }
+    #v-vender.vista.on:not(.grilla-visible) .der {
+      position: fixed; inset: 0; z-index: 60;
+      height: 100dvh !important; max-height: none;
+      border-top: none; flex: 1 1 auto;
+    }
+
+    /* mas aire en cada linea */
+    .linea { padding: 18px 16px; gap: 14px; }
+    .linea .info .n { font-size: 15px; }
+    .linea .info .d { font-size: 12.5px; margin-top: 1px; }
+    .linea .cant button { width: 40px; height: 40px; font-size: 19px; }
+    .linea .cant span { min-width: 30px; font-size: 15px; }
+    .linea .sub { font-size: 15px; }
     .manija {
       display: flex; align-items: center; justify-content: center;
       height: 26px; flex-shrink: 0; cursor: pointer;
