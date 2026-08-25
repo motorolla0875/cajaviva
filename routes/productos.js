@@ -15,11 +15,16 @@ router.get('/', (req, res) => {
     WHERE p.user_id = ? AND p.activo = 1
     ORDER BY p.nombre
   `).all(req.userId);
+
+  // el empleado no ve el costo
+  if (req.esEmpleado) rows.forEach(function (p) { delete p.precio_costo; });
+
   res.json(rows);
 });
 
 // ── crear producto ──
 router.post('/', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
           unidad, stockInicial, stockMinimo, notas } = req.body || {};
 
@@ -52,6 +57,7 @@ router.post('/', (req, res) => {
 
 // ── editar producto ──
 router.put('/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
           unidad, stockMinimo, notas } = req.body || {};
 
@@ -120,6 +126,7 @@ router.post('/:id/quitar', (req, res) => {
 
 // ── borrado suave ──
 router.delete('/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   db.prepare('UPDATE productos SET activo = 0 WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });

@@ -44,6 +44,7 @@ router.put('/:id', (req, res) => {
 
 // ── borrar cliente ──
 router.delete('/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const c = db.prepare('SELECT saldo FROM clientes WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!c) return res.status(404).json({ error: 'Cliente no encontrado.' });
   if (c.saldo > 0) return res.status(400).json({ error: 'Este cliente todavia debe plata. Saldá la cuenta antes de borrarlo.' });

@@ -93,7 +93,10 @@ function requiereAuth(req, res, next) {
   const token = h.startsWith('Bearer ') ? h.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Sin sesion.' });
   try {
-    req.userId = jwt.verify(token, SECRETO).id;
+    const p = jwt.verify(token, SECRETO);
+    req.userId = p.id;
+    req.empleadoId = p.emp || null;
+    req.esEmpleado = !!p.emp;
     next();
   } catch (e) {
     res.status(401).json({ error: 'Sesion invalida.' });

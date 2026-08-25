@@ -15,6 +15,7 @@ app.get('/api/ping', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.post('/api/empleados/entrar', require('./routes/empleados'));
 
 app.use('/api/productos', requiereAuth, require('./routes/productos'));
 app.use('/api/ventas', requiereAuth, require('./routes/ventas'));
@@ -25,5 +26,6 @@ app.use('/api/negocio', requiereAuth, require('./routes/negocio'));
 app.use('/api/proveedores', requiereAuth, require('./routes/proveedores'));
 app.use('/api/importar', requiereAuth, require('./routes/importar'));
 app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
+app.use('/api/empleados', requiereAuth, require('./routes/empleados'));
 
 app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));

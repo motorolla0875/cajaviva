@@ -524,6 +524,50 @@
   .mapeo-fila label { flex: 0 0 130px; font-size: 13px; color: var(--muted); margin: 0; }
   .mapeo-fila select { flex: 1; min-width: 0; }
 
+  .codigo-grande {
+    font-size: 40px; font-weight: 500; letter-spacing: 8px;
+    color: var(--accent-dark); background: var(--accent-soft);
+    padding: 18px; border-radius: 12px; margin-bottom: 6px;
+  }
+  .emp-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .emp-item .n { flex: 1; font-size: 14.5px; }
+  .emp-item .c { color: var(--muted); font-size: 12.5px; }
+  .emp-item.baja { opacity: .5; }
+  .emp-item button {
+    width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 13px;
+  }
+  body.modo-empleado #btnNuevo,
+  body.modo-empleado #btnCategorias,
+  body.modo-empleado #btnProveedores,
+  body.modo-empleado #btnImportarProd,
+  body.modo-empleado #btnImportarCli,
+  body.modo-empleado #btnGasto,
+  body.modo-empleado #btnCierre,
+  body.modo-empleado #btnConfigNegocio,
+  body.modo-empleado #btnEmpleados,
+  body.modo-empleado #btnAsegurar,
+  body.modo-empleado #camposAsegurar,
+  body.modo-empleado .fila .datos .margen,
+  body.modo-empleado #listaGastos,
+  body.modo-empleado .seccion-gastos { display: none !important; }
+
+  body.modo-empleado .tarjeta.destacada,
+  body.modo-empleado .tarjeta:nth-child(3),
+  body.modo-empleado .tarjeta:nth-child(4) { display: none; }
+
+  body.modo-empleado .tarjetas { grid-template-columns: 1fr; }
+
+  .chip-empleado {
+    background: #FDF3E3; border-bottom: 1px solid var(--warn);
+    padding: 8px 18px; font-size: 12.5px; color: #8A5A0F;
+    display: none; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+
   .cierre-linea {
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px;
@@ -711,6 +755,7 @@
     <input type="password" id="lPassword" autocomplete="current-password">
     <button class="btn-ppal" id="btnEntrar">Entrar</button>
     <button class="btn-sec" id="btnCuentaNueva">Empezar con una cuenta nueva</button>
+    <button class="btn-sec" id="btnEntrarCodigo">Soy empleado, tengo un codigo</button>
   </div>
 </div>
 
@@ -739,6 +784,8 @@
   </header>
 
   <div class="contador-cola" id="contadorCola"></div>
+
+  <div class="chip-empleado" id="chipEmpleado"></div>
 
   <div class="aviso-offline" id="avisoOffline">
     <span>Sin conexion. Estas viendo los ultimos datos guardados.</span>
@@ -897,7 +944,7 @@
       </div>
       <div class="seccion">Ventas</div>
       <div id="listaVentas"></div>
-      <div class="seccion">Gastos</div>
+      <div class="seccion seccion-gastos">Gastos</div>
       <div id="listaGastos"></div>
     </div>
   </div>
@@ -920,6 +967,7 @@
       <button class="btn-ppal" id="btnAsegurar">Guardar</button>
     </div>
     <button class="btn-sec" id="btnConfigNegocio">Configurar mi negocio</button>
+    <button class="btn-sec" id="btnEmpleados">Empleados</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
     <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
   </div>
@@ -1125,6 +1173,42 @@
     </div>
     <button class="btn-ppal" id="btnGuardarStock">Confirmar</button>
     <button class="btn-sec" id="btnCerrarStock">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalEmpleados">
+  <div class="modal">
+    <h3>Empleados</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Cada uno entra con su codigo. Pueden vender y cobrar, pero no ven los costos ni la ganancia.</p>
+    <div id="msgEmp"></div>
+    <label>Nombre del empleado</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="empNombre" placeholder="Ej: Marcela">
+      <button class="btn-pago" id="btnAgregarEmp" style="border:none; border-radius:10px; padding:0 18px; font-weight:500;">Agregar</button>
+    </div>
+    <div id="listaEmp" style="margin-top:16px;"></div>
+    <button class="btn-sec" id="btnCerrarEmpleados">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCodigoEmp">
+  <div class="modal" style="max-width:340px; text-align:center;">
+    <h3 style="text-align:center;" id="tituloCodEmp">Codigo de acceso</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 12px;">Que lo use para entrar desde su celular.</p>
+    <div class="codigo-grande" id="codigoGrande">000000</div>
+    <button class="btn-ppal" id="btnNuevoCodigo">Generar otro codigo</button>
+    <button class="btn-sec" id="btnCerrarCodEmp">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalIngresoEmp">
+  <div class="modal" style="max-width:340px;">
+    <h3>Entrar con codigo</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Pedile el codigo de 6 numeros al dueño del negocio.</p>
+    <div id="msgIngEmp"></div>
+    <input type="text" id="codIngreso" inputmode="numeric" maxlength="6" placeholder="000000" style="text-align:center; font-size:26px; letter-spacing:6px;">
+    <button class="btn-ppal" id="btnConfirmarCodigo">Entrar</button>
+    <button class="btn-sec" id="btnCerrarIngEmp">Cancelar</button>
   </div>
 </div>
 
@@ -1459,6 +1543,7 @@ function mostrar(cual) {
 
 function cerrarSesion() {
   localStorage.removeItem('cajaviva_token');
+  localStorage.removeItem('cajaviva_empleado');
   token = null; usuario = null;
   location.reload();
 }
@@ -2011,7 +2096,7 @@ function pintarLista() {
   }
 
   $('listaProd').innerHTML = lista.map(function (p) {
-    const tieneCosto = p.precio_costo > 0;
+    const tieneCosto = !esEmpleado && p.precio_costo > 0;
     const margen = tieneCosto ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo) * 100) : null;
     const clase = p.stock <= 0 ? 'cero' : (p.stock_minimo > 0 && p.stock <= p.stock_minimo ? 'bajo' : '');
     return '<div class="fila"><div class="datos">' +
@@ -2795,6 +2880,143 @@ $('btnImprimirVentaDet').onclick = function () {
   });
 };
 
+/* ══ Empleados ══ */
+
+let empleados = [];
+let empActual = null;
+let esEmpleado = false;
+
+async function cargarEmpleados() {
+  empleados = await api('GET', '/empleados');
+  pintarEmpleados();
+}
+
+function pintarEmpleados() {
+  if (empleados.length === 0) {
+    $('listaEmp').innerHTML = '<div class="vacio">Todavia no cargaste empleados.</div>';
+    return;
+  }
+  $('listaEmp').innerHTML = empleados.map(function (e) {
+    return '<div class="emp-item' + (e.activo ? '' : ' baja') + '">' +
+      '<div class="n">' + esc(e.nombre) +
+        '<div class="c">' + (e.ventas > 0 ? e.ventas + ' ventas - ' + plata(e.vendido) : 'sin ventas') +
+        (e.activo ? '' : ' - dado de baja') + '</div></div>' +
+      '<button onclick="verCodigoEmp(\'' + e.id + '\')" title="Ver codigo">#</button>' +
+      '<button onclick="alternarEmp(\'' + e.id + '\')" title="' + (e.activo ? 'Dar de baja' : 'Reactivar') + '">' +
+        (e.activo ? '&#9210;' : '&#10003;') + '</button>' +
+      '<button onclick="borrarEmp(\'' + e.id + '\')">&#10005;</button></div>';
+  }).join('');
+}
+
+$('btnEmpleados').onclick = async function () {
+  $('modalCuentaUsuario').classList.remove('on');
+  $('msgEmp').innerHTML = ''; $('empNombre').value = '';
+  $('modalEmpleados').classList.add('on');
+  try { await cargarEmpleados(); }
+  catch (e) { $('msgEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
+$('btnCerrarEmpleados').onclick = function () { $('modalEmpleados').classList.remove('on'); };
+
+$('btnAgregarEmp').onclick = async function () {
+  const nombre = $('empNombre').value.trim();
+  if (!nombre) { $('msgEmp').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
+  try {
+    const r = await api('POST', '/empleados', { nombre: nombre });
+    $('empNombre').value = ''; $('msgEmp').innerHTML = '';
+    await cargarEmpleados();
+    empActual = r.id;
+    $('tituloCodEmp').textContent = 'Codigo de ' + nombre;
+    $('codigoGrande').textContent = r.codigo;
+    $('modalCodigoEmp').classList.add('on');
+  } catch (e) { $('msgEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
+
+function verCodigoEmp(id) {
+  const e = empleados.filter(function (x) { return x.id === id; })[0];
+  if (!e) return;
+  empActual = id;
+  $('tituloCodEmp').textContent = 'Codigo de ' + e.nombre;
+  $('codigoGrande').textContent = e.codigo;
+  $('modalCodigoEmp').classList.add('on');
+}
+$('btnCerrarCodEmp').onclick = function () { $('modalCodigoEmp').classList.remove('on'); };
+
+$('btnNuevoCodigo').onclick = async function () {
+  if (!empActual) return;
+  if (!confirm('Generar otro codigo? El anterior deja de funcionar.')) return;
+  try {
+    const r = await api('POST', '/empleados/' + empActual + '/codigo');
+    $('codigoGrande').textContent = r.codigo;
+    await cargarEmpleados();
+    avisar('Codigo nuevo generado');
+  } catch (e) { avisar(e.message, true); }
+};
+
+async function alternarEmp(id) {
+  const e = empleados.filter(function (x) { return x.id === id; })[0];
+  if (!e) return;
+  try {
+    await api('PUT', '/empleados/' + id, { nombre: e.nombre, activo: e.activo ? 0 : 1 });
+    await cargarEmpleados();
+    avisar(e.activo ? 'Empleado dado de baja' : 'Empleado reactivado');
+  } catch (er) { avisar(er.message, true); }
+}
+
+async function borrarEmp(id) {
+  if (!confirm('Borrar este empleado? Sus ventas quedan registradas.')) return;
+  try {
+    await api('DELETE', '/empleados/' + id);
+    await cargarEmpleados();
+    avisar('Empleado borrado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+/* ── entrar como empleado ── */
+
+$('btnEntrarCodigo').onclick = function () {
+  $('msgIngEmp').innerHTML = '';
+  $('codIngreso').value = '';
+  $('modalIngresoEmp').classList.add('on');
+  setTimeout(function () { $('codIngreso').focus(); }, 150);
+};
+$('btnCerrarIngEmp').onclick = function () { $('modalIngresoEmp').classList.remove('on'); };
+
+$('btnConfirmarCodigo').onclick = async function () {
+  const codigo = $('codIngreso').value.trim();
+  if (!/^\d{6}$/.test(codigo)) {
+    $('msgIngEmp').innerHTML = '<div class="msg">El codigo tiene 6 numeros.</div>';
+    return;
+  }
+  const btn = $('btnConfirmarCodigo');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const d = await api('POST', '/empleados/entrar', { codigo: codigo });
+    token = d.token;
+    localStorage.setItem('cajaviva_token', token);
+    localStorage.setItem('cajaviva_ya_uso', '1');
+    localStorage.setItem('cajaviva_empleado', d.empleado.nombre);
+    usuario = d.user; negocio = d.negocio;
+    esEmpleado = true;
+    $('modalIngresoEmp').classList.remove('on');
+    aplicarModoEmpleado(d.empleado.nombre);
+    await arrancarApp();
+  } catch (e) {
+    $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Entrar';
+};
+
+function aplicarModoEmpleado(nombre) {
+  esEmpleado = true;
+  $('btnYo').textContent = nombre.charAt(0);
+  $('chipEmpleado').style.display = 'flex';
+  $('chipEmpleado').innerHTML = '<span>Estas trabajando como <b>' + esc(nombre) + '</b></span>';
+  $('avisoAsegurar').style.display = 'none';
+
+  // ocultar lo que no le corresponde
+  document.body.classList.add('modo-empleado');
+}
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -3113,6 +3335,8 @@ $('btnGuardarGasto').onclick = async function () {
     try {
       const d = await api('GET', '/auth/yo');
       aplicarUsuario(d);
+      const nomEmp = localStorage.getItem('cajaviva_empleado');
+      if (nomEmp) aplicarModoEmpleado(nomEmp);
       await arrancarApp();
       return;
     } catch (e) {

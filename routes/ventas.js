@@ -52,11 +52,11 @@ router.post('/', (req, res) => {
 
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
-      costo_total, medio_pago, monto_pagado, descuento_pct, notas, device_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      costo_total, medio_pago, monto_pagado, descuento_pct, notas, device_id, empleado_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(ventaId, req.userId, clienteId || null, clienteId ? 'reparto' : 'mostrador',
          fechaVenta, estado, total, costoTotal, medioPago || 'efectivo',
-         pagado, pct, notas || null, deviceId || null);
+         pagado, pct, notas || null, deviceId || null, req.empleadoId || null);
 
   for (const l of lineas) {
     db.prepare(`
@@ -113,14 +113,23 @@ router.get('/resumen', (req, res) => {
     FROM gastos WHERE user_id = ? AND fecha >= ? AND fecha <= ?
   `).get(req.userId, desde, hasta);
 
-  res.json({
+  const salida = {
     desde, hasta,
     vendido: v.vendido,
     cantidadVentas: v.cantidad,
     gananciaBruta: v.vendido - v.costo,
     gastos: g.gastos,
     balance: v.vendido - g.gastos
-  });
+  };
+
+  // el empleado no ve ganancia ni balance
+  if (req.esEmpleado) {
+    delete salida.gananciaBruta;
+    delete salida.balance;
+    delete salida.gastos;
+  }
+
+  res.json(salida);
 });
 
 // ── anular una venta (devuelve el stock) ──

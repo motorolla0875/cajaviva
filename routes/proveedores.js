@@ -19,6 +19,7 @@ router.get('/', (req, res) => {
 
 // ── crear ──
 router.post('/', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Ponele un nombre al proveedor.' });
 
@@ -47,6 +48,7 @@ router.put('/:id', (req, res) => {
 
 // ── borrar: los gastos quedan sin proveedor, no se borran ──
 router.delete('/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   db.prepare('UPDATE gastos SET proveedor_id = NULL WHERE proveedor_id = ? AND user_id = ?')
     .run(req.params.id, req.userId);
   db.prepare('DELETE FROM proveedores WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
