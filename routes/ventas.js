@@ -81,13 +81,21 @@ router.get('/', (req, res) => {
   const desde = req.query.desde || hoyISO();
   const hasta = req.query.hasta || hoyISO();
 
-  const ventas = db.prepare(`
-    SELECT v.*, c.nombre AS cliente_nombre
-    FROM ventas v
-    LEFT JOIN clientes c ON c.id = v.cliente_id
-    WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
-    ORDER BY v.created_at DESC
-  `).all(req.userId, desde, hasta);
+  const ventas = req.esEmpleado
+    ? db.prepare(`
+        SELECT v.*, c.nombre AS cliente_nombre
+        FROM ventas v
+        LEFT JOIN clientes c ON c.id = v.cliente_id
+        WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ? AND v.empleado_id = ?
+        ORDER BY v.created_at DESC
+      `).all(req.userId, desde, hasta, req.empleadoId)
+    : db.prepare(`
+        SELECT v.*, c.nombre AS cliente_nombre
+        FROM ventas v
+        LEFT JOIN clientes c ON c.id = v.cliente_id
+        WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
+        ORDER BY v.created_at DESC
+      `).all(req.userId, desde, hasta);
 
   for (const v of ventas) {
     v.items = db.prepare('SELECT * FROM venta_items WHERE venta_id = ?').all(v.id);
@@ -101,12 +109,19 @@ router.get('/resumen', (req, res) => {
   const desde = req.query.desde || hoyISO();
   const hasta = req.query.hasta || hoyISO();
 
-  const v = db.prepare(`
-    SELECT COALESCE(SUM(total), 0) AS vendido,
-           COALESCE(SUM(costo_total), 0) AS costo,
-           COUNT(*) AS cantidad
-    FROM ventas WHERE user_id = ? AND fecha >= ? AND fecha <= ?
-  `).get(req.userId, desde, hasta);
+  const v = req.esEmpleado
+    ? db.prepare(`
+        SELECT COALESCE(SUM(total), 0) AS vendido,
+               COALESCE(SUM(costo_total), 0) AS costo,
+               COUNT(*) AS cantidad
+        FROM ventas WHERE user_id = ? AND fecha >= ? AND fecha <= ? AND empleado_id = ?
+      `).get(req.userId, desde, hasta, req.empleadoId)
+    : db.prepare(`
+        SELECT COALESCE(SUM(total), 0) AS vendido,
+               COALESCE(SUM(costo_total), 0) AS costo,
+               COUNT(*) AS cantidad
+        FROM ventas WHERE user_id = ? AND fecha >= ? AND fecha <= ?
+      `).get(req.userId, desde, hasta);
 
   const g = db.prepare(`
     SELECT COALESCE(SUM(monto), 0) AS gastos

@@ -561,6 +561,9 @@
   body.modo-empleado .tarjeta:nth-child(4) { display: none; }
 
   body.modo-empleado .tarjetas { grid-template-columns: 1fr; }
+  body.modo-empleado #periodos,
+  body.modo-empleado #rangoFechas,
+  body.modo-empleado #buscarCaja { display: none !important; }
 
   .chip-empleado {
     background: #FDF3E3; border-bottom: 1px solid var(--warn);
@@ -946,7 +949,7 @@
         <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
         <button class="btn-nuevo gris" id="btnCierre">Cerrar caja</button>
       </div>
-      <div class="seccion">Ventas</div>
+      <div class="seccion" id="tituloVentasCaja">Ventas</div>
       <div id="listaVentas"></div>
       <div class="seccion seccion-gastos">Gastos</div>
       <div id="listaGastos"></div>
@@ -3110,6 +3113,9 @@ $('btnCrearEmp').onclick = async function () {
 
 function aplicarModoEmpleado(nombre) {
   esEmpleado = true;
+  periodo = 'hoy';
+  const t = document.getElementById('tituloVentasCaja');
+  if (t) t.textContent = 'Mis ventas de hoy';
   $('btnYo').textContent = nombre.charAt(0);
   $('chipEmpleado').style.display = 'flex';
   $('chipEmpleado').innerHTML = '<span>Estas trabajando como <b>' + esc(nombre) + '</b></span>';
