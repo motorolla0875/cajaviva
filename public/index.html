@@ -3007,6 +3007,23 @@ $('btnConfirmarPeso').onclick = function () {
 
 let audioCtx = null;
 
+// iOS solo deja sonar despues de que el usuario toque algo
+function despertarAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    // un pitido mudo para desbloquear
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    g.gain.value = 0;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.01);
+  } catch (e) {}
+}
+
+document.addEventListener('touchstart', despertarAudio, { once: true });
+document.addEventListener('click', despertarAudio, { once: true });
+
 function pitido(frecuencia, duracion, volumen) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
