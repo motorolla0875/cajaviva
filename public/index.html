@@ -772,6 +772,10 @@
 
     <button class="btn-seguir" id="btnEmpezar" disabled>Empezar</button>
     <p class="nota-cambio">Podes cambiarlo cuando quieras desde tu cuenta.</p>
+    <button class="btn-seguir" id="btnEmpDesdeBienvenida"
+      style="background:none; color:var(--accent-dark); margin-top:6px;">
+      Soy empleado, tengo un codigo
+    </button>
   </div>
 </div>
 
@@ -2972,6 +2976,16 @@ async function borrarEmp(id) {
 }
 
 /* ── entrar como empleado ── */
+
+function abrirIngresoEmpleado() {
+  $('msgIngEmp').innerHTML = '';
+  $('codIngreso').value = '';
+  $('modalIngresoEmp').classList.add('on');
+  setTimeout(function () { $('codIngreso').focus(); }, 150);
+}
+
+const _btnEmpBien = document.getElementById('btnEmpDesdeBienvenida');
+if (_btnEmpBien) _btnEmpBien.onclick = abrirIngresoEmpleado;
 
 $('btnEntrarCodigo').onclick = function () {
   $('msgIngEmp').innerHTML = '';
