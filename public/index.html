@@ -536,6 +536,23 @@
     color: var(--accent-dark); background: var(--accent-soft);
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
+  #modalProdCatalogo { z-index: 130; }
+  .cat-prod {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+  }
+  .cat-prod .marca {
+    width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px;
+    border: 1.5px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #fff;
+  }
+  .cat-prod.on .marca { background: var(--accent); border-color: var(--accent); }
+  .cat-prod .txt { flex: 1; min-width: 0; }
+  .cat-prod .txt .n { font-size: 14.5px; }
+  .cat-prod .txt .d { font-size: 12px; color: var(--muted); }
+  .cat-prod.off { opacity: .5; }
+
   .dev-fila {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 0; border-bottom: 1px solid var(--line);
@@ -1392,9 +1409,31 @@
     </div>
 
     <p class="hint" id="catCuantos"></p>
+    <button class="btn-sec" id="btnElegirProd">Elegir que productos mostrar</button>
 
     <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
     <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalProdCatalogo">
+  <div class="modal">
+    <h3>Que se muestra en el catalogo</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 12px;">Toca para mostrar u ocultar cada producto.</p>
+    <div id="msgProdCat"></div>
+
+    <div class="pr-acciones">
+      <button onclick="marcarCatalogo(true)">Mostrar todos</button>
+      <button onclick="marcarCatalogo(false)">Ocultar todos</button>
+    </div>
+
+    <div class="buscador" style="margin:10px 0;">
+      <input type="text" id="buscarProdCat" placeholder="Buscar..." autocomplete="off">
+    </div>
+
+    <div id="listaProdCat" style="max-height:340px; overflow-y:auto;"></div>
+
+    <button class="btn-sec" id="btnCerrarProdCat" style="margin-top:14px;">Listo</button>
   </div>
 </div>
 
@@ -4234,6 +4273,66 @@ async function compartirCatalogo() {
 
 function abrirCatalogo() {
   window.open($('catLink').textContent, '_blank');
+}
+
+/* ══ Elegir productos del catalogo ══ */
+
+$('btnElegirProd').onclick = function () {
+  $('msgProdCat').innerHTML = '';
+  $('buscarProdCat').value = '';
+  pintarProdCatalogo();
+  $('modalProdCatalogo').classList.add('on');
+};
+$('btnCerrarProdCat').onclick = async function () {
+  $('modalProdCatalogo').classList.remove('on');
+  try {
+    const d = await api('GET', '/catalogo/config');
+    $('catCuantos').textContent = d.productos + (d.productos === 1 ? ' producto en el catalogo' : ' productos en el catalogo');
+  } catch (e) {}
+};
+
+function pintarProdCatalogo() {
+  const t = norm($('buscarProdCat').value.trim());
+  const lista = t ? productos.filter(function (p) { return norm(p.nombre).indexOf(t) >= 0; }) : productos;
+
+  if (lista.length === 0) {
+    $('listaProdCat').innerHTML = '<div class="vacio">No hay productos.</div>';
+    return;
+  }
+
+  $('listaProdCat').innerHTML = lista.map(function (p) {
+    const on = p.en_catalogo !== 0;
+    return '<div class="cat-prod' + (on ? ' on' : ' off') + '" onclick="alternarProdCat(\'' + p.id + '\')">' +
+      '<span class="marca">&#10003;</span>' +
+      '<div class="txt"><div class="n">' + esc(p.nombre) + '</div>' +
+      '<div class="d">' + plata(p.precio_venta) +
+      (p.categoria_nombre ? ' - ' + esc(p.categoria_nombre) : '') + '</div></div></div>';
+  }).join('');
+}
+$('buscarProdCat').addEventListener('input', pintarProdCatalogo);
+
+async function alternarProdCat(id) {
+  const p = productos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+  const nuevo = p.en_catalogo !== 0 ? 0 : 1;
+  p.en_catalogo = nuevo;
+  pintarProdCatalogo();
+  try {
+    await api('PUT', '/catalogo/producto/' + id, { mostrar: nuevo });
+  } catch (e) {
+    p.en_catalogo = nuevo ? 0 : 1;
+    pintarProdCatalogo();
+    avisar(e.message, true);
+  }
+}
+
+async function marcarCatalogo(mostrar) {
+  try {
+    await api('PUT', '/catalogo/todos', { mostrar: mostrar });
+    productos.forEach(function (p) { p.en_catalogo = mostrar ? 1 : 0; });
+    pintarProdCatalogo();
+    avisar(mostrar ? 'Se muestran todos' : 'Se ocultaron todos');
+  } catch (e) { avisar(e.message, true); }
 }
 
 /* ══ Vuelto ══ */
