@@ -537,6 +537,24 @@
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
   #modalProdCatalogo { z-index: 130; }
+  #modalNuevoCheque { z-index: 135; }
+  .cheque {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  }
+  .cheque.vencido { border-color: var(--danger); }
+  .cheque .datos { flex: 1; min-width: 0; }
+  .cheque .datos .n { font-weight: 500; font-size: 14.5px; }
+  .cheque .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .cheque .datos .venc { color: var(--danger); font-size: 12.5px; font-weight: 500; }
+  .cheque .monto { font-weight: 500; font-size: 15px; flex-shrink: 0; }
+  .cheque .acc { display: flex; gap: 5px; flex-shrink: 0; }
+  .cheque .acc button {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 13px;
+  }
   .cat-prod {
     display: flex; align-items: center; gap: 10px;
     padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer;
@@ -646,6 +664,7 @@
   body.modo-empleado #btnConfigNegocio,
   body.modo-empleado #btnEmpleados,
   body.modo-empleado #btnCatalogo,
+  body.modo-empleado #btnCheques,
   body.modo-empleado #btnAsegurar,
   body.modo-empleado #camposAsegurar,
   body.modo-empleado .fila .datos .margen,
@@ -999,6 +1018,7 @@
       </div>
       <div class="dos-arriba">
         <button class="btn-nuevo" id="btnNuevoCliente">+ Nuevo cliente</button>
+        <button class="btn-nuevo gris" id="btnCheques">Cheques</button>
         <button class="btn-nuevo gris" id="btnImportarCli" title="Importar desde Excel">&#8681;</button>
       </div>
       <div class="buscador">
@@ -1413,6 +1433,58 @@
 
     <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
     <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCheques">
+  <div class="modal">
+    <h3>Cheques</h3>
+    <div id="resumenCheques"></div>
+    <div id="msgCheques"></div>
+
+    <button class="btn-nuevo solo" id="btnNuevoCheque">+ Anotar un cheque</button>
+
+    <div class="chips" id="tabsCheques">
+      <button class="on" data-estado="pendientes">Pendientes</button>
+      <button data-estado="acreditados">Acreditados</button>
+      <button data-estado="rechazados">Rechazados</button>
+    </div>
+
+    <div id="listaCheques" style="max-height:320px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarCheques">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalNuevoCheque">
+  <div class="modal" style="max-width:380px;">
+    <h3>Anotar un cheque</h3>
+    <div id="msgNuevoCheque"></div>
+
+    <label>De que cliente</label>
+    <select id="chCliente"><option value="">Sin cliente</option></select>
+
+    <label>Monto</label>
+    <input type="text" id="chMonto" inputmode="decimal" placeholder="0">
+
+    <label>Se cobra el</label>
+    <input type="date" id="chFecha">
+
+    <div class="fila2">
+      <div><label>Numero</label><input type="text" id="chNumero" inputmode="numeric"></div>
+      <div><label>Banco</label><input type="text" id="chBanco"></div>
+    </div>
+
+    <div class="cap-item" id="wrapBajaDeuda">
+      <div class="txt"><div class="n">Descontar de su deuda</div>
+        <div class="d">Le baja el saldo que tiene con vos</div></div>
+      <button class="switch on" id="swBajaDeuda"></button>
+    </div>
+
+    <label>Nota (opcional)</label>
+    <input type="text" id="chNota">
+
+    <button class="btn-ppal" id="btnGuardarCheque">Guardar</button>
+    <button class="btn-sec" id="btnCerrarNuevoCheque">Cancelar</button>
   </div>
 </div>
 
@@ -4334,6 +4406,138 @@ async function marcarCatalogo(mostrar) {
     avisar(mostrar ? 'Se muestran todos' : 'Se ocultaron todos');
   } catch (e) { avisar(e.message, true); }
 }
+
+/* ══ Cheques ══ */
+
+let estadoCheques = 'pendientes';
+let bajaDeuda = true;
+
+$('btnCheques').onclick = function () {
+  $('msgCheques').innerHTML = '';
+  estadoCheques = 'pendientes';
+  Array.prototype.forEach.call($('tabsCheques').children, function (x, i) { x.classList.toggle('on', i === 0); });
+  $('modalCheques').classList.add('on');
+  cargarCheques();
+};
+$('btnCerrarCheques').onclick = function () { $('modalCheques').classList.remove('on'); };
+
+$('tabsCheques').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  estadoCheques = b.dataset.estado;
+  Array.prototype.forEach.call($('tabsCheques').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarCheques();
+});
+
+async function cargarCheques() {
+  $('listaCheques').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const d = await api('GET', '/cheques?estado=' + estadoCheques);
+
+    if (d.resumen.pendiente > 0) {
+      $('resumenCheques').innerHTML =
+        '<div class="rep-resumen' + (d.resumen.vencidos > 0 ? ' alerta' : '') + '">' +
+        '<div class="lbl">' + d.resumen.cantidad + ' cheques por cobrar</div>' +
+        '<div class="val">' + plata(d.resumen.pendiente) + '</div>' +
+        (d.resumen.vencidos > 0 ? '<div class="lbl">' + plata(d.resumen.vencidos) + ' ya vencieron</div>' : '') +
+        '</div>';
+    } else {
+      $('resumenCheques').innerHTML = '';
+    }
+
+    if (d.items.length === 0) {
+      $('listaCheques').innerHTML = '<div class="vacio">No hay cheques ' + estadoCheques + '.</div>';
+      return;
+    }
+
+    $('listaCheques').innerHTML = d.items.map(function (c) {
+      const vencido = !c.acreditado && !c.rechazado && c.fecha_cobro <= d.hoy;
+      let acciones = '';
+      if (!c.acreditado && !c.rechazado) {
+        acciones = '<button onclick="accionCheque(\'' + c.id + '\',\'acreditar\')" title="Se cobro">&#10003;</button>' +
+                   '<button onclick="accionCheque(\'' + c.id + '\',\'rechazar\')" title="Rechazado">&#10007;</button>';
+      } else {
+        acciones = '<button onclick="accionCheque(\'' + c.id + '\',\'pendiente\')" title="Volver a pendiente">&#8630;</button>';
+      }
+      acciones += '<button onclick="borrarCheque(\'' + c.id + '\')">&#10005;</button>';
+
+      return '<div class="cheque' + (vencido ? ' vencido' : '') + '">' +
+        '<div class="datos"><div class="n">' + (c.cliente_nombre ? esc(c.cliente_nombre) : 'Sin cliente') + '</div>' +
+        '<div class="d">' + (c.numero ? 'N ' + esc(c.numero) + ' - ' : '') +
+          (c.banco ? esc(c.banco) + ' - ' : '') + 'cobra el ' + fechaCorta(c.fecha_cobro) + '</div>' +
+        (vencido ? '<div class="venc">Ya vencio</div>' : '') +
+        '</div>' +
+        '<div class="monto">' + plata(c.monto) + '</div>' +
+        '<div class="acc">' + acciones + '</div></div>';
+    }).join('');
+  } catch (e) {
+    $('listaCheques').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+async function accionCheque(id, que) {
+  try {
+    await api('POST', '/cheques/' + id + '/' + que);
+    await cargarCheques();
+    await cargarClientes();
+    avisar(que === 'acreditar' ? 'Cheque acreditado' : que === 'rechazar' ? 'Cheque rechazado' : 'Vuelve a pendiente');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function borrarCheque(id) {
+  if (!confirm('Borrar este cheque?')) return;
+  try {
+    await api('DELETE', '/cheques/' + id);
+    await cargarCheques();
+    avisar('Cheque borrado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+$('btnNuevoCheque').onclick = function () {
+  $('msgNuevoCheque').innerHTML = '';
+  $('chMonto').value = ''; $('chNumero').value = '';
+  $('chBanco').value = ''; $('chNota').value = '';
+  $('chFecha').value = hoyISO();
+  bajaDeuda = true;
+  $('swBajaDeuda').classList.add('on');
+  $('chCliente').innerHTML = '<option value="">Sin cliente</option>' +
+    clientes.map(function (c) {
+      return '<option value="' + c.id + '">' + esc(c.nombre) +
+        (c.saldo > 0 ? ' (debe ' + plata(c.saldo) + ')' : '') + '</option>';
+    }).join('');
+  $('modalNuevoCheque').classList.add('on');
+};
+$('btnCerrarNuevoCheque').onclick = function () { $('modalNuevoCheque').classList.remove('on'); };
+
+$('swBajaDeuda').onclick = function () {
+  bajaDeuda = !bajaDeuda;
+  $('swBajaDeuda').classList.toggle('on', bajaDeuda);
+};
+
+$('btnGuardarCheque').onclick = async function () {
+  const monto = num($('chMonto').value);
+  if (monto <= 0) { $('msgNuevoCheque').innerHTML = '<div class="msg">Poné un monto mayor a 0.</div>'; return; }
+  if (!$('chFecha').value) { $('msgNuevoCheque').innerHTML = '<div class="msg">Poné cuando se cobra.</div>'; return; }
+
+  const btn = $('btnGuardarCheque');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    await api('POST', '/cheques', {
+      clienteId: $('chCliente').value || null,
+      monto: monto, fechaCobro: $('chFecha').value,
+      numero: $('chNumero').value.trim() || null,
+      banco: $('chBanco').value.trim() || null,
+      nota: $('chNota').value.trim() || null,
+      bajaDeuda: bajaDeuda && !!$('chCliente').value
+    });
+    $('modalNuevoCheque').classList.remove('on');
+    await cargarCheques(); await cargarClientes();
+    avisar('Cheque anotado');
+  } catch (e) {
+    $('msgNuevoCheque').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
 
 /* ══ Vuelto ══ */
 

@@ -38,6 +38,7 @@ app.use('/api/importar', requiereAuth, require('./routes/importar'));
 app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
 app.use('/api/reportes', requiereAuth, require('./routes/reportes'));
 app.use('/api/devoluciones', requiereAuth, require('./routes/devoluciones'));
+app.use('/api/cheques', requiereAuth, require('./routes/cheques'));
 app.use('/api/catalogo', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0) return next();
   return requiereAuth(req, res, next);
