@@ -80,9 +80,21 @@
   }
   .prod .ctrl .n { min-width: 24px; text-align: center; font-weight: 500; }
   .prod .btn-sumar {
-    padding: 9px 16px; border-radius: 9px; border: 1px solid var(--accent);
+    padding: 9px 14px; border-radius: 9px; border: 1px solid var(--accent);
     background: var(--accent-soft); color: var(--accent-dark);
-    font-size: 13.5px; font-weight: 500;
+    font-size: 13.5px; font-weight: 500; white-space: nowrap;
+  }
+  .prod .info .n {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 420px) {
+    .prod { gap: 8px; padding: 12px; }
+    .prod .btn-sumar { padding: 9px 0; width: 42px; font-size: 20px; line-height: 1; }
+    .prod .btn-sumar::before { content: '+'; }
+    .prod .btn-sumar { font-size: 0; }
+    .prod .btn-sumar::before { font-size: 20px; }
+    .prod .ctrl button { width: 32px; height: 32px; }
   }
 
   .barra {
