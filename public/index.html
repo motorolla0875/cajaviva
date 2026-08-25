@@ -535,6 +535,20 @@
     color: var(--accent-dark); background: var(--accent-soft);
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
+  .dev-fila {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .dev-fila .info { flex: 1; min-width: 0; }
+  .dev-fila .info .n { font-size: 14.5px; font-weight: 500; }
+  .dev-fila .info .d { font-size: 12.5px; color: var(--muted); }
+  .dev-fila input {
+    width: 68px; padding: 8px; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  .dev-fila .sub { width: 76px; text-align: right; font-weight: 500; font-size: 14px; }
+
   .rep-item {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -1271,6 +1285,32 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalDevolucion">
+  <div class="modal">
+    <h3>Devolucion</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Elegi que devuelve el cliente y cuanto.</p>
+    <div id="msgDev"></div>
+
+    <div id="itemsDev"></div>
+
+    <div class="cierre-linea total"><span>A devolver</span><b id="totalDev">$0</b></div>
+
+    <label>Como se le devuelve</label>
+    <div class="medios" id="formaDev" style="margin-bottom:4px;">
+      <button class="on" data-forma="efectivo">Efectivo</button>
+      <button data-forma="credito">Le queda a favor</button>
+      <button data-forma="descuenta_deuda">Baja su deuda</button>
+    </div>
+    <p class="hint" id="hintFormaDev">Sale plata de la caja.</p>
+
+    <label>Motivo (opcional)</label>
+    <input type="text" id="motivoDev" placeholder="Ej: vino fallado">
+
+    <button class="btn-ppal" id="btnConfirmarDev">Confirmar devolucion</button>
+    <button class="btn-sec" id="btnCerrarDev">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalPrecios">
   <div class="modal">
     <h3>Cambiar precios</h3>
@@ -1382,6 +1422,7 @@
     <div id="msgVentaDet"></div>
     <div id="itemsVentaDet"></div>
     <div class="cierre-linea total"><span>Total</span><b id="totalVentaDet">$0</b></div>
+    <button class="btn-sec" id="btnDevolver">Registrar una devolucion</button>
     <button class="btn-sec" id="btnImprimirVentaDet">Imprimir ticket</button>
     <button class="btn-del" id="btnAnularVentaDet">Anular la venta entera</button>
     <button class="btn-sec" id="btnCerrarVentaDet">Cerrar</button>
@@ -3988,6 +4029,96 @@ $('btnConfirmarImp').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Importar';
 };
 
+
+/* ══ Devoluciones ══ */
+
+let formaDev = 'efectivo';
+
+$('btnDevolver').onclick = function () {
+  if (!ventaAbierta) return;
+  $('msgDev').innerHTML = '';
+  $('motivoDev').value = '';
+  formaDev = 'efectivo';
+  Array.prototype.forEach.call($('formaDev').children, function (x, i) { x.classList.toggle('on', i === 0); });
+  $('hintFormaDev').textContent = 'Sale plata de la caja.';
+
+  $('itemsDev').innerHTML = ventaAbierta.items.map(function (i) {
+    return '<div class="dev-fila">' +
+      '<div class="info"><div class="n">' + esc(i.nombre) + '</div>' +
+      '<div class="d">Se vendieron ' + fmtCant(i.cantidad) + ' a ' + plata(i.precio_unitario) + '</div></div>' +
+      '<input type="text" inputmode="decimal" id="dev_' + i.id + '" value="0" ' +
+        'data-max="' + i.cantidad + '" data-precio="' + i.precio_unitario + '" ' +
+        'oninput="calcularDev()">' +
+      '<div class="sub" id="devsub_' + i.id + '">$0</div></div>';
+  }).join('');
+
+  $('totalDev').textContent = '$0';
+  $('modalDevolucion').classList.add('on');
+};
+
+function calcularDev() {
+  if (!ventaAbierta) return;
+  let total = 0;
+  ventaAbierta.items.forEach(function (i) {
+    const el = $('dev_' + i.id);
+    if (!el) return;
+    let c = num(el.value);
+    if (c > i.cantidad) { c = i.cantidad; el.value = fmtCant(c); }
+    if (c < 0) { c = 0; el.value = '0'; }
+    const sub = c * i.precio_unitario;
+    const s = $('devsub_' + i.id);
+    if (s) s.textContent = plata(sub);
+    total += sub;
+  });
+  $('totalDev').textContent = plata(total);
+}
+
+$('formaDev').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  formaDev = b.dataset.forma;
+  Array.prototype.forEach.call($('formaDev').children, function (x) { x.classList.toggle('on', x === b); });
+  $('hintFormaDev').textContent = formaDev === 'efectivo' ? 'Sale plata de la caja.'
+    : formaDev === 'credito' ? 'Le queda como saldo a favor para la proxima.'
+    : 'Se le descuenta de lo que debe.';
+});
+
+$('btnCerrarDev').onclick = function () { $('modalDevolucion').classList.remove('on'); };
+
+$('btnConfirmarDev').onclick = async function () {
+  if (!ventaAbierta) return;
+
+  const items = [];
+  ventaAbierta.items.forEach(function (i) {
+    const el = $('dev_' + i.id);
+    const c = el ? num(el.value) : 0;
+    if (c > 0) items.push({ itemId: i.id, cantidad: c });
+  });
+
+  if (items.length === 0) {
+    $('msgDev').innerHTML = '<div class="msg">Poné cuanto se devuelve de cada producto.</div>'; return;
+  }
+
+  if ((formaDev === 'credito' || formaDev === 'descuenta_deuda') && !ventaAbierta.cliente_id) {
+    $('msgDev').innerHTML = '<div class="msg">Esa venta no tiene cliente. Devolvé en efectivo.</div>'; return;
+  }
+
+  const btn = $('btnConfirmarDev');
+  btn.disabled = true; btn.textContent = 'Registrando...';
+  try {
+    const r = await api('POST', '/devoluciones', {
+      ventaId: ventaAbierta.id, items: items, forma: formaDev,
+      motivo: $('motivoDev').value.trim() || null, fecha: hoyISO()
+    });
+    await cargarProductos(); await cargarResumen(); await cargarClientes(); await cargarCaja();
+    $('modalDevolucion').classList.remove('on');
+    $('modalVenta').classList.remove('on');
+    avisar('Devolucion de ' + plata(r.monto) + ' registrada');
+  } catch (e) {
+    $('msgDev').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Confirmar devolucion';
+};
 
 /* ══ Vuelto ══ */
 
