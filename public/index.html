@@ -2093,6 +2093,32 @@ function encontroCodigo(codigo) {
   avisar(p.nombre + ' agregado');
 }
 
+
+/* ══ Panel de venta: un toque lo sube o lo baja ══ */
+
+(function () {
+  const manija = document.getElementById('manija');
+  const panel = document.querySelector('#v-vender .der');
+  if (!manija || !panel) return;
+
+  const CHICO = 30, GRANDE = 62;
+
+  function fijar(v) {
+    panel.style.height = v + 'dvh';
+    try { localStorage.setItem('cv_altoPanel', v); } catch (e) {}
+  }
+
+  let inicial = CHICO;
+  try { inicial = parseInt(localStorage.getItem('cv_altoPanel')) || CHICO; } catch (e) {}
+  fijar(inicial);
+
+  manija.addEventListener('click', function () {
+    let actual = CHICO;
+    try { actual = parseInt(localStorage.getItem('cv_altoPanel')) || CHICO; } catch (e) {}
+    fijar(actual === CHICO ? GRANDE : CHICO);
+  });
+})();
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
