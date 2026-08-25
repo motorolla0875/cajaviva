@@ -3651,6 +3651,293 @@ async function compartirLista() {
   catch (e) { window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); }
 }
 
+/* ══ Importar desde Excel o CSV ══ */
+
+let impTipo = 'productos';
+let impFilas = [];
+let impColumnas = [];
+let impLibro = null;
+let ultimaImportacion = null;
+
+const CAMPOS_PROD = [
+  ['nombre', 'Nombre', true, ['nombre', 'producto', 'descripcion', 'articulo', 'detalle']],
+  ['precioVenta', 'Precio de venta', true, ['precio', 'precioventa', 'venta', 'pventa', 'preciopublico']],
+  ['precioCosto', 'Precio de costo', false, ['costo', 'preciocosto', 'pcosto', 'compra']],
+  ['stock', 'Stock', false, ['stock', 'cantidad', 'existencia', 'unidades']],
+  ['categoria', 'Categoria', false, ['categoria', 'rubro', 'familia', 'grupo']],
+  ['codigoBarras', 'Codigo de barras', false, ['codigo', 'codigobarras', 'barras', 'ean', 'sku']],
+  ['unidad', 'Unidad', false, ['unidad', 'medida']]
+];
+
+const CAMPOS_CLI = [
+  ['nombre', 'Nombre', true, ['nombre', 'cliente', 'apellido', 'razonsocial']],
+  ['whatsapp', 'WhatsApp', false, ['whatsapp', 'telefono', 'celular', 'tel', 'movil']],
+  ['direccion', 'Direccion', false, ['direccion', 'domicilio', 'calle']],
+  ['notas', 'Notas', false, ['notas', 'observaciones', 'comentario']],
+  ['saldo', 'Saldo que debe', false, ['saldo', 'deuda', 'debe']]
+];
+
+function campos() { return impTipo === 'productos' ? CAMPOS_PROD : CAMPOS_CLI; }
+
+function normCol(t) {
+  return String(t || '').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+function abrirImportar(tipo) {
+  impTipo = tipo;
+  impFilas = []; impColumnas = [];
+  $('tituloImportar').textContent = tipo === 'productos' ? 'Importar productos' : 'Importar clientes';
+  $('subImportar').textContent = tipo === 'productos'
+    ? 'Subi tu lista de precios y cargamos todo de una vez.'
+    : 'Subi tu lista de clientes con sus datos.';
+  $('msgImportar').innerHTML = '';
+  $('archivoImp').value = '';
+  $('pasoArchivo').style.display = 'block';
+  $('pasoMapeo').style.display = 'none';
+  $('pasoResultado').style.display = 'none';
+  $('btnCerrarImportar').style.display = 'block';
+  $('modalImportar').classList.add('on');
+  pintarHistorialImp();
+}
+
+async function pintarHistorialImp() {
+  const el = $('historialImp');
+  el.innerHTML = '';
+  try {
+    const h = await api('GET', '/importar/historial');
+    const propias = h.filter(function (i) { return i.tipo === impTipo; });
+    if (propias.length === 0) return;
+
+    el.innerHTML = '<div class="seccion">Importaciones anteriores</div>' +
+      propias.map(function (i) {
+        return '<div class="cat-item"><div class="n">' + i.cantidad +
+          (impTipo === 'productos' ? ' productos' : ' clientes') +
+          '<div class="c">' + fechaCorta(i.created_at) + ' ' + horaDe(i.created_at) + '</div></div>' +
+          '<button onclick="deshacerImp(\'' + i.id + '\')" title="Deshacer">&#10005;</button></div>';
+      }).join('');
+  } catch (e) {}
+}
+
+async function deshacerImp(id) {
+  if (!confirm('Borrar todo lo que trajo esa importacion? Lo que ya se vendio no se toca.')) return;
+  try {
+    const r = await api('DELETE', '/importar/' + id);
+    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
+    else { await cargarClientes(); }
+    await pintarHistorialImp();
+    avisar(r.conVentas > 0
+      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' con ventas.'
+      : 'Se borraron ' + r.borrados);
+  } catch (e) { avisar(e.message, true); }
+}
+
+$('btnImportarProd').onclick = function () { abrirImportar('productos'); };
+$('btnImportarCli').onclick = function () { abrirImportar('clientes'); };
+$('btnCerrarImportar').onclick = function () { $('modalImportar').classList.remove('on'); };
+$('btnCerrarImpOk').onclick = function () { $('modalImportar').classList.remove('on'); };
+
+$('btnDeshacerImp').onclick = async function () {
+  if (!ultimaImportacion) return;
+  if (!confirm('Borrar todo lo que se acaba de importar? Lo que ya se vendio no se toca.')) return;
+
+  const btn = $('btnDeshacerImp');
+  btn.disabled = true; btn.textContent = 'Deshaciendo...';
+  try {
+    const r = await api('DELETE', '/importar/' + ultimaImportacion);
+    ultimaImportacion = null;
+    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
+    else { await cargarClientes(); }
+    $('modalImportar').classList.remove('on');
+    avisar(r.conVentas > 0
+      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' porque ya tienen ventas.'
+      : 'Se borraron ' + r.borrados);
+  } catch (e) { avisar(e.message, true); }
+  btn.disabled = false; btn.textContent = 'Deshacer esta importacion';
+};
+$('btnVolverImp').onclick = function () {
+  $('pasoArchivo').style.display = 'block';
+  $('pasoMapeo').style.display = 'none';
+  $('archivoImp').value = '';
+};
+
+function leerHoja(i) {
+  const hoja = impLibro.Sheets[impLibro.SheetNames[i]];
+  return XLSX.utils.sheet_to_json(hoja, { header: 1, blankrows: false, defval: '' });
+}
+
+function cargarHoja(datos) {
+  impColumnas = datos[0].map(function (c, i) { return String(c).trim() || ('Columna ' + (i + 1)); });
+  impFilas = datos.slice(1).filter(function (fila) {
+    return fila.some(function (c) { return String(c).trim() !== ''; });
+  });
+}
+
+$('hojaImp').onchange = function () {
+  const datos = leerHoja(parseInt($('hojaImp').value));
+  if (datos.length < 2) {
+    $('msgImportar').innerHTML = '<div class="msg">Esa hoja no tiene datos.</div>';
+    return;
+  }
+  $('msgImportar').innerHTML = '';
+  cargarHoja(datos);
+  pintarMapeo();
+  $('pasoArchivo').style.display = 'none';
+  $('pasoMapeo').style.display = 'block';
+};
+
+$('archivoImp').onchange = function (e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  $('msgImportar').innerHTML = '';
+
+  const lector = new FileReader();
+  lector.onload = function (ev) {
+    try {
+      impLibro = XLSX.read(ev.target.result, { type: 'array' });
+
+      if (impLibro.SheetNames.length > 1) {
+        $('hojaImp').innerHTML = impLibro.SheetNames.map(function (n, i) {
+          return '<option value="' + i + '">' + esc(n) + '</option>';
+        }).join('');
+        $('wrapHoja').style.display = 'block';
+      } else {
+        $('wrapHoja').style.display = 'none';
+      }
+
+      const datos = leerHoja(0);
+
+      if (datos.length < 2) {
+        $('msgImportar').innerHTML = '<div class="msg">El archivo no tiene datos suficientes.</div>';
+        return;
+      }
+
+      cargarHoja(datos);
+
+      if (impFilas.length === 0) {
+        $('msgImportar').innerHTML = '<div class="msg">No se encontraron filas con datos.</div>';
+        return;
+      }
+
+      pintarMapeo();
+      if (impLibro.SheetNames.length > 1) {
+        $('pasoMapeo').insertBefore($('wrapHoja'), $('pasoMapeo').firstChild);
+      }
+      $('pasoArchivo').style.display = 'none';
+      $('pasoMapeo').style.display = 'block';
+    } catch (err) {
+      $('msgImportar').innerHTML = '<div class="msg">No se pudo leer el archivo. Proba guardarlo como CSV o XLSX.</div>';
+    }
+  };
+  lector.readAsArrayBuffer(f);
+};
+
+function pintarMapeo() {
+  $('camposMapeo').innerHTML = campos().map(function (c) {
+    const clave = c[0], titulo = c[1], obligatorio = c[2], alias = c[3];
+
+    let elegida = -1;
+    impColumnas.forEach(function (col, i) {
+      if (elegida >= 0) return;
+      if (alias.indexOf(normCol(col)) >= 0) elegida = i;
+    });
+
+    const ops = impColumnas.map(function (col, i) {
+      return '<option value="' + i + '"' + (i === elegida ? ' selected' : '') + '>' + esc(col) + '</option>';
+    }).join('');
+
+    return '<div class="mapeo-fila"><label>' + titulo + (obligatorio ? ' *' : '') + '</label>' +
+      '<select id="map_' + clave + '" onchange="pintarPrevia()">' +
+      '<option value="">— sin usar —</option>' + ops + '</select></div>';
+  }).join('');
+
+  pintarPrevia();
+}
+
+function pintarPrevia() {
+  const cs = campos();
+  const usadas = cs.filter(function (c) { return $('map_' + c[0]).value !== ''; });
+
+  let html = '<table class="tabla-prev"><thead><tr>' +
+    usadas.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') +
+    '</tr></thead><tbody>';
+
+  impFilas.slice(0, 5).forEach(function (fila) {
+    html += '<tr>' + usadas.map(function (c) {
+      const i = parseInt($('map_' + c[0]).value);
+      return '<td>' + esc(fila[i] != null ? fila[i] : '') + '</td>';
+    }).join('') + '</tr>';
+  });
+
+  html += '</tbody></table><p class="hint">' + impFilas.length +
+    (impFilas.length === 1 ? ' fila en el archivo' : ' filas en el archivo') + '</p>';
+
+  $('vistaPrevia').innerHTML = html;
+  revisarCoherencia();
+}
+
+$('btnConfirmarImp').onclick = async function () {
+  const cs = campos();
+  const faltan = cs.filter(function (c) { return c[2] && $('map_' + c[0]).value === ''; });
+  if (faltan.length > 0) {
+    $('msgImportar').innerHTML = '<div class="msg">Falta indicar: ' +
+      faltan.map(function (c) { return c[1]; }).join(', ') + '</div>';
+    return;
+  }
+
+  if (!revisarCoherencia()) {
+    const tipoTxt = impTipo === 'productos' ? 'productos' : 'clientes';
+    if (!confirm('El archivo no parece una lista de ' + tipoTxt + '. Importar igual?')) return;
+  }
+
+  const filas = impFilas.map(function (fila) {
+    const o = {};
+    cs.forEach(function (c) {
+      const v = $('map_' + c[0]).value;
+      if (v !== '') o[c[0]] = fila[parseInt(v)];
+    });
+    return o;
+  });
+
+  const btn = $('btnConfirmarImp');
+  btn.disabled = true; btn.textContent = 'Importando...';
+
+  try {
+    const r = await api('POST', '/importar/' + impTipo, { filas: filas, fecha: hoyISO() });
+
+    let html = '<div style="text-align:center; padding:10px 0 6px;">' +
+      '<div class="monto-hecho">' + (r.creados + r.actualizados) + '</div>' +
+      '<div style="color:var(--muted); font-size:13.5px;">' +
+      r.creados + ' nuevos, ' + r.actualizados + ' actualizados</div></div>';
+
+    if (r.gastoStock > 0) {
+      html += '<p class="hint ok">Se anoto un gasto de ' + plata(r.gastoStock) + ' por la mercaderia cargada.</p>';
+    }
+    if (r.errores && r.errores.length > 0) {
+      html += '<div class="seccion">No se pudieron cargar</div><div style="max-height:150px; overflow-y:auto; font-size:12.5px; color:var(--danger);">' +
+        r.errores.map(function (e) { return esc(e); }).join('<br>') + '</div>';
+    }
+
+    $('resultadoImp').innerHTML = html;
+    try {
+      const u = await api('GET', '/importar/ultima');
+      ultimaImportacion = u && u.id ? u.id : null;
+    } catch (e) { ultimaImportacion = null; }
+    $('btnDeshacerImp').style.display = ultimaImportacion ? 'block' : 'none';
+    $('pasoMapeo').style.display = 'none';
+    $('pasoResultado').style.display = 'block';
+    $('btnCerrarImportar').style.display = 'none';
+
+    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
+    else { await cargarClientes(); }
+  } catch (e) {
+    $('msgImportar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Importar';
+};
+
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
