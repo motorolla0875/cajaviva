@@ -261,6 +261,13 @@
   .barra-resumen .br-cant { font-size: 26px; font-weight: 500; color: var(--accent); }
   .barra-resumen .br-total { font-size: 26px; font-weight: 500; color: var(--accent); }
 
+  .volver-venta {
+    width: 100%; padding: 13px 18px; text-align: left;
+    border: none; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); color: var(--accent-dark);
+    font-size: 14px; font-weight: 500;
+  }
+
   .der h2 {
     margin: 0; padding: 16px 18px 12px; font-size: 13px;
     font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line);
@@ -611,8 +618,6 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    /* con el panel cerrado, el panel entero desaparece */
-    .der.chico { display: none !important; }
 
     .barra-fija {
       display: block; position: fixed; left: 0; right: 0; bottom: 0;
@@ -747,8 +752,19 @@
       </div>
       <div class="grilla" id="grilla"></div>
     </div>
+    <div class="barra-fija" id="barraResumen">
+      <div class="bf-manija"><span></span></div>
+      <div class="bf-datos">
+        <span class="br-cant" id="brCant">0</span>
+        <span class="br-total" id="brTotal">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-venta">
     <div class="der">
-      <h2 id="tituloVenta"></h2>
+      <button class="volver-venta" id="volverVenta">&#8592; Seguir agregando</button>
+      <h2 id="tituloVenta">Detalle de la venta</h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
         <div class="total-row">
@@ -786,13 +802,6 @@
       </div>
     </div>
 
-    <div class="barra-fija" id="barraResumen">
-      <div class="bf-manija"><span></span></div>
-      <div class="bf-datos">
-        <span class="br-cant" id="brCant">0</span>
-        <span class="br-total" id="brTotal">$0</span>
-      </div>
-    </div>
   </div>
 
   <div class="vista" id="v-productos">
@@ -2345,471 +2354,32 @@ function encontroCodigo(codigo) {
 }
 
 
-/* ══ Panel de venta: un toque lo abre o lo cierra ══ */
+/* ══ Ir al detalle de la venta ══ */
+
+function irAVista(nombre) {
+  document.querySelectorAll('nav button').forEach(function (b) {
+    b.classList.toggle('on', b.dataset.vista === nombre);
+  });
+  document.querySelectorAll('.vista').forEach(function (v) { v.classList.remove('on'); });
+  const v = document.getElementById('v-' + nombre);
+  if (v) v.classList.add('on');
+}
 
 (function () {
-  const panel = document.querySelector('#v-vender .der');
-  const vista = document.getElementById('v-vender');
-  if (!panel || !vista) return;
-
-  function aplicar(cerrado) {
-    panel.classList.toggle('chico', cerrado);
-    vista.classList.toggle('grilla-visible', cerrado);
-
-    // ocultar/mostrar a mano, sin depender del CSS
-    const ocultar = ['#tituloVenta', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
-                     '.medios', '.selector-cliente', '.btn-cobrar', '.btn-limpiar'];
-    ocultar.forEach(function (sel) {
-      const el = panel.querySelector(sel);
-      if (el) el.style.display = cerrado ? 'none' : '';
-    });
-
-    const barra = document.getElementById('barraResumen');
-    if (barra) barra.style.display = cerrado ? 'block' : 'none';
-
-    try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
-  }
-
-  // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
-  aplicar(true);
-
-  const barraFija = document.getElementById('barraResumen');
-  if (barraFija) barraFija.addEventListener('click', function () {
-    const cerradoAhora = panel.classList.contains('chico');
-    if (cerradoAhora && (typeof carrito === 'undefined' || carrito.length === 0)) {
+  const barra = document.getElementById('barraResumen');
+  if (barra) barra.addEventListener('click', function () {
+    if (typeof carrito === 'undefined' || carrito.length === 0) {
       avisar('Toca un producto para empezar');
       return;
     }
-    aplicar(!cerradoAhora);
+    irAVista('venta');
   });
 
+  const volver = document.getElementById('volverVenta');
+  if (volver) volver.addEventListener('click', function () { irAVista('vender'); });
 
-
-  window.cerrarPanelVenta = function () { aplicar(true); };
+  window.cerrarPanelVenta = function () { irAVista('vender'); };
 })();
-
-/* ══ Confirmacion despues de cobrar ══ */
-
-let ultimaVenta = null;
-
-function mostrarHecho(datos) {
-  ultimaVenta = datos;
-  $('btnAnularUltima').style.display = datos.ventaId ? 'block' : 'none';
-  $('hechoMonto').textContent = plata(datos.total);
-
-  let html = '';
-  if (datos.vuelto > 0) html += 'Vuelto: <b>' + plata(datos.vuelto) + '</b><br>';
-  if (datos.ganancia > 0) html += 'Ganaste <b>' + plata(datos.ganancia) + '</b><br>';
-  if (datos.fiadoA) html += 'Fiado a <b>' + esc(datos.fiadoA) + '</b><br>';
-  if (datos.sinConexion) html += '<span style="color:var(--warn);">Se sube cuando vuelva la conexion</span>';
-
-  $('hechoDetalle').innerHTML = html;
-  $('modalHecho').classList.add('on');
-}
-
-function textoComprobante() {
-  if (!ultimaVenta) return '';
-  const n = (negocio && negocio.nombre) ? negocio.nombre : 'CajaViva';
-  let t = n + '\n\n';
-  ultimaVenta.items.forEach(function (i) {
-    t += fmtCant(i.cantidad) + ' x ' + i.nombre + '   ' + plata(i.precio * i.cantidad) + '\n';
-  });
-  t += '\nTOTAL: ' + plata(ultimaVenta.total);
-  if (ultimaVenta.vuelto > 0) t += '\nVuelto: ' + plata(ultimaVenta.vuelto);
-  t += '\n' + new Date().toLocaleString('es-AR');
-  return t;
-}
-
-$('btnCompartir').onclick = async function () {
-  const texto = textoComprobante();
-  if (navigator.share) {
-    try { await navigator.share({ text: texto }); return; } catch (e) { return; }
-  }
-  try {
-    await navigator.clipboard.writeText(texto);
-    avisar('Comprobante copiado');
-  } catch (e) {
-    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
-  }
-};
-
-$('btnSeguir').onclick = function () { $('modalHecho').classList.remove('on'); };
-
-$('btnAnularUltima').onclick = async function () {
-  if (!ultimaVenta || !ultimaVenta.ventaId) return;
-  if (!confirm('Anular esta venta? El stock vuelve a su lugar.')) return;
-
-  const btn = $('btnAnularUltima');
-  btn.disabled = true; btn.textContent = 'Anulando...';
-  try {
-    await api('DELETE', '/ventas/' + ultimaVenta.ventaId);
-    await cargarProductos(); await cargarResumen(); await cargarClientes();
-    $('modalHecho').classList.remove('on');
-    avisar('Venta anulada');
-  } catch (e) { avisar(e.message, true); }
-  btn.disabled = false; btn.textContent = 'Me equivoque, anular';
-};
-
-/* ══ Importar desde Excel o CSV ══ */
-
-let impTipo = 'productos';
-let impFilas = [];
-let impColumnas = [];
-let impLibro = null;
-let ultimaImportacion = null;
-
-const CAMPOS_PROD = [
-  ['nombre', 'Nombre', true, ['nombre', 'producto', 'descripcion', 'articulo', 'detalle']],
-  ['precioVenta', 'Precio de venta', true, ['precio', 'precioventa', 'venta', 'pventa', 'preciopublico']],
-  ['precioCosto', 'Precio de costo', false, ['costo', 'preciocosto', 'pcosto', 'compra']],
-  ['stock', 'Stock', false, ['stock', 'cantidad', 'existencia', 'unidades']],
-  ['categoria', 'Categoria', false, ['categoria', 'rubro', 'familia', 'grupo']],
-  ['codigoBarras', 'Codigo de barras', false, ['codigo', 'codigobarras', 'barras', 'ean', 'sku']],
-  ['unidad', 'Unidad', false, ['unidad', 'medida']]
-];
-
-const CAMPOS_CLI = [
-  ['nombre', 'Nombre', true, ['nombre', 'cliente', 'apellido', 'razonsocial']],
-  ['whatsapp', 'WhatsApp', false, ['whatsapp', 'telefono', 'celular', 'tel', 'movil']],
-  ['direccion', 'Direccion', false, ['direccion', 'domicilio', 'calle']],
-  ['notas', 'Notas', false, ['notas', 'observaciones', 'comentario']],
-  ['saldo', 'Saldo que debe', false, ['saldo', 'deuda', 'debe']]
-];
-
-function campos() { return impTipo === 'productos' ? CAMPOS_PROD : CAMPOS_CLI; }
-
-function normCol(t) {
-  return String(t || '').toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-}
-
-function abrirImportar(tipo) {
-  impTipo = tipo;
-  impFilas = []; impColumnas = [];
-  $('tituloImportar').textContent = tipo === 'productos' ? 'Importar productos' : 'Importar clientes';
-  $('subImportar').textContent = tipo === 'productos'
-    ? 'Subi tu lista de precios y cargamos todo de una vez.'
-    : 'Subi tu lista de clientes con sus datos.';
-  $('msgImportar').innerHTML = '';
-  $('archivoImp').value = '';
-  $('pasoArchivo').style.display = 'block';
-  $('pasoMapeo').style.display = 'none';
-  $('pasoResultado').style.display = 'none';
-  $('btnCerrarImportar').style.display = 'block';
-  $('modalImportar').classList.add('on');
-  pintarHistorialImp();
-}
-
-async function pintarHistorialImp() {
-  const el = $('historialImp');
-  el.innerHTML = '';
-  try {
-    const h = await api('GET', '/importar/historial');
-    const propias = h.filter(function (i) { return i.tipo === impTipo; });
-    if (propias.length === 0) return;
-
-    el.innerHTML = '<div class="seccion">Importaciones anteriores</div>' +
-      propias.map(function (i) {
-        return '<div class="cat-item"><div class="n">' + i.cantidad +
-          (impTipo === 'productos' ? ' productos' : ' clientes') +
-          '<div class="c">' + fechaCorta(i.created_at) + ' ' + horaDe(i.created_at) + '</div></div>' +
-          '<button onclick="deshacerImp(\'' + i.id + '\')" title="Deshacer">&#10005;</button></div>';
-      }).join('');
-  } catch (e) {}
-}
-
-async function deshacerImp(id) {
-  if (!confirm('Borrar todo lo que trajo esa importacion? Lo que ya se vendio no se toca.')) return;
-  try {
-    const r = await api('DELETE', '/importar/' + id);
-    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
-    else { await cargarClientes(); }
-    await pintarHistorialImp();
-    avisar(r.conVentas > 0
-      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' con ventas.'
-      : 'Se borraron ' + r.borrados);
-  } catch (e) { avisar(e.message, true); }
-}
-
-$('btnImportarProd').onclick = function () { abrirImportar('productos'); };
-$('btnImportarCli').onclick = function () { abrirImportar('clientes'); };
-$('btnCerrarImportar').onclick = function () { $('modalImportar').classList.remove('on'); };
-$('btnCerrarImpOk').onclick = function () { $('modalImportar').classList.remove('on'); };
-
-$('btnDeshacerImp').onclick = async function () {
-  if (!ultimaImportacion) return;
-  if (!confirm('Borrar todo lo que se acaba de importar? Lo que ya se vendio no se toca.')) return;
-
-  const btn = $('btnDeshacerImp');
-  btn.disabled = true; btn.textContent = 'Deshaciendo...';
-  try {
-    const r = await api('DELETE', '/importar/' + ultimaImportacion);
-    ultimaImportacion = null;
-    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
-    else { await cargarClientes(); }
-    $('modalImportar').classList.remove('on');
-    avisar(r.conVentas > 0
-      ? 'Se borraron ' + r.borrados + '. Quedaron ' + r.conVentas + ' porque ya tienen ventas.'
-      : 'Se borraron ' + r.borrados);
-  } catch (e) { avisar(e.message, true); }
-  btn.disabled = false; btn.textContent = 'Deshacer esta importacion';
-};
-$('btnVolverImp').onclick = function () {
-  $('pasoArchivo').style.display = 'block';
-  $('pasoMapeo').style.display = 'none';
-  $('archivoImp').value = '';
-};
-
-function leerHoja(i) {
-  const hoja = impLibro.Sheets[impLibro.SheetNames[i]];
-  return XLSX.utils.sheet_to_json(hoja, { header: 1, blankrows: false, defval: '' });
-}
-
-function cargarHoja(datos) {
-  impColumnas = datos[0].map(function (c, i) { return String(c).trim() || ('Columna ' + (i + 1)); });
-  impFilas = datos.slice(1).filter(function (fila) {
-    return fila.some(function (c) { return String(c).trim() !== ''; });
-  });
-}
-
-$('hojaImp').onchange = function () {
-  const datos = leerHoja(parseInt($('hojaImp').value));
-  if (datos.length < 2) {
-    $('msgImportar').innerHTML = '<div class="msg">Esa hoja no tiene datos.</div>';
-    return;
-  }
-  $('msgImportar').innerHTML = '';
-  cargarHoja(datos);
-  pintarMapeo();
-  $('pasoArchivo').style.display = 'none';
-  $('pasoMapeo').style.display = 'block';
-};
-
-$('archivoImp').onchange = function (e) {
-  const f = e.target.files[0];
-  if (!f) return;
-  $('msgImportar').innerHTML = '';
-
-  const lector = new FileReader();
-  lector.onload = function (ev) {
-    try {
-      impLibro = XLSX.read(ev.target.result, { type: 'array' });
-
-      if (impLibro.SheetNames.length > 1) {
-        $('hojaImp').innerHTML = impLibro.SheetNames.map(function (n, i) {
-          return '<option value="' + i + '">' + esc(n) + '</option>';
-        }).join('');
-        $('wrapHoja').style.display = 'block';
-      } else {
-        $('wrapHoja').style.display = 'none';
-      }
-
-      const datos = leerHoja(0);
-
-      if (datos.length < 2) {
-        $('msgImportar').innerHTML = '<div class="msg">El archivo no tiene datos suficientes.</div>';
-        return;
-      }
-
-      cargarHoja(datos);
-
-      if (impFilas.length === 0) {
-        $('msgImportar').innerHTML = '<div class="msg">No se encontraron filas con datos.</div>';
-        return;
-      }
-
-      pintarMapeo();
-      if (impLibro.SheetNames.length > 1) {
-        $('pasoMapeo').insertBefore($('wrapHoja'), $('pasoMapeo').firstChild);
-      }
-      $('pasoArchivo').style.display = 'none';
-      $('pasoMapeo').style.display = 'block';
-    } catch (err) {
-      $('msgImportar').innerHTML = '<div class="msg">No se pudo leer el archivo. Proba guardarlo como CSV o XLSX.</div>';
-    }
-  };
-  lector.readAsArrayBuffer(f);
-};
-
-function pintarMapeo() {
-  $('camposMapeo').innerHTML = campos().map(function (c) {
-    const clave = c[0], titulo = c[1], obligatorio = c[2], alias = c[3];
-
-    let elegida = -1;
-    impColumnas.forEach(function (col, i) {
-      if (elegida >= 0) return;
-      if (alias.indexOf(normCol(col)) >= 0) elegida = i;
-    });
-
-    const ops = impColumnas.map(function (col, i) {
-      return '<option value="' + i + '"' + (i === elegida ? ' selected' : '') + '>' + esc(col) + '</option>';
-    }).join('');
-
-    return '<div class="mapeo-fila"><label>' + titulo + (obligatorio ? ' *' : '') + '</label>' +
-      '<select id="map_' + clave + '" onchange="pintarPrevia()">' +
-      '<option value="">— sin usar —</option>' + ops + '</select></div>';
-  }).join('');
-
-  pintarPrevia();
-}
-
-function pintarPrevia() {
-  const cs = campos();
-  const usadas = cs.filter(function (c) { return $('map_' + c[0]).value !== ''; });
-
-  let html = '<table class="tabla-prev"><thead><tr>' +
-    usadas.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') +
-    '</tr></thead><tbody>';
-
-  impFilas.slice(0, 5).forEach(function (fila) {
-    html += '<tr>' + usadas.map(function (c) {
-      const i = parseInt($('map_' + c[0]).value);
-      return '<td>' + esc(fila[i] != null ? fila[i] : '') + '</td>';
-    }).join('') + '</tr>';
-  });
-
-  html += '</tbody></table><p class="hint">' + impFilas.length +
-    (impFilas.length === 1 ? ' fila en el archivo' : ' filas en el archivo') + '</p>';
-
-  $('vistaPrevia').innerHTML = html;
-  revisarCoherencia();
-}
-
-$('btnConfirmarImp').onclick = async function () {
-  const cs = campos();
-  const faltan = cs.filter(function (c) { return c[2] && $('map_' + c[0]).value === ''; });
-  if (faltan.length > 0) {
-    $('msgImportar').innerHTML = '<div class="msg">Falta indicar: ' +
-      faltan.map(function (c) { return c[1]; }).join(', ') + '</div>';
-    return;
-  }
-
-  if (!revisarCoherencia()) {
-    const tipoTxt = impTipo === 'productos' ? 'productos' : 'clientes';
-    if (!confirm('El archivo no parece una lista de ' + tipoTxt + '. Importar igual?')) return;
-  }
-
-  const filas = impFilas.map(function (fila) {
-    const o = {};
-    cs.forEach(function (c) {
-      const v = $('map_' + c[0]).value;
-      if (v !== '') o[c[0]] = fila[parseInt(v)];
-    });
-    return o;
-  });
-
-  const btn = $('btnConfirmarImp');
-  btn.disabled = true; btn.textContent = 'Importando...';
-
-  try {
-    const r = await api('POST', '/importar/' + impTipo, { filas: filas, fecha: hoyISO() });
-
-    let html = '<div style="text-align:center; padding:10px 0 6px;">' +
-      '<div class="monto-hecho">' + (r.creados + r.actualizados) + '</div>' +
-      '<div style="color:var(--muted); font-size:13.5px;">' +
-      r.creados + ' nuevos, ' + r.actualizados + ' actualizados</div></div>';
-
-    if (r.gastoStock > 0) {
-      html += '<p class="hint ok">Se anoto un gasto de ' + plata(r.gastoStock) + ' por la mercaderia cargada.</p>';
-    }
-    if (r.errores && r.errores.length > 0) {
-      html += '<div class="seccion">No se pudieron cargar</div><div style="max-height:150px; overflow-y:auto; font-size:12.5px; color:var(--danger);">' +
-        r.errores.map(function (e) { return esc(e); }).join('<br>') + '</div>';
-    }
-
-    $('resultadoImp').innerHTML = html;
-    try {
-      const u = await api('GET', '/importar/ultima');
-      ultimaImportacion = u && u.id ? u.id : null;
-    } catch (e) { ultimaImportacion = null; }
-    $('btnDeshacerImp').style.display = ultimaImportacion ? 'block' : 'none';
-    $('pasoMapeo').style.display = 'none';
-    $('pasoResultado').style.display = 'block';
-    $('btnCerrarImportar').style.display = 'none';
-
-    if (impTipo === 'productos') { await cargarCategorias(); await cargarProductos(); }
-    else { await cargarClientes(); }
-  } catch (e) {
-    $('msgImportar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
-
-  btn.disabled = false; btn.textContent = 'Importar';
-};
-
-/* ══ Flechas para las categorias ══ */
-
-(function () {
-  const cont = document.querySelector('.chips-wrap');
-  const chips = document.getElementById('chipsCat');
-  const izq = document.getElementById('chipIzq');
-  const der = document.getElementById('chipDer');
-  if (!cont || !chips) return;
-
-  function actualizar() {
-    const hayIzq = chips.scrollLeft > 4;
-    const hayDer = chips.scrollLeft + chips.clientWidth < chips.scrollWidth - 4;
-    izq.classList.toggle('ver', hayIzq);
-    der.classList.toggle('ver', hayDer);
-    cont.classList.toggle('con-izq', hayIzq);
-    cont.classList.toggle('con-der', hayDer);
-  }
-
-  izq.onclick = function () { chips.scrollBy({ left: -220, behavior: 'smooth' }); };
-  der.onclick = function () { chips.scrollBy({ left: 220, behavior: 'smooth' }); };
-
-  chips.addEventListener('scroll', actualizar);
-  window.addEventListener('resize', actualizar);
-  window.actualizarFlechasChips = actualizar;
-  setTimeout(actualizar, 300);
-})();
-
-// Avisa si el archivo no parece del tipo que se esta importando.
-// Ej: subir la lista de clientes desde Productos.
-function revisarCoherencia() {
-  const el = $('avisoTipo');
-  if (!el) return true;
-  el.innerHTML = '';
-
-  const iNombre = $('map_nombre') ? $('map_nombre').value : '';
-  if (iNombre === '') return true;
-
-  const muestra = impFilas.slice(0, 20);
-  let sospechas = [];
-
-  if (impTipo === 'productos') {
-    // sin precio real no es una lista de productos
-    const iPrecio = $('map_precioVenta') ? $('map_precioVenta').value : '';
-    if (iPrecio !== '') {
-      const conPrecio = muestra.filter(function (f) {
-        const v = parseFloat(String(f[parseInt(iPrecio)]).replace(/[^0-9.,-]/g, '').replace(',', '.'));
-        return !isNaN(v) && v > 0;
-      }).length;
-      if (conPrecio < muestra.length * 0.5) {
-        sospechas.push('La mitad de las filas no tiene un precio valido.');
-      }
-    }
-    // titulos que suenan a clientes
-    const pistas = ['cliente', 'telefono', 'celular', 'whatsapp', 'domicilio', 'deuda', 'debe', 'saldo'];
-    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
-    if (coinciden.length >= 2) {
-      sospechas.push('El archivo tiene columnas de clientes (' + coinciden.join(', ') + ').');
-    }
-  } else {
-    const pistas = ['precio', 'costo', 'stock', 'codigobarras', 'ean', 'categoria', 'rubro'];
-    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
-    if (coinciden.length >= 2) {
-      sospechas.push('El archivo tiene columnas de productos (' + coinciden.join(', ') + ').');
-    }
-  }
-
-  if (sospechas.length === 0) return true;
-
-  el.innerHTML = '<div class="msg" style="background:#FDF3E3; color:#8A5A0F;">' +
-    '<b>Revisa antes de importar</b><br>' + sospechas.join('<br>') +
-    '<br>Estas importando <b>' + (impTipo === 'productos' ? 'PRODUCTOS' : 'CLIENTES') + '</b>.' +
-    '</div>';
-  return false;
-}
 
 /* ══ Vuelto ══ */
 
