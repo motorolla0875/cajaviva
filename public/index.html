@@ -712,6 +712,33 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalPeso">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="tituloPeso">Cargar</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subPeso"></p>
+    <div id="msgPeso"></div>
+
+    <div class="medios" style="margin-bottom:14px;">
+      <button class="on" id="modoImporte">Por importe</button>
+      <button id="modoPeso">Por peso</button>
+    </div>
+
+    <div id="wrapImporte">
+      <label>Cuanto lleva ($)</label>
+      <input type="text" id="pesoImporte" inputmode="decimal" placeholder="0">
+    </div>
+    <div id="wrapCantidad" style="display:none;">
+      <label id="lblCantPeso">Cantidad</label>
+      <input type="text" id="pesoCantidad" inputmode="decimal" placeholder="0">
+    </div>
+
+    <div class="hint ok" id="hintPeso" style="margin-top:10px;"></div>
+
+    <button class="btn-ppal" id="btnConfirmarPeso">Agregar</button>
+    <button class="btn-sec" id="btnCerrarPeso">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalProveedores">
   <div class="modal">
     <h3>Proveedores</h3>
@@ -1437,6 +1464,7 @@ $('buscar').addEventListener('input', pintarGrilla);
 function agregar(id) {
   const p = productos.filter(function (x) { return x.id === id; })[0];
   if (!p) return;
+  if (cap('cap_peso') && p.unidad !== 'unidad') { abrirPeso(id); return; }
   const l = carrito.filter(function (x) { return x.productoId === id; })[0];
   const paso = (cap('cap_peso') && p.unidad !== 'unidad') ? 1 : 1;
   if ((l ? l.cantidad : 0) + paso > p.stock) { avisar('No hay mas stock de ' + p.nombre, true); return; }
@@ -1823,6 +1851,85 @@ async function verCompras(id) {
 }
 
 $('btnCerrarCompras').onclick = function () { $('modalCompras').classList.remove('on'); };
+
+/* ══ Cargar por importe o por peso ══ */
+
+let pesoProdId = null;
+let pesoModo = 'importe';
+
+function abrirPeso(id) {
+  const p = productos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+  pesoProdId = id; pesoModo = 'importe';
+  $('tituloPeso').textContent = p.nombre;
+  $('subPeso').textContent = plata(p.precio_venta) + ' por ' + p.unidad + ' - hay ' + fmtCant(p.stock) + ' ' + p.unidad;
+  $('lblCantPeso').textContent = 'Cuanto lleva (' + p.unidad + ')';
+  $('msgPeso').innerHTML = '';
+  $('pesoImporte').value = ''; $('pesoCantidad').value = '';
+  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on');
+  $('wrapImporte').style.display = 'block'; $('wrapCantidad').style.display = 'none';
+  $('hintPeso').textContent = '';
+  $('modalPeso').classList.add('on');
+  setTimeout(function () { $('pesoImporte').focus(); }, 100);
+}
+
+$('modoImporte').onclick = function () {
+  pesoModo = 'importe';
+  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on');
+  $('wrapImporte').style.display = 'block'; $('wrapCantidad').style.display = 'none';
+  calcularPeso();
+};
+$('modoPeso').onclick = function () {
+  pesoModo = 'peso';
+  $('modoPeso').classList.add('on'); $('modoImporte').classList.remove('on');
+  $('wrapCantidad').style.display = 'block'; $('wrapImporte').style.display = 'none';
+  calcularPeso();
+};
+
+function calcularPeso() {
+  const p = productos.filter(function (x) { return x.id === pesoProdId; })[0];
+  if (!p) return;
+  const el = $('hintPeso');
+  if (pesoModo === 'importe') {
+    const imp = num($('pesoImporte').value);
+    if (imp <= 0 || p.precio_venta <= 0) { el.textContent = ''; return; }
+    const cant = imp / p.precio_venta;
+    el.textContent = 'Son ' + fmtCant(cant) + ' ' + p.unidad;
+  } else {
+    const cant = num($('pesoCantidad').value);
+    if (cant <= 0) { el.textContent = ''; return; }
+    el.textContent = 'Son ' + plata(cant * p.precio_venta);
+  }
+}
+$('pesoImporte').addEventListener('input', calcularPeso);
+$('pesoCantidad').addEventListener('input', calcularPeso);
+
+$('btnCerrarPeso').onclick = function () { $('modalPeso').classList.remove('on'); };
+
+$('btnConfirmarPeso').onclick = function () {
+  const p = productos.filter(function (x) { return x.id === pesoProdId; })[0];
+  if (!p) return;
+
+  let cantidad;
+  if (pesoModo === 'importe') {
+    const imp = num($('pesoImporte').value);
+    if (imp <= 0) { $('msgPeso').innerHTML = '<div class="msg">Pone un importe mayor a 0.</div>'; return; }
+    cantidad = Math.round((imp / p.precio_venta) * 1000) / 1000;
+  } else {
+    cantidad = num($('pesoCantidad').value);
+    if (cantidad <= 0) { $('msgPeso').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
+  }
+
+  const yaHay = carrito.filter(function (x) { return x.productoId === pesoProdId; })[0];
+  const total = (yaHay ? yaHay.cantidad : 0) + cantidad;
+  if (total > p.stock) { $('msgPeso').innerHTML = '<div class="msg">Solo hay ' + fmtCant(p.stock) + ' ' + p.unidad + '.</div>'; return; }
+
+  if (yaHay) yaHay.cantidad = total;
+  else carrito.push({ productoId: pesoProdId, nombre: p.nombre, precio: p.precio_venta, cantidad: cantidad, unidad: p.unidad });
+
+  pintarCarrito();
+  $('modalPeso').classList.remove('on');
+};
 
 /* ══ Vuelto ══ */
 
