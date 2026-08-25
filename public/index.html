@@ -178,6 +178,17 @@
   }
   .buscador input:focus { outline: none; border-color: var(--accent); }
 
+  .buscador-con-scan { display: flex; gap: 8px; }
+  .buscador-con-scan input { flex: 1; min-width: 0; }
+  .buscador-con-scan button {
+    flex-shrink: 0; width: 50px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--panel);
+    color: var(--text); font-size: 20px;
+  }
+
+  #lectorCam { width: 100%; border-radius: 12px; overflow: hidden; }
+  #lectorCam video { width: 100% !important; border-radius: 12px; }
+
   .chips {
     display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
     margin-bottom: 4px; flex-shrink: 0; scrollbar-width: none;
@@ -499,6 +510,7 @@
     .rubros { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   }
 </style>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -565,8 +577,9 @@
 
   <div class="vista on" id="v-vender">
     <div class="izq">
-      <div class="buscador">
+      <div class="buscador buscador-con-scan">
         <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
+        <button id="btnEscanear" title="Escanear codigo">&#9974;</button>
       </div>
       <div class="chips" id="chipsCat"></div>
       <div class="grilla" id="grilla"></div>
@@ -709,6 +722,16 @@
 
     <button class="btn-ppal" id="btnGuardarNegocio">Guardar</button>
     <button class="btn-sec" id="btnCerrarNegocio">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalScan">
+  <div class="modal" style="max-width:420px;">
+    <h3>Escanear codigo</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Apunta la camara al codigo de barras del producto.</p>
+    <div id="msgScan"></div>
+    <div id="lectorCam"></div>
+    <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
   </div>
 </div>
 
@@ -1942,6 +1965,56 @@ $('btnConfirmarPeso').onclick = function () {
   pintarCarrito();
   $('modalPeso').classList.remove('on');
 };
+
+/* ══ Escaner de codigo de barras ══ */
+
+let lector = null;
+let escaneando = false;
+
+$('btnEscanear').onclick = async function () {
+  if (typeof Html5Qrcode === 'undefined') {
+    avisar('El lector no esta disponible sin conexion', true); return;
+  }
+  $('msgScan').innerHTML = '';
+  $('modalScan').classList.add('on');
+
+  try {
+    if (!lector) lector = new Html5Qrcode('lectorCam');
+    escaneando = true;
+    await lector.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 260, height: 160 } },
+      function (texto) { encontroCodigo(texto); },
+      function () {}
+    );
+  } catch (e) {
+    $('msgScan').innerHTML = '<div class="msg">No se pudo abrir la camara. Dale permiso al navegador.</div>';
+    escaneando = false;
+  }
+};
+
+async function cerrarScan() {
+  if (lector && escaneando) {
+    try { await lector.stop(); } catch (e) {}
+    escaneando = false;
+  }
+  $('modalScan').classList.remove('on');
+}
+$('btnCerrarScan').onclick = cerrarScan;
+
+function encontroCodigo(codigo) {
+  const limpio = String(codigo).trim();
+  const p = productos.filter(function (x) { return (x.codigo_barras || '') === limpio; })[0];
+
+  if (!p) {
+    $('msgScan').innerHTML = '<div class="msg">Ningun producto tiene el codigo ' + esc(limpio) + '. Cargalo desde Productos.</div>';
+    return;
+  }
+
+  cerrarScan();
+  agregar(p.id);
+  avisar(p.nombre + ' agregado');
+}
 
 /* ══ Vuelto ══ */
 
