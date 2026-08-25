@@ -169,4 +169,33 @@ router.get('/empleados/:id', (req, res) => {
   res.json(filas);
 });
 
+
+// ── lo que esta por vencer ──
+router.get('/vencimientos', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const hoy = hoyISO();
+  const filas = db.prepare(`
+    SELECT p.id, p.nombre, p.vence, p.stock, p.unidad, p.precio_venta, p.precio_costo,
+           p.aviso_dias, c.nombre AS categoria_nombre,
+           CAST(julianday(p.vence) - julianday(?) AS INTEGER) AS dias
+    FROM productos p
+    LEFT JOIN categorias c ON c.id = p.categoria_id
+    WHERE p.user_id = ? AND p.activo = 1 AND p.vence IS NOT NULL AND p.stock > 0
+    ORDER BY p.vence ASC
+  `).all(hoy, req.userId);
+
+  const vencidos = filas.filter(function (p) { return p.dias < 0; });
+  const porVencer = filas.filter(function (p) { return p.dias >= 0 && p.dias <= (p.aviso_dias || 7); });
+
+  const perdida = vencidos.reduce(function (s, p) { return s + (p.stock * (p.precio_costo || 0)); }, 0);
+  const enRiesgo = porVencer.reduce(function (s, p) { return s + (p.stock * (p.precio_costo || 0)); }, 0);
+
+  res.json({
+    vencidos: vencidos, porVencer: porVencer,
+    resto: filas.filter(function (p) { return p.dias > (p.aviso_dias || 7); }),
+    perdida: perdida, enRiesgo: enRiesgo, hoy: hoy
+  });
+});
+
 module.exports = router;

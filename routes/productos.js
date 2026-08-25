@@ -4,6 +4,9 @@ const db = require('../db');
 
 const router = express.Router();
 
+try { db.exec('ALTER TABLE productos ADD COLUMN vence TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE productos ADD COLUMN aviso_dias INTEGER NOT NULL DEFAULT 7'); } catch (e) {}
+
 function hoyISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── listar productos activos ──
@@ -26,7 +29,7 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
-          unidad, stockInicial, stockMinimo, notas } = req.body || {};
+          unidad, stockInicial, stockMinimo, notas, vence, avisoDias } = req.body || {};
 
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Falta el nombre del producto.' });
 
@@ -39,10 +42,12 @@ router.post('/', (req, res) => {
 
   db.prepare(`
     INSERT INTO productos (id, user_id, categoria_id, nombre, codigo_barras,
-      precio_venta, precio_costo, unidad, stock, stock_minimo, notas)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, categoriaId || null, nombre.trim(), codigoBarras || null,
-         pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null);
+         pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
+         /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
+         parseInt(avisoDias) || 7);
 
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {
@@ -59,7 +64,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
-          unidad, stockMinimo, notas } = req.body || {};
+          unidad, stockMinimo, notas, vence, avisoDias } = req.body || {};
 
   const prod = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!prod) return res.status(404).json({ error: 'Producto no encontrado.' });
@@ -84,12 +89,14 @@ router.put('/:id', (req, res) => {
   db.prepare(`
     UPDATE productos SET nombre = ?, categoria_id = ?, codigo_barras = ?,
       precio_venta = ?, precio_costo = ?, unidad = ?, stock_minimo = ?,
-      notas = ?, updated_at = datetime('now')
+      notas = ?, vence = ?, aviso_dias = ?, updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
   `).run(nombre.trim(), categoriaId || null, codigoBarras || null,
          parseFloat(precioVenta) || 0,
          precioCosto === '' || precioCosto == null ? null : parseFloat(precioCosto),
          unidad || 'unidad', parseFloat(stockMinimo) || 0, notas || null,
+         /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
+         parseInt(avisoDias) || 7,
          req.params.id, req.userId);
 
   res.json({ ok: true });

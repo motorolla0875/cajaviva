@@ -539,6 +539,14 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .venc-badge {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; margin-top: 3px; font-weight: 500;
+  }
+  .venc-badge.rojo { background: var(--danger-soft); color: var(--danger); }
+  .venc-badge.naranja { background: #FDF3E3; color: #8A5A0F; }
+  .venc-badge.verde { background: var(--accent-soft); color: var(--accent-dark); }
+
   .hist-fila {
     display: flex; justify-content: space-between; align-items: center;
     padding: 11px 0; border-bottom: 1px solid var(--line);
@@ -1054,6 +1062,7 @@
         <button data-tab="reponer">Que comprar</button>
         <button data-tab="quietos">No se venden</button>
         <button data-tab="empleados">Por empleado</button>
+        <button data-tab="vencen" id="tabVencen">Vencimientos</button>
       </div>
 
       <div id="repContenido"></div>
@@ -1314,6 +1323,20 @@
     </div>
     <label>Avisar cuando el stock baje de</label>
     <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
+
+    <div id="wrapVence" style="display:none;">
+      <div class="fila2">
+        <div><label>Vence el</label><input type="date" id="pVence"></div>
+        <div><label>Avisar con</label>
+          <select id="pAvisoDias">
+            <option value="3">3 dias antes</option>
+            <option value="7" selected>7 dias antes</option>
+            <option value="15">15 dias antes</option>
+            <option value="30">30 dias antes</option>
+          </select>
+        </div>
+      </div>
+    </div>
     <button class="btn-ppal" id="btnGuardarProd">Guardar</button>
     <button class="btn-sec" id="btnHistorialPrecio" style="display:none;">Ver historial de precios</button>
     <button class="btn-del" id="btnBorrarProd" style="display:none;">Eliminar producto</button>
@@ -1949,12 +1972,18 @@ function aplicarUsuario(d) {
 function aplicarCapacidades() {
   if (negocio && negocio.nombre) $('nombreNegocio').textContent = negocio.nombre;
 
+  const tv = document.getElementById('tabVencen');
+  if (tv) tv.style.display = cap('cap_vencimientos') ? '' : 'none';
+
   document.querySelector('nav button[data-vista="productos"]')
     .classList.toggle('oculto', cap('cap_turnos') && !cap('cap_mostrador'));
   document.querySelector('nav button[data-vista="vender"]')
     .classList.toggle('oculto', !cap('cap_mostrador') && !cap('cap_reparto'));
 
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
+  $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
+  $('pVence').value = p && p.vence ? p.vence : '';
+  $('pAvisoDias').value = p && p.aviso_dias ? p.aviso_dias : 7;
 
   const activo = document.querySelector('nav button.on');
   if (activo && activo.classList.contains('oculto')) {
@@ -2575,7 +2604,9 @@ $('btnGuardarProd').onclick = async function () {
     precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
     unidad: cap('cap_peso') ? $('pUnidad').value : 'unidad',
     codigoBarras: $('pBarras').value.trim() || null,
-    stockMinimo: num($('pMinimo').value)
+    stockMinimo: num($('pMinimo').value),
+    vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
+    avisoDias: parseInt($('pAvisoDias').value) || 7
   };
 
   const btn = $('btnGuardarProd');
@@ -3849,6 +3880,46 @@ async function cargarReportes() {
             '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
         }).join('');
       window._listaReponer = d.items;
+
+    } else if (repTab === 'vencen') {
+      const d = await api('GET', '/reportes/vencimientos');
+
+      function fila(p) {
+        const cls = p.dias < 0 ? 'rojo' : (p.dias <= (p.aviso_dias || 7) ? 'naranja' : 'verde');
+        const txt = p.dias < 0 ? 'Vencio hace ' + (-p.dias) + (p.dias === -1 ? ' dia' : ' dias')
+          : p.dias === 0 ? 'Vence hoy'
+          : 'Vence en ' + p.dias + (p.dias === 1 ? ' dia' : ' dias');
+        return '<div class="rep-item"><div class="datos">' +
+          '<div class="n">' + esc(p.nombre) + '</div>' +
+          '<div class="d">' + fechaCorta(p.vence) +
+            (p.categoria_nombre ? ' - ' + esc(p.categoria_nombre) : '') + '</div>' +
+          '<span class="venc-badge ' + cls + '">' + txt + '</span></div>' +
+          '<div class="cifra"><b>' + fmtCant(p.stock) + '</b><span>' +
+          (p.unidad === 'unidad' ? 'unidades' : p.unidad) + '</span></div></div>';
+      }
+
+      let html = '';
+      if (d.perdida > 0) {
+        html += '<div class="rep-resumen alerta"><div class="lbl">Ya vencido - perdida</div>' +
+          '<div class="val">' + plata(d.perdida) + '</div></div>';
+      }
+      if (d.enRiesgo > 0) {
+        html += '<div class="rep-resumen"><div class="lbl">Por vencer pronto</div>' +
+          '<div class="val">' + plata(d.enRiesgo) + '</div></div>';
+      }
+
+      if (d.vencidos.length > 0) {
+        html += '<div class="seccion">Ya vencieron</div>' + d.vencidos.map(fila).join('');
+      }
+      if (d.porVencer.length > 0) {
+        html += '<div class="seccion">Vencen pronto</div>' + d.porVencer.map(fila).join('');
+      }
+      if (d.resto.length > 0) {
+        html += '<div class="seccion">Mas adelante</div>' + d.resto.map(fila).join('');
+      }
+      if (!html) html = '<div class="vacio">No hay productos con vencimiento cargado.</div>';
+
+      cont.innerHTML = html;
 
     } else if (repTab === 'empleados') {
       const d = await api('GET', '/reportes/empleados' + qs);
