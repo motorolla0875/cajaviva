@@ -628,6 +628,7 @@
   body.modo-empleado #btnCierre,
   body.modo-empleado #btnConfigNegocio,
   body.modo-empleado #btnEmpleados,
+  body.modo-empleado #btnCatalogo,
   body.modo-empleado #btnAsegurar,
   body.modo-empleado #camposAsegurar,
   body.modo-empleado .fila .datos .margen,
@@ -1078,6 +1079,7 @@
     </div>
     <button class="btn-sec" id="btnConfigNegocio">Configurar mi negocio</button>
     <button class="btn-sec" id="btnEmpleados">Empleados</button>
+    <button class="btn-sec" id="btnCatalogo">Catalogo para compartir</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
     <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
   </div>
@@ -1353,6 +1355,46 @@
     <button class="btn-ppal" id="btnAplicarPrecios">Aplicar</button>
     <button class="btn-sec" id="btnDeshacerPrecios">Deshacer el ultimo cambio</button>
     <button class="btn-sec" id="btnCerrarPrecios">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCatalogo">
+  <div class="modal">
+    <h3>Catalogo para compartir</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Una pagina con tus precios que podes mandar por WhatsApp. Tus clientes ven la lista y te arman el pedido.</p>
+    <div id="msgCat2"></div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Catalogo activo</div>
+        <div class="d">Si lo apagas, el link deja de funcionar</div></div>
+      <button class="switch" id="swCatalogo"></button>
+    </div>
+
+    <label>Direccion del catalogo</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span style="color:var(--muted); font-size:13px; flex-shrink:0;">cajaviva.app/c/</span>
+      <input type="text" id="catSlug" placeholder="mi-negocio" style="flex:1; min-width:0;">
+    </div>
+
+    <label>Tu WhatsApp (para recibir los pedidos)</label>
+    <input type="text" id="catWpp" inputmode="tel" placeholder="Ej: 1150250011">
+
+    <label>Mensaje de bienvenida (opcional)</label>
+    <input type="text" id="catMensaje" placeholder="Ej: Hacemos envios sin cargo">
+
+    <div id="catLinkBox" style="display:none; margin-top:16px; padding:14px; background:var(--accent-soft); border-radius:10px;">
+      <div style="font-size:12px; color:var(--accent-dark); margin-bottom:6px;">Tu link</div>
+      <div style="font-size:14px; font-weight:500; color:var(--accent-dark); word-break:break-all;" id="catLink"></div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn-pago" onclick="compartirCatalogo()" style="flex:1; border:none; border-radius:9px; padding:10px; font-size:13.5px; font-weight:500;">Compartir</button>
+        <button onclick="abrirCatalogo()" style="flex:1; border:1px solid var(--accent); border-radius:9px; padding:10px; background:var(--panel); color:var(--accent-dark); font-size:13.5px; font-weight:500;">Ver como queda</button>
+      </div>
+    </div>
+
+    <p class="hint" id="catCuantos"></p>
+
+    <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
+    <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
   </div>
 </div>
 
@@ -4120,6 +4162,79 @@ $('btnConfirmarDev').onclick = async function () {
   }
   btn.disabled = false; btn.textContent = 'Confirmar devolucion';
 };
+
+/* ══ Catalogo publico ══ */
+
+let catActivo = false;
+
+$('btnCatalogo').onclick = async function () {
+  $('modalCuentaUsuario').classList.remove('on');
+  $('msgCat2').innerHTML = '';
+  $('modalCatalogo').classList.add('on');
+
+  try {
+    const d = await api('GET', '/catalogo/config');
+    const c = d.config || {};
+    catActivo = !!c.catalogo_activo;
+    $('swCatalogo').classList.toggle('on', catActivo);
+    $('catSlug').value = c.slug || '';
+    $('catWpp').value = c.whatsapp || '';
+    $('catMensaje').value = c.catalogo_mensaje || '';
+    $('catCuantos').textContent = d.productos + (d.productos === 1 ? ' producto en el catalogo' : ' productos en el catalogo');
+    mostrarLink(c.slug);
+  } catch (e) {
+    $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+};
+
+function mostrarLink(slug) {
+  if (catActivo && slug) {
+    $('catLinkBox').style.display = 'block';
+    $('catLink').textContent = location.origin + '/c/' + slug;
+  } else {
+    $('catLinkBox').style.display = 'none';
+  }
+}
+
+$('swCatalogo').onclick = function () {
+  catActivo = !catActivo;
+  $('swCatalogo').classList.toggle('on', catActivo);
+  mostrarLink($('catSlug').value.trim());
+};
+
+$('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remove('on'); };
+
+$('btnGuardarCatalogo').onclick = async function () {
+  const btn = $('btnGuardarCatalogo');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const d = await api('PUT', '/catalogo/config', {
+      slug: $('catSlug').value.trim() || (negocio && negocio.nombre) || 'negocio',
+      activo: catActivo,
+      whatsapp: $('catWpp').value.trim() || null,
+      mensaje: $('catMensaje').value.trim() || null
+    });
+    $('catSlug').value = d.slug;
+    mostrarLink(d.slug);
+    avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
+  } catch (e) {
+    $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+async function compartirCatalogo() {
+  const url = $('catLink').textContent;
+  const n = (negocio && negocio.nombre) ? negocio.nombre : 'Mi negocio';
+  const texto = 'Mira los precios de ' + n + ': ' + url;
+  if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { return; } }
+  try { await navigator.clipboard.writeText(texto); avisar('Link copiado'); }
+  catch (e) { window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); }
+}
+
+function abrirCatalogo() {
+  window.open($('catLink').textContent, '_blank');
+}
 
 /* ══ Vuelto ══ */
 
