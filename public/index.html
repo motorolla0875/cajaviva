@@ -288,6 +288,7 @@
   .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
   .total-row .lbl { color: var(--muted); font-size: 13px; }
   .total-row .val { font-size: 28px; font-weight: 500; }
+  .cant-items { display: none; }
 
   .cobrar-fila {
     display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
@@ -610,8 +611,13 @@
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
     .der.chico { flex: 0 0 auto; }
-    .der.chico .pie { border-top: none; padding: 0 16px 10px; }
-    .der.chico .total-row { margin-bottom: 0; }
+    .der.chico .pie { border-top: none; padding: 0 16px 12px; }
+    .der.chico .total-row { margin-bottom: 0; align-items: center; }
+    .der.chico .total-row .lbl { display: none; }
+    .der.chico .cant-items {
+      display: block; font-size: 26px; font-weight: 500; color: var(--accent);
+    }
+    .der.chico .total-row .val { color: var(--accent); }
     .der.chico .manija { height: 20px; }
     .manija:active span { background: var(--accent); }
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
@@ -723,7 +729,11 @@
       <h2>Venta actual</h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
-        <div class="total-row"><span class="lbl">Total</span><span class="val" id="total">$0</span></div>
+        <div class="total-row">
+          <span class="lbl">Total</span>
+          <span class="cant-items" id="cantItems">0</span>
+          <span class="val" id="total">$0</span>
+        </div>
         <div class="cobrar-fila">
           <label>Cobrar</label>
           <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
@@ -1762,6 +1772,7 @@ function pintarCarrito() {
   }
   const t = totalCarrito();
   $('total').textContent = plata(t);
+  $('cantItems').textContent = fmtCant(carrito.reduce(function (s, l) { return s + l.cantidad; }, 0));
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
   pintarGrilla();
   actualizarNotaDesc();
