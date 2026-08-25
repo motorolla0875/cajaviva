@@ -253,6 +253,8 @@
 
   .manija { display: none; }
 
+  .barra-fija { display: none; }
+
   .barra-resumen {
     display: none; align-items: center; justify-content: space-between;
     padding: 6px 18px 14px;
@@ -617,15 +619,24 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    .der.chico {
-      position: fixed !important; left: 0; right: 0; bottom: 0;
-      height: 78px !important; min-height: 78px; max-height: 78px;
-      flex: none !important; overflow: hidden !important; z-index: 40;
-      border-top: 1px solid var(--line); background: var(--panel);
-      display: block !important;
+    /* con el panel cerrado, el panel entero desaparece */
+    .der.chico { display: none !important; }
+
+    .barra-fija {
+      display: block; position: fixed; left: 0; right: 0; bottom: 0;
+      height: 76px; background: var(--panel);
+      border-top: 1px solid var(--line); z-index: 40;
     }
-    /* nada mas que la manija y la barra cuando esta cerrado */
-    .der.chico > *:not(.manija):not(.barra-resumen) { display: none !important; }
+    .bf-manija { display: flex; align-items: center; justify-content: center; height: 24px; }
+    .bf-manija span { width: 42px; height: 4px; border-radius: 2px; background: var(--line); }
+    .bf-datos {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 50px; padding: 0 18px;
+    }
+    .bf-datos .br-cant, .bf-datos .br-total {
+      font-size: 26px; font-weight: 500; color: var(--accent);
+    }
+    #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
     /* espacio para que la grilla no quede tapada por la barra */
     #v-vender.vista.on.grilla-visible .izq { padding-bottom: 0; }
     #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
@@ -748,10 +759,6 @@
     </div>
     <div class="der">
       <div class="manija" id="manija"><span></span></div>
-      <div class="barra-resumen" id="barraResumen">
-        <span class="br-cant" id="brCant">0</span>
-        <span class="br-total" id="brTotal">$0</span>
-      </div>
       <h2 id="tituloVenta"></h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
@@ -787,6 +794,14 @@
         </div>
         <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
         <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
+      </div>
+    </div>
+
+    <div class="barra-fija" id="barraResumen">
+      <div class="bf-manija"><span></span></div>
+      <div class="bf-datos">
+        <span class="br-cant" id="brCant">0</span>
+        <span class="br-total" id="brTotal">$0</span>
       </div>
     </div>
   </div>
@@ -2362,15 +2377,22 @@ function encontroCodigo(codigo) {
     });
 
     const barra = document.getElementById('barraResumen');
-    if (barra) barra.style.display = cerrado ? 'flex' : 'none';
-    const pie = panel.querySelector('.pie');
-    if (pie) pie.style.display = cerrado ? 'none' : '';
+    if (barra) barra.style.display = cerrado ? 'block' : 'none';
 
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
   // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
   aplicar(true);
+
+  const barraFija = document.getElementById('barraResumen');
+  if (barraFija) barraFija.addEventListener('click', function () {
+    if (typeof carrito === 'undefined' || carrito.length === 0) {
+      avisar('Toca un producto para empezar');
+      return;
+    }
+    aplicar(false);
+  });
 
   manija.addEventListener('click', function () {
     const cerradoAhora = panel.classList.contains('chico');
