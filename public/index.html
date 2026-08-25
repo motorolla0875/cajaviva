@@ -2099,6 +2099,7 @@ async function arrancarApp() {
   aplicarCapacidades();
   pintarCarrito();
   usarDatosGuardados();
+  revisarPedidos(false);
   pintarContadorCola();
   subirCola();
   try {
@@ -4886,15 +4887,39 @@ async function convertirPedido(id) {
   } catch (e) { avisar(e.message, true); }
 }
 
-// avisar si hay pedidos nuevos, cada 2 minutos
-async function revisarPedidos() {
-  if (esEmpleado) return;
+// avisar si hay pedidos nuevos
+let ultimosPedidos = null;
+
+async function revisarPedidos(avisarSiHay) {
+  if (esEmpleado || !token) return;
   try {
     const d = await api('GET', '/pedidos?estado=pendientes');
     pintarContadorPedidos(d.nuevos);
+
+    if (avisarSiHay && ultimosPedidos !== null && d.nuevos > ultimosPedidos) {
+      const cuantos = d.nuevos - ultimosPedidos;
+      sonidoPedido();
+      vibrar([100, 60, 100]);
+      avisar(cuantos === 1 ? 'Entro un pedido nuevo' : 'Entraron ' + cuantos + ' pedidos');
+      if (document.querySelector('.vista.on') === document.getElementById('v-pedidos')) {
+        cargarPedidos();
+      }
+    }
+    ultimosPedidos = d.nuevos;
   } catch (e) {}
 }
-setInterval(revisarPedidos, 120000);
+
+function sonidoPedido() {
+  pitido(880, 0.12);
+  setTimeout(function () { pitido(1320, 0.16); }, 130);
+}
+
+setInterval(function () { revisarPedidos(true); }, 20000);
+
+// revisar tambien al volver a la app
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) revisarPedidos(true);
+});
 
 /* ══ Vuelto ══ */
 
