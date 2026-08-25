@@ -3119,6 +3119,47 @@ function aplicarModoEmpleado(nombre) {
   document.body.classList.add('modo-empleado');
 }
 
+/* ══ En escritorio, el detalle va al costado ══ */
+
+(function () {
+  const vender = document.getElementById('v-vender');
+  const venta = document.getElementById('v-venta');
+  const barra = document.getElementById('barraResumen');
+  if (!vender || !venta) return;
+
+  const panel = venta.querySelector('.der');
+  const volver = document.getElementById('volverVenta');
+  let enEscritorio = null;
+
+  function acomodar() {
+    const ancho = window.innerWidth > 900;
+    if (ancho === enEscritorio) return;
+    enEscritorio = ancho;
+
+    if (ancho) {
+      vender.appendChild(panel);
+      if (barra) barra.style.display = 'none';
+      if (volver) volver.style.display = 'none';
+      const b = document.querySelector('nav button[data-vista="venta"]');
+      if (b) b.style.display = 'none';
+      if (venta.classList.contains('on')) {
+        venta.classList.remove('on');
+        vender.classList.add('on');
+        document.querySelectorAll('nav button').forEach(function (x) {
+          x.classList.toggle('on', x.dataset.vista === 'vender');
+        });
+      }
+    } else {
+      venta.appendChild(panel);
+      if (barra) barra.style.display = '';
+      if (volver) volver.style.display = '';
+    }
+  }
+
+  acomodar();
+  window.addEventListener('resize', acomodar);
+})();
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
