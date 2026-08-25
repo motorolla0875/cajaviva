@@ -251,7 +251,15 @@
   }
   .prod.en-venta { border-color: var(--accent); background: var(--accent-soft); }
 
-  .manija { display: none; }
+
+  .barra-fija { display: none; }
+
+  .barra-resumen {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 6px 18px 14px;
+  }
+  .barra-resumen .br-cant { font-size: 26px; font-weight: 500; color: var(--accent); }
+  .barra-resumen .br-total { font-size: 26px; font-weight: 500; color: var(--accent); }
 
   .der h2 {
     margin: 0; padding: 16px 18px 12px; font-size: 13px;
@@ -572,7 +580,7 @@
   @media (max-width: 1024px) {
     .vista.on { flex-direction: column; }
     .der {
-      width: 100%; border-left: none; border-top: 1px solid var(--line);
+      width: 100%; border-left: none; border-top: none;
       flex: 1 1 auto; min-height: 0;
       display: flex; flex-direction: column;
     }
@@ -592,13 +600,6 @@
     .linea .cant button { width: 40px; height: 40px; font-size: 19px; }
     .linea .cant span { min-width: 30px; font-size: 15px; }
     .linea .sub { font-size: 15px; }
-    .manija {
-      display: flex; align-items: center; justify-content: center;
-      height: 26px; flex-shrink: 0; cursor: pointer;
-    }
-    .manija span {
-      width: 42px; height: 4px; border-radius: 2px; background: var(--line);
-    }
 
     /* colapsado: solo se ve el total */
     .der.chico h2,
@@ -610,7 +611,31 @@
     .der.chico .selector-cliente,
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
-    .der.chico { flex: 0 0 auto; }
+    /* con el panel cerrado, el panel entero desaparece */
+    .der.chico { display: none !important; }
+
+    .barra-fija {
+      display: block; position: fixed; left: 0; right: 0; bottom: 0;
+      height: 76px; background: var(--panel);
+      border-top: 1px solid var(--line); z-index: 40;
+    }
+    .bf-manija { display: flex; align-items: center; justify-content: center; height: 24px; }
+    .bf-manija span { width: 42px; height: 4px; border-radius: 2px; background: var(--line); }
+    .bf-datos {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 50px; padding: 0 18px;
+    }
+    .bf-datos .br-cant, .bf-datos .br-total {
+      font-size: 26px; font-weight: 500; color: var(--accent);
+    }
+    #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
+    /* espacio para que la grilla no quede tapada por la barra */
+    #v-vender.vista.on.grilla-visible .izq { padding-bottom: 0; }
+    #v-vender.vista.on.grilla-visible .grilla { padding-bottom: 86px; }
+    .der.chico .barra-resumen {
+      height: 52px; padding: 0 18px; margin: 0;
+    }
+    .der.chico .manija { height: 26px; margin: 0; }
     .der.chico .pie { border-top: none; padding: 0 16px 12px; }
     .der.chico .total-row { margin-bottom: 0; align-items: center; }
     .der.chico .total-row .lbl { display: none; }
@@ -618,8 +643,6 @@
       display: block; font-size: 26px; font-weight: 500; color: var(--accent);
     }
     .der.chico .total-row .val { color: var(--accent); }
-    .der.chico .manija { height: 20px; }
-    .manija:active span { background: var(--accent); }
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
     #v-vender .grilla { overflow-y: auto; }
     .der h2 { padding: 10px 16px 8px; }
@@ -725,8 +748,7 @@
       <div class="grilla" id="grilla"></div>
     </div>
     <div class="der">
-      <div class="manija" id="manija"><span></span></div>
-      <h2>Venta actual</h2>
+      <h2 id="tituloVenta"></h2>
       <div class="lineas" id="lineas"></div>
       <div class="pie">
         <div class="total-row">
@@ -761,6 +783,14 @@
         </div>
         <button class="btn-cobrar" id="btnCobrar" disabled>Cobrar</button>
         <button class="btn-limpiar" id="btnLimpiar">Vaciar</button>
+      </div>
+    </div>
+
+    <div class="barra-fija" id="barraResumen">
+      <div class="bf-manija"><span></span></div>
+      <div class="bf-datos">
+        <span class="br-cant" id="brCant">0</span>
+        <span class="br-total" id="brTotal">$0</span>
       </div>
     </div>
   </div>
@@ -1772,7 +1802,10 @@ function pintarCarrito() {
   }
   const t = totalCarrito();
   $('total').textContent = plata(t);
-  $('cantItems').textContent = fmtCant(carrito.reduce(function (s, l) { return s + l.cantidad; }, 0));
+  const nItems = fmtCant(carrito.reduce(function (a, l) { return a + l.cantidad; }, 0));
+  if ($('cantItems')) $('cantItems').textContent = nItems;
+  if ($('brCant')) $('brCant').textContent = nItems;
+  if ($('brTotal')) $('brTotal').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
   pintarGrilla();
   actualizarNotaDesc();
@@ -2315,25 +2348,33 @@ function encontroCodigo(codigo) {
 /* ══ Panel de venta: un toque lo abre o lo cierra ══ */
 
 (function () {
-  const manija = document.getElementById('manija');
   const panel = document.querySelector('#v-vender .der');
   const vista = document.getElementById('v-vender');
-  if (!manija || !panel || !vista) return;
+  if (!panel || !vista) return;
 
   function aplicar(cerrado) {
     panel.classList.toggle('chico', cerrado);
     vista.classList.toggle('grilla-visible', cerrado);
+
+    // ocultar/mostrar a mano, sin depender del CSS
+    const ocultar = ['#tituloVenta', '.lineas', '.cobrar-fila', '.nota-desc', '.vuelto-box',
+                     '.medios', '.selector-cliente', '.btn-cobrar', '.btn-limpiar'];
+    ocultar.forEach(function (sel) {
+      const el = panel.querySelector(sel);
+      if (el) el.style.display = cerrado ? 'none' : '';
+    });
+
+    const barra = document.getElementById('barraResumen');
+    if (barra) barra.style.display = cerrado ? 'block' : 'none';
+
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  let cerrado = true;
-  try {
-    const g = localStorage.getItem('cv_panelCerrado');
-    cerrado = g === null ? true : g === '1';
-  } catch (e) {}
-  aplicar(cerrado);
+  // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
+  aplicar(true);
 
-  manija.addEventListener('click', function () {
+  const barraFija = document.getElementById('barraResumen');
+  if (barraFija) barraFija.addEventListener('click', function () {
     const cerradoAhora = panel.classList.contains('chico');
     if (cerradoAhora && (typeof carrito === 'undefined' || carrito.length === 0)) {
       avisar('Toca un producto para empezar');
@@ -2341,6 +2382,8 @@ function encontroCodigo(codigo) {
     }
     aplicar(!cerradoAhora);
   });
+
+
 
   window.cerrarPanelVenta = function () { aplicar(true); };
 })();
