@@ -210,13 +210,12 @@
   .grilla {
     flex: 1; overflow-y: auto; display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px; align-content: start; align-items: start;
+    gap: 10px; align-content: start;
   }
   .prod {
     background: var(--panel); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 14px 12px; text-align: left;
     display: flex; flex-direction: column; gap: 4px; min-height: 92px;
-    height: auto; align-self: start;
   }
   .prod:active { border-color: var(--accent); background: var(--accent-soft); }
   .prod .n { font-weight: 500; font-size: 14px; line-height: 1.3; }
@@ -2437,7 +2436,7 @@ function pintarGrilla() {
     const cant = enCarrito ? enCarrito.cantidad : 0;
     return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
-
+      (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
