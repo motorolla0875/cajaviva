@@ -557,8 +557,35 @@
   .btn-foto.borrar { border-color: var(--line); background: var(--panel); color: var(--danger); }
 
   .prod .foto-mini {
-    width: 100%; height: 74px; border-radius: 8px; object-fit: cover;
-    margin-bottom: 6px; background: var(--panel-2);
+    width: 100%; height: 74px; border-radius: 8px; object-fit: contain;
+    margin-bottom: 6px; background: var(--panel-2); flex-shrink: 0;
+  }
+  .prod .txt-prod { display: contents; }
+
+  /* con foto en mobile: fila horizontal completa */
+  @media (max-width: 900px) {
+    .grilla .prod.con-foto {
+      grid-column: 1 / -1;
+      flex-direction: row !important;
+      align-items: center; gap: 12px;
+      min-height: 0; padding: 10px 12px;
+    }
+    .grilla .prod.con-foto .foto-mini {
+      width: 58px !important; height: 58px !important;
+      margin-bottom: 0; border-radius: 9px;
+    }
+    .grilla .prod.con-foto .txt-prod {
+      display: block !important; flex: 1; min-width: 0;
+    }
+    .grilla .prod.con-foto .n {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; font-size: 14px;
+    }
+    .grilla .prod.con-foto .p {
+      margin-top: 0; margin-left: auto; flex-shrink: 0; font-size: 16px;
+    }
+    .grilla .prod.con-foto .en-carrito { top: 50%; margin-top: -12px; right: 10px; }
+    .grilla .prod.con-foto .reponer-rapido { bottom: 50%; margin-bottom: -13px; right: 46px; }
   }
   .fila .foto-fila {
     width: 46px; height: 46px; flex-shrink: 0; border-radius: 9px;
@@ -2434,12 +2461,15 @@ function pintarGrilla() {
     const bajo = !sin && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
     const enCarrito = carrito.filter(function (l) { return l.productoId === p.id; })[0];
     const cant = enCarrito ? enCarrito.cantidad : 0;
-    return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
+    const tieneFoto = !!(p.foto_mini || p.foto_url);
+    return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
-      (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      (tieneFoto ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
+      '<div class="txt-prod">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
+      '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
