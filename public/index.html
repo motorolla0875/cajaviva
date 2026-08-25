@@ -618,10 +618,14 @@
     .der.chico .btn-cobrar,
     .der.chico .btn-limpiar { display: none !important; }
     .der.chico {
-      flex: 0 0 auto; height: auto !important;
-      position: sticky; bottom: 0;
+      flex: 0 0 78px !important;
+      height: 78px !important; min-height: 78px; max-height: 78px;
+      overflow: hidden;
     }
-    .der.chico .barra-resumen { padding: 8px 18px 16px; }
+    .der.chico .barra-resumen {
+      height: 52px; padding: 0 18px; margin: 0;
+    }
+    .der.chico .manija { height: 26px; margin: 0; }
     .der.chico .pie { border-top: none; padding: 0 16px 12px; }
     .der.chico .total-row { margin-bottom: 0; align-items: center; }
     .der.chico .total-row .lbl { display: none; }
