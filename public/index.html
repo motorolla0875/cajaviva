@@ -3652,6 +3652,53 @@ async function compartirLista() {
 }
 
 /* ══ Importar desde Excel o CSV ══ */
+// Avisa si el archivo no parece del tipo que se esta importando.
+function revisarCoherencia() {
+  const el = document.getElementById('avisoTipo');
+  if (!el) return true;
+  el.innerHTML = '';
+
+  const campoNombre = document.getElementById('map_nombre');
+  const iNombre = campoNombre ? campoNombre.value : '';
+  if (iNombre === '') return true;
+
+  const muestra = impFilas.slice(0, 20);
+  const sospechas = [];
+
+  if (impTipo === 'productos') {
+    const campoPrecio = document.getElementById('map_precioVenta');
+    const iPrecio = campoPrecio ? campoPrecio.value : '';
+    if (iPrecio !== '') {
+      const conPrecio = muestra.filter(function (f) {
+        const v = parseFloat(String(f[parseInt(iPrecio)]).replace(/[^0-9.,-]/g, '').replace(',', '.'));
+        return !isNaN(v) && v > 0;
+      }).length;
+      if (conPrecio < muestra.length * 0.5) {
+        sospechas.push('La mitad de las filas no tiene un precio valido.');
+      }
+    }
+    const pistas = ['cliente', 'telefono', 'celular', 'whatsapp', 'domicilio', 'deuda', 'debe', 'saldo'];
+    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
+    if (coinciden.length >= 2) {
+      sospechas.push('El archivo tiene columnas de clientes (' + coinciden.join(', ') + ').');
+    }
+  } else {
+    const pistas = ['precio', 'costo', 'stock', 'codigobarras', 'ean', 'categoria', 'rubro'];
+    const coinciden = impColumnas.filter(function (c) { return pistas.indexOf(normCol(c)) >= 0; });
+    if (coinciden.length >= 2) {
+      sospechas.push('El archivo tiene columnas de productos (' + coinciden.join(', ') + ').');
+    }
+  }
+
+  if (sospechas.length === 0) return true;
+
+  el.innerHTML = '<div class="msg" style="background:#FDF3E3; color:#8A5A0F;">' +
+    '<b>Revisa antes de importar</b><br>' + sospechas.join('<br>') +
+    '<br>Estas importando <b>' + (impTipo === 'productos' ? 'PRODUCTOS' : 'CLIENTES') + '</b>.' +
+    '</div>';
+  return false;
+}
+
 
 let impTipo = 'productos';
 let impFilas = [];
