@@ -20,7 +20,9 @@ function armarSlug(t) {
 // ── configuracion del catalogo (dueño) ──
 router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
-  const n = db.prepare('SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre FROM negocio WHERE user_id = ?').get(req.userId);
+  const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
+    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia
+    FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
   res.json({ config: n || null, productos: cuantos.n });
 });
@@ -41,12 +43,16 @@ router.put('/config', (req, res) => {
   slug = intento;
 
   db.prepare(`
-    UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?
+    UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
+      alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?
     WHERE user_id = ?
   `).run(slug, req.body?.activo ? 1 : 0, req.body?.whatsapp || null,
-         req.body?.mensaje || null, req.userId);
+         req.body?.mensaje || null, req.body?.alias || null, req.body?.titular || null,
+         req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0, req.userId);
 
-  res.json(db.prepare('SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje FROM negocio WHERE user_id = ?').get(req.userId));
+  res.json(db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
+    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia
+    FROM negocio WHERE user_id = ?`).get(req.userId));
 });
 
 // ── mostrar u ocultar un producto del catalogo ──

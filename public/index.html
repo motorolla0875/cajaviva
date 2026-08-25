@@ -539,6 +539,32 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .pedido {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+  }
+  .pedido.nuevo { border-color: var(--accent); }
+  .pedido .cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .pedido .cab .n { font-weight: 500; font-size: 15.5px; }
+  .pedido .cab .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .pedido .cab .m { font-size: 18px; font-weight: 500; flex-shrink: 0; }
+  .pedido .items { margin: 10px 0; font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+  .pedido .acc { display: flex; gap: 7px; flex-wrap: wrap; }
+  .pedido .acc button {
+    flex: 1; min-width: 90px; padding: 9px; border-radius: 9px;
+    font-size: 13px; font-weight: 500; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text);
+  }
+  .pedido .acc button.ppal { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .badge-nuevo {
+    display: inline-block; background: var(--accent); color: #fff;
+    font-size: 10.5px; padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+  }
+  nav button .contador {
+    display: inline-block; background: var(--danger); color: #fff;
+    font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;
+  }
+
   .venc-badge {
     display: inline-block; font-size: 11px; padding: 2px 8px;
     border-radius: 20px; margin-top: 3px; font-weight: 500;
@@ -947,6 +973,7 @@
     <button data-vista="vender" class="on">Vender</button>
     <button data-vista="productos">Productos</button>
     <button data-vista="clientes">Fiado</button>
+    <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
   </nav>
@@ -1046,6 +1073,17 @@
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
       <div class="lista" id="listaCli"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-pedidos">
+    <div class="lista-wrap">
+      <div class="chips" id="tabsPedidos">
+        <button class="on" data-estado="pendientes">Pendientes</button>
+        <button data-estado="listos">Entregados</button>
+        <button data-estado="cancelados">Cancelados</button>
+      </div>
+      <div id="listaPedidos"></div>
     </div>
   </div>
 
@@ -1456,6 +1494,27 @@
 
     <label>Mensaje de bienvenida (opcional)</label>
     <input type="text" id="catMensaje" placeholder="Ej: Hacemos envios sin cargo">
+
+    <div class="seccion">Como te pagan</div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Efectivo</div>
+        <div class="d">Paga al recibir el pedido</div></div>
+      <button class="switch on" id="swEfectivo"></button>
+    </div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Transferencia</div>
+        <div class="d">Le mostramos tu alias para que transfiera</div></div>
+      <button class="switch" id="swTransfer"></button>
+    </div>
+
+    <div id="wrapAlias" style="display:none;">
+      <label>Tu alias o CBU</label>
+      <input type="text" id="catAlias" placeholder="Ej: mi.negocio.mp">
+      <label>A nombre de</label>
+      <input type="text" id="catTitular" placeholder="Ej: Juan Perez">
+    </div>
 
     <div id="catLinkBox" style="display:none; margin-top:16px; padding:14px; background:var(--accent-soft); border-radius:10px;">
       <div style="font-size:12px; color:var(--accent-dark); margin-bottom:6px;">Tu link</div>
@@ -2193,6 +2252,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'caja') cargarCaja();
     if (b.dataset.vista === 'clientes') cargarClientes();
     if (b.dataset.vista === 'reportes') cargarReportes();
+    if (b.dataset.vista === 'pedidos') cargarPedidos();
   };
 });
 
@@ -4400,6 +4460,17 @@ $('btnConfirmarDev').onclick = async function () {
 /* ══ Catalogo publico ══ */
 
 let catActivo = false;
+let aceptaEfectivo = true, aceptaTransfer = false;
+
+document.getElementById('swEfectivo').onclick = function () {
+  aceptaEfectivo = !aceptaEfectivo;
+  this.classList.toggle('on', aceptaEfectivo);
+};
+document.getElementById('swTransfer').onclick = function () {
+  aceptaTransfer = !aceptaTransfer;
+  this.classList.toggle('on', aceptaTransfer);
+  document.getElementById('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
+};
 
 $('btnCatalogo').onclick = async function () {
   $('modalCuentaUsuario').classList.remove('on');
@@ -4415,6 +4486,13 @@ $('btnCatalogo').onclick = async function () {
     $('catWpp').value = c.whatsapp || '';
     $('catMensaje').value = c.catalogo_mensaje || '';
     $('catCuantos').textContent = d.productos + (d.productos === 1 ? ' producto en el catalogo' : ' productos en el catalogo');
+    $('catAlias').value = c.alias_pago || '';
+    $('catTitular').value = c.titular_pago || '';
+    aceptaEfectivo = c.acepta_efectivo !== 0;
+    aceptaTransfer = !!c.acepta_transferencia;
+    $('swEfectivo').classList.toggle('on', aceptaEfectivo);
+    $('swTransfer').classList.toggle('on', aceptaTransfer);
+    $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -4446,7 +4524,11 @@ $('btnGuardarCatalogo').onclick = async function () {
       slug: $('catSlug').value.trim() || (negocio && negocio.nombre) || 'negocio',
       activo: catActivo,
       whatsapp: $('catWpp').value.trim() || null,
-      mensaje: $('catMensaje').value.trim() || null
+      mensaje: $('catMensaje').value.trim() || null,
+      alias: $('catAlias').value.trim() || null,
+      titular: $('catTitular').value.trim() || null,
+      efectivo: aceptaEfectivo,
+      transferencia: aceptaTransfer
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -4720,6 +4802,99 @@ $('btnHistorialPrecio').onclick = async function () {
 };
 
 $('btnCerrarHist').onclick = function () { $('modalHistorial').classList.remove('on'); };
+
+/* ══ Pedidos del catalogo ══ */
+
+let estadoPedidos = 'pendientes';
+
+$('tabsPedidos').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  estadoPedidos = b.dataset.estado;
+  Array.prototype.forEach.call($('tabsPedidos').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarPedidos();
+});
+
+async function cargarPedidos() {
+  $('listaPedidos').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const d = await api('GET', '/pedidos?estado=' + estadoPedidos);
+    pintarContadorPedidos(d.nuevos);
+
+    if (d.items.length === 0) {
+      $('listaPedidos').innerHTML = '<div class="vacio">No hay pedidos ' + estadoPedidos + '.</div>';
+      return;
+    }
+
+    $('listaPedidos').innerHTML = d.items.map(function (p) {
+      const detalle = p.items.map(function (i) {
+        return fmtCant(i.cantidad) + ' x ' + esc(i.nombre);
+      }).join('<br>');
+
+      const pago = p.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo';
+      let acc = '';
+      if (p.estado === 'nuevo' || p.estado === 'confirmado') {
+        acc = '<button class="ppal" onclick="convertirPedido(\'' + p.id + '\')">Cobrar y entregar</button>' +
+              (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="cambiarPedido(\'' + p.id + '\',\'cancelado\')">Cancelar</button>';
+      } else if (p.estado === 'cancelado') {
+        acc = '<button onclick="cambiarPedido(\'' + p.id + '\',\'nuevo\')">Reactivar</button>';
+      }
+
+      return '<div class="pedido' + (p.estado === 'nuevo' ? ' nuevo' : '') + '">' +
+        '<div class="cab"><div><div class="n">' + esc(p.nombre) +
+          (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') + '</div>' +
+        '<div class="d">' + fechaCorta(p.created_at) + ' ' + horaDe(p.created_at) + ' - ' + pago +
+          (p.telefono ? ' - ' + esc(p.telefono) : '') + '</div>' +
+        (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
+        (p.nota ? '<div class="d">Nota: ' + esc(p.nota) + '</div>' : '') +
+        '</div><div class="m">' + plata(p.total) + '</div></div>' +
+        '<div class="items">' + detalle + '</div>' +
+        (acc ? '<div class="acc">' + acc + '</div>' : '') +
+        '</div>';
+    }).join('');
+  } catch (e) {
+    $('listaPedidos').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function pintarContadorPedidos(n) {
+  const b = document.getElementById('tabPedidos');
+  if (!b) return;
+  b.innerHTML = 'Pedidos' + (n > 0 ? '<span class="contador">' + n + '</span>' : '');
+}
+
+function llamarPedido(tel) {
+  const t = String(tel).replace(/\D/g, '');
+  window.open('https://wa.me/54' + t, '_blank');
+}
+
+async function cambiarPedido(id, estado) {
+  try {
+    await api('PUT', '/pedidos/' + id, { estado: estado });
+    await cargarPedidos();
+    avisar('Pedido actualizado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function convertirPedido(id) {
+  if (!confirm('Cobrar este pedido? Se registra como venta y baja el stock.')) return;
+  try {
+    const r = await api('POST', '/pedidos/' + id + '/vender', { fecha: hoyISO() });
+    await cargarProductos(); await cargarResumen(); await cargarPedidos();
+    avisar('Venta de ' + plata(r.total) + ' registrada');
+  } catch (e) { avisar(e.message, true); }
+}
+
+// avisar si hay pedidos nuevos, cada 2 minutos
+async function revisarPedidos() {
+  if (esEmpleado) return;
+  try {
+    const d = await api('GET', '/pedidos?estado=pendientes');
+    pintarContadorPedidos(d.nuevos);
+  } catch (e) {}
+}
+setInterval(revisarPedidos, 120000);
 
 /* ══ Vuelto ══ */
 
