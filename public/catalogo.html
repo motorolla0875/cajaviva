@@ -20,12 +20,30 @@
   }
   header {
     background: var(--panel); border-bottom: 1px solid var(--line);
-    padding: 20px 18px; text-align: center; position: sticky; top: 0; z-index: 10;
+    padding: 18px 18px; text-align: center; position: sticky; top: 0; z-index: 10;
+  }
+  @media (max-width: 380px) {
+    header { padding: 14px 14px; }
+    header h1 { font-size: 18px; }
+    .cont { padding: 12px; }
+    .prod { padding: 11px 12px; gap: 8px; }
+    .prod .info .n { font-size: 14px; }
   }
   header h1 { margin: 0; font-size: 21px; font-weight: 500; }
   header p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
 
   .cont { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+  @media (min-width: 820px) {
+    .cont { max-width: 1000px; }
+    #lista { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+    .cat-titulo { grid-column: 1 / -1; }
+    .prod { margin-bottom: 10px; }
+  }
+  @media (min-width: 1280px) {
+    .cont { max-width: 1240px; }
+    #lista { grid-template-columns: repeat(3, 1fr); }
+  }
 
   .buscador { margin-bottom: 14px; }
   .buscador input {
@@ -108,7 +126,7 @@
 </div>
 
 <script>
-const slug = location.pathname.split('/').filter(Boolean).pop();
+const slug = decodeURIComponent(location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '');
 let datos = null, pedido = {}, filtro = '';
 
 const $ = id => document.getElementById(id);
