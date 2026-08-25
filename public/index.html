@@ -250,6 +250,32 @@
   .nota-desc { font-size: 12px; color: var(--accent-dark); margin: -6px 0 12px; }
   .nota-desc.vacia { display: none; }
 
+  .vuelto-box {
+    display: none; background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+  }
+  .vuelto-box.on { display: block; }
+  .vuelto-box .fila-v { display: flex; align-items: center; gap: 8px; }
+  .vuelto-box .fila-v label { font-size: 12.5px; color: var(--accent-dark); flex-shrink: 0; }
+  .vuelto-box .fila-v input {
+    flex: 1; min-width: 0; padding: 9px 12px; text-align: right;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--text); font-size: 15px;
+  }
+  .vuelto-box .res {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--accent);
+  }
+  .vuelto-box .res .lbl { font-size: 13px; color: var(--accent-dark); }
+  .vuelto-box .res .val { font-size: 24px; font-weight: 500; color: var(--accent-dark); }
+  .vuelto-box .res .val.falta { color: var(--danger); }
+  .rapidos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .rapidos button {
+    flex: 1; min-width: 62px; padding: 7px 4px; font-size: 12.5px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--text);
+  }
+
   .medios { display: flex; gap: 6px; margin-bottom: 12px; }
   .medios button {
     flex: 1; padding: 10px 4px; border: 1px solid var(--line);
@@ -555,6 +581,17 @@
           <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
         </div>
         <div class="nota-desc vacia" id="notaDesc"></div>
+        <div class="vuelto-box" id="vueltoBox">
+          <div class="fila-v">
+            <label>Paga con</label>
+            <input type="text" id="pagaCon" inputmode="decimal" placeholder="0">
+          </div>
+          <div class="rapidos" id="rapidos"></div>
+          <div class="res">
+            <span class="lbl" id="lblVuelto">Vuelto</span>
+            <span class="val" id="valVuelto">$0</span>
+          </div>
+        </div>
         <div class="medios" id="medios">
           <button data-medio="efectivo" class="on">Efectivo</button>
           <button data-medio="transferencia">Transfer.</button>
@@ -1456,6 +1493,7 @@ function pintarCarrito() {
   $('total').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
   actualizarNotaDesc();
+  actualizarVueltoBox();
   $('btnCobrar').disabled = carrito.length === 0;
 }
 
@@ -1489,6 +1527,7 @@ $('medios').addEventListener('click', function (e) {
   medioPago = b.dataset.medio;
   Array.prototype.forEach.call($('medios').children, function (x) { x.classList.toggle('on', x === b); });
   $('selCliente').classList.toggle('on', medioPago === 'cuenta_corriente');
+  actualizarVueltoBox();
 });
 
 $('btnCobrar').onclick = async function () {
@@ -1534,7 +1573,7 @@ $('btnCobrar').onclick = async function () {
   btn.disabled = carrito.length === 0;
 };
 
-$('totalFinal').addEventListener('input', actualizarNotaDesc);
+$('totalFinal').addEventListener('input', function () { actualizarNotaDesc(); pintarRapidos(); calcularVuelto(); });
 
 $('btnLimpiar').onclick = function () { carrito = []; pintarCarrito(); };
 
@@ -1784,6 +1823,55 @@ async function verCompras(id) {
 }
 
 $('btnCerrarCompras').onclick = function () { $('modalCompras').classList.remove('on'); };
+
+/* ══ Vuelto ══ */
+
+function totalACobrar() {
+  const manual = num($('totalFinal').value);
+  return manual > 0 ? manual : totalCarrito();
+}
+
+function pintarRapidos() {
+  const t = totalACobrar();
+  if (t <= 0) { $('rapidos').innerHTML = ''; return; }
+  const opciones = [];
+  opciones.push(Math.ceil(t / 1000) * 1000);
+  [2000, 5000, 10000, 20000].forEach(function (b) { if (b > t) opciones.push(b); });
+  const unicos = [];
+  opciones.forEach(function (o) { if (unicos.indexOf(o) < 0 && unicos.length < 4) unicos.push(o); });
+  $('rapidos').innerHTML = unicos.map(function (o) {
+    return '<button onclick="ponerPaga(' + o + ')">' + plata(o) + '</button>';
+  }).join('');
+}
+
+function ponerPaga(monto) {
+  $('pagaCon').value = monto;
+  calcularVuelto();
+}
+
+function calcularVuelto() {
+  const t = totalACobrar();
+  const paga = num($('pagaCon').value);
+  const el = $('valVuelto');
+  if (paga <= 0) { el.textContent = '$0'; el.className = 'val'; $('lblVuelto').textContent = 'Vuelto'; return; }
+  const dif = paga - t;
+  if (dif >= 0) {
+    $('lblVuelto').textContent = 'Vuelto';
+    el.textContent = plata(dif); el.className = 'val';
+  } else {
+    $('lblVuelto').textContent = 'Falta';
+    el.textContent = plata(-dif); el.className = 'val falta';
+  }
+}
+
+function actualizarVueltoBox() {
+  const mostrar = medioPago === 'efectivo' && carrito.length > 0;
+  $('vueltoBox').classList.toggle('on', mostrar);
+  if (mostrar) { pintarRapidos(); calcularVuelto(); }
+  else { $('pagaCon').value = ''; }
+}
+
+$('pagaCon').addEventListener('input', calcularVuelto);
 
 /* ══ Clientes ══ */
 
