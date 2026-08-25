@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 
@@ -21,6 +22,11 @@ db.exec(`
 
 // la columna que dice quien hizo cada venta
 try { db.exec('ALTER TABLE ventas ADD COLUMN empleado_id TEXT'); } catch (e) {}
+
+// credenciales propias del empleado
+try { db.exec('ALTER TABLE empleados ADD COLUMN username TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN password_hash TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN codigo_usado INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 
 function nuevoCodigo() {
   let c;
@@ -76,7 +82,7 @@ router.post('/:id/codigo', (req, res) => {
   if (!e) return res.status(404).json({ error: 'Empleado no encontrado.' });
 
   const codigo = nuevoCodigo();
-  db.prepare('UPDATE empleados SET codigo = ? WHERE id = ?').run(codigo, e.id);
+  db.prepare('UPDATE empleados SET codigo = ?, codigo_usado = 0 WHERE id = ?').run(codigo, e.id);
   res.json({ codigo: codigo });
 });
 
@@ -87,21 +93,61 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── el empleado entra con su codigo (sin auth previa) ──
-router.post('/entrar', (req, res) => {
+function sesionEmpleado(e) {
+  db.prepare("UPDATE empleados SET ultimo_acceso = datetime('now') WHERE id = ?").run(e.id);
+  const token = jwt.sign({ id: e.user_id, emp: e.id }, SECRETO, { expiresIn: '30d' });
+  const u = db.prepare('SELECT id, username, plan FROM users WHERE id = ?').get(e.user_id);
+  const n = db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(e.user_id);
+  return { token: token, user: u, negocio: n, empleado: { id: e.id, nombre: e.nombre } };
+}
+
+// ── validar el codigo de invitacion ──
+router.post('/codigo', (req, res) => {
   const codigo = String(req.body?.codigo || '').trim();
   if (!/^\d{6}$/.test(codigo)) return res.status(400).json({ error: 'El codigo tiene 6 numeros.' });
 
   const e = db.prepare('SELECT * FROM empleados WHERE codigo = ? AND activo = 1').get(codigo);
   if (!e) return res.status(400).json({ error: 'Codigo incorrecto o dado de baja.' });
+  if (e.codigo_usado) return res.status(400).json({ error: 'Ese codigo ya se uso. Pedile uno nuevo al dueño.' });
 
-  db.prepare("UPDATE empleados SET ultimo_acceso = datetime('now') WHERE id = ?").run(e.id);
+  const neg = db.prepare('SELECT nombre FROM negocio WHERE user_id = ?').get(e.user_id);
+  res.json({ ok: true, nombre: e.nombre, negocio: neg ? neg.nombre : 'el negocio' });
+});
 
-  const token = jwt.sign({ id: e.user_id, emp: e.id }, SECRETO, { expiresIn: '30d' });
-  const u = db.prepare('SELECT id, username, plan FROM users WHERE id = ?').get(e.user_id);
-  const n = db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(e.user_id);
+// ── el empleado crea su usuario con el codigo ──
+router.post('/registrar', (req, res) => {
+  const codigo = String(req.body?.codigo || '').trim();
+  const username = (req.body?.username || '').trim();
+  const password = req.body?.password || '';
 
-  res.json({ token: token, user: u, negocio: n, empleado: { id: e.id, nombre: e.nombre } });
+  const e = db.prepare('SELECT * FROM empleados WHERE codigo = ? AND activo = 1').get(codigo);
+  if (!e) return res.status(400).json({ error: 'Codigo incorrecto o dado de baja.' });
+  if (e.codigo_usado) return res.status(400).json({ error: 'Ese codigo ya se uso.' });
+
+  if (username.length < 3) return res.status(400).json({ error: 'El usuario necesita al menos 3 letras.' });
+  if (password.length < 4) return res.status(400).json({ error: 'La contraseña necesita al menos 4 caracteres.' });
+
+  const tomado = db.prepare('SELECT id FROM empleados WHERE username = ? AND user_id = ?').get(username, e.user_id);
+  if (tomado) return res.status(400).json({ error: 'Ese usuario ya esta tomado en este negocio.' });
+
+  db.prepare('UPDATE empleados SET username = ?, password_hash = ?, codigo_usado = 1 WHERE id = ?')
+    .run(username, bcrypt.hashSync(password, 10), e.id);
+
+  res.json(sesionEmpleado(e));
+});
+
+// ── el empleado entra con su usuario ──
+router.post('/entrar', (req, res) => {
+  const username = (req.body?.username || '').trim();
+  const password = req.body?.password || '';
+  if (!username || !password) return res.status(400).json({ error: 'Completa usuario y contraseña.' });
+
+  const e = db.prepare('SELECT * FROM empleados WHERE username = ? AND activo = 1').get(username);
+  if (!e || !e.password_hash || !bcrypt.compareSync(password, e.password_hash)) {
+    return res.status(400).json({ error: 'Usuario o contraseña incorrectos.' });
+  }
+
+  res.json(sesionEmpleado(e));
 });
 
 module.exports = router;

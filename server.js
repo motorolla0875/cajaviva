@@ -17,7 +17,7 @@ app.get('/api/ping', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/empleados', function (req, res, next) {
   // solo /entrar es publica; el resto necesita sesion
-  if (req.path === '/entrar') return next();
+  if (req.path === '/entrar' || req.path === '/codigo' || req.path === '/registrar') return next();
   return requiereAuth(req, res, next);
 }, require('./routes/empleados'));
 

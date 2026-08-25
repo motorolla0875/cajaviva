@@ -1206,12 +1206,36 @@
 </div>
 
 <div class="modal-bg" id="modalIngresoEmp">
-  <div class="modal" style="max-width:340px;">
-    <h3>Entrar con codigo</h3>
-    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Pedile el codigo de 6 numeros al dueño del negocio.</p>
+  <div class="modal" style="max-width:360px;">
+    <h3 id="tituloIngEmp">Entrar como empleado</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subIngEmp">Entra con el usuario que creaste.</p>
     <div id="msgIngEmp"></div>
-    <input type="text" id="codIngreso" inputmode="numeric" maxlength="6" placeholder="000000" style="text-align:center; font-size:26px; letter-spacing:6px;">
-    <button class="btn-ppal" id="btnConfirmarCodigo">Entrar</button>
+
+    <div id="pasoLoginEmp">
+      <label>Usuario</label>
+      <input type="text" id="empUser" autocomplete="username">
+      <label>Contraseña</label>
+      <input type="password" id="empPass" autocomplete="current-password">
+      <button class="btn-ppal" id="btnLoginEmp">Entrar</button>
+      <button class="btn-sec" id="btnIrACodigo">Es mi primera vez, tengo un codigo</button>
+    </div>
+
+    <div id="pasoCodigoEmp" style="display:none;">
+      <label>Codigo de 6 numeros</label>
+      <input type="text" id="codIngreso" inputmode="numeric" maxlength="6" placeholder="000000" style="text-align:center; font-size:26px; letter-spacing:6px;">
+      <button class="btn-ppal" id="btnConfirmarCodigo">Continuar</button>
+      <button class="btn-sec" id="btnVolverLoginEmp">Ya tengo usuario</button>
+    </div>
+
+    <div id="pasoCrearEmp" style="display:none;">
+      <div style="background:var(--accent-soft); color:var(--accent-dark); padding:10px 12px; border-radius:9px; font-size:13px; margin-bottom:12px;" id="bienvenidaEmp"></div>
+      <label>Elegi tu usuario</label>
+      <input type="text" id="nuevoUserEmp" autocomplete="username">
+      <label>Elegi tu contraseña</label>
+      <input type="password" id="nuevoPassEmp" autocomplete="new-password">
+      <button class="btn-ppal" id="btnCrearEmp">Crear y entrar</button>
+    </div>
+
     <button class="btn-sec" id="btnCerrarIngEmp">Cancelar</button>
   </div>
 </div>
@@ -2977,57 +3001,101 @@ async function borrarEmp(id) {
 
 /* ── entrar como empleado ── */
 
+let codigoEmpleado = null;
+
 function abrirIngresoEmpleado() {
-  // limpiar cualquier sesion previa antes de entrar como empleado
   token = null;
   localStorage.removeItem('cajaviva_token');
   localStorage.removeItem('cajaviva_empleado');
   $('msgIngEmp').innerHTML = '';
+  $('empUser').value = ''; $('empPass').value = '';
   $('codIngreso').value = '';
+  $('nuevoUserEmp').value = ''; $('nuevoPassEmp').value = '';
+  mostrarPasoEmp('login');
   $('modalIngresoEmp').classList.add('on');
-  setTimeout(function () { $('codIngreso').focus(); }, 150);
+}
+
+function mostrarPasoEmp(cual) {
+  $('pasoLoginEmp').style.display = cual === 'login' ? 'block' : 'none';
+  $('pasoCodigoEmp').style.display = cual === 'codigo' ? 'block' : 'none';
+  $('pasoCrearEmp').style.display = cual === 'crear' ? 'block' : 'none';
+  $('tituloIngEmp').textContent = cual === 'crear' ? 'Crea tu usuario' : 'Entrar como empleado';
+  $('subIngEmp').textContent = cual === 'login' ? 'Entra con el usuario que creaste.'
+    : cual === 'codigo' ? 'Pedile el codigo de 6 numeros al dueño del negocio.'
+    : 'Con esto vas a entrar siempre, sin pedir el codigo de nuevo.';
 }
 
 const _btnEmpBien = document.getElementById('btnEmpDesdeBienvenida');
 if (_btnEmpBien) _btnEmpBien.onclick = abrirIngresoEmpleado;
-
-$('btnEntrarCodigo').onclick = function () {
-  $('msgIngEmp').innerHTML = '';
-  $('codIngreso').value = '';
-  $('modalIngresoEmp').classList.add('on');
-  setTimeout(function () { $('codIngreso').focus(); }, 150);
-};
+$('btnEntrarCodigo').onclick = abrirIngresoEmpleado;
 $('btnCerrarIngEmp').onclick = function () { $('modalIngresoEmp').classList.remove('on'); };
+$('btnIrACodigo').onclick = function () { $('msgIngEmp').innerHTML = ''; mostrarPasoEmp('codigo'); };
+$('btnVolverLoginEmp').onclick = function () { $('msgIngEmp').innerHTML = ''; mostrarPasoEmp('login'); };
+
+async function pedir(ruta, cuerpo) {
+  const r = await fetch(API + ruta, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpo)
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'No se pudo');
+  return d;
+}
+
+async function entrarComoEmpleado(d) {
+  token = d.token;
+  localStorage.setItem('cajaviva_token', token);
+  localStorage.setItem('cajaviva_ya_uso', '1');
+  localStorage.setItem('cajaviva_empleado', d.empleado.nombre);
+  usuario = d.user; negocio = d.negocio;
+  $('modalIngresoEmp').classList.remove('on');
+  aplicarModoEmpleado(d.empleado.nombre);
+  await arrancarApp();
+}
+
+$('btnLoginEmp').onclick = async function () {
+  const btn = $('btnLoginEmp');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const d = await pedir('/empleados/entrar', {
+      username: $('empUser').value.trim(), password: $('empPass').value
+    });
+    await entrarComoEmpleado(d);
+  } catch (e) { $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  btn.disabled = false; btn.textContent = 'Entrar';
+};
 
 $('btnConfirmarCodigo').onclick = async function () {
   const codigo = $('codIngreso').value.trim();
   if (!/^\d{6}$/.test(codigo)) {
-    $('msgIngEmp').innerHTML = '<div class="msg">El codigo tiene 6 numeros.</div>';
-    return;
+    $('msgIngEmp').innerHTML = '<div class="msg">El codigo tiene 6 numeros.</div>'; return;
   }
   const btn = $('btnConfirmarCodigo');
-  btn.disabled = true; btn.textContent = 'Entrando...';
+  btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    const r = await fetch(API + '/empleados/entrar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codigo: codigo })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'No se pudo entrar');
-    token = d.token;
-    localStorage.setItem('cajaviva_token', token);
-    localStorage.setItem('cajaviva_ya_uso', '1');
-    localStorage.setItem('cajaviva_empleado', d.empleado.nombre);
-    usuario = d.user; negocio = d.negocio;
-    esEmpleado = true;
-    $('modalIngresoEmp').classList.remove('on');
-    aplicarModoEmpleado(d.empleado.nombre);
-    await arrancarApp();
-  } catch (e) {
-    $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-  }
-  btn.disabled = false; btn.textContent = 'Entrar';
+    const d = await pedir('/empleados/codigo', { codigo: codigo });
+    codigoEmpleado = codigo;
+    $('bienvenidaEmp').innerHTML = 'Hola <b>' + esc(d.nombre) + '</b>, vas a trabajar en <b>' + esc(d.negocio) + '</b>.';
+    $('msgIngEmp').innerHTML = '';
+    mostrarPasoEmp('crear');
+    setTimeout(function () { $('nuevoUserEmp').focus(); }, 150);
+  } catch (e) { $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  btn.disabled = false; btn.textContent = 'Continuar';
+};
+
+$('btnCrearEmp').onclick = async function () {
+  const u = $('nuevoUserEmp').value.trim(), pw = $('nuevoPassEmp').value;
+  if (u.length < 3) { $('msgIngEmp').innerHTML = '<div class="msg">El usuario necesita al menos 3 letras.</div>'; return; }
+  if (pw.length < 4) { $('msgIngEmp').innerHTML = '<div class="msg">La contraseña necesita al menos 4 caracteres.</div>'; return; }
+
+  const btn = $('btnCrearEmp');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try {
+    const d = await pedir('/empleados/registrar', { codigo: codigoEmpleado, username: u, password: pw });
+    await entrarComoEmpleado(d);
+  } catch (e) { $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  btn.disabled = false; btn.textContent = 'Crear y entrar';
 };
 
 function aplicarModoEmpleado(nombre) {
