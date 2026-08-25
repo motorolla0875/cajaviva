@@ -2386,7 +2386,8 @@ function encontroCodigo(codigo) {
     try { localStorage.setItem('cv_panelCerrado', cerrado ? '1' : '0'); } catch (e) {}
   }
 
-  // siempre arranca cerrado: se ve la grilla y abajo la cantidad y el total
+  // siempre arranca cerrado
+  panel.classList.add('chico');
   aplicar(true);
 
   const barraFija = document.getElementById('barraResumen');
