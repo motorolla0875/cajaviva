@@ -1,37 +1,47 @@
-const CACHE = 'cajaviva-v1';
-const BASE = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'cajaviva-v2';
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(BASE); }).then(function () {
-    return self.skipWaiting();
-  }));
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) {
+      return c.addAll(['/', '/manifest.json', '/icon-192.png']);
+    }).then(function () { return self.skipWaiting(); })
+  );
 });
 
 self.addEventListener('activate', function (e) {
-  e.waitUntil(caches.keys().then(function (nombres) {
-    return Promise.all(nombres.map(function (n) {
-      if (n !== CACHE) return caches.delete(n);
-    }));
-  }).then(function () { return self.clients.claim(); }));
+  e.waitUntil(
+    caches.keys().then(function (ns) {
+      return Promise.all(ns.map(function (n) { if (n !== CACHE) return caches.delete(n); }));
+    }).then(function () { return self.clients.claim(); })
+  );
 });
 
 self.addEventListener('fetch', function (e) {
+  if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-
-  // la API nunca se cachea: si no hay red, que el front lo maneje
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf('/api/') === 0) return;
 
-  // el resto: red primero, cache como respaldo
+  // navegacion (abrir la app): red primero, si falla la copia guardada
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(function (r) {
+        const copia = r.clone();
+        caches.open(CACHE).then(function (c) { c.put('/', copia); });
+        return r;
+      }).catch(function () {
+        return caches.match('/');
+      })
+    );
+    return;
+  }
+
   e.respondWith(
-    fetch(e.request).then(function (r) {
-      if (r && r.status === 200 && e.request.method === 'GET') {
+    caches.match(e.request).then(function (guardado) {
+      return guardado || fetch(e.request).then(function (r) {
         const copia = r.clone();
         caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
-      }
-      return r;
-    }).catch(function () {
-      return caches.match(e.request).then(function (r) {
-        return r || caches.match('/index.html');
+        return r;
       });
     })
   );
