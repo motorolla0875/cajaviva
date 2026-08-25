@@ -535,6 +535,34 @@
     color: var(--accent-dark); background: var(--accent-soft);
     padding: 18px; border-radius: 12px; margin-bottom: 6px;
   }
+  .rep-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 7px;
+  }
+  .rep-pos {
+    width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+    background: var(--panel-2); color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500;
+  }
+  .rep-pos.top { background: var(--accent); color: #fff; }
+  .rep-item .datos { flex: 1; min-width: 0; }
+  .rep-item .datos .n { font-weight: 500; font-size: 14.5px; }
+  .rep-item .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .rep-item .datos .g { color: var(--accent-dark); font-size: 12.5px; }
+  .rep-item .cifra { text-align: right; flex-shrink: 0; }
+  .rep-item .cifra b { display: block; font-size: 17px; font-weight: 500; }
+  .rep-item .cifra span { font-size: 11.5px; color: var(--muted); }
+  .rep-resumen {
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+  }
+  .rep-resumen .lbl { font-size: 12.5px; color: var(--accent-dark); }
+  .rep-resumen .val { font-size: 24px; font-weight: 500; color: var(--accent-dark); }
+  .rep-resumen.alerta { background: #FDF3E3; border-color: var(--warn); }
+  .rep-resumen.alerta .lbl, .rep-resumen.alerta .val { color: #8A5A0F; }
+
   .pr-lista { max-height: 260px; overflow-y: auto; }
   .pr-fila.sel { cursor: pointer; }
   .pr-fila.off { opacity: .4; }
@@ -579,6 +607,7 @@
   body.modo-empleado #btnProveedores,
   body.modo-empleado #btnImportarProd,
   body.modo-empleado #btnPrecios,
+  body.modo-empleado nav button[data-vista="reportes"],
   body.modo-empleado #btnImportarCli,
   body.modo-empleado #btnGasto,
   body.modo-empleado #btnCierre,
@@ -846,6 +875,7 @@
     <button data-vista="productos">Productos</button>
     <button data-vista="clientes">Fiado</button>
     <button data-vista="caja">Caja</button>
+    <button data-vista="reportes">Reportes</button>
   </nav>
 
   <div class="vista on" id="v-vender">
@@ -942,6 +972,24 @@
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
       <div class="lista" id="listaCli"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-reportes">
+    <div class="lista-wrap">
+      <div class="periodos" id="repPeriodos">
+        <button data-dias="7" class="on">7 dias</button>
+        <button data-dias="30">30 dias</button>
+        <button data-dias="90">90 dias</button>
+      </div>
+
+      <div class="chips" id="repTabs">
+        <button class="on" data-tab="vendidos">Mas vendidos</button>
+        <button data-tab="reponer">Que comprar</button>
+        <button data-tab="quietos">No se venden</button>
+      </div>
+
+      <div id="repContenido"></div>
     </div>
   </div>
 
@@ -1898,6 +1946,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     $('v-' + b.dataset.vista).classList.add('on');
     if (b.dataset.vista === 'caja') cargarCaja();
     if (b.dataset.vista === 'clientes') cargarClientes();
+    if (b.dataset.vista === 'reportes') cargarReportes();
   };
 });
 
@@ -3498,6 +3547,109 @@ $('btnDeshacerPrecios').onclick = async function () {
     $('msgPrecios').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
 };
+
+/* ══ Reportes ══ */
+
+let repDias = 7;
+let repTab = 'vendidos';
+
+function repRango() {
+  const d = new Date();
+  d.setDate(d.getDate() - (repDias - 1));
+  return { desde: d.toISOString().slice(0, 10), hasta: hoyISO() };
+}
+
+$('repPeriodos').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  repDias = parseInt(b.dataset.dias);
+  Array.prototype.forEach.call($('repPeriodos').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarReportes();
+});
+
+$('repTabs').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  repTab = b.dataset.tab;
+  Array.prototype.forEach.call($('repTabs').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarReportes();
+});
+
+async function cargarReportes() {
+  const cont = $('repContenido');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+  const r = repRango();
+  const qs = '?desde=' + r.desde + '&hasta=' + r.hasta;
+
+  try {
+    if (repTab === 'vendidos') {
+      const d = await api('GET', '/reportes/mas-vendidos' + qs);
+      if (d.length === 0) { cont.innerHTML = '<div class="vacio">No hay ventas en este periodo.</div>'; return; }
+
+      const totalG = d.reduce(function (s, i) { return s + i.ganancia; }, 0);
+      cont.innerHTML =
+        '<div class="rep-resumen"><div class="lbl">Ganancia del periodo</div>' +
+        '<div class="val">' + plata(totalG) + '</div></div>' +
+        d.map(function (i, n) {
+          return '<div class="rep-item">' +
+            '<div class="rep-pos' + (n < 3 ? ' top' : '') + '">' + (n + 1) + '</div>' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">' + plata(i.facturado) + ' en ' + i.veces + (i.veces === 1 ? ' venta' : ' ventas') + '</div>' +
+            '<div class="g">Ganaste ' + plata(i.ganancia) + '</div></div>' +
+            '<div class="cifra"><b>' + fmtCant(i.unidades) + '</b><span>vendidas</span></div></div>';
+        }).join('');
+
+    } else if (repTab === 'reponer') {
+      const d = await api('GET', '/reportes/reponer?dias=' + repDias);
+      if (d.items.length === 0) { cont.innerHTML = '<div class="vacio">No hay nada por reponer.</div>'; return; }
+
+      cont.innerHTML =
+        '<div class="rep-resumen alerta"><div class="lbl">' + d.items.length +
+        ' productos para comprar - costo estimado</div>' +
+        '<div class="val">' + plata(d.totalEstimado) + '</div></div>' +
+        '<button class="btn-nuevo solo" onclick="compartirLista()">Compartir la lista</button>' +
+        d.items.map(function (i) {
+          return '<div class="rep-item">' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">Hay ' + fmtCant(i.stock) + ' - vendiste ' + fmtCant(i.vendidas) + ' en ' + d.dias + ' dias</div>' +
+            (i.costoEstimado > 0 ? '<div class="g">Costaria ' + plata(i.costoEstimado) + '</div>' : '') +
+            '</div>' +
+            '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
+        }).join('');
+      window._listaReponer = d.items;
+
+    } else {
+      const d = await api('GET', '/reportes/sin-movimiento' + qs);
+      if (d.items.length === 0) { cont.innerHTML = '<div class="vacio">Todo tuvo movimiento. Muy bien.</div>'; return; }
+
+      cont.innerHTML =
+        '<div class="rep-resumen alerta"><div class="lbl">Plata parada en mercaderia que no rota</div>' +
+        '<div class="val">' + plata(d.inmovilizado) + '</div></div>' +
+        d.items.map(function (i) {
+          return '<div class="rep-item">' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">' + (i.categoria_nombre ? esc(i.categoria_nombre) + ' - ' : '') +
+              plata(i.precio_venta) + '</div></div>' +
+            '<div class="cifra"><b>' + fmtCant(i.stock) + '</b><span>sin vender</span></div></div>';
+        }).join('');
+    }
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+async function compartirLista() {
+  const items = window._listaReponer || [];
+  if (items.length === 0) return;
+  const n = (negocio && negocio.nombre) ? negocio.nombre : 'Mi negocio';
+  let t = 'Lista de compras - ' + n + '\n\n';
+  items.forEach(function (i) {
+    t += '- ' + i.nombre + ': ' + fmtCant(i.sugerido) + '\n';
+  });
+  if (navigator.share) { try { await navigator.share({ text: t }); return; } catch (e) { return; } }
+  try { await navigator.clipboard.writeText(t); avisar('Lista copiada'); }
+  catch (e) { window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); }
+}
 
 /* ══ Vuelto ══ */
 

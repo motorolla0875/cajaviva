@@ -30,5 +30,6 @@ app.use('/api/negocio', requiereAuth, require('./routes/negocio'));
 app.use('/api/proveedores', requiereAuth, require('./routes/proveedores'));
 app.use('/api/importar', requiereAuth, require('./routes/importar'));
 app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
+app.use('/api/reportes', requiereAuth, require('./routes/reportes'));
 
 app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));
