@@ -1967,6 +1967,18 @@ $('btnConfirmarPeso').onclick = function () {
 };
 
 /* ══ Escaner de codigo de barras ══ */
+// EAN-13 y EAN-8 traen un digito verificador al final.
+// Si no cierra, la lectura fue mala: se descarta y se sigue escaneando.
+function codigoValido(c) {
+  const d = String(c).replace(/\D/g, '');
+  if (d.length !== 13 && d.length !== 8) return true; // otros formatos: no se valida
+  const digitos = d.split('').map(Number);
+  const verificador = digitos.pop();
+  let suma = 0;
+  digitos.reverse().forEach(function (n, i) { suma += n * (i % 2 === 0 ? 3 : 1); });
+  return ((10 - (suma % 10)) % 10) === verificador;
+}
+
 
 let lector = null;
 let escaneando = false;
@@ -2009,20 +2021,37 @@ async function cerrarScan() {
 }
 $('btnCerrarScan').onclick = cerrarScan;
 
+let ultimoCodigo = null;
+let vecesCodigo = 0;
+
 function encontroCodigo(codigo) {
   const limpio = String(codigo).trim();
+
+  // descartar lecturas con error de digito verificador
+  if (!codigoValido(limpio)) return;
+
+  // pedir dos lecturas iguales seguidas, para estar seguros
+  if (limpio === ultimoCodigo) { vecesCodigo++; }
+  else { ultimoCodigo = limpio; vecesCodigo = 1; return; }
+  if (vecesCodigo < 2) return;
+  ultimoCodigo = null; vecesCodigo = 0;
+
   const p = productos.filter(function (x) { return (x.codigo_barras || '') === limpio; })[0];
 
   if (!p) {
-    $('msgScan').innerHTML = '<div class="msg">Ningun producto tiene el codigo ' + esc(limpio) + '. Cargalo desde Productos.</div>';
+    cerrarScan();
+    abrirProd(null);
+    $('pBarras').value = limpio;
+    $('msgProd').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Codigo ' + esc(limpio) + ' - completa el producto y guardalo.</div>';
+    setTimeout(function () { $('pNombre').focus(); }, 150);
     return;
   }
 
   cerrarScan();
   if (p.stock <= 0) { avisar(p.nombre + ' esta sin stock', true); return; }
-  const antes = carrito.length + carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
+  const antes = carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
   agregar(p.id);
-  const despues = carrito.length + carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
+  const despues = carrito.reduce(function (s, l) { return s + l.cantidad; }, 0);
   if (despues > antes) avisar(p.nombre + ' agregado');
 }
 
