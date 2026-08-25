@@ -1979,11 +1979,18 @@ $('btnEscanear').onclick = async function () {
   $('modalScan').classList.add('on');
 
   try {
-    if (!lector) lector = new Html5Qrcode('lectorCam');
+    if (!lector) {
+      const F = Html5QrcodeSupportedFormats;
+      lector = new Html5Qrcode('lectorCam', {
+        formatsToSupport: [
+          F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF, F.QR_CODE
+        ]
+      });
+    }
     escaneando = true;
     await lector.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 260, height: 160 } },
+      { fps: 15, qrbox: { width: 300, height: 150 }, aspectRatio: 1.4 },
       function (texto) { encontroCodigo(texto); },
       function () {}
     );
