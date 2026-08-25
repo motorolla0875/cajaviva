@@ -910,6 +910,7 @@
     <div class="detalle-hecho" id="hechoDetalle"></div>
     <button class="btn-ppal" id="btnCompartir">Compartir comprobante</button>
     <button class="btn-sec" id="btnSeguir">Seguir vendiendo</button>
+    <button class="btn-del" id="btnAnularUltima">Me equivoque, anular</button>
   </div>
 </div>
 
@@ -1827,7 +1828,7 @@ $('btnCobrar').onclick = async function () {
     };
 
     try {
-      await api('POST', '/ventas', cuerpo);
+      const resp = await api('POST', '/ventas', cuerpo);
       carrito = []; pintarCarrito();
       if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       await cargarProductos(); await cargarResumen();
@@ -1838,7 +1839,8 @@ $('btnCobrar').onclick = async function () {
         vuelto: Math.max(0, num($('pagaCon').value) - total),
         ganancia: ganancia,
         fiadoA: esFiado && clienteId ? (clientes.filter(function (c) { return c.id === clienteId; })[0] || {}).nombre : null,
-        sinConexion: false
+        sinConexion: false,
+        ventaId: resp && resp.id ? resp.id : null
       });
     } catch (e) {
       // sin red: se guarda y se sube cuando vuelva
@@ -2338,6 +2340,7 @@ let ultimaVenta = null;
 
 function mostrarHecho(datos) {
   ultimaVenta = datos;
+  $('btnAnularUltima').style.display = datos.ventaId ? 'block' : 'none';
   $('hechoMonto').textContent = plata(datos.total);
 
   let html = '';
@@ -2377,6 +2380,21 @@ $('btnCompartir').onclick = async function () {
 };
 
 $('btnSeguir').onclick = function () { $('modalHecho').classList.remove('on'); };
+
+$('btnAnularUltima').onclick = async function () {
+  if (!ultimaVenta || !ultimaVenta.ventaId) return;
+  if (!confirm('Anular esta venta? El stock vuelve a su lugar.')) return;
+
+  const btn = $('btnAnularUltima');
+  btn.disabled = true; btn.textContent = 'Anulando...';
+  try {
+    await api('DELETE', '/ventas/' + ultimaVenta.ventaId);
+    await cargarProductos(); await cargarResumen(); await cargarClientes();
+    $('modalHecho').classList.remove('on');
+    avisar('Venta anulada');
+  } catch (e) { avisar(e.message, true); }
+  btn.disabled = false; btn.textContent = 'Me equivoque, anular';
+};
 
 /* ══ Importar desde Excel o CSV ══ */
 
