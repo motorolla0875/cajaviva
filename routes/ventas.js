@@ -24,7 +24,6 @@ router.post('/', (req, res) => {
 
     const cantidad = parseFloat(it.cantidad);
     if (isNaN(cantidad) || cantidad <= 0) return res.status(400).json({ error: `Cantidad no válida en ${prod.nombre}.` });
-    if (cantidad > prod.stock) return res.status(400).json({ error: `No hay stock suficiente de ${prod.nombre}.` });
 
     const precio = it.precioUnitario != null ? parseFloat(it.precioUnitario) : prod.precio_venta;
     const costo = prod.precio_costo || 0;
