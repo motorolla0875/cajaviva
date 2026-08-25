@@ -949,21 +949,12 @@
     .dos-arriba .btn-nuevo { flex: none; width: 100%; padding: 13px 8px; font-size: 14px; }
     .dos-arriba .btn-nuevo.gris { padding: 13px 8px; }
     .dos-arriba .btn-nuevo:first-child { grid-column: 1 / -1; }
-    /* en mobile: foto a la izquierda, texto a la derecha */
-    .grilla { grid-template-columns: 1fr; gap: 8px; }
-    .prod {
-      flex-direction: row; align-items: center; gap: 12px;
-      min-height: 0; padding: 10px 12px;
-    }
-    .prod .foto-mini {
-      width: 56px; height: 56px; margin-bottom: 0; border-radius: 9px;
-    }
-    .prod .n { font-size: 14.5px; -webkit-line-clamp: 2; flex: 1; }
-    .prod .s { font-size: 12px; }
-    .prod .p { font-size: 16px; margin-top: 0; margin-left: auto; flex-shrink: 0; }
-    .prod .en-carrito { top: 50%; transform: translateY(-50%); right: 10px; }
-    .prod .reponer-rapido { bottom: 50%; transform: translateY(50%); right: 46px; }
-    .prod .datos-txt { flex: 1; min-width: 0; }
+    .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .prod { min-height: 150px; padding: 10px; }
+    .prod .foto-mini { height: 60px; }
+    .prod .n { font-size: 13px; }
+    .prod .s { font-size: 11px; }
+    .prod .p { font-size: 15px; }
     header { padding: 12px 14px; }
     nav button { font-size: 12.5px; }
     .rubros { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
@@ -2457,11 +2448,9 @@ function pintarGrilla() {
     return '<button class="prod' + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
-      '<div class="datos-txt">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
-      '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
