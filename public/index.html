@@ -208,9 +208,12 @@
   .chips button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
   .grilla {
-    flex: 1; overflow-y: auto; display: grid;
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px; align-content: start;
+    gap: 10px; align-content: start; align-items: start;
+    grid-auto-rows: min-content;
+    padding-right: 2px;
   }
   .prod {
     background: var(--panel); border: 1px solid var(--line);
