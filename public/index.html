@@ -2149,7 +2149,12 @@ function encontroCodigo(codigo) {
   aplicar(cerrado);
 
   manija.addEventListener('click', function () {
-    aplicar(!panel.classList.contains('chico'));
+    const cerradoAhora = panel.classList.contains('chico');
+    if (cerradoAhora && (typeof carrito === 'undefined' || carrito.length === 0)) {
+      avisar('Toca un producto para empezar');
+      return;
+    }
+    aplicar(!cerradoAhora);
   });
 
   window.cerrarPanelVenta = function () { aplicar(true); };
