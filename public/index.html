@@ -5885,6 +5885,7 @@ async function estadoTurno(id, estado) {
   try {
     await api('PUT', '/turnos/' + id, { estado: estado });
     await cargarAgenda();
+    await revisarTurnos();
     avisar('Turno actualizado');
   } catch (e) { avisar(e.message, true); }
 }
@@ -5894,6 +5895,7 @@ async function cobrarTurno(id) {
   try {
     const r = await api('POST', '/turnos/' + id + '/cobrar', { fecha: hoyISO() });
     await cargarAgenda();
+    await revisarTurnos();
     await cargarResumen();
     avisar('Cobrado ' + plata(r.total));
   } catch (e) { avisar(e.message, true); }
@@ -6001,6 +6003,7 @@ $('btnGuardarTurno').onclick = async function () {
     $('fechaAgenda').value = cuerpo.fecha;
     $('modalTurno').classList.remove('on');
     await cargarAgenda();
+    await revisarTurnos();
     avisar(turnoEditando ? 'Turno actualizado' : 'Turno reservado');
   } catch (e) {
     $('msgTurno').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -6014,6 +6017,7 @@ $('btnBorrarTurno').onclick = async function () {
     await api('PUT', '/turnos/' + turnoEditando, { estado: 'cancelado' });
     $('modalTurno').classList.remove('on');
     await cargarAgenda();
+    await revisarTurnos();
     avisar('Turno cancelado');
   } catch (e) { avisar(e.message, true); }
 };
