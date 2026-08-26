@@ -17,7 +17,7 @@ const RUBROS = {
   regalos:       ['cap_mostrador'],
   petshop:       ['cap_mostrador'],
   repuestos:     ['cap_mostrador', 'cap_reparto'],
-  distribuidora: ['cap_reparto'],
+  distribuidora: ['cap_mostrador', 'cap_reparto'],
   verduleria:    ['cap_mostrador', 'cap_peso'],
   carniceria:    ['cap_mostrador', 'cap_peso', 'cap_vencimientos'],
   fiambreria:    ['cap_mostrador', 'cap_peso', 'cap_vencimientos'],
@@ -29,7 +29,12 @@ const RUBROS = {
   calzado:       ['cap_mostrador', 'cap_variantes'],
   rotiseria:     ['cap_mostrador', 'cap_recetas'],
   cafeteria:     ['cap_mostrador', 'cap_recetas'],
-  peluqueria:    ['cap_turnos'],
+  peluqueria:    ['cap_mostrador', 'cap_turnos'],
+  barberia:      ['cap_mostrador', 'cap_turnos'],
+  estetica:      ['cap_mostrador', 'cap_turnos'],
+  consultorio:   ['cap_turnos'],
+  gomeria:       ['cap_mostrador', 'cap_turnos'],
+  lavadero:      ['cap_mostrador', 'cap_turnos'],
   taller:        ['cap_mostrador', 'cap_turnos'],
   otro:          ['cap_mostrador']
 };

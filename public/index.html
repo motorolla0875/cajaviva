@@ -2434,10 +2434,20 @@ async function alternarCap(nombre) {
   if (apagando && CAPS_VENTA.indexOf(nombre) >= 0) {
     const otras = CAPS_VENTA.filter(function (c) { return c !== nombre && cap(c); });
     if (otras.length === 0) {
-      avisar('Tu negocio necesita al menos una forma de vender', true);
+      avisar('No podes apagar esto: tu negocio necesita al menos una forma de cobrar', true);
       return;
     }
   }
+  // turnos y recetas necesitan poder cobrar
+  if (!apagando && (nombre === 'cap_turnos' || nombre === 'cap_recetas') &&
+      !cap('cap_mostrador') && !cap('cap_reparto')) {
+    try {
+      await api('PUT', '/negocio/capacidad', { cap: 'cap_mostrador', valor: 1 });
+      negocio.cap_mostrador = 1;
+      avisar('Se activo tambien la venta en mostrador');
+    } catch (e) {}
+  }
+
   try {
     negocio = await api('PUT', '/negocio/capacidad', { cap: nombre, valor: apagando ? 0 : 1 });
     pintarCaps();
