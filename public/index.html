@@ -667,6 +667,12 @@
     background: var(--panel); color: var(--text); font-size: 15px; text-align: center;
   }
 
+  .dia-titulo {
+    text-align: center; font-size: 14px; font-weight: 500;
+    color: var(--accent-dark); margin-bottom: 12px;
+  }
+  .dia-titulo small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
+
   .turno {
     display: flex; gap: 12px; align-items: flex-start;
     background: var(--panel); border: 1px solid var(--line);
@@ -1264,6 +1270,7 @@
         <input type="date" id="fechaAgenda">
         <button id="diaSiguiente">&#8250;</button>
       </div>
+      <div class="dia-titulo" id="diaTitulo"></div>
       <button class="btn-nuevo solo" id="btnNuevoTurno">+ Reservar un turno</button>
       <div id="resumenAgenda"></div>
       <div id="listaAgenda"></div>
@@ -5805,6 +5812,23 @@ async function sacarInsumo(id) {
 }
 
 /* ══ Agenda de turnos ══ */
+function textoDelDia(fecha) {
+  const hoy = hoyISO();
+  const d = new Date(fecha + 'T12:00:00');
+  const h = new Date(hoy + 'T12:00:00');
+  const dias = Math.round((d - h) / 86400000);
+
+  const nombreDia = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  let rel;
+  if (dias === 0) rel = 'Hoy';
+  else if (dias === 1) rel = 'Mañana';
+  else if (dias === -1) rel = 'Ayer';
+  else if (dias > 1) rel = 'En ' + dias + ' dias';
+  else rel = 'Hace ' + (-dias) + ' dias';
+
+  return { rel: rel, fecha: nombreDia };
+}
+
 
 let turnoEditando = null;
 
@@ -5831,6 +5855,9 @@ async function cargarAgenda() {
     const d = await api('GET', '/turnos?fecha=' + fechaAgenda());
 
     if (fechaAgenda() === hoyISO()) pintarContadorAgenda(d.totales.reservados);
+
+    const td = textoDelDia(fechaAgenda());
+    $('diaTitulo').innerHTML = td.rel + '<small>' + td.fecha + '</small>';
 
     $('resumenAgenda').innerHTML = d.items.length === 0 ? '' :
       '<div class="rep-resumen"><div class="lbl">' +
