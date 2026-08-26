@@ -130,6 +130,37 @@
   .btn-seguir:disabled { background: var(--line); color: var(--muted); }
   .nota-cambio { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 12px; }
 
+  #tourCarga { width: 100%; max-width: 340px; margin-top: 26px; text-align: center; }
+  .tour-card {
+    min-height: 190px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+  }
+  .tour-icono {
+    width: 70px; height: 70px; border-radius: 20px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; animation: entrar .5s ease;
+  }
+  .tour-titulo { font-size: 19px; font-weight: 500; animation: entrar .5s ease .06s both; }
+  .tour-texto {
+    font-size: 14px; color: var(--muted); line-height: 1.5;
+    animation: entrar .5s ease .12s both; padding: 0 10px;
+  }
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  .tour-puntos { display: flex; gap: 7px; justify-content: center; margin-top: 20px; }
+  .tour-puntos i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line); transition: all .3s;
+  }
+  .tour-puntos i.on { background: var(--accent); width: 22px; border-radius: 4px; }
+  .tour-saltear {
+    margin-top: 22px; border: none; background: none;
+    color: var(--muted); font-size: 13.5px; padding: 8px 16px;
+  }
+
   .app { display: none; flex-direction: column; height: 100dvh; }
   .app.on { display: flex; }
 
@@ -1167,7 +1198,13 @@
 
 <div class="pantalla-centro on" id="pantallaCarga">
   <div class="logo-grande">Caja<span>Viva</span></div>
-  <div class="logo-sub">Preparando tu cuenta...</div>
+  <div class="logo-sub" id="subCarga">Preparando tu cuenta...</div>
+
+  <div id="tourCarga" style="display:none;">
+    <div class="tour-card" id="tourCard"></div>
+    <div class="tour-puntos" id="tourPuntos"></div>
+    <button class="tour-saltear" id="btnSaltear">Saltear</button>
+  </div>
 </div>
 
 <div class="pantalla-centro" id="pantallaLogin">
@@ -2595,6 +2632,68 @@ function descontarStockLocal(items) {
 
 setInterval(function () { if (navigator.onLine) subirCola(); }, 30000);
 
+/* ══ Tour de bienvenida ══ */
+
+const TOUR = [
+  ['&#128179;', 'Cobrá en segundos', 'Tocá el producto o escaneá el código. El vuelto se calcula solo.'],
+  ['&#128200;', 'Sabé cuánto ganás', 'Guardamos el costo de cada venta, asi ves la ganancia real y no solo lo que facturaste.'],
+  ['&#128246;', 'Funciona sin internet', 'Si se corta la señal seguis vendiendo. Cuando vuelve, todo se sube solo.'],
+  ['&#128187;', 'Desde el celu o la compu', 'Entrá con la misma cuenta desde donde quieras. Tus datos te siguen.']
+];
+
+let tourPaso = 0, tourTimer = null, tourListo = null;
+
+function pintarTour() {
+  const t = TOUR[tourPaso];
+  document.getElementById('tourCard').innerHTML =
+    '<div class="tour-icono">' + t[0] + '</div>' +
+    '<div class="tour-titulo">' + t[1] + '</div>' +
+    '<div class="tour-texto">' + t[2] + '</div>';
+
+  document.getElementById('tourPuntos').innerHTML = TOUR.map(function (x, i) {
+    return '<i class="' + (i === tourPaso ? 'on' : '') + '"></i>';
+  }).join('');
+}
+
+function arrancarTour() {
+  const ya = localStorage.getItem('cajaviva_tour');
+  if (ya) return Promise.resolve();
+
+  document.getElementById('subCarga').textContent = 'Preparando todo...';
+  document.getElementById('tourCarga').style.display = 'block';
+  tourPaso = 0;
+  pintarTour();
+
+  return new Promise(function (resolver) {
+    tourListo = resolver;
+    tourTimer = setInterval(function () {
+      tourPaso++;
+      if (tourPaso >= TOUR.length) { terminarTour(); return; }
+      pintarTour();
+    }, 2600);
+  });
+}
+
+function terminarTour() {
+  clearInterval(tourTimer);
+  localStorage.setItem('cajaviva_tour', '1');
+  document.getElementById('tourCarga').style.display = 'none';
+  if (tourListo) { tourListo(); tourListo = null; }
+}
+
+document.getElementById('btnSaltear').onclick = terminarTour;
+document.getElementById('tourCard').onclick = function () {
+  tourPaso++;
+  if (tourPaso >= TOUR.length) { terminarTour(); return; }
+  clearInterval(tourTimer);
+  tourTimer = setInterval(function () {
+    tourPaso++;
+    if (tourPaso >= TOUR.length) { terminarTour(); return; }
+    pintarTour();
+  }, 2600);
+  pintarTour();
+};
+
 /* ══ Sesion ══ */
 
 function mostrar(cual) {
@@ -2790,6 +2889,7 @@ function usarDatosGuardados() {
 }
 
 async function arrancarApp() {
+  await arrancarTour();
   mostrar('app');
   aplicarCapacidades();
   pintarCarrito();
