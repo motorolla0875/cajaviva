@@ -115,6 +115,7 @@
     object-fit: cover; background: var(--panel-2); cursor: pointer;
   }
   .prod .info .n { font-weight: 500; font-size: 15px; }
+  .desc-prod { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
   .prod .info .p { color: var(--accent); font-weight: 500; font-size: 16px; margin-top: 2px; }
   .prod .ctrl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
   .prod .ctrl button {
@@ -314,6 +315,7 @@ function pintar() {
       (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy" onclick="verFoto(\'' + (p.foto_grande || p.foto) + '\')">' : '') +
       '<div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
+      (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
       '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
         (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (p.tiene_variantes ? '<span class="badge-var">' +

@@ -1499,6 +1499,9 @@
       </div>
       <div id="wrapStockIni"><label>Stock inicial</label><input type="text" id="pStock" inputmode="decimal" placeholder="0"></div>
     </div>
+    <label id="lblDescripcion">Descripcion (opcional)</label>
+    <input type="text" id="pNotas" placeholder="Ej: incluye lavado y peinado">
+
     <div id="wrapDuracion" style="display:none;">
       <label>Cuanto dura</label>
       <select id="pDuracion">
@@ -2895,6 +2898,7 @@ function abrirProd(id) {
   $('pUnidad').value = p ? p.unidad : 'unidad';
   $('pStock').value = '';
   $('pBarras').value = p && p.codigo_barras ? p.codigo_barras : '';
+  $('pNotas').value = p && p.notas ? p.notas : '';
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
@@ -2932,6 +2936,7 @@ $('btnGuardarProd').onclick = async function () {
     unidad: cap('cap_peso') ? $('pUnidad').value : 'unidad',
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
+    notas: $('pNotas').value.trim() || null,
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
