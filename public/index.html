@@ -5512,19 +5512,8 @@ function aplicarModoServicio() {
   $('swEsServicio').classList.toggle('on', on);
   $('wrapDuracion').style.display = on ? 'block' : 'none';
   $('wrapStockIni').style.display = on ? 'none' : (editandoId ? 'none' : 'block');
-  $('pBarras').parentElement.style.display = on ? 'none' : '';
-  $('pMinimo').parentElement.style.display = on ? 'none' : '';
-
-  // ocultar tambien las etiquetas
-  const labels = document.querySelectorAll('#modalProd label');
-  labels.forEach(function (l) {
-    const t = l.textContent;
-    if (t.indexOf('Codigo de barras') === 0 || t.indexOf('Avisar cuando') === 0) {
-      l.style.display = on ? 'none' : '';
-    }
-    if (t.indexOf('Unidad') === 0) l.style.display = on ? 'none' : '';
-  });
   if (on) $('wrapUnidad').style.display = 'none';
+  else if (cap('cap_peso')) $('wrapUnidad').style.display = 'block';
 }
 
 $('swEsServicio').onclick = function () {
