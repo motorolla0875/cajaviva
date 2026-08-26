@@ -6034,7 +6034,7 @@ async function cargarAgenda() {
       return;
     }
 
-    $('listaAgenda').innerHTML = d.items.map(function (t) {
+    function pintarTurno(t) {
       let acc = '';
       if (t.estado === 'reservado') {
         acc = (t.comprobante && t.sena_estado !== 'confirmada'
@@ -6069,7 +6069,22 @@ async function cargarAgenda() {
         '</div>' +
         '<div class="lado"><div class="precio">' + plata(t.precio) + '</div></div>' +
       '</div>';
-    }).join('');
+    }
+
+    const pendientes = d.items.filter(function (t) { return t.estado === 'reservado'; });
+    const cerrados = d.items.filter(function (t) { return t.estado !== 'reservado'; });
+
+    let html = '';
+    if (pendientes.length > 0) {
+      html += '<div class="seccion">Por atender (' + pendientes.length + ')</div>' +
+        pendientes.map(pintarTurno).join('');
+    }
+    if (cerrados.length > 0) {
+      html += '<div class="seccion">Ya pasaron (' + cerrados.length + ')</div>' +
+        cerrados.map(pintarTurno).join('');
+    }
+
+    $('listaAgenda').innerHTML = html;
   } catch (e) {
     $('listaAgenda').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
