@@ -2817,24 +2817,31 @@ function pintarLista() {
     const tieneCosto = !esEmpleado && p.precio_costo > 0;
     const margen = tieneCosto ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo) * 100) : null;
     const clase = p.stock <= 0 ? 'cero' : (p.stock_minimo > 0 && p.stock <= p.stock_minimo ? 'bajo' : '');
+    const esServ = !!p.es_servicio;
     return '<div class="fila">' +
       (p.foto_mini || p.foto_url ? '<img class="foto-fila" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="datos">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="d">' + plata(p.precio_venta) +
-        (tieneCosto ? ' &middot; costo ' + plata(p.precio_costo) : ' &middot; sin costo cargado') + '</div>' +
+        (esServ
+          ? (p.duracion ? ' &middot; ' + (p.duracion >= 60
+              ? (p.duracion / 60) + (p.duracion === 60 ? ' hora' : ' horas')
+              : p.duracion + ' min') : '')
+          : (tieneCosto ? ' &middot; costo ' + plata(p.precio_costo) : ' &middot; sin costo cargado')) + '</div>' +
       (margen !== null ? '<div class="margen">Ganas ' + plata(p.precio_venta - p.precio_costo) + ' (' + margen + '%)</div>' : '') +
       (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
       (p.es_insumo ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">insumo</span>' : '') +
       (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
-      (p.stock < 0 ? '<div class="alerta-stock cero">Faltan ' + fmtCant(-p.stock) + ' - revisa</div>'
+      (esServ ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">servicio</span>'
+        : p.stock < 0 ? '<div class="alerta-stock cero">Faltan ' + fmtCant(-p.stock) + ' - revisa</div>'
         : p.stock === 0 ? '<div class="alerta-stock cero">Sin stock</div>'
         : (p.stock_minimo > 0 && p.stock <= p.stock_minimo) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
       '</div>' +
-      '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>' +
+      (esServ ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
       '<div class="acc">' +
-        '<button onclick="abrirStock(\'' + p.id + '\',\'reponer\')">+</button>' +
-        '<button onclick="abrirStock(\'' + p.id + '\',\'quitar\')">&minus;</button>' +
+        (esServ ? '' :
+          '<button onclick="abrirStock(\'' + p.id + '\',\'reponer\')">+</button>' +
+          '<button onclick="abrirStock(\'' + p.id + '\',\'quitar\')">&minus;</button>') +
         '<button onclick="abrirProd(\'' + p.id + '\')">&#9998;</button>' +
       '</div></div>';
   }).join('');
