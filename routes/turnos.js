@@ -50,7 +50,7 @@ router.get('/', (req, res) => {
     FROM turnos t
     LEFT JOIN empleados e ON e.id = t.empleado_id
     WHERE t.user_id = ? AND t.fecha = ?
-    ORDER BY t.hora
+    ORDER BY CASE WHEN t.estado = 'reservado' THEN 0 ELSE 1 END, t.hora
   `).all(req.userId, fecha);
 
   filas.forEach(function (t) { t.hora_fin = aHora(minutos(t.hora) + t.duracion); });
