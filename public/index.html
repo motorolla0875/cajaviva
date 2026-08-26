@@ -1350,6 +1350,10 @@
       </div>
       <div id="panoramaAgenda"></div>
       <div class="dia-titulo" id="diaTitulo"></div>
+      <div class="chips" id="tabsAgenda">
+        <button class="on" data-tab="pendientes">Por atender</button>
+        <button data-tab="cerrados">Ya pasaron</button>
+      </div>
       <div class="dos-arriba">
         <button class="btn-nuevo" id="btnNuevoTurno">+ Reservar un turno</button>
         <button class="btn-nuevo gris" id="btnRecordar" style="display:none;">Recordar</button>
@@ -5983,6 +5987,15 @@ function textoDelDia(fecha) {
 
 
 let turnoEditando = null;
+let tabAgenda = 'pendientes';
+
+document.getElementById('tabsAgenda').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  tabAgenda = b.dataset.tab;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+  cargarAgenda();
+});
 
 function fechaAgenda() {
   return $('fechaAgenda').value || hoyISO();
@@ -6029,10 +6042,7 @@ async function cargarAgenda() {
       br.textContent = 'Recordar a ' + turnosParaRecordar.length;
     }
 
-    if (d.items.length === 0) {
-      $('listaAgenda').innerHTML = '<div class="vacio">No hay turnos este dia.</div>';
-      return;
-    }
+
 
     function pintarTurno(t) {
       let acc = '';
@@ -6074,17 +6084,17 @@ async function cargarAgenda() {
     const pendientes = d.items.filter(function (t) { return t.estado === 'reservado'; });
     const cerrados = d.items.filter(function (t) { return t.estado !== 'reservado'; });
 
-    let html = '';
-    if (pendientes.length > 0) {
-      html += '<div class="seccion">Por atender (' + pendientes.length + ')</div>' +
-        pendientes.map(pintarTurno).join('');
-    }
-    if (cerrados.length > 0) {
-      html += '<div class="seccion">Ya pasaron (' + cerrados.length + ')</div>' +
-        cerrados.map(pintarTurno).join('');
-    }
+    const tabs = $('tabsAgenda').children;
+    tabs[0].textContent = 'Por atender' + (pendientes.length > 0 ? ' (' + pendientes.length + ')' : '');
+    tabs[1].textContent = 'Ya pasaron' + (cerrados.length > 0 ? ' (' + cerrados.length + ')' : '');
 
-    $('listaAgenda').innerHTML = html;
+    const lista = tabAgenda === 'pendientes' ? pendientes : cerrados;
+
+    $('listaAgenda').innerHTML = lista.length === 0
+      ? '<div class="vacio">' + (tabAgenda === 'pendientes'
+          ? 'No hay turnos por atender este dia.'
+          : 'Todavia no hay turnos cerrados.') + '</div>'
+      : lista.map(pintarTurno).join('');
   } catch (e) {
     $('listaAgenda').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
