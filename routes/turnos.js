@@ -44,18 +44,22 @@ function aHora(min) {
 // ── horarios de atencion ──
 try { db.exec('ALTER TABLE negocio ADD COLUMN horarios TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN turnos_web INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN sena_monto REAL NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE turnos ADD COLUMN sena_estado TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE turnos ADD COLUMN comprobante TEXT'); } catch (e) {}
 
 router.get('/horarios', (req, res) => {
   const n = db.prepare('SELECT horarios, turnos_web FROM negocio WHERE user_id = ?').get(req.userId);
   let h = null;
   try { h = n && n.horarios ? JSON.parse(n.horarios) : null; } catch (e) {}
-  res.json({ horarios: h, turnosWeb: n ? !!n.turnos_web : false });
+  res.json({ horarios: h, turnosWeb: n ? !!n.turnos_web : false, sena: n ? n.sena_monto : 0 });
 });
 
 router.put('/horarios', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
-  db.prepare('UPDATE negocio SET horarios = ?, turnos_web = ? WHERE user_id = ?')
-    .run(JSON.stringify(req.body?.horarios || {}), req.body?.turnosWeb ? 1 : 0, req.userId);
+  db.prepare('UPDATE negocio SET horarios = ?, turnos_web = ?, sena_monto = ? WHERE user_id = ?')
+    .run(JSON.stringify(req.body?.horarios || {}), req.body?.turnosWeb ? 1 : 0,
+         parseFloat(req.body?.sena) || 0, req.userId);
   res.json({ ok: true });
 });
 
@@ -252,7 +256,8 @@ router.get('/publico/:slug/libres', (req, res) => {
     if (!choca) horas.push(aHora(m));
   }
 
-  res.json({ activo: true, abierto: true, horas: horas, desde: cfg.desde, hasta: cfg.hasta });
+  res.json({ activo: true, abierto: true, horas: horas, desde: cfg.desde, hasta: cfg.hasta,
+             sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });
 });
 
 // ── el cliente reserva (publico) ──
@@ -283,15 +288,32 @@ router.post('/publico/:slug', (req, res) => {
   if (choca) return res.status(400).json({ error: 'Ese horario ya se ocupo. Proba con otro.' });
 
   const id = uuidv4();
+  const pideSena = (n.sena_monto || 0) > 0;
+
   db.prepare(`
     INSERT INTO turnos (id, user_id, cliente_nombre, telefono, producto_id,
-      servicio, fecha, hora, duracion, precio, estado, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservado', ?)
+      servicio, fecha, hora, duracion, precio, estado, nota, sena_estado)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservado', ?, ?)
   `).run(id, n.user_id, nombre.trim(), telefono || null, p.id,
          p.nombre, fecha, hora, dur, p.precio_venta,
-         (nota ? nota + ' - ' : '') + 'Pedido por la web');
+         (nota ? nota + ' - ' : '') + 'Pedido por la web',
+         pideSena ? 'pendiente' : null);
 
-  res.json({ id: id, servicio: p.nombre, fecha: fecha, hora: hora, precio: p.precio_venta });
+  res.json({ id: id, servicio: p.nombre, fecha: fecha, hora: hora, precio: p.precio_venta,
+             sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });
+});
+
+
+// ── confirmar la seña ──
+router.put('/:id/sena', (req, res) => {
+  const t = db.prepare('SELECT * FROM turnos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!t) return res.status(404).json({ error: 'Turno no encontrado.' });
+
+  const estado = ['pendiente', 'enviado', 'confirmada'].indexOf(req.body?.estado) >= 0
+    ? req.body.estado : 'confirmada';
+
+  db.prepare('UPDATE turnos SET sena_estado = ? WHERE id = ?').run(estado, t.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

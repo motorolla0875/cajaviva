@@ -93,4 +93,20 @@ router.post('/comprobante/:pedidoId', subir.single('foto'), (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── comprobante de seña de un turno (publico) ──
+router.post('/sena/:turnoId', subir.single('foto'), (req, res) => {
+  const t = db.prepare('SELECT * FROM turnos WHERE id = ?').get(req.params.turnoId);
+  if (!t) return res.status(404).json({ error: 'Turno no encontrado.' });
+  if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
+
+  const nombre = uuidv4() + '-sena.webp';
+  guardarArchivo(req.file.buffer, nombre);
+
+  db.prepare("UPDATE turnos SET comprobante = ?, sena_estado = 'enviado' WHERE id = ?")
+    .run('/fotos/' + nombre, t.id);
+
+  res.json({ ok: true });
+});
+
 module.exports = router;

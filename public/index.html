@@ -1824,6 +1824,10 @@
           <div><label>Desde</label><input type="time" id="catDesde" value="09:00"></div>
           <div><label>Hasta</label><input type="time" id="catHasta" value="19:00"></div>
         </div>
+
+        <label>Seña para reservar (opcional)</label>
+        <input type="text" id="catSena" inputmode="decimal" placeholder="0">
+        <p class="hint">Si ponés un monto, el cliente tiene que transferir y mandarte el comprobante. Evita turnos falsos.</p>
       </div>
     </div>
 
@@ -5984,7 +5988,11 @@ async function cargarAgenda() {
     $('listaAgenda').innerHTML = d.items.map(function (t) {
       let acc = '';
       if (t.estado === 'reservado') {
-        acc = '<button class="ppal" onclick="cobrarTurno(\'' + t.id + '\')">Atendido y cobrar</button>' +
+        acc = (t.comprobante && t.sena_estado !== 'confirmada'
+          ? '<button onclick="verComprobante(\'' + t.comprobante + '\')">Ver seña</button>' +
+            '<button onclick="confirmarSena(\'' + t.id + '\')">Seña ok</button>'
+          : '') +
+        '<button class="ppal" onclick="cobrarTurno(\'' + t.id + '\')">Atendido y cobrar</button>' +
               (t.telefono ? '<button onclick="wppTurno(\'' + esc(t.telefono) + '\')">WhatsApp</button>' : '') +
               '<button onclick="abrirTurno(\'' + t.id + '\')">Editar</button>' +
               '<button onclick="estadoTurno(\'' + t.id + '\',\'ausente\')">No vino</button>';
@@ -6001,6 +6009,9 @@ async function cargarAgenda() {
             (t.empleado_nombre ? ' - ' + esc(t.empleado_nombre) : '') + '</div>' +
           '<div class="cuando">' + textoDelDia(t.fecha).rel + '</div>' +
           (t.nota ? '<div class="nota">' + esc(t.nota) + '</div>' : '') +
+          (t.sena_estado === 'pendiente' ? '<span class="estado-turno ausente">espera seña</span>' : '') +
+          (t.sena_estado === 'enviado' ? '<span class="estado-turno ausente">seña por verificar</span>' : '') +
+          (t.sena_estado === 'confirmada' ? '<span class="estado-turno atendido">seña paga</span>' : '') +
           (t.estado !== 'reservado'
             ? '<span class="estado-turno ' + t.estado + '">' +
               (t.estado === 'atendido' ? 'atendido' : t.estado === 'ausente' ? 'no vino' : 'cancelado') + '</span>'
@@ -6017,6 +6028,14 @@ async function cargarAgenda() {
 
 function wppTurno(tel) {
   window.open('https://wa.me/54' + String(tel).replace(/\D/g, ''), '_blank');
+}
+
+async function confirmarSena(id) {
+  try {
+    await api('PUT', '/turnos/' + id + '/sena', { estado: 'confirmada' });
+    await cargarAgenda();
+    avisar('Seña confirmada');
+  } catch (e) { avisar(e.message, true); }
 }
 
 async function estadoTurno(id, estado) {
@@ -6285,6 +6304,7 @@ async function cargarTurnosWeb() {
       $('catDesde').value = d.horarios.desde || '09:00';
       $('catHasta').value = d.horarios.hasta || '19:00';
     }
+    $('catSena').value = d.sena > 0 ? d.sena : '';
     $('swTurnosWeb').classList.toggle('on', turnosWebOn);
     $('wrapHorariosCat').style.display = turnosWebOn ? 'block' : 'none';
     pintarDiasCat();
@@ -6301,7 +6321,8 @@ async function guardarTurnosWeb() {
         desde: $('catDesde').value || '09:00',
         hasta: $('catHasta').value || '19:00'
       },
-      turnosWeb: turnosWebOn
+      turnosWeb: turnosWebOn,
+      sena: num($('catSena').value)
     });
     if (el) el.innerHTML = '';
   } catch (e) {
