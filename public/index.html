@@ -2511,6 +2511,9 @@ function aplicarCapacidades() {
   const ta = document.getElementById('tabAgenda');
   if (ta) ta.style.display = cap('cap_turnos') ? '' : 'none';
 
+  const tp = document.querySelector('nav button[data-vista="productos"]');
+  if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
+
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
     .classList.remove('oculto');
