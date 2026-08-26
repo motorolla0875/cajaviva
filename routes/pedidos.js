@@ -64,7 +64,7 @@ router.post('/publico/:slug', (req, res) => {
       variante = db.prepare('SELECT * FROM producto_variantes WHERE id = ? AND producto_id = ?')
         .get(it.varianteId, p.id);
     }
-    if (p.tiene_variantes && !variante) continue;
+    // si tiene variantes pero no vino ninguna, se acepta igual (el comerciante pregunta)
 
     const precio = variante && variante.precio_venta ? variante.precio_venta : p.precio_venta;
     lineas.push({ p: p, cantidad: c, variante: variante, precio: precio });
