@@ -2512,7 +2512,12 @@ function aplicarCapacidades() {
   if (ta) ta.style.display = cap('cap_turnos') ? '' : 'none';
 
   const tp = document.querySelector('nav button[data-vista="productos"]');
-  if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
+  if (tp) {
+    const angosto = window.innerWidth <= 900;
+    tp.textContent = cap('cap_turnos')
+      ? (angosto ? 'Servicios' : 'Productos/Servicios')
+      : 'Productos';
+  }
 
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
@@ -4264,6 +4269,7 @@ function aplicarModoEmpleado(nombre) {
 
   acomodar();
   window.addEventListener('resize', acomodar);
+  window.addEventListener('resize', function () { if (negocio) aplicarCapacidades(); });
 })();
 
 /* ══ Filtros de la lista de productos ══ */
