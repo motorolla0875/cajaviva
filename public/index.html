@@ -1193,8 +1193,10 @@
     <label>Como se llama tu negocio</label>
     <input type="text" id="bNombre" placeholder="Ej: Kiosco La Esquina">
 
-    <label>Que tipo de negocio es</label>
-    <div class="rubros" id="rubros"></div>
+    <label id="lblRubro">Que tipo de negocio es</label>
+    <div class="rubros" id="familias"></div>
+    <div class="rubros" id="rubros" style="display:none;"></div>
+    <button id="btnVolverFamilias" style="display:none; width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--accent-dark); font-size:13.5px;">&#8592; Ver otras categorias</button>
 
     <div id="pasoHorarios" style="display:none; margin-top:24px;">
       <h1 style="font-size:20px;">Cuando atendes</h1>
@@ -2309,6 +2311,28 @@ let filtroProd = 'todos';
 let ventasCaja = [], gastosCaja = [];
 let rubroElegido = '';
 
+const FAMILIAS = [
+  ['mostrador', 'Vendo en el mostrador', 'Kiosco, almacen, ferreteria, libreria...'],
+  ['peso', 'Vendo por peso', 'Verduleria, carniceria, fiambreria...'],
+  ['ropa', 'Vendo ropa o calzado', 'Con talles y colores'],
+  ['comida', 'Preparo lo que vendo', 'Rotiseria, cafeteria, panaderia...'],
+  ['turnos', 'Doy turnos', 'Peluqueria, taller, consultorio...'],
+  ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
+  ['otro', 'Otro', 'Lo configuro a mano']
+];
+
+const RUBROS_POR_FAMILIA = {
+  mostrador: ['kiosco', 'almacen', 'minimercado', 'libreria', 'ferreteria', 'bazar', 'regalos', 'petshop', 'repuestos', 'perfumeria', 'farmacia'],
+  peso: ['verduleria', 'carniceria', 'fiambreria', 'dietetica'],
+  ropa: ['ropa', 'calzado'],
+  comida: ['rotiseria', 'cafeteria', 'panaderia'],
+  turnos: ['peluqueria', 'barberia', 'estetica', 'consultorio', 'gomeria', 'lavadero', 'taller'],
+  reparto: ['distribuidora', 'almacen'],
+  otro: ['otro']
+};
+
+let familiaElegida = null;
+
 const RUBROS = [
   ['kiosco', 'Kiosco', 'Golosinas, bebidas'],
   ['almacen', 'Almacen', 'Con reparto'],
@@ -2333,6 +2357,11 @@ const RUBROS = [
   ['peluqueria', 'Peluqueria', 'Servicios'],
   ['taller', 'Taller', 'Servicios'],
   ['distribuidora', 'Distribuidora', 'Solo reparto'],
+  ['barberia', 'Barberia', 'Servicios'],
+  ['estetica', 'Estetica', 'Servicios'],
+  ['consultorio', 'Consultorio', 'Servicios'],
+  ['gomeria', 'Gomeria', 'Servicios'],
+  ['lavadero', 'Lavadero', 'Servicios'],
   ['otro', 'Otro', 'Configuro a mano']
 ];
 
@@ -2576,16 +2605,54 @@ function aplicarCapacidades() {
 /* ══ Bienvenida ══ */
 
 function pintarRubros() {
-  $('rubros').innerHTML = RUBROS.map(function (r) {
+  pintarFamilias();
+}
+
+function pintarFamilias() {
+  $('familias').innerHTML = FAMILIAS.map(function (f) {
+    return '<button class="rubro-btn" onclick="elegirFamilia(\'' + f[0] + '\')">' +
+      esc(f[1]) + '<span class="que">' + esc(f[2]) + '</span></button>';
+  }).join('');
+  $('familias').style.display = 'grid';
+  $('rubros').style.display = 'none';
+  $('btnVolverFamilias').style.display = 'none';
+  $('lblRubro').textContent = 'Que tipo de negocio es';
+}
+
+function elegirFamilia(f) {
+  familiaElegida = f;
+  const lista = RUBROS_POR_FAMILIA[f] || [];
+
+  if (lista.length === 1) { elegirRubro(lista[0]); return; }
+
+  const nombreFam = FAMILIAS.filter(function (x) { return x[0] === f; })[0];
+  $('lblRubro').textContent = nombreFam ? nombreFam[1] : 'Elegi tu rubro';
+
+  $('rubros').innerHTML = lista.map(function (id) {
+    const r = RUBROS.filter(function (x) { return x[0] === id; })[0];
+    if (!r) return '';
     return '<button class="rubro-btn' + (rubroElegido === r[0] ? ' on' : '') + '" ' +
       'onclick="elegirRubro(\'' + r[0] + '\')">' + esc(r[1]) +
       '<span class="que">' + esc(r[2]) + '</span></button>';
   }).join('');
+
+  $('familias').style.display = 'none';
+  $('rubros').style.display = 'grid';
+  $('btnVolverFamilias').style.display = 'block';
 }
+
+document.getElementById('btnVolverFamilias').onclick = function () {
+  rubroElegido = '';
+  $('btnEmpezar').disabled = true;
+  pintarFamilias();
+  const ph = document.getElementById('pasoHorarios');
+  if (ph) ph.style.display = 'none';
+};
 
 function elegirRubro(id) {
   rubroElegido = id;
-  pintarRubros();
+  if (familiaElegida) elegirFamilia(familiaElegida);
+  else pintarFamilias();
   $('btnEmpezar').disabled = false;
   revisarPasoHorarios();
 }
