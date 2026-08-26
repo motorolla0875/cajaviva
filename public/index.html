@@ -2519,6 +2519,9 @@ function aplicarCapacidades() {
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
 
+  const bn = document.getElementById('btnNuevo');
+  if (bn) bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
+
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
     .classList.remove('oculto');
