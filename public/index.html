@@ -99,6 +99,18 @@
   }
   .rubro-btn .que { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; margin-top: 3px; }
   .rubro-btn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
+  .dias-fila { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dia-btn {
+    flex: 1; min-width: 44px; padding: 12px 4px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-size: 13px; font-weight: 500;
+  }
+  .dia-btn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
+  #pasoHorarios input[type="time"] {
+    width: 100%; padding: 12px; margin-bottom: 0;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--text); font-size: 15px;
+  }
   .btn-seguir {
     width: 100%; padding: 15px; margin-top: 24px;
     border: none; border-radius: var(--radius);
@@ -1143,6 +1155,24 @@
 
     <label>Que tipo de negocio es</label>
     <div class="rubros" id="rubros"></div>
+
+    <div id="pasoHorarios" style="display:none; margin-top:24px;">
+      <h1 style="font-size:20px;">Cuando atendes</h1>
+      <p class="sub">Asi tus clientes pueden pedir turno solos. Podes cambiarlo despues.</p>
+
+      <div id="diasSemana"></div>
+
+      <div class="fila2" style="margin-top:14px;">
+        <div>
+          <label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:500;">Desde</label>
+          <input type="time" id="horaDesde" value="09:00">
+        </div>
+        <div>
+          <label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:500;">Hasta</label>
+          <input type="time" id="horaHasta" value="19:00">
+        </div>
+      </div>
+    </div>
 
     <button class="btn-seguir" id="btnEmpezar" disabled>Empezar</button>
     <p class="nota-cambio">Podes cambiarlo cuando quieras desde tu cuenta.</p>
@@ -2452,6 +2482,7 @@ function elegirRubro(id) {
   rubroElegido = id;
   pintarRubros();
   $('btnEmpezar').disabled = false;
+  revisarPasoHorarios();
 }
 
 $('btnEmpezar').onclick = async function () {
@@ -2464,6 +2495,20 @@ $('btnEmpezar').onclick = async function () {
       nombre: $('bNombre').value.trim() || 'Mi negocio'
     });
     localStorage.setItem('cajaviva_config', '1');
+
+    if (RUBROS_TURNOS.indexOf(rubroElegido) >= 0) {
+      try {
+        await api('PUT', '/turnos/horarios', {
+          horarios: {
+            dias: diasAbiertos,
+            desde: $('horaDesde').value || '09:00',
+            hasta: $('horaHasta').value || '19:00'
+          },
+          turnosWeb: true
+        });
+      } catch (e) {}
+    }
+
     await arrancarApp();
   } catch (e) {
     avisar(e.message, true);
@@ -6132,6 +6177,38 @@ function irAlDia(f) {
 function verProximo() {
   if (window._proximoTurno) irAlDia(window._proximoTurno);
   else avisar('No hay turnos mas adelante');
+}
+
+/* ══ Horarios en la bienvenida ══ */
+
+const DIAS = [['1','Lun'],['2','Mar'],['3','Mie'],['4','Jue'],['5','Vie'],['6','Sab'],['0','Dom']];
+let diasAbiertos = { '1':1, '2':1, '3':1, '4':1, '5':1, '6':1 };
+
+function pintarDias() {
+  const cont = document.getElementById('diasSemana');
+  if (!cont) return;
+  cont.innerHTML = '<label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:8px; font-weight:500;">Que dias abris</label>' +
+    '<div class="dias-fila">' + DIAS.map(function (d) {
+      return '<button type="button" class="dia-btn' + (diasAbiertos[d[0]] ? ' on' : '') +
+        '" onclick="alternarDia(\'' + d[0] + '\')">' + d[1] + '</button>';
+    }).join('') + '</div>';
+}
+
+function alternarDia(n) {
+  if (diasAbiertos[n]) delete diasAbiertos[n];
+  else diasAbiertos[n] = 1;
+  pintarDias();
+}
+
+// mostrar el paso de horarios si el rubro usa turnos
+const RUBROS_TURNOS = ['peluqueria', 'barberia', 'estetica', 'consultorio', 'gomeria', 'lavadero', 'taller'];
+
+function revisarPasoHorarios() {
+  const el = document.getElementById('pasoHorarios');
+  if (!el) return;
+  const usa = RUBROS_TURNOS.indexOf(rubroElegido) >= 0;
+  el.style.display = usa ? 'block' : 'none';
+  if (usa) pintarDias();
 }
 
 /* ══ Vuelto ══ */

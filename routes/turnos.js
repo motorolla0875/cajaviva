@@ -192,4 +192,23 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── horarios de atencion ──
+try { db.exec('ALTER TABLE negocio ADD COLUMN horarios TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN turnos_web INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+
+router.get('/horarios', (req, res) => {
+  const n = db.prepare('SELECT horarios, turnos_web FROM negocio WHERE user_id = ?').get(req.userId);
+  let h = null;
+  try { h = n && n.horarios ? JSON.parse(n.horarios) : null; } catch (e) {}
+  res.json({ horarios: h, turnosWeb: n ? !!n.turnos_web : false });
+});
+
+router.put('/horarios', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  db.prepare('UPDATE negocio SET horarios = ?, turnos_web = ? WHERE user_id = ?')
+    .run(JSON.stringify(req.body?.horarios || {}), req.body?.turnosWeb ? 1 : 0, req.userId);
+  res.json({ ok: true });
+});
+
 module.exports = router;
