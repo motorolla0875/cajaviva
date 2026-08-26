@@ -3962,9 +3962,10 @@ function aplicarModoEmpleado(nombre) {
 /* ══ Filtros de la lista de productos ══ */
 
 function pintarFiltrosProd() {
-  const negativos = productos.filter(function (p) { return p.stock < 0; }).length;
-  const sinStock = productos.filter(function (p) { return p.stock === 0; }).length;
-  const bajos = productos.filter(function (p) {
+  const conStock = productos.filter(function (p) { return !p.es_servicio; });
+  const negativos = conStock.filter(function (p) { return p.stock < 0; }).length;
+  const sinStock = conStock.filter(function (p) { return p.stock === 0; }).length;
+  const bajos = conStock.filter(function (p) {
     return p.stock > 0 && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
   }).length;
   const revisar = negativos + sinStock + bajos;
@@ -3995,6 +3996,7 @@ function filtrarProductos(cual) {
 
 function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
+  if (p.es_servicio) return false;
   if (filtroProd === 'negativo') return p.stock < 0;
   if (filtroProd === 'cero') return p.stock === 0;
   if (filtroProd === 'bajo') return p.stock > 0 && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
