@@ -300,15 +300,17 @@ function pintar() {
   }
 
   function tarjeta(p) {
-    const c = pedido[p.id] || 0;
+    const c = Object.keys(pedido).reduce(function (a, k) {
+      return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
+    }, 0);
     return '<div class="prod">' +
       (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy" onclick="verFoto(\'' + (p.foto_grande || p.foto) + '\')">' : '') +
       '<div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
         (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
-      (variantesElegidas[p.id] ? '<span class="badge-var">' + esc(variantesElegidas[p.id].nombre) + '</span>'
-        : (p.tiene_variantes ? '<span class="badge-var">elegi talle</span>' : '')) +
+      (p.tiene_variantes ? '<span class="badge-var">' +
+        (c > 0 ? c + ' en el pedido' : 'elegi talle') + '</span>' : '') +
       '</div>' +
       '<div class="ctrl">' +
       (c > 0
@@ -344,15 +346,30 @@ let prodVarActual = null;
 function cambiar(id, d) {
   const p = datos.productos.filter(function (x) { return x.id === id; })[0];
 
-  if (p && p.tiene_variantes && d > 0 && !pedido[id]) {
+  // con variantes: siempre abre el selector al sumar
+  if (p && p.tiene_variantes && d > 0) {
     abrirVarCat(p);
     return;
   }
 
   pedido[id] = (pedido[id] || 0) + d;
-  if (pedido[id] <= 0) { delete pedido[id]; delete variantesElegidas[id]; }
+  if (pedido[id] <= 0) delete pedido[id];
   pintar();
   actualizarBarra();
+}
+
+function cambiarVar(clave, d) {
+  pedido[clave] = (pedido[clave] || 0) + d;
+  if (pedido[clave] <= 0) { delete pedido[clave]; delete variantesElegidas[clave]; }
+  pintar();
+  actualizarBarra();
+}
+
+function datosDeClave(clave) {
+  const partes = String(clave).split('|');
+  const prod = datos.productos.filter(function (x) { return x.id === partes[0]; })[0];
+  const v = variantesElegidas[clave];
+  return { prod: prod, variante: v, precio: v ? v.precio : (prod ? prod.precio_venta : 0) };
 }
 
 function abrirVarCat(p) {
@@ -378,9 +395,9 @@ function cerrarVarCat() { document.getElementById('modalVar').style.display = 'n
 
 function elegirVarCat(varId, nombreVar, precio) {
   if (!prodVarActual) return;
-  const id = prodVarActual.id;
-  variantesElegidas[id] = { id: varId, nombre: nombreVar, precio: precio };
-  pedido[id] = (pedido[id] || 0) + 1;
+  const clave = prodVarActual.id + '|' + varId;
+  variantesElegidas[clave] = { id: varId, nombre: nombreVar, precio: precio };
+  pedido[clave] = (pedido[clave] || 0) + 1;
   cerrarVarCat();
   pintar();
   actualizarBarra();
@@ -391,11 +408,11 @@ function actualizarBarra() {
   if (ids.length === 0) { $('barra').style.display = 'none'; return; }
 
   let total = 0, cant = 0;
-  ids.forEach(function (id) {
-    const p = datos.productos.filter(function (x) { return x.id === id; })[0];
-    if (!p) return;
-    total += (variantesElegidas[id] ? variantesElegidas[id].precio : p.precio_venta) * pedido[id];
-    cant += pedido[id];
+  ids.forEach(function (clave) {
+    const d = datosDeClave(clave);
+    if (!d.prod) return;
+    total += d.precio * pedido[clave];
+    cant += pedido[clave];
   });
 
   $('barra').style.display = 'block';
@@ -408,14 +425,13 @@ let formaPago = 'efectivo';
 function textoPedido() {
   let t = 'Hola! Hice un pedido:\n\n';
   let total = 0;
-  Object.keys(pedido).forEach(function (id) {
-    const p = datos.productos.filter(function (x) { return x.id === id; })[0];
-    if (!p) return;
-    const pu = variantesElegidas[id] ? variantesElegidas[id].precio : p.precio_venta;
-    const sub = pu * pedido[id];
+  Object.keys(pedido).forEach(function (clave) {
+    const d = datosDeClave(clave);
+    if (!d.prod) return;
+    const sub = d.precio * pedido[clave];
     total += sub;
-    t += pedido[id] + ' x ' + p.nombre +
-      (variantesElegidas[id] ? ' (' + variantesElegidas[id].nombre + ')' : '') +
+    t += pedido[clave] + ' x ' + d.prod.nombre +
+      (d.variante ? ' (' + d.variante.nombre + ')' : '') +
       ' - ' + plata(sub) + '\n';
   });
   t += '\nTotal: ' + plata(total);
@@ -436,14 +452,13 @@ $('btnPedir').onclick = function () {
   $('resumenPedido').textContent = 'Revisa antes de enviar';
 
   let filas = '';
-  Object.keys(pedido).forEach(function (id) {
-    const pr = datos.productos.filter(function (x) { return x.id === id; })[0];
-    if (!pr) return;
-    const pu = variantesElegidas[id] ? variantesElegidas[id].precio : pr.precio_venta;
+  Object.keys(pedido).forEach(function (clave) {
+    const d = datosDeClave(clave);
+    if (!d.prod) return;
     filas += '<div class="det-linea"><div class="dn">' +
-      pedido[id] + ' x ' + esc(pr.nombre) +
-      (variantesElegidas[id] ? '<br><small>' + esc(variantesElegidas[id].nombre) + '</small>' : '') +
-      '</div><div class="dp">' + plata(pu * pedido[id]) + '</div></div>';
+      pedido[clave] + ' x ' + esc(d.prod.nombre) +
+      (d.variante ? '<br><small>' + esc(d.variante.nombre) + '</small>' : '') +
+      '</div><div class="dp">' + plata(d.precio * pedido[clave]) + '</div></div>';
   });
 
   $('detallePedido').innerHTML = filas +
@@ -500,11 +515,11 @@ $('btnEnviarPedido').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   try {
-    const items = Object.keys(pedido).map(function (id) {
+    const items = Object.keys(pedido).map(function (clave) {
       return {
-        productoId: id,
-        varianteId: variantesElegidas[id] ? variantesElegidas[id].id : null,
-        cantidad: pedido[id]
+        productoId: String(clave).split('|')[0],
+        varianteId: variantesElegidas[clave] ? variantesElegidas[clave].id : null,
+        cantidad: pedido[clave]
       };
     });
 
