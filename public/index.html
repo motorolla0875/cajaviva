@@ -5423,6 +5423,7 @@ $('btnCerrarHist').onclick = function () { $('modalHistorial').classList.remove(
 /* ══ Pedidos del catalogo ══ */
 
 let estadoPedidos = 'pendientes';
+let pedidosCargados = [];
 
 $('tabsPedidos').addEventListener('click', function (e) {
   const b = e.target.closest('button');
@@ -5436,6 +5437,7 @@ async function cargarPedidos() {
   $('listaPedidos').innerHTML = '<div class="vacio">Cargando...</div>';
   try {
     const d = await api('GET', '/pedidos?estado=' + estadoPedidos);
+    pedidosCargados = d.items;
     pintarContadorPedidos(d.nuevos);
 
     if (d.items.length === 0) {
@@ -5454,13 +5456,13 @@ async function cargarPedidos() {
       let acc = '';
       if (p.estado === 'nuevo' || p.estado === 'confirmado') {
         acc = '<button class="ppal" onclick="convertirPedido(\'' + p.id + '\')">Cobrar y entregar</button>' +
-              (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
+              (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\',\'' + p.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="cambiarPedido(\'' + p.id + '\',\'cancelado\')">Cancelar</button>';
       } else if (p.estado === 'cancelado') {
-        acc = (p.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
+        acc = (p.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(p.telefono) + '\',\'' + p.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="cambiarPedido(\'' + p.id + '\',\'nuevo\')">Reactivar</button>';
       } else {
-        acc = (p.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '');
+        acc = (p.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(p.telefono) + '\',\'' + p.id + '\')">WhatsApp</button>' : '');
       }
 
       return '<div class="pedido' + (p.estado === 'nuevo' ? ' nuevo' : '') + '">' +
@@ -5488,9 +5490,27 @@ function pintarContadorPedidos(n) {
   b.innerHTML = 'Pedidos' + (n > 0 ? '<span class="contador">' + n + '</span>' : '');
 }
 
-function llamarPedido(tel) {
+function llamarPedido(tel, id) {
   const t = String(tel).replace(/\D/g, '');
-  window.open('https://wa.me/54' + t, '_blank');
+  let texto = '';
+  const p = id ? pedidosCargados.filter(function (x) { return x.id === id; })[0] : null;
+
+  if (p) {
+    const n = (negocio && negocio.nombre) ? negocio.nombre : '';
+    const detalle = p.items.map(function (i) {
+      return fmtCant(i.cantidad) + ' x ' + i.nombre;
+    }).join(', ');
+
+    if (p.estado === 'entregado') {
+      texto = 'Hola ' + p.nombre + '! Gracias por tu compra.' +
+        (n ? ' Te esperamos de nuevo en ' + n + '.' : '');
+    } else {
+      texto = 'Hola ' + p.nombre + '! Recibimos tu pedido: ' + detalle +
+        ' por ' + plata(p.total) + '.' + (n ? ' Somos ' + n + '.' : '');
+    }
+  }
+
+  window.open('https://wa.me/54' + t + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
 }
 
 async function cambiarPedido(id, estado) {
@@ -5988,6 +6008,7 @@ function textoDelDia(fecha) {
 
 let turnoEditando = null;
 let tabAgenda = 'pendientes';
+let turnosDelDia = [];
 
 document.getElementById('tabsAgenda').addEventListener('click', function (e) {
   const b = e.target.closest('button');
@@ -6052,11 +6073,11 @@ async function cargarAgenda() {
             '<button onclick="confirmarSena(\'' + t.id + '\')">Seña ok</button>'
           : '') +
         '<button class="ppal" onclick="cobrarTurno(\'' + t.id + '\')">Atendido y cobrar</button>' +
-              (t.telefono ? '<button onclick="wppTurno(\'' + esc(t.telefono) + '\')">WhatsApp</button>' : '') +
+              (t.telefono ? '<button onclick="wppTurno(\'' + esc(t.telefono) + '\',\'' + t.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="abrirTurno(\'' + t.id + '\')">Editar</button>' +
               '<button onclick="estadoTurno(\'' + t.id + '\',\'ausente\')">No vino</button>';
       } else {
-        acc = (t.telefono ? '<button class="ppal" onclick="wppTurno(\'' + esc(t.telefono) + '\')">WhatsApp</button>' : '') +
+        acc = (t.telefono ? '<button class="ppal" onclick="wppTurno(\'' + esc(t.telefono) + '\',\'' + t.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="estadoTurno(\'' + t.id + '\',\'reservado\')">Reabrir</button>';
       }
 
@@ -6081,6 +6102,7 @@ async function cargarAgenda() {
       '</div>';
     }
 
+    turnosDelDia = d.items;
     const pendientes = d.items.filter(function (t) { return t.estado === 'reservado'; });
     const cerrados = d.items.filter(function (t) { return t.estado !== 'reservado'; });
 
@@ -6100,8 +6122,26 @@ async function cargarAgenda() {
   }
 }
 
-function wppTurno(tel) {
-  window.open('https://wa.me/54' + String(tel).replace(/\D/g, ''), '_blank');
+function wppTurno(tel, id) {
+  let texto = '';
+  const t = id ? turnosDelDia.filter(function (x) { return x.id === id; })[0] : null;
+
+  if (t) {
+    const n = (negocio && negocio.nombre) ? negocio.nombre : '';
+    const td = textoDelDia(t.fecha);
+    const cuando = td.rel === 'Hoy' ? 'hoy' : td.rel === 'Mañana' ? 'mañana' : 'el ' + fechaCorta(t.fecha);
+
+    if (t.estado === 'reservado') {
+      texto = 'Hola ' + t.cliente_nombre + '! Te escribimos por tu turno ' + cuando +
+        ' a las ' + t.hora + ' para ' + t.servicio + '.' + (n ? ' Somos ' + n + '.' : '');
+    } else {
+      texto = 'Hola ' + t.cliente_nombre + '! Gracias por venir.' +
+        (n ? ' Te esperamos de nuevo en ' + n + '.' : '');
+    }
+  }
+
+  window.open('https://wa.me/54' + String(tel).replace(/\D/g, '') +
+    (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
 }
 
 async function confirmarSena(id) {
