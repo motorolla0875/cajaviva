@@ -1480,7 +1480,7 @@
     <select id="pCategoria"><option value="">Sin categoria</option></select>
     <div class="fila2">
       <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
-      <div><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
+      <div id="wrapCostoProd"><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
     </div>
     <div class="hint" id="hintMargen"></div>
     <div class="fila2">
@@ -1507,13 +1507,17 @@
       </select>
     </div>
 
-    <label>Codigo de barras (opcional)</label>
-    <div style="display:flex; gap:8px;">
-      <input type="text" id="pBarras" inputmode="numeric" style="flex:1; min-width:0;">
-      <button id="btnEscanearCampo" type="button" style="flex-shrink:0; width:52px; border:1px solid var(--line); border-radius:10px; background:var(--panel-2); color:var(--text); font-size:20px;">&#9974;</button>
+    <div id="wrapBarras">
+      <label>Codigo de barras (opcional)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="pBarras" inputmode="numeric" style="flex:1; min-width:0;">
+        <button id="btnEscanearCampo" type="button" style="flex-shrink:0; width:52px; border:1px solid var(--line); border-radius:10px; background:var(--panel-2); color:var(--text); font-size:20px;">&#9974;</button>
+      </div>
     </div>
-    <label>Avisar cuando el stock baje de</label>
-    <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
+    <div id="wrapMinimo">
+      <label>Avisar cuando el stock baje de</label>
+      <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
+    </div>
 
     <div class="cap-item" id="wrapEsInsumo" style="display:none;">
       <div class="txt"><div class="n">Es un insumo</div>
@@ -5514,6 +5518,11 @@ function aplicarModoServicio() {
   $('wrapStockIni').style.display = on ? 'none' : (editandoId ? 'none' : 'block');
   if (on) $('wrapUnidad').style.display = 'none';
   else if (cap('cap_peso')) $('wrapUnidad').style.display = 'block';
+
+  $('wrapBarras').style.display = on ? 'none' : '';
+  $('wrapMinimo').style.display = on ? 'none' : '';
+  $('wrapCostoProd').style.display = on ? 'none' : '';
+  $('hintMargen').style.display = on ? 'none' : '';
 }
 
 $('swEsServicio').onclick = function () {
