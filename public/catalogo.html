@@ -271,7 +271,11 @@
   <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:40px auto 0; padding:26px; text-align:center;">
     <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
     <h3 style="margin:14px 0 6px; font-size:20px; font-weight:500;">Turno reservado</h3>
-    <p style="color:var(--muted); font-size:14.5px; margin:0 0 20px;" id="detalleTurnoListo"></p>
+    <p style="color:var(--text); font-size:15px; font-weight:500; margin:0 0 12px;" id="detalleTurnoListo"></p>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.5;">
+      Nos vamos a comunicar con vos para confirmarlo. Si no podes venir, avisanos con tiempo.
+    </p>
+    <div id="wppTurnoListo"></div>
     <button onclick="location.reload()" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>
   </div>
 </div>
@@ -850,6 +854,18 @@ document.getElementById('btnReservar').onclick = async function () {
     document.getElementById('detalleTurnoListo').textContent =
       d.servicio + ' el ' + f.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }) +
       ' a las ' + d.hora;
+
+    const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
+    if (wpp) {
+      const texto = 'Hola! Reserve un turno: ' + d.servicio + ' el ' +
+        f.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }) +
+        ' a las ' + d.hora + '. Soy ' + nombre + '.';
+      document.getElementById('wppTurnoListo').innerHTML =
+        '<button onclick="window.open(\'https://wa.me/54' + wpp + '?text=' +
+        encodeURIComponent(texto) + '\', \'_blank\')" ' +
+        'style="width:100%; padding:13px; margin-bottom:8px; border:1px solid var(--accent); border-radius:12px; background:var(--panel); color:var(--accent-dark); font-size:14.5px; font-weight:500;">' +
+        'Avisar por WhatsApp</button>';
+    }
 
     cerrarTurnoWeb();
     document.getElementById('turnoListo').style.display = 'block';
