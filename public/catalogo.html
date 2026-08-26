@@ -89,13 +89,13 @@
   .det-total b { font-size: 20px; font-weight: 500; }
 
   .btn-turno {
-    padding: 9px 12px; border-radius: 10px; flex-shrink: 0;
-    border: 1px solid var(--accent); background: var(--accent-soft);
-    color: var(--accent-dark); font-size: 12.5px; font-weight: 500;
-    line-height: 1.15; max-width: 88px; text-align: center;
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 10px; border: 1px solid var(--accent);
+    background: var(--accent-soft); font-size: 18px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
   }
   @media (max-width: 420px) {
-    .btn-turno { font-size: 11.5px; padding: 8px 9px; max-width: 76px; }
+    .btn-turno { width: 36px; height: 36px; font-size: 16px; }
   }
 
   .hora-btn {
@@ -395,7 +395,7 @@ function pintar() {
       (c > 0
         ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
         : (p.es_servicio
-            ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">Pedir<br>turno</button>'
+            ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
             : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>')) +
       '</div></div>';
   }
