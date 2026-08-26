@@ -645,6 +645,19 @@
   .venc-badge.verde { background: var(--accent-soft); color: var(--accent-dark); }
 
   #modalVariantes { z-index: 125; }
+  #modalElegirVar { z-index: 128; }
+  .opt-var {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 13px 14px; margin-bottom: 8px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); text-align: left;
+  }
+  .opt-var:active { border-color: var(--accent); background: var(--accent-soft); }
+  .opt-var .nom { flex: 1; font-size: 15px; font-weight: 500; }
+  .opt-var .stk { font-size: 13px; color: var(--muted); }
+  .opt-var .stk.poco { color: var(--warn); font-weight: 500; }
+  .opt-var .pre { font-size: 15px; font-weight: 500; color: var(--accent); }
+  .opt-var.sin { opacity: .45; }
   .var-fila {
     display: flex; align-items: center; gap: 10px;
     padding: 11px 0; border-bottom: 1px solid var(--line);
@@ -1638,6 +1651,16 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalElegirVar">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="tituloElegirVar">Elegi la combinacion</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subElegirVar"></p>
+    <div id="msgElegirVar"></div>
+    <div id="opcionesVar" style="max-height:340px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarElegirVar" style="margin-top:14px;">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalVariantes">
   <div class="modal">
     <h3 id="tituloVar">Talles y colores</h3>
@@ -2504,8 +2527,8 @@ function pintarGrilla() {
     const sin = p.stock <= 0;
     const tieneFoto = !!(p.foto_mini || p.foto_url);
     const bajo = !sin && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
-    const enCarrito = carrito.filter(function (l) { return l.productoId === p.id; })[0];
-    const cant = enCarrito ? enCarrito.cantidad : 0;
+    const cant = carrito.filter(function (l) { return l.productoId === p.id; })
+      .reduce(function (a, l) { return a + l.cantidad; }, 0);
     return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
@@ -2524,6 +2547,7 @@ $('buscar').addEventListener('input', pintarGrilla);
 function agregar(id) {
   const p = productos.filter(function (x) { return x.id === id; })[0];
   if (!p) return;
+  if (cap('cap_variantes') && p.tiene_variantes) { abrirElegirVariante(id); return; }
   if (cap('cap_peso') && p.unidad !== 'unidad') { abrirPeso(id); return; }
   const l = carrito.filter(function (x) { return x.productoId === id; })[0];
   const paso = 1;
@@ -2537,12 +2561,12 @@ function agregar(id) {
 }
 
 function cambiarCantidad(id, delta) {
-  const l = carrito.filter(function (x) { return x.productoId === id; })[0];
+  const l = carrito.filter(function (x) { return x.clave === id; })[0];
   if (!l) return;
-  const p = productos.filter(function (x) { return x.id === id; })[0];
+  const p = productos.filter(function (x) { return x.id === l.productoId; })[0];
   const nueva = l.cantidad + delta;
   if (nueva <= 0) {
-    carrito = carrito.filter(function (x) { return x.productoId !== id; });
+    carrito = carrito.filter(function (x) { return x.clave !== id; });
   } else {
     l.cantidad = nueva;
     if (p && nueva > p.stock) {
@@ -2564,7 +2588,7 @@ function fijarCantidad(id, valor) {
 }
 
 function quitarDelCarrito(id) {
-  carrito = carrito.filter(function (x) { return x.productoId !== id; });
+  carrito = carrito.filter(function (x) { return x.clave !== id; });
   pintarCarrito();
 }
 
@@ -2580,15 +2604,15 @@ function pintarCarrito() {
       const porPeso = cap('cap_peso') && l.unidad && l.unidad !== 'unidad';
       const control = porPeso
         ? '<input type="text" inputmode="decimal" value="' + fmtCant(l.cantidad) + '" ' +
-          'onchange="fijarCantidad(\'' + l.productoId + '\', this.value)">'
-        : '<button onclick="cambiarCantidad(\'' + l.productoId + '\',-1)">-</button>' +
+          'onchange="fijarCantidad(\'' + l.clave + '\', this.value)">'
+        : '<button onclick="cambiarCantidad(\'' + l.clave + '\',-1)">-</button>' +
           '<span>' + l.cantidad + '</span>' +
-          '<button onclick="cambiarCantidad(\'' + l.productoId + '\',1)">+</button>';
+          '<button onclick="cambiarCantidad(\'' + l.clave + '\',1)">+</button>';
       return '<div class="linea"><div class="info"><div class="n">' + esc(l.nombre) + '</div>' +
         '<div class="d">' + plata(l.precio) + (porPeso ? ' /' + l.unidad : ' c/u') + '</div></div>' +
         '<div class="cant">' + control + '</div>' +
         '<div class="sub">' + plata(l.precio * l.cantidad) + '</div>' +
-        '<button class="quitar-linea" onclick="quitarDelCarrito(\'' + l.productoId + '\')">&#10005;</button></div>';
+        '<button class="quitar-linea" onclick="quitarDelCarrito(\'' + l.clave + '\')">&#10005;</button></div>';
     }).join('');
   }
   const t = totalCarrito();
@@ -2648,7 +2672,7 @@ $('btnCobrar').onclick = async function () {
     const bruto = totalCarrito();
     const manual = num($('totalFinal').value);
     const total = manual > 0 ? manual : bruto;
-    const items = carrito.map(function (l) { return { productoId: l.productoId, cantidad: l.cantidad }; });
+    const items = carrito.map(function (l) { return { productoId: l.productoId, varianteId: l.varianteId || null, cantidad: l.cantidad }; });
     const itemsCopia = carrito.map(function (l) { return { nombre: l.nombre, cantidad: l.cantidad, precio: l.precio }; });
     const ganancia = carrito.reduce(function (s, l) {
       const pr = productos.filter(function (x) { return x.id === l.productoId; })[0];
@@ -5332,6 +5356,64 @@ async function borrarVariante(id) {
     await api('DELETE', '/variantes/' + id);
     await cargarVariantes();
   } catch (e) { avisar(e.message, true); }
+}
+
+/* ══ Elegir talle y color al vender ══ */
+
+async function abrirElegirVariante(prodId) {
+  $('msgElegirVar').innerHTML = '';
+  $('opcionesVar').innerHTML = '<div class="vacio">Cargando...</div>';
+  $('modalElegirVar').classList.add('on');
+
+  try {
+    const d = await api('GET', '/variantes/producto/' + prodId);
+    $('tituloElegirVar').textContent = d.producto.nombre;
+    $('subElegirVar').textContent = plata(d.producto.precio_venta) + ' - toca la combinacion que lleva';
+
+    if (d.variantes.length === 0) {
+      $('opcionesVar').innerHTML = '<div class="vacio">Este producto no tiene combinaciones cargadas.</div>';
+      return;
+    }
+
+    $('opcionesVar').innerHTML = d.variantes.map(function (v) {
+      const sin = v.stock <= 0;
+      const poco = !sin && v.stock <= 2;
+      const precio = v.precio_venta || d.producto.precio_venta;
+      return '<button class="opt-var' + (sin ? ' sin' : '') + '" ' +
+        'onclick="elegirVariante(\'' + prodId + '\', \'' + v.id + '\', \'' + esc(v.nombre).replace(/'/g, '') + '\', ' + precio + ', ' + v.stock + ')">' +
+        '<span class="nom">' + esc(v.nombre) + '</span>' +
+        '<span class="stk' + (poco ? ' poco' : '') + '">' +
+          (sin ? 'sin stock' : fmtCant(v.stock) + ' u.') + '</span>' +
+        '<span class="pre">' + plata(precio) + '</span></button>';
+    }).join('');
+  } catch (e) {
+    $('opcionesVar').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnCerrarElegirVar').onclick = function () { $('modalElegirVar').classList.remove('on'); };
+
+function elegirVariante(prodId, varId, nombreVar, precio, stock) {
+  const p = productos.filter(function (x) { return x.id === prodId; })[0];
+  if (!p) return;
+
+  const clave = prodId + '|' + varId;
+  const l = carrito.filter(function (x) { return x.clave === clave; })[0];
+  const nueva = (l ? l.cantidad : 0) + 1;
+
+  if (l) l.cantidad = nueva;
+  else carrito.push({
+    clave: clave, productoId: prodId, varianteId: varId,
+    nombre: p.nombre + ' (' + nombreVar + ')',
+    precio: precio, cantidad: 1, unidad: 'unidad'
+  });
+
+  if (nueva > stock) {
+    avisar(nombreVar + ': quedaria en -' + fmtCant(nueva - stock), true);
+  }
+
+  $('modalElegirVar').classList.remove('on');
+  pintarCarrito();
 }
 
 /* ══ Vuelto ══ */

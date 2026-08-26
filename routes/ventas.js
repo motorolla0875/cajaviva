@@ -25,10 +25,19 @@ router.post('/', (req, res) => {
     const cantidad = parseFloat(it.cantidad);
     if (isNaN(cantidad) || cantidad <= 0) return res.status(400).json({ error: `Cantidad no válida en ${prod.nombre}.` });
 
-    const precio = it.precioUnitario != null ? parseFloat(it.precioUnitario) : prod.precio_venta;
+    // si viene con variante, se usa su precio y su nombre
+    let variante = null;
+    if (it.varianteId) {
+      variante = db.prepare('SELECT * FROM producto_variantes WHERE id = ? AND producto_id = ?')
+        .get(it.varianteId, prod.id);
+      if (!variante) return res.status(400).json({ error: 'Esa combinacion ya no existe.' });
+    }
+
+    const precio = it.precioUnitario != null ? parseFloat(it.precioUnitario)
+      : (variante && variante.precio_venta ? variante.precio_venta : prod.precio_venta);
     const costo = prod.precio_costo || 0;
 
-    lineas.push({ prod, cantidad, precio, costo });
+    lineas.push({ prod, cantidad, precio, costo, variante });
     total += precio * cantidad;
     costoTotal += costo * cantidad;
   }
@@ -59,12 +68,21 @@ router.post('/', (req, res) => {
          pagado, pct, notas || null, deviceId || null, req.empleadoId || null);
 
   for (const l of lineas) {
-    db.prepare(`
-      INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(uuidv4(), ventaId, l.prod.id, l.prod.nombre, l.cantidad, l.precio, l.costo);
+    const nombreItem = l.variante ? l.prod.nombre + ' (' + l.variante.nombre + ')' : l.prod.nombre;
 
-    db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.prod.id);
+    db.prepare(`
+      INSERT INTO venta_items (id, venta_id, producto_id, variante_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), ventaId, l.prod.id, l.variante ? l.variante.id : null,
+           nombreItem, l.cantidad, l.precio, l.costo);
+
+    if (l.variante) {
+      db.prepare('UPDATE producto_variantes SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.variante.id);
+      const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(l.prod.id);
+      db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, l.prod.id);
+    } else {
+      db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.prod.id);
+    }
   }
 
   // si quedó saldo y hay cliente, se suma a su deuda
@@ -154,7 +172,13 @@ router.delete('/:id', (req, res) => {
 
   const items = db.prepare('SELECT * FROM venta_items WHERE venta_id = ?').all(venta.id);
   for (const it of items) {
-    if (it.producto_id) {
+    if (it.variante_id) {
+      db.prepare('UPDATE producto_variantes SET stock = stock + ? WHERE id = ?').run(it.cantidad, it.variante_id);
+      if (it.producto_id) {
+        const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(it.producto_id);
+        db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, it.producto_id);
+      }
+    } else if (it.producto_id) {
       db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(it.cantidad, it.producto_id);
     }
   }
