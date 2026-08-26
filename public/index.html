@@ -1496,6 +1496,12 @@
     <label>Avisar cuando el stock baje de</label>
     <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
 
+    <div class="cap-item" id="wrapEsInsumo" style="display:none;">
+      <div class="txt"><div class="n">Es un insumo</div>
+        <div class="d">Se usa en recetas y no se vende suelto</div></div>
+      <button class="switch" id="swEsInsumo"></button>
+    </div>
+
     <div id="wrapVence" style="display:none;">
       <div class="fila2">
         <div><label>Vence el</label><input type="date" id="pVence"></div>
@@ -2552,7 +2558,7 @@ async function cargarResumen() {
 
 function pintarGrilla() {
   const t = norm($('buscar').value.trim());
-  let lista = productos;
+  let lista = productos.filter(function (p) { return !p.es_insumo; });
   if (catFiltro) lista = lista.filter(function (p) { return p.categoria_id === catFiltro; });
   if (t) lista = lista.filter(function (p) {
     return norm(p.nombre).indexOf(t) >= 0 || (p.codigo_barras || '').indexOf(t) >= 0;
@@ -2795,6 +2801,8 @@ function pintarLista() {
         (tieneCosto ? ' &middot; costo ' + plata(p.precio_costo) : ' &middot; sin costo cargado') + '</div>' +
       (margen !== null ? '<div class="margen">Ganas ' + plata(p.precio_venta - p.precio_costo) + ' (' + margen + '%)</div>' : '') +
       (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
+      (p.es_insumo ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">insumo</span>' : '') +
+      (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
       (p.stock < 0 ? '<div class="alerta-stock cero">Faltan ' + fmtCant(-p.stock) + ' - revisa</div>'
         : p.stock === 0 ? '<div class="alerta-stock cero">Sin stock</div>'
         : (p.stock_minimo > 0 && p.stock <= p.stock_minimo) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
@@ -2847,6 +2855,9 @@ function abrirProd(id) {
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
   $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
+  $('wrapEsInsumo').style.display = (p && cap('cap_recetas')) ? 'flex' : 'none';
+  esInsumoActual = !!(p && p.es_insumo);
+  $('swEsInsumo').classList.toggle('on', esInsumoActual);
   calcularMargen();
   $('modalProd').classList.add('on');
 }
@@ -5467,6 +5478,21 @@ function elegirVariante(prodId, varId, nombreVar, precio, stock) {
 }
 
 /* ══ Recetas ══ */
+let esInsumoActual = false;
+
+$('swEsInsumo').onclick = async function () {
+  esInsumoActual = !esInsumoActual;
+  $('swEsInsumo').classList.toggle('on', esInsumoActual);
+  if (editandoId) {
+    try {
+      await api('PUT', '/recetas/insumo/' + editandoId, { esInsumo: esInsumoActual });
+      const p = productos.filter(function (x) { return x.id === editandoId; })[0];
+      if (p) p.es_insumo = esInsumoActual ? 1 : 0;
+      pintarGrilla();
+    } catch (e) { avisar(e.message, true); }
+  }
+};
+
 
 let recProdId = null;
 
