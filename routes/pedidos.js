@@ -111,8 +111,9 @@ router.get('/', (req, res) => {
     p.faltaStock = false;
     p.items.forEach(function (i) {
       if (!i.producto_id) return;
-      const prod = db.prepare('SELECT stock, tiene_variantes FROM productos WHERE id = ?').get(i.producto_id);
+      const prod = db.prepare('SELECT stock, tiene_variantes, es_servicio, tiene_receta FROM productos WHERE id = ?').get(i.producto_id);
       if (!prod) return;
+      if (prod.es_servicio || prod.tiene_receta) return;
 
       // si el nombre trae la variante, buscar su stock
       let disponible = prod.stock;
@@ -179,7 +180,17 @@ router.post('/:id/vender', (req, res) => {
     `).run(uuidv4(), ventaId, i.producto_id, i.variante_id || null, i.nombre, i.cantidad, i.precio_unitario,
            prod && prod.precio_costo ? prod.precio_costo : 0);
 
-    if (i.variante_id) {
+    const info = i.producto_id
+      ? db.prepare('SELECT es_servicio, tiene_receta FROM productos WHERE id = ?').get(i.producto_id) : null;
+
+    if (info && info.es_servicio) {
+      // un servicio no descuenta stock
+    } else if (info && info.tiene_receta) {
+      db.prepare('SELECT insumo_id, cantidad FROM receta_items WHERE producto_id = ?').all(i.producto_id)
+        .forEach(function (r) {
+          db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(r.cantidad * i.cantidad, r.insumo_id);
+        });
+    } else if (i.variante_id) {
       db.prepare('UPDATE producto_variantes SET stock = stock - ? WHERE id = ?').run(i.cantidad, i.variante_id);
       const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(i.producto_id);
       db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, i.producto_id);
