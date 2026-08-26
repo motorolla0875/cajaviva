@@ -2606,9 +2606,10 @@ function pintarGrilla() {
   }
 
   $('grilla').innerHTML = lista.map(function (p) {
-    const sin = p.stock <= 0;
+    const esServ = !!p.es_servicio;
+    const sin = !esServ && p.stock <= 0;
     const tieneFoto = !!(p.foto_mini || p.foto_url);
-    const bajo = !sin && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
+    const bajo = !sin && !esServ && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
     const cant = carrito.filter(function (l) { return l.productoId === p.id; })
       .reduce(function (a, l) { return a + l.cantidad; }, 0);
     return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
@@ -2617,10 +2618,12 @@ function pintarGrilla() {
       '<div class="info-prod">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
-        (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>' +
+        (esServ
+          ? (p.duracion ? (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : 'servicio')
+          : (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : ''))) + '</div>' +
       '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
-      (sin ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
+      (sin && !esServ ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
   }).join('');
 }
