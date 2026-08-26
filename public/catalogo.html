@@ -88,6 +88,13 @@
   .det-total span { font-size: 13px; color: var(--muted); }
   .det-total b { font-size: 20px; font-weight: 500; }
 
+  .hora-btn {
+    display: inline-block; padding: 10px 14px; margin: 0 6px 6px 0;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
+  }
+  .hora-btn.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+
   .opt-v {
     display: flex; align-items: center; gap: 12px; width: 100%;
     padding: 13px 14px; margin-bottom: 8px;
@@ -223,6 +230,43 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;">Elegi el talle o color que queres</p>
     <div id="opcionesVarCat"></div>
 
+  </div>
+</div>
+
+<div id="modalTurnoWeb" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:58; overflow-y:auto; padding:20px 16px;">
+  <div style="background:var(--panel); border-radius:16px; max-width:400px; margin:0 auto; padding:22px;">
+    <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;" id="tituloTurnoWeb"></h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subTurnoWeb"></p>
+    <div id="msgTurnoWeb"></div>
+
+    <label style="display:block; font-size:12.5px; color:var(--muted); margin:0 0 5px; font-weight:500;">Que dia</label>
+    <input type="date" id="twFecha" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
+
+    <div style="margin-top:14px;">
+      <label style="display:block; font-size:12.5px; color:var(--muted); margin:0 0 8px; font-weight:500;">A que hora</label>
+      <div id="horasLibres"></div>
+    </div>
+
+    <div id="datosTurnoWeb" style="display:none; margin-top:16px;">
+      <label style="display:block; font-size:12.5px; color:var(--muted); margin:0 0 5px; font-weight:500;">Tu nombre</label>
+      <input type="text" id="twNombre" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
+
+      <label style="display:block; font-size:12.5px; color:var(--muted); margin:12px 0 5px; font-weight:500;">Tu telefono</label>
+      <input type="text" id="twTelefono" inputmode="tel" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
+
+      <button id="btnReservar" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar el turno</button>
+    </div>
+
+    <button onclick="cerrarTurnoWeb()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
+  </div>
+</div>
+
+<div id="turnoListo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:62; padding:20px 16px;">
+  <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:40px auto 0; padding:26px; text-align:center;">
+    <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
+    <h3 style="margin:14px 0 6px; font-size:20px; font-weight:500;">Turno reservado</h3>
+    <p style="color:var(--muted); font-size:14.5px; margin:0 0 20px;" id="detalleTurnoListo"></p>
+    <button onclick="location.reload()" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>
   </div>
 </div>
 

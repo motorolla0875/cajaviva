@@ -211,4 +211,86 @@ router.put('/horarios', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── horarios libres de un dia (publico) ──
+router.get('/publico/:slug/libres', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+  if (!n.turnos_web) return res.json({ activo: false, horas: [] });
+
+  const fecha = req.query.fecha || hoyISO();
+  const duracion = parseInt(req.query.duracion) || 30;
+
+  let cfg = {};
+  try { cfg = n.horarios ? JSON.parse(n.horarios) : {}; } catch (e) {}
+
+  const dias = cfg.dias || { '1':1,'2':1,'3':1,'4':1,'5':1,'6':1 };
+  const diaSemana = String(new Date(fecha + 'T12:00:00').getDay());
+  if (!dias[diaSemana]) return res.json({ activo: true, abierto: false, horas: [] });
+
+  const desde = minutos(cfg.desde || '09:00');
+  const hasta = minutos(cfg.hasta || '19:00');
+
+  const ocupados = db.prepare(`
+    SELECT hora, duracion FROM turnos
+    WHERE user_id = ? AND fecha = ? AND estado != 'cancelado'
+  `).all(n.user_id, fecha);
+
+  // si es hoy, no ofrecer horas pasadas
+  const ahora = new Date();
+  const esHoy = fecha === hoyISO();
+  const minAhora = ahora.getHours() * 60 + ahora.getMinutes() + 30;
+
+  const horas = [];
+  for (let m = desde; m + duracion <= hasta; m += 15) {
+    if (esHoy && m < minAhora) continue;
+    const choca = ocupados.some(function (o) {
+      const d = minutos(o.hora), h = d + o.duracion;
+      return m < h && (m + duracion) > d;
+    });
+    if (!choca) horas.push(aHora(m));
+  }
+
+  res.json({ activo: true, abierto: true, horas: horas, desde: cfg.desde, hasta: cfg.hasta });
+});
+
+// ── el cliente reserva (publico) ──
+router.post('/publico/:slug', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+  if (!n.turnos_web) return res.status(400).json({ error: 'Este negocio no toma turnos por la web.' });
+
+  const { nombre, telefono, productoId, fecha, hora, nota } = req.body || {};
+  if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
+  if (!fecha || !hora) return res.status(400).json({ error: 'Elegi el dia y la hora.' });
+
+  const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_servicio = 1')
+    .get(productoId, n.user_id);
+  if (!p) return res.status(400).json({ error: 'Servicio no encontrado.' });
+
+  const dur = p.duracion || 30;
+  const desde = minutos(hora), hasta = desde + dur;
+
+  const choca = db.prepare(`
+    SELECT hora, duracion FROM turnos
+    WHERE user_id = ? AND fecha = ? AND estado != 'cancelado'
+  `).all(n.user_id, fecha).some(function (t) {
+    const d = minutos(t.hora), h = d + t.duracion;
+    return desde < h && hasta > d;
+  });
+
+  if (choca) return res.status(400).json({ error: 'Ese horario ya se ocupo. Proba con otro.' });
+
+  const id = uuidv4();
+  db.prepare(`
+    INSERT INTO turnos (id, user_id, cliente_nombre, telefono, producto_id,
+      servicio, fecha, hora, duracion, precio, estado, nota)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservado', ?)
+  `).run(id, n.user_id, nombre.trim(), telefono || null, p.id,
+         p.nombre, fecha, hora, dur, p.precio_venta,
+         (nota ? nota + ' - ' : '') + 'Pedido por la web');
+
+  res.json({ id: id, servicio: p.nombre, fecha: fecha, hora: hora, precio: p.precio_venta });
+});
+
 module.exports = router;
