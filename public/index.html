@@ -690,6 +690,11 @@
   .turno .datos { flex: 1; min-width: 0; }
   .turno .datos .n { font-weight: 500; font-size: 15px; }
   .turno .datos .s { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .turno .datos .cuando {
+    display: inline-block; font-size: 11.5px; font-weight: 500;
+    color: var(--accent-dark); background: var(--accent-soft);
+    padding: 2px 9px; border-radius: 20px; margin-top: 4px;
+  }
   .turno .datos .nota { color: var(--muted); font-size: 12px; font-style: italic; margin-top: 2px; }
   .turno .lado { text-align: right; flex-shrink: 0; }
   .turno .lado .precio { font-weight: 500; font-size: 15px; }
@@ -5889,6 +5894,7 @@ async function cargarAgenda() {
           '<div class="n">' + esc(t.cliente_nombre) + '</div>' +
           '<div class="s">' + esc(t.servicio) +
             (t.empleado_nombre ? ' - ' + esc(t.empleado_nombre) : '') + '</div>' +
+          '<div class="cuando">' + textoDelDia(t.fecha).rel + '</div>' +
           (t.nota ? '<div class="nota">' + esc(t.nota) + '</div>' : '') +
           (t.estado !== 'reservado'
             ? '<span class="estado-turno ' + t.estado + '">' +
