@@ -651,6 +651,52 @@
 
   #modalVariantes { z-index: 125; }
   #modalReceta { z-index: 126; }
+  .dias-nav { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .dias-nav button {
+    width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 20px; line-height: 1;
+  }
+  .dias-nav input {
+    flex: 1; min-width: 0; padding: 12px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--text); font-size: 15px; text-align: center;
+  }
+
+  .turno {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 13px 14px; margin-bottom: 8px;
+  }
+  .turno.atendido { opacity: .55; }
+  .turno.cancelado { opacity: .45; }
+  .turno .hora {
+    flex-shrink: 0; text-align: center; min-width: 52px;
+    padding-right: 12px; border-right: 2px solid var(--line);
+  }
+  .turno .hora b { display: block; font-size: 16px; font-weight: 500; }
+  .turno .hora span { font-size: 11px; color: var(--muted); }
+  .turno.reservado .hora { border-color: var(--accent); }
+  .turno .datos { flex: 1; min-width: 0; }
+  .turno .datos .n { font-weight: 500; font-size: 15px; }
+  .turno .datos .s { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .turno .datos .nota { color: var(--muted); font-size: 12px; font-style: italic; margin-top: 2px; }
+  .turno .lado { text-align: right; flex-shrink: 0; }
+  .turno .lado .precio { font-weight: 500; font-size: 15px; }
+  .turno .acc { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .turno .acc button {
+    padding: 7px 11px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+  }
+  .turno .acc button.ppal { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .estado-turno {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; margin-top: 3px; font-weight: 500;
+  }
+  .estado-turno.atendido { background: var(--accent-soft); color: var(--accent-dark); }
+  .estado-turno.cancelado { background: var(--danger-soft); color: var(--danger); }
+  .estado-turno.ausente { background: #FDF3E3; color: #8A5A0F; }
+
   .rec-fila {
     display: flex; align-items: center; gap: 10px;
     padding: 11px 0; border-bottom: 1px solid var(--line);
@@ -1103,6 +1149,7 @@
     <button data-vista="vender" class="on">Vender</button>
     <button data-vista="productos">Productos</button>
     <button data-vista="clientes">Fiado</button>
+    <button data-vista="agenda" id="tabAgenda">Agenda</button>
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
@@ -1203,6 +1250,19 @@
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
       <div class="lista" id="listaCli"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-agenda">
+    <div class="lista-wrap">
+      <div class="dias-nav">
+        <button id="diaAnterior">&#8249;</button>
+        <input type="date" id="fechaAgenda">
+        <button id="diaSiguiente">&#8250;</button>
+      </div>
+      <button class="btn-nuevo solo" id="btnNuevoTurno">+ Reservar un turno</button>
+      <div id="resumenAgenda"></div>
+      <div id="listaAgenda"></div>
     </div>
   </div>
 
@@ -1717,6 +1777,55 @@
     <div id="msgElegirVar"></div>
     <div id="opcionesVar" style="max-height:340px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarElegirVar" style="margin-top:14px;">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalTurno">
+  <div class="modal">
+    <h3 id="tituloTurno">Reservar un turno</h3>
+    <div id="msgTurno"></div>
+
+    <label>Cliente</label>
+    <input type="text" id="tuNombre" placeholder="Nombre de quien viene">
+
+    <label>Telefono (opcional)</label>
+    <input type="text" id="tuTelefono" inputmode="tel">
+
+    <label>Servicio</label>
+    <select id="tuServicio"></select>
+
+    <div class="fila2">
+      <div><label>Dia</label><input type="date" id="tuFecha"></div>
+      <div><label>Hora</label><input type="time" id="tuHora"></div>
+    </div>
+
+    <div class="fila2">
+      <div>
+        <label>Dura</label>
+        <select id="tuDuracion">
+          <option value="15">15 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">1 hora</option>
+          <option value="90">1 h 30</option>
+          <option value="120">2 horas</option>
+          <option value="180">3 horas</option>
+        </select>
+      </div>
+      <div><label>Precio</label><input type="text" id="tuPrecio" inputmode="decimal" placeholder="0"></div>
+    </div>
+
+    <div id="wrapEmpleadoTurno" style="display:none;">
+      <label>Quien atiende</label>
+      <select id="tuEmpleado"></select>
+    </div>
+
+    <label>Nota (opcional)</label>
+    <input type="text" id="tuNota" placeholder="Ej: viene con su hija">
+
+    <button class="btn-ppal" id="btnGuardarTurno">Guardar</button>
+    <button class="btn-del" id="btnBorrarTurno" style="display:none;">Cancelar el turno</button>
+    <button class="btn-sec" id="btnCerrarTurno">Cerrar</button>
   </div>
 </div>
 
@@ -2265,6 +2374,9 @@ function aplicarCapacidades() {
   const tv = document.getElementById('tabVencen');
   if (tv) tv.style.display = cap('cap_vencimientos') ? '' : 'none';
 
+  const ta = document.getElementById('tabAgenda');
+  if (ta) ta.style.display = cap('cap_turnos') ? '' : 'none';
+
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
     .classList.remove('oculto');
@@ -2497,6 +2609,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'clientes') cargarClientes();
     if (b.dataset.vista === 'reportes') cargarReportes();
     if (b.dataset.vista === 'pedidos') cargarPedidos();
+    if (b.dataset.vista === 'agenda') cargarAgenda();
   };
 });
 
@@ -5685,6 +5798,218 @@ async function sacarInsumo(id) {
     await cargarReceta();
   } catch (e) { avisar(e.message, true); }
 }
+
+/* ══ Agenda de turnos ══ */
+
+let turnoEditando = null;
+
+function fechaAgenda() {
+  return $('fechaAgenda').value || hoyISO();
+}
+
+function moverDia(dias) {
+  const d = new Date(fechaAgenda() + 'T12:00:00');
+  d.setDate(d.getDate() + dias);
+  $('fechaAgenda').value = d.toISOString().slice(0, 10);
+  cargarAgenda();
+}
+
+$('diaAnterior').onclick = function () { moverDia(-1); };
+$('diaSiguiente').onclick = function () { moverDia(1); };
+$('fechaAgenda').addEventListener('change', cargarAgenda);
+
+async function cargarAgenda() {
+  if (!$('fechaAgenda').value) $('fechaAgenda').value = hoyISO();
+  $('listaAgenda').innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/turnos?fecha=' + fechaAgenda());
+
+    $('resumenAgenda').innerHTML = d.items.length === 0 ? '' :
+      '<div class="rep-resumen"><div class="lbl">' +
+      d.totales.reservados + (d.totales.reservados === 1 ? ' turno por atender' : ' turnos por atender') +
+      '</div><div class="val">' + plata(d.totales.porCobrar) + '</div>' +
+      (d.totales.atendidos > 0 ? '<div class="lbl">' + d.totales.atendidos + ' ya atendidos</div>' : '') +
+      '</div>';
+
+    if (d.items.length === 0) {
+      $('listaAgenda').innerHTML = '<div class="vacio">No hay turnos este dia.</div>';
+      return;
+    }
+
+    $('listaAgenda').innerHTML = d.items.map(function (t) {
+      let acc = '';
+      if (t.estado === 'reservado') {
+        acc = '<button class="ppal" onclick="cobrarTurno(\'' + t.id + '\')">Atendido y cobrar</button>' +
+              (t.telefono ? '<button onclick="wppTurno(\'' + esc(t.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="abrirTurno(\'' + t.id + '\')">Editar</button>' +
+              '<button onclick="estadoTurno(\'' + t.id + '\',\'ausente\')">No vino</button>';
+      } else {
+        acc = (t.telefono ? '<button class="ppal" onclick="wppTurno(\'' + esc(t.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="estadoTurno(\'' + t.id + '\',\'reservado\')">Reabrir</button>';
+      }
+
+      return '<div class="turno ' + t.estado + '">' +
+        '<div class="hora"><b>' + t.hora + '</b><span>' + t.hora_fin + '</span></div>' +
+        '<div class="datos">' +
+          '<div class="n">' + esc(t.cliente_nombre) + '</div>' +
+          '<div class="s">' + esc(t.servicio) +
+            (t.empleado_nombre ? ' - ' + esc(t.empleado_nombre) : '') + '</div>' +
+          (t.nota ? '<div class="nota">' + esc(t.nota) + '</div>' : '') +
+          (t.estado !== 'reservado'
+            ? '<span class="estado-turno ' + t.estado + '">' +
+              (t.estado === 'atendido' ? 'atendido' : t.estado === 'ausente' ? 'no vino' : 'cancelado') + '</span>'
+            : '') +
+          '<div class="acc">' + acc + '</div>' +
+        '</div>' +
+        '<div class="lado"><div class="precio">' + plata(t.precio) + '</div></div>' +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    $('listaAgenda').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function wppTurno(tel) {
+  window.open('https://wa.me/54' + String(tel).replace(/\D/g, ''), '_blank');
+}
+
+async function estadoTurno(id, estado) {
+  try {
+    await api('PUT', '/turnos/' + id, { estado: estado });
+    await cargarAgenda();
+    avisar('Turno actualizado');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function cobrarTurno(id) {
+  if (!confirm('Marcar como atendido y registrar el cobro?')) return;
+  try {
+    const r = await api('POST', '/turnos/' + id + '/cobrar', { fecha: hoyISO() });
+    await cargarAgenda();
+    await cargarResumen();
+    avisar('Cobrado ' + plata(r.total));
+  } catch (e) { avisar(e.message, true); }
+}
+
+function serviciosDisponibles() {
+  return productos.filter(function (p) { return p.es_servicio; });
+}
+
+$('btnNuevoTurno').onclick = function () { abrirTurno(null); };
+$('btnCerrarTurno').onclick = function () { $('modalTurno').classList.remove('on'); };
+
+async function abrirTurno(id) {
+  turnoEditando = id || null;
+  $('msgTurno').innerHTML = '';
+  $('tituloTurno').textContent = id ? 'Editar turno' : 'Reservar un turno';
+  $('btnBorrarTurno').style.display = id ? 'block' : 'none';
+
+  const servicios = serviciosDisponibles();
+  $('tuServicio').innerHTML = servicios.length === 0
+    ? '<option value="">Carga servicios en Productos</option>'
+    : servicios.map(function (p) {
+        return '<option value="' + p.id + '" data-dur="' + (p.duracion || 30) +
+          '" data-precio="' + p.precio_venta + '">' + esc(p.nombre) + '</option>';
+      }).join('');
+
+  try {
+    const emps = await api('GET', '/empleados');
+    if (emps.length > 0) {
+      $('wrapEmpleadoTurno').style.display = 'block';
+      $('tuEmpleado').innerHTML = '<option value="">Cualquiera</option>' +
+        emps.filter(function (e) { return e.activo; }).map(function (e) {
+          return '<option value="' + e.id + '">' + esc(e.nombre) + '</option>';
+        }).join('');
+    } else {
+      $('wrapEmpleadoTurno').style.display = 'none';
+    }
+  } catch (e) { $('wrapEmpleadoTurno').style.display = 'none'; }
+
+  if (id) {
+    const d = await api('GET', '/turnos?fecha=' + fechaAgenda());
+    const t = d.items.filter(function (x) { return x.id === id; })[0];
+    if (t) {
+      $('tuNombre').value = t.cliente_nombre;
+      $('tuTelefono').value = t.telefono || '';
+      if (t.producto_id) $('tuServicio').value = t.producto_id;
+      $('tuFecha').value = t.fecha;
+      $('tuHora').value = t.hora;
+      $('tuDuracion').value = t.duracion;
+      $('tuPrecio').value = t.precio;
+      $('tuNota').value = t.nota || '';
+      if (t.empleado_id) $('tuEmpleado').value = t.empleado_id;
+    }
+  } else {
+    $('tuNombre').value = ''; $('tuTelefono').value = '';
+    $('tuFecha').value = fechaAgenda();
+    $('tuHora').value = '';
+    $('tuNota').value = '';
+    aplicarServicio();
+  }
+
+  $('modalTurno').classList.add('on');
+}
+
+function aplicarServicio() {
+  const op = $('tuServicio').options[$('tuServicio').selectedIndex];
+  if (!op || !op.dataset.dur) return;
+  $('tuDuracion').value = op.dataset.dur;
+  $('tuPrecio').value = op.dataset.precio;
+}
+$('tuServicio').addEventListener('change', aplicarServicio);
+
+$('btnGuardarTurno').onclick = async function () {
+  const nombre = $('tuNombre').value.trim();
+  if (!nombre) { $('msgTurno').innerHTML = '<div class="msg">Poné el nombre del cliente.</div>'; return; }
+  if (!$('tuFecha').value || !$('tuHora').value) {
+    $('msgTurno').innerHTML = '<div class="msg">Poné el dia y la hora.</div>'; return;
+  }
+
+  const op = $('tuServicio').options[$('tuServicio').selectedIndex];
+  const cuerpo = {
+    clienteNombre: nombre,
+    telefono: $('tuTelefono').value.trim() || null,
+    productoId: $('tuServicio').value || null,
+    servicio: op ? op.textContent : '',
+    fecha: $('tuFecha').value,
+    hora: $('tuHora').value,
+    duracion: parseInt($('tuDuracion').value),
+    precio: num($('tuPrecio').value),
+    empleadoId: $('tuEmpleado').value || null,
+    nota: $('tuNota').value.trim() || null
+  };
+
+  const btn = $('btnGuardarTurno');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (turnoEditando) {
+      await api('PUT', '/turnos/' + turnoEditando, cuerpo);
+    } else {
+      const r = await api('POST', '/turnos', cuerpo);
+      if (r.choques > 0) {
+        avisar('Ojo: se superpone con ' + r.conQuien.join(', '), true);
+      }
+    }
+    $('fechaAgenda').value = cuerpo.fecha;
+    $('modalTurno').classList.remove('on');
+    await cargarAgenda();
+    avisar(turnoEditando ? 'Turno actualizado' : 'Turno reservado');
+  } catch (e) {
+    $('msgTurno').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+$('btnBorrarTurno').onclick = async function () {
+  if (!turnoEditando || !confirm('Cancelar este turno?')) return;
+  try {
+    await api('PUT', '/turnos/' + turnoEditando, { estado: 'cancelado' });
+    $('modalTurno').classList.remove('on');
+    await cargarAgenda();
+    avisar('Turno cancelado');
+  } catch (e) { avisar(e.message, true); }
+};
 
 /* ══ Vuelto ══ */
 
