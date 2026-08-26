@@ -46,6 +46,7 @@ router.post('/producto/:id/generar', (req, res) => {
   const listaT = talles.length > 0 ? talles : [null];
   const listaC = colores.length > 0 ? colores : [null];
 
+  const stockInicial = parseFloat(req.body?.stockInicial) || 0;
   let creadas = 0;
 
   listaT.forEach(function (t) {
@@ -60,15 +61,16 @@ router.post('/producto/:id/generar', (req, res) => {
 
       db.prepare(`
         INSERT INTO producto_variantes (id, producto_id, nombre, talle, color, stock, activa)
-        VALUES (?, ?, ?, ?, ?, 0, 1)
-      `).run(uuidv4(), p.id, nombre, t, c);
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+      `).run(uuidv4(), p.id, nombre, t, c, stockInicial);
       creadas++;
     });
   });
 
-  db.prepare('UPDATE productos SET tiene_variantes = 1 WHERE id = ?').run(p.id);
+  const total = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(p.id);
+  db.prepare('UPDATE productos SET tiene_variantes = 1, stock = ? WHERE id = ?').run(total.n, p.id);
 
-  res.json({ creadas: creadas });
+  res.json({ creadas: creadas, stockTotal: total.n });
 });
 
 // ── cambiar el stock o el precio de una variante ──

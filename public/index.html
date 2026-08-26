@@ -1672,6 +1672,8 @@
       <input type="text" id="varTalles" placeholder="Ej: S, M, L, XL">
       <label>Colores (separados por coma)</label>
       <input type="text" id="varColores" placeholder="Ej: Negro, Blanco, Azul">
+      <label>Stock inicial para cada una</label>
+      <input type="text" id="varStock" inputmode="decimal" placeholder="0" value="0">
       <p class="hint" id="hintVar">Se van a crear todas las combinaciones.</p>
       <button class="btn-ppal" id="btnGenerarVar">Crear combinaciones</button>
     </div>
@@ -5317,12 +5319,16 @@ function contarCombinaciones() {
   const t = separar($('varTalles').value).length || 1;
   const c = separar($('varColores').value).length || 1;
   const total = t * c;
-  $('hintVar').textContent = (separar($('varTalles').value).length + separar($('varColores').value).length) === 0
+  const hayDatos = (separar($('varTalles').value).length + separar($('varColores').value).length) > 0;
+  const st = num($('varStock').value);
+  $('hintVar').textContent = !hayDatos
     ? 'Se van a crear todas las combinaciones.'
-    : 'Se van a crear ' + total + (total === 1 ? ' combinacion.' : ' combinaciones.');
+    : 'Se van a crear ' + total + (total === 1 ? ' combinacion' : ' combinaciones') +
+      (st > 0 ? ' con ' + fmtCant(st) + ' unidades cada una (' + fmtCant(total * st) + ' en total).' : '.');
 }
 $('varTalles').addEventListener('input', contarCombinaciones);
 $('varColores').addEventListener('input', contarCombinaciones);
+$('varStock').addEventListener('input', contarCombinaciones);
 
 $('btnGenerarVar').onclick = async function () {
   const talles = separar($('varTalles').value);
@@ -5335,7 +5341,7 @@ $('btnGenerarVar').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Creando...';
   try {
     const r = await api('POST', '/variantes/producto/' + varProdId + '/generar',
-      { talles: talles, colores: colores });
+      { talles: talles, colores: colores, stockInicial: num($('varStock').value) });
     $('varTalles').value = ''; $('varColores').value = '';
     $('msgVar').innerHTML = '';
     contarCombinaciones();
