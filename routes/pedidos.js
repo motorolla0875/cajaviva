@@ -58,8 +58,17 @@ router.post('/publico/:slug', (req, res) => {
     if (!p) continue;
     const c = parseFloat(it.cantidad);
     if (isNaN(c) || c <= 0) continue;
-    lineas.push({ p: p, cantidad: c });
-    total += p.precio_venta * c;
+
+    let variante = null;
+    if (it.varianteId) {
+      variante = db.prepare('SELECT * FROM producto_variantes WHERE id = ? AND producto_id = ?')
+        .get(it.varianteId, p.id);
+    }
+    if (p.tiene_variantes && !variante) continue;
+
+    const precio = variante && variante.precio_venta ? variante.precio_venta : p.precio_venta;
+    lineas.push({ p: p, cantidad: c, variante: variante, precio: precio });
+    total += precio * c;
   }
 
   if (lineas.length === 0) return res.status(400).json({ error: 'No hay productos validos.' });
@@ -74,7 +83,9 @@ router.post('/publico/:slug', (req, res) => {
     db.prepare(`
       INSERT INTO pedido_web_items (id, pedido_id, producto_id, nombre, cantidad, precio_unitario)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(uuidv4(), id, l.p.id, l.p.nombre, l.cantidad, l.p.precio_venta);
+    `).run(uuidv4(), id, l.p.id,
+           l.variante ? l.p.nombre + ' (' + l.variante.nombre + ')' : l.p.nombre,
+           l.cantidad, l.precio);
   });
 
   res.json({ id: id, total: total, numero: id.slice(0, 6).toUpperCase() });
