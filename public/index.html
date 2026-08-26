@@ -644,6 +644,30 @@
   .venc-badge.naranja { background: #FDF3E3; color: #8A5A0F; }
   .venc-badge.verde { background: var(--accent-soft); color: var(--accent-dark); }
 
+  #modalVariantes { z-index: 125; }
+  .var-fila {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--line);
+  }
+  .var-fila .nom { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 500; }
+  .var-fila .nom small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .var-fila input {
+    width: 62px; padding: 8px; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  .var-fila button {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--muted); font-size: 12px;
+  }
+  .var-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 12px 0 4px; border-top: 2px solid var(--line); margin-top: 6px;
+  }
+  .var-total span { color: var(--muted); font-size: 13px; }
+  .var-total b { font-size: 20px; font-weight: 500; }
+
   .hist-fila {
     display: flex; justify-content: space-between; align-items: center;
     padding: 11px 0; border-bottom: 1px solid var(--line);
@@ -1456,6 +1480,7 @@
       </div>
     </div>
     <button class="btn-ppal" id="btnGuardarProd">Guardar</button>
+    <button class="btn-sec" id="btnVariantes" style="display:none;">Talles y colores</button>
     <button class="btn-sec" id="btnHistorialPrecio" style="display:none;">Ver historial de precios</button>
     <button class="btn-del" id="btnBorrarProd" style="display:none;">Eliminar producto</button>
     <button class="btn-sec" id="btnCerrarProd">Cancelar</button>
@@ -1610,6 +1635,27 @@
 
     <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
     <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalVariantes">
+  <div class="modal">
+    <h3 id="tituloVar">Talles y colores</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subVar"></p>
+    <div id="msgVar"></div>
+
+    <div id="generarVar">
+      <label>Talles (separados por coma)</label>
+      <input type="text" id="varTalles" placeholder="Ej: S, M, L, XL">
+      <label>Colores (separados por coma)</label>
+      <input type="text" id="varColores" placeholder="Ej: Negro, Blanco, Azul">
+      <p class="hint" id="hintVar">Se van a crear todas las combinaciones.</p>
+      <button class="btn-ppal" id="btnGenerarVar">Crear combinaciones</button>
+    </div>
+
+    <div id="listaVar" style="max-height:320px; overflow-y:auto; margin-top:14px;"></div>
+
+    <button class="btn-sec" id="btnCerrarVar" style="margin-top:14px;">Listo</button>
   </div>
 </div>
 
@@ -2734,6 +2780,7 @@ function abrirProd(id) {
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
+  $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
   calcularMargen();
   $('modalProd').classList.add('on');
 }
@@ -5186,6 +5233,105 @@ function cajaComprobante(p) {
     (verificado ? 'Pago verificado' : 'Mando el comprobante') + '</div>' +
     (verificado ? '' : '<button onclick="verificarPago(\'' + p.id + '\')">Confirmar que llego</button>') +
     '</div></div>';
+}
+
+/* ══ Talles y colores ══ */
+
+let varProdId = null;
+
+$('btnVariantes').onclick = function () {
+  if (!editandoId) return;
+  varProdId = editandoId;
+  $('msgVar').innerHTML = '';
+  $('varTalles').value = '';
+  $('varColores').value = '';
+  $('modalVariantes').classList.add('on');
+  cargarVariantes();
+};
+$('btnCerrarVar').onclick = async function () {
+  $('modalVariantes').classList.remove('on');
+  await cargarProductos();
+};
+
+async function cargarVariantes() {
+  $('listaVar').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const d = await api('GET', '/variantes/producto/' + varProdId);
+    $('tituloVar').textContent = d.producto.nombre;
+    $('subVar').textContent = d.variantes.length === 0
+      ? 'Todavia no tiene talles ni colores.'
+      : d.variantes.length + ' combinaciones - ' + fmtCant(d.stockTotal) + ' unidades en total';
+
+    if (d.variantes.length === 0) {
+      $('listaVar').innerHTML = '';
+      return;
+    }
+
+    $('listaVar').innerHTML = d.variantes.map(function (v) {
+      return '<div class="var-fila">' +
+        '<div class="nom">' + esc(v.nombre) +
+        (v.precio_venta ? '<small>' + plata(v.precio_venta) + '</small>' : '') + '</div>' +
+        '<input type="text" inputmode="decimal" value="' + fmtCant(v.stock) + '" ' +
+          'onchange="guardarVariante(\'' + v.id + '\', this.value)">' +
+        '<button onclick="borrarVariante(\'' + v.id + '\')">&#10005;</button></div>';
+    }).join('') +
+    '<div class="var-total"><span>Stock total</span><b>' + fmtCant(d.stockTotal) + '</b></div>';
+  } catch (e) {
+    $('listaVar').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function separar(t) {
+  return String(t || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+function contarCombinaciones() {
+  const t = separar($('varTalles').value).length || 1;
+  const c = separar($('varColores').value).length || 1;
+  const total = t * c;
+  $('hintVar').textContent = (separar($('varTalles').value).length + separar($('varColores').value).length) === 0
+    ? 'Se van a crear todas las combinaciones.'
+    : 'Se van a crear ' + total + (total === 1 ? ' combinacion.' : ' combinaciones.');
+}
+$('varTalles').addEventListener('input', contarCombinaciones);
+$('varColores').addEventListener('input', contarCombinaciones);
+
+$('btnGenerarVar').onclick = async function () {
+  const talles = separar($('varTalles').value);
+  const colores = separar($('varColores').value);
+  if (talles.length === 0 && colores.length === 0) {
+    $('msgVar').innerHTML = '<div class="msg">Poné al menos un talle o un color.</div>'; return;
+  }
+
+  const btn = $('btnGenerarVar');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try {
+    const r = await api('POST', '/variantes/producto/' + varProdId + '/generar',
+      { talles: talles, colores: colores });
+    $('varTalles').value = ''; $('varColores').value = '';
+    $('msgVar').innerHTML = '';
+    contarCombinaciones();
+    await cargarVariantes();
+    avisar(r.creadas + (r.creadas === 1 ? ' combinacion creada' : ' combinaciones creadas'));
+  } catch (e) {
+    $('msgVar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Crear combinaciones';
+};
+
+async function guardarVariante(id, stock) {
+  try {
+    await api('PUT', '/variantes/' + id, { stock: num(stock) });
+    await cargarVariantes();
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function borrarVariante(id) {
+  if (!confirm('Borrar esta combinacion?')) return;
+  try {
+    await api('DELETE', '/variantes/' + id);
+    await cargarVariantes();
+  } catch (e) { avisar(e.message, true); }
 }
 
 /* ══ Vuelto ══ */

@@ -39,6 +39,7 @@ app.use('/api/cierre', requiereAuth, require('./routes/cierre'));
 app.use('/api/reportes', requiereAuth, require('./routes/reportes'));
 app.use('/api/devoluciones', requiereAuth, require('./routes/devoluciones'));
 app.use('/api/cheques', requiereAuth, require('./routes/cheques'));
+app.use('/api/variantes', requiereAuth, require('./routes/variantes'));
 app.use('/api/fotos', function (req, res, next) {
   if (req.path.indexOf('/comprobante/') === 0) return next();
   return requiereAuth(req, res, next);
