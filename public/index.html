@@ -2639,7 +2639,7 @@ function agregar(id) {
   const nuevaCant = (l ? l.cantidad : 0) + paso;
   if (l) l.cantidad += paso;
   else carrito.push({ productoId: id, nombre: p.nombre, precio: p.precio_venta, cantidad: paso, unidad: p.unidad });
-  if (nuevaCant > p.stock) {
+  if (!p.es_servicio && nuevaCant > p.stock) {
     avisar(p.nombre + ': quedaria en -' + fmtCant(nuevaCant - p.stock) + ', revisa el stock', true);
   }
   pintarCarrito();
@@ -2654,7 +2654,7 @@ function cambiarCantidad(id, delta) {
     carrito = carrito.filter(function (x) { return x.clave !== id; });
   } else {
     l.cantidad = nueva;
-    if (p && nueva > p.stock) {
+    if (p && !p.es_servicio && nueva > p.stock) {
       avisar(p.nombre + ': quedaria en -' + fmtCant(nueva - p.stock), true);
     }
   }
