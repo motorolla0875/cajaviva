@@ -253,6 +253,8 @@
       <div id="horasLibres"></div>
     </div>
 
+    <div id="avisoSena" style="display:none; background:#FDF3E3; border-radius:10px; padding:12px 14px; margin-top:14px; font-size:13px; color:#8A5A0F;"></div>
+
     <div id="datosTurnoWeb" style="display:none; margin-top:16px;">
       <label style="display:block; font-size:12.5px; color:var(--muted); margin:0 0 5px; font-weight:500;">Tu nombre</label>
       <input type="text" id="twNombre" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
@@ -275,6 +277,16 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.5;">
       Nos vamos a comunicar con vos para confirmarlo. Si no podes venir, avisanos con tiempo.
     </p>
+    <div id="zonaSena" style="display:none; background:var(--accent-soft); border-radius:12px; padding:16px; margin-bottom:14px; text-align:left;">
+      <div style="font-size:14px; color:var(--accent-dark); font-weight:500; margin-bottom:4px;" id="textoSena"></div>
+      <div style="font-size:12.5px; color:var(--accent-dark); margin-bottom:10px;" id="aliasSenaTxt"></div>
+      <div id="prevSena" style="display:none; margin-bottom:10px;">
+        <img id="imgSena" style="width:100%; border-radius:9px;">
+      </div>
+      <button id="btnSubirSena" style="width:100%; padding:12px; border:1px solid var(--accent); border-radius:10px; background:var(--panel); color:var(--accent-dark); font-size:14px; font-weight:500;">Subir comprobante de la seña</button>
+      <input type="file" id="archSena" accept="image/*" style="display:none;">
+    </div>
+
     <div id="wppTurnoListo"></div>
     <button onclick="location.reload()" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>
   </div>
@@ -710,6 +722,36 @@ document.getElementById('archComp').onchange = async function (e) {
   }
 };
 
+document.getElementById('btnSubirSena').onclick = function () {
+  document.getElementById('archSena').click();
+};
+
+document.getElementById('archSena').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f || !turnoCreado) return;
+
+  const btn = document.getElementById('btnSubirSena');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const chica = await comprimirComp(f, 900, 0.75);
+    const fd = new FormData();
+    fd.append('foto', chica, 'sena.webp');
+
+    const r = await fetch('/api/fotos/sena/' + turnoCreado, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('No se pudo subir');
+
+    document.getElementById('imgSena').src = URL.createObjectURL(chica);
+    document.getElementById('prevSena').style.display = 'block';
+    btn.textContent = 'Comprobante enviado';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+  } catch (err) {
+    alert('No se pudo subir el comprobante');
+    btn.disabled = false; btn.textContent = 'Subir comprobante de la seña';
+  }
+};
+
 function verFoto(url) {
   const d = document.createElement('div');
   d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -755,6 +797,8 @@ document.addEventListener('visibilitychange', function () {
 
 let servicioTurno = null;
 let horaElegida = null;
+let senaMonto = 0, aliasSena = null, titularSena = null;
+let turnoCreado = null;
 
 function abrirTurnoWeb(p) {
   servicioTurno = p;
@@ -810,6 +854,21 @@ async function buscarHoras() {
     cont.innerHTML = d.horas.map(function (h) {
       return '<button class="hora-btn" onclick="elegirHora(\'' + h + '\', this)">' + h + '</button>';
     }).join('');
+
+    senaMonto = d.sena || 0;
+    aliasSena = d.alias || null;
+    titularSena = d.titular || null;
+
+    const av = document.getElementById('avisoSena');
+    if (senaMonto > 0) {
+      av.style.display = 'block';
+      av.innerHTML = '<b>Para confirmar hace falta una seña de ' + plata(senaMonto) + '</b>' +
+        (aliasSena ? '<br>Transferí a <b>' + esc(aliasSena) + '</b>' +
+          (titularSena ? ' (' + esc(titularSena) + ')' : '') : '') +
+        '<br>Despues de reservar vas a poder subir el comprobante.';
+    } else {
+      av.style.display = 'none';
+    }
   } catch (e) {
     cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudieron cargar los horarios.</div>';
   }
@@ -865,6 +924,18 @@ document.getElementById('btnReservar').onclick = async function () {
         encodeURIComponent(texto) + '\', \'_blank\')" ' +
         'style="width:100%; padding:13px; margin-bottom:8px; border:1px solid var(--accent); border-radius:12px; background:var(--panel); color:var(--accent-dark); font-size:14.5px; font-weight:500;">' +
         'Avisar por WhatsApp</button>';
+    }
+
+    turnoCreado = d.id;
+    const zs = document.getElementById('zonaSena');
+    if (d.sena > 0) {
+      zs.style.display = 'block';
+      document.getElementById('textoSena').textContent = 'Seña de ' + plata(d.sena);
+      document.getElementById('aliasSenaTxt').innerHTML = d.alias
+        ? 'Transferí a <b>' + esc(d.alias) + '</b>' + (d.titular ? ' (' + esc(d.titular) + ')' : '')
+        : 'Consultanos como abonarla.';
+    } else {
+      zs.style.display = 'none';
     }
 
     cerrarTurnoWeb();
