@@ -6047,7 +6047,10 @@ $('btnGuardarTurno').onclick = async function () {
     } else {
       const r = await api('POST', '/turnos', cuerpo);
       if (r.choques > 0) {
-        avisar('Ojo: se superpone con ' + r.conQuien.join(', '), true);
+        setTimeout(function () {
+          alert('Ojo: este turno se superpone con ' + r.conQuien.join(', ') +
+            '.\n\nSe guardo igual, pero revisa el horario.');
+        }, 300);
       }
     }
     $('fechaAgenda').value = cuerpo.fecha;
