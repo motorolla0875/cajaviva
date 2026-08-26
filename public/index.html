@@ -1468,6 +1468,12 @@
       <input type="file" id="archivoFoto" accept="image/*" style="display:none;">
     </div>
 
+    <div class="cap-item" id="wrapEsServicio" style="display:none;">
+      <div class="txt"><div class="n">Es un servicio</div>
+        <div class="d">Sin stock, se agenda por turno</div></div>
+      <button class="switch" id="swEsServicio"></button>
+    </div>
+
     <label>Nombre</label>
     <input type="text" id="pNombre" placeholder="Ej: Coca Cola 500ml">
     <label>Categoria</label>
@@ -1488,6 +1494,19 @@
       </div>
       <div id="wrapStockIni"><label>Stock inicial</label><input type="text" id="pStock" inputmode="decimal" placeholder="0"></div>
     </div>
+    <div id="wrapDuracion" style="display:none;">
+      <label>Cuanto dura</label>
+      <select id="pDuracion">
+        <option value="15">15 minutos</option>
+        <option value="30" selected>30 minutos</option>
+        <option value="45">45 minutos</option>
+        <option value="60">1 hora</option>
+        <option value="90">1 hora y media</option>
+        <option value="120">2 horas</option>
+        <option value="180">3 horas</option>
+      </select>
+    </div>
+
     <label>Codigo de barras (opcional)</label>
     <div style="display:flex; gap:8px;">
       <input type="text" id="pBarras" inputmode="numeric" style="flex:1; min-width:0;">
@@ -2857,6 +2876,10 @@ function abrirProd(id) {
   $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
+  $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
+  esServicioActual = !!(p && p.es_servicio);
+  $('pDuracion').value = (p && p.duracion) ? p.duracion : 30;
+  aplicarModoServicio();
   esInsumoActual = !!(p && p.es_insumo);
   $('swEsInsumo').classList.toggle('on', esInsumoActual);
   calcularMargen();
@@ -2880,7 +2903,9 @@ $('btnGuardarProd').onclick = async function () {
     stockMinimo: num($('pMinimo').value),
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
-    esInsumo: cap('cap_recetas') && esInsumoActual
+    esInsumo: cap('cap_recetas') && esInsumoActual,
+    esServicio: cap('cap_turnos') && esServicioActual,
+    duracion: esServicioActual ? parseInt($('pDuracion').value) : null
   };
 
   const btn = $('btnGuardarProd');
@@ -5480,6 +5505,33 @@ function elegirVariante(prodId, varId, nombreVar, precio, stock) {
 }
 
 /* ══ Recetas ══ */
+let esServicioActual = false;
+
+function aplicarModoServicio() {
+  const on = esServicioActual;
+  $('swEsServicio').classList.toggle('on', on);
+  $('wrapDuracion').style.display = on ? 'block' : 'none';
+  $('wrapStockIni').style.display = on ? 'none' : (editandoId ? 'none' : 'block');
+  $('pBarras').parentElement.style.display = on ? 'none' : '';
+  $('pMinimo').parentElement.style.display = on ? 'none' : '';
+
+  // ocultar tambien las etiquetas
+  const labels = document.querySelectorAll('#modalProd label');
+  labels.forEach(function (l) {
+    const t = l.textContent;
+    if (t.indexOf('Codigo de barras') === 0 || t.indexOf('Avisar cuando') === 0) {
+      l.style.display = on ? 'none' : '';
+    }
+    if (t.indexOf('Unidad') === 0) l.style.display = on ? 'none' : '';
+  });
+  if (on) $('wrapUnidad').style.display = 'none';
+}
+
+$('swEsServicio').onclick = function () {
+  esServicioActual = !esServicioActual;
+  aplicarModoServicio();
+};
+
 let esInsumoActual = false;
 
 $('swEsInsumo').onclick = async function () {
