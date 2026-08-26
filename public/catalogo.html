@@ -94,7 +94,14 @@
     border: 1px solid var(--line); border-radius: 12px;
     background: var(--panel); text-align: left;
   }
-  .opt-v .nv { flex: 1; font-size: 15px; font-weight: 500; }
+  .opt-v .nv { flex: 1; font-size: 15px; font-weight: 500; min-width: 0; }
+  .opt-v .ctrl-v { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .opt-v .ctrl-v button {
+    width: 34px; height: 34px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 18px; line-height: 1;
+  }
+  .opt-v .ctrl-v .cv { min-width: 22px; text-align: center; font-weight: 500; }
   .opt-v .sv { font-size: 12.5px; color: var(--muted); }
   .opt-v .pv { font-size: 15px; font-weight: 500; color: var(--accent); }
   .badge-var {
@@ -214,7 +221,7 @@
     <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;" id="tituloVarCat"></h3>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;">Elegi el talle o color que queres</p>
     <div id="opcionesVarCat"></div>
-    <button onclick="cerrarVarCat()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
+
   </div>
 </div>
 
@@ -379,16 +386,43 @@ function abrirVarCat(p) {
   const vs = p.variantes || [];
   if (vs.length === 0) { alert('Sin stock disponible.'); return; }
 
-  document.getElementById('opcionesVarCat').innerHTML = vs.map(function (v) {
-    const precio = v.precio_venta || p.precio_venta;
-    return '<button class="opt-v" onclick="elegirVarCat(\'' + v.id + '\',\'' +
-      esc(v.nombre).replace(/'/g, '') + '\',' + precio + ')">' +
-      '<span class="nv">' + esc(v.nombre) + '</span>' +
-      '<span class="sv">' + v.stock + ' disp.</span>' +
-      '<span class="pv">' + plata(precio) + '</span></button>';
-  }).join('');
-
+  pintarOpcionesVar();
   document.getElementById('modalVar').style.display = 'block';
+}
+
+function pintarOpcionesVar() {
+  const p = prodVarActual;
+  if (!p) return;
+
+  document.getElementById('opcionesVarCat').innerHTML = (p.variantes || []).map(function (v) {
+    const precio = v.precio_venta || p.precio_venta;
+    const clave = p.id + '|' + v.id;
+    const c = pedido[clave] || 0;
+    return '<div class="opt-v">' +
+      '<span class="nv">' + esc(v.nombre) +
+        '<small style="display:block;color:var(--muted);font-weight:400;">' +
+        plata(precio) + ' - ' + v.stock + ' disp.</small></span>' +
+      '<div class="ctrl-v">' +
+        (c > 0
+          ? '<button onclick="sumarVar(\'' + v.id + '\',\'' + esc(v.nombre).replace(/'/g, '') + '\',' + precio + ',-1)">-</button>' +
+            '<span class="cv">' + c + '</span>'
+          : '') +
+        '<button onclick="sumarVar(\'' + v.id + '\',\'' + esc(v.nombre).replace(/'/g, '') + '\',' + precio + ',1)">+</button>' +
+      '</div></div>';
+  }).join('') +
+  '<button onclick="cerrarVarCat()" style="width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>';
+}
+
+function sumarVar(varId, nombreVar, precio, d) {
+  const clave = prodVarActual.id + '|' + varId;
+  if (d > 0) variantesElegidas[clave] = { id: varId, nombre: nombreVar, precio: precio };
+
+  pedido[clave] = (pedido[clave] || 0) + d;
+  if (pedido[clave] <= 0) { delete pedido[clave]; delete variantesElegidas[clave]; }
+
+  pintarOpcionesVar();
+  pintar();
+  actualizarBarra();
 }
 
 function cerrarVarCat() { document.getElementById('modalVar').style.display = 'none'; }
