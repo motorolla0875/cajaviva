@@ -6551,7 +6551,7 @@ function alternarDia(n) {
 }
 
 // mostrar el paso de horarios si el rubro usa turnos
-const RUBROS_TURNOS = ['peluqueria', 'barberia', 'estetica', 'consultorio', 'gomeria', 'lavadero', 'taller'];
+const RUBROS_TURNOS = RUBROS_POR_FAMILIA.turnos;
 
 function revisarPasoHorarios() {
   const el = document.getElementById('pasoHorarios');
