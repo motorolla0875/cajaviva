@@ -2256,8 +2256,9 @@ function aplicarCapacidades() {
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
     .classList.remove('oculto');
+  // Vender siempre visible: con turnos tambien se cobra
   document.querySelector('nav button[data-vista="vender"]')
-    .classList.toggle('oculto', !cap('cap_mostrador') && !cap('cap_reparto'));
+    .classList.remove('oculto');
 
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
 
