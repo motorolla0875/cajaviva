@@ -636,6 +636,10 @@
     display: inline-block; background: var(--accent); color: #fff;
     font-size: 10.5px; padding: 2px 7px; border-radius: 10px; margin-left: 6px;
   }
+  nav button .contador-verde {
+    display: inline-block; background: var(--accent); color: #fff;
+    font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;
+  }
   nav button .contador {
     display: inline-block; background: var(--danger); color: #fff;
     font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;
@@ -2445,6 +2449,7 @@ async function arrancarApp() {
   pintarCarrito();
   usarDatosGuardados();
   revisarPedidos(false);
+  revisarTurnos();
   pintarContadorCola();
   subirCola();
   try {
@@ -5825,6 +5830,8 @@ async function cargarAgenda() {
   try {
     const d = await api('GET', '/turnos?fecha=' + fechaAgenda());
 
+    if (fechaAgenda() === hoyISO()) pintarContadorAgenda(d.totales.reservados);
+
     $('resumenAgenda').innerHTML = d.items.length === 0 ? '' :
       '<div class="rep-resumen"><div class="lbl">' +
       d.totales.reservados + (d.totales.reservados === 1 ? ' turno por atender' : ' turnos por atender') +
@@ -6010,6 +6017,21 @@ $('btnBorrarTurno').onclick = async function () {
     avisar('Turno cancelado');
   } catch (e) { avisar(e.message, true); }
 };
+
+function pintarContadorAgenda(n) {
+  const b = document.getElementById('tabAgenda');
+  if (!b) return;
+  b.innerHTML = 'Agenda' + (n > 0 ? '<span class="contador-verde">' + n + '</span>' : '');
+}
+
+async function revisarTurnos() {
+  if (!token || !cap('cap_turnos')) return;
+  try {
+    const d = await api('GET', '/turnos?fecha=' + hoyISO());
+    pintarContadorAgenda(d.totales.reservados);
+  } catch (e) {}
+}
+setInterval(revisarTurnos, 120000);
 
 /* ══ Vuelto ══ */
 
