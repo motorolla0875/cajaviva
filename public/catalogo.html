@@ -88,6 +88,12 @@
   .det-total span { font-size: 13px; color: var(--muted); }
   .det-total b { font-size: 20px; font-weight: 500; }
 
+  .btn-turno {
+    padding: 10px 14px; border-radius: 10px; flex-shrink: 0;
+    border: 1px solid var(--accent); background: var(--accent-soft);
+    color: var(--accent-dark); font-size: 13px; font-weight: 500; white-space: nowrap;
+  }
+
   .hora-btn {
     display: inline-block; padding: 10px 14px; margin: 0 6px 6px 0;
     border: 1px solid var(--line); border-radius: 10px;
@@ -368,7 +374,9 @@ function pintar() {
       '<div class="ctrl">' +
       (c > 0
         ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
-        : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>') +
+        : (p.es_servicio
+            ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">Pedir turno</button>'
+            : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>')) +
       '</div></div>';
   }
 
@@ -398,6 +406,8 @@ let prodVarActual = null;
 
 function cambiar(id, d) {
   const p = datos.productos.filter(function (x) { return x.id === id; })[0];
+
+  if (p && p.es_servicio && d > 0) { abrirTurnoWeb(p); return; }
 
   // con variantes: siempre abre el selector al sumar
   if (p && p.tiene_variantes && d > 0) {
@@ -736,6 +746,122 @@ setInterval(refrescarStock, 60000);
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden) refrescarStock();
 });
+
+/* ══ Reservar turno desde el catalogo ══ */
+
+let servicioTurno = null;
+let horaElegida = null;
+
+function abrirTurnoWeb(p) {
+  servicioTurno = p;
+  horaElegida = null;
+  document.getElementById('tituloTurnoWeb').textContent = p.nombre;
+  document.getElementById('subTurnoWeb').textContent =
+    plata(p.precio_venta) + (p.duracion ? ' - ' + (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : '');
+  document.getElementById('msgTurnoWeb').innerHTML = '';
+  document.getElementById('twNombre').value = '';
+  document.getElementById('twTelefono').value = '';
+  document.getElementById('datosTurnoWeb').style.display = 'none';
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const f = document.getElementById('twFecha');
+  f.value = hoy;
+  f.min = hoy;
+
+  document.getElementById('modalTurnoWeb').style.display = 'block';
+  buscarHoras();
+}
+
+function cerrarTurnoWeb() { document.getElementById('modalTurnoWeb').style.display = 'none'; }
+
+document.getElementById('twFecha').addEventListener('change', function () {
+  horaElegida = null;
+  document.getElementById('datosTurnoWeb').style.display = 'none';
+  buscarHoras();
+});
+
+async function buscarHoras() {
+  const cont = document.getElementById('horasLibres');
+  cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Buscando horarios...</div>';
+
+  try {
+    const dur = servicioTurno.duracion || 30;
+    const r = await fetch('/api/turnos/publico/' + slug + '/libres?fecha=' +
+      document.getElementById('twFecha').value + '&duracion=' + dur);
+    const d = await r.json();
+
+    if (!d.activo) {
+      cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Este negocio no toma turnos por la web. Escribinos por WhatsApp.</div>';
+      return;
+    }
+    if (!d.abierto) {
+      cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Ese dia no atendemos. Proba con otro.</div>';
+      return;
+    }
+    if (d.horas.length === 0) {
+      cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No quedan horarios libres ese dia.</div>';
+      return;
+    }
+
+    cont.innerHTML = d.horas.map(function (h) {
+      return '<button class="hora-btn" onclick="elegirHora(\'' + h + '\', this)">' + h + '</button>';
+    }).join('');
+  } catch (e) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudieron cargar los horarios.</div>';
+  }
+}
+
+function elegirHora(h, btn) {
+  horaElegida = h;
+  document.querySelectorAll('.hora-btn').forEach(function (b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('datosTurnoWeb').style.display = 'block';
+  setTimeout(function () { document.getElementById('twNombre').focus(); }, 100);
+}
+
+document.getElementById('btnReservar').onclick = async function () {
+  const nombre = document.getElementById('twNombre').value.trim();
+  if (!nombre) {
+    document.getElementById('msgTurnoWeb').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">Poné tu nombre.</div>';
+    return;
+  }
+  if (!horaElegida) return;
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Reservando...';
+
+  try {
+    const r = await fetch('/api/turnos/publico/' + slug, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: nombre,
+        telefono: document.getElementById('twTelefono').value.trim() || null,
+        productoId: servicioTurno.id,
+        fecha: document.getElementById('twFecha').value,
+        hora: horaElegida
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo reservar');
+
+    const f = new Date(d.fecha + 'T12:00:00');
+    document.getElementById('detalleTurnoListo').textContent =
+      d.servicio + ' el ' + f.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }) +
+      ' a las ' + d.hora;
+
+    cerrarTurnoWeb();
+    document.getElementById('turnoListo').style.display = 'block';
+  } catch (e) {
+    document.getElementById('msgTurnoWeb').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">' +
+      esc(e.message) + '</div>';
+    buscarHoras();
+  }
+  btn.disabled = false; btn.textContent = 'Reservar el turno';
+};
+
 </script>
 
 </body>
