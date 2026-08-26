@@ -2619,7 +2619,7 @@ function pintarGrilla() {
       '<div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
         (esServ
-          ? (p.duracion ? (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : 'servicio')
+          ? 'servicio' + (p.duracion ? ' - ' + (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : '')
           : (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : ''))) + '</div>' +
       '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
