@@ -105,6 +105,28 @@ router.get('/', (req, res) => {
 
   for (const p of filas) {
     p.items = db.prepare('SELECT * FROM pedido_web_items WHERE pedido_id = ?').all(p.id);
+
+    // marcar los items que ya no tienen stock suficiente
+    p.faltaStock = false;
+    p.items.forEach(function (i) {
+      if (!i.producto_id) return;
+      const prod = db.prepare('SELECT stock, tiene_variantes FROM productos WHERE id = ?').get(i.producto_id);
+      if (!prod) return;
+
+      // si el nombre trae la variante, buscar su stock
+      let disponible = prod.stock;
+      if (prod.tiene_variantes) {
+        const m = String(i.nombre).match(/\(([^)]+)\)\s*$/);
+        if (m) {
+          const v = db.prepare('SELECT stock FROM producto_variantes WHERE producto_id = ? AND nombre = ?')
+            .get(i.producto_id, m[1]);
+          if (v) disponible = v.stock;
+        }
+      }
+
+      i.disponible = disponible;
+      if (disponible < i.cantidad) { i.falta = true; p.faltaStock = true; }
+    });
   }
 
   const nuevos = db.prepare("SELECT COUNT(*) AS n FROM pedidos_web WHERE user_id = ? AND estado = 'nuevo'").get(req.userId);

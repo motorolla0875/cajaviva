@@ -5030,7 +5030,9 @@ async function cargarPedidos() {
 
     $('listaPedidos').innerHTML = d.items.map(function (p) {
       const detalle = p.items.map(function (i) {
-        return fmtCant(i.cantidad) + ' x ' + esc(i.nombre);
+        return (i.falta ? '<span style="color:var(--danger);">' : '') +
+          fmtCant(i.cantidad) + ' x ' + esc(i.nombre) +
+          (i.falta ? ' - solo hay ' + fmtCant(i.disponible) + '</span>' : '');
       }).join('<br>');
 
       const pago = p.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo';
@@ -5051,7 +5053,9 @@ async function cargarPedidos() {
         (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
         (p.nota ? '<div class="d">Nota: ' + esc(p.nota) + '</div>' : '') +
         '</div><div class="m">' + plata(p.total) + '</div></div>' +
-        '<div class="items">' + detalle + '</div>' + cajaComprobante(p) +
+        '<div class="items">' + detalle + '</div>' +
+        (p.faltaStock ? '<div class="comp-box" style="background:#FDF3E3;color:#8A5A0F;justify-content:center;">No tenes stock suficiente para este pedido</div>' : '') +
+        cajaComprobante(p) +
         (acc ? '<div class="acc">' + acc + '</div>' : '') +
         '</div>';
     }).join('');

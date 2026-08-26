@@ -660,6 +660,36 @@ function verFoto(url) {
 
 $('buscar').addEventListener('input', pintar);
 cargar();
+
+// refrescar el stock cada tanto y al volver a la pestaña
+async function refrescarStock() {
+  try {
+    const r = await fetch('/api/catalogo/publico/' + slug);
+    if (!r.ok) return;
+    const nuevo = await r.json();
+    datos.productos = nuevo.productos;
+    datos.negocio = nuevo.negocio;
+
+    // sacar del pedido lo que ya no tiene stock
+    Object.keys(pedido).forEach(function (clave) {
+      const partes = String(clave).split('|');
+      const pr = datos.productos.filter(function (x) { return x.id === partes[0]; })[0];
+      if (!pr) { delete pedido[clave]; delete variantesElegidas[clave]; return; }
+      if (partes[1]) {
+        const v = (pr.variantes || []).filter(function (x) { return x.id === partes[1]; })[0];
+        if (!v) { delete pedido[clave]; delete variantesElegidas[clave]; }
+      }
+    });
+
+    pintar();
+    actualizarBarra();
+  } catch (e) {}
+}
+
+setInterval(refrescarStock, 60000);
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) refrescarStock();
+});
 </script>
 
 </body>
