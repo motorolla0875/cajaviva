@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
-          unidad, stockInicial, stockMinimo, notas, vence, avisoDias } = req.body || {};
+          unidad, stockInicial, stockMinimo, notas, vence, avisoDias, esInsumo } = req.body || {};
 
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Falta el nombre del producto.' });
 
@@ -42,12 +42,12 @@ router.post('/', (req, res) => {
 
   db.prepare(`
     INSERT INTO productos (id, user_id, categoria_id, nombre, codigo_barras,
-      precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias, es_insumo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, categoriaId || null, nombre.trim(), codigoBarras || null,
          pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
-         parseInt(avisoDias) || 7);
+         parseInt(avisoDias) || 7, esInsumo ? 1 : 0);
 
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {

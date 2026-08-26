@@ -2855,7 +2855,7 @@ function abrirProd(id) {
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
   $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
-  $('wrapEsInsumo').style.display = (p && cap('cap_recetas')) ? 'flex' : 'none';
+  $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
   esInsumoActual = !!(p && p.es_insumo);
   $('swEsInsumo').classList.toggle('on', esInsumoActual);
   calcularMargen();
@@ -2878,7 +2878,8 @@ $('btnGuardarProd').onclick = async function () {
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
-    avisoDias: parseInt($('pAvisoDias').value) || 7
+    avisoDias: parseInt($('pAvisoDias').value) || 7,
+    esInsumo: cap('cap_recetas') && esInsumoActual
   };
 
   const btn = $('btnGuardarProd');
