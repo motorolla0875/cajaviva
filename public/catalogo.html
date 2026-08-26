@@ -74,6 +74,20 @@
     overflow: hidden; max-width: 100%;
   }
   .prod .info { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .det-linea {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 13.5px; padding: 5px 0;
+  }
+  .det-linea .dn { flex: 1; min-width: 0; }
+  .det-linea .dn small { color: var(--muted); }
+  .det-linea .dp { font-weight: 500; flex-shrink: 0; }
+  .det-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  .det-total span { font-size: 13px; color: var(--muted); }
+  .det-total b { font-size: 20px; font-weight: 500; }
+
   .opt-v {
     display: flex; align-items: center; gap: 12px; width: 100%;
     padding: 13px 14px; margin-bottom: 8px;
@@ -162,7 +176,10 @@
 <div id="modalPedido" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:50; overflow-y:auto; padding:20px 16px;">
   <div style="background:var(--panel); border-radius:16px; max-width:420px; margin:0 auto; padding:22px;">
     <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;">Tu pedido</h3>
-    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="resumenPedido"></p>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 12px;" id="resumenPedido"></p>
+
+    <div id="detallePedido" style="background:var(--panel-2); border-radius:12px; padding:14px; margin-bottom:16px;"></div>
+
     <div id="msgPedido"></div>
 
     <label style="display:block; font-size:12.5px; color:var(--muted); margin:0 0 5px; font-weight:500;">Tu nombre</label>
@@ -416,7 +433,22 @@ $('btnPedir').onclick = function () {
     cant += pedido[id];
   });
 
-  $('resumenPedido').textContent = cant + (cant === 1 ? ' producto - ' : ' productos - ') + plata(total);
+  $('resumenPedido').textContent = 'Revisa antes de enviar';
+
+  let filas = '';
+  Object.keys(pedido).forEach(function (id) {
+    const pr = datos.productos.filter(function (x) { return x.id === id; })[0];
+    if (!pr) return;
+    const pu = variantesElegidas[id] ? variantesElegidas[id].precio : pr.precio_venta;
+    filas += '<div class="det-linea"><div class="dn">' +
+      pedido[id] + ' x ' + esc(pr.nombre) +
+      (variantesElegidas[id] ? '<br><small>' + esc(variantesElegidas[id].nombre) + '</small>' : '') +
+      '</div><div class="dp">' + plata(pu * pedido[id]) + '</div></div>';
+  });
+
+  $('detallePedido').innerHTML = filas +
+    '<div class="det-total"><span>Total</span><b>' + plata(total) + '</b></div>';
+
   $('msgPedido').innerHTML = '';
 
   const f = [];
