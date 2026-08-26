@@ -1482,7 +1482,11 @@
     <label>Nombre</label>
     <input type="text" id="pNombre" placeholder="Ej: Coca Cola 500ml">
     <label>Categoria</label>
-    <select id="pCategoria"><option value="">Sin categoria</option></select>
+    <div style="display:flex; gap:8px;">
+      <select id="pCategoria" style="flex:1; min-width:0;"><option value="">Sin categoria</option></select>
+      <button type="button" id="btnCatRapida" title="Nueva categoria"
+        style="flex-shrink:0; width:48px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft); color:var(--accent-dark); font-size:22px; line-height:1;">+</button>
+    </div>
     <div class="fila2">
       <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
       <div id="wrapCostoProd"><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
@@ -2920,6 +2924,18 @@ function abrirProd(id) {
   calcularMargen();
   $('modalProd').classList.add('on');
 }
+$('btnCatRapida').onclick = async function () {
+  const nombre = prompt('Nombre de la categoria nueva:');
+  if (!nombre || !nombre.trim()) return;
+  try {
+    const r = await api('POST', '/categorias', { nombre: nombre.trim() });
+    await cargarCategorias();
+    pintarSelectCategorias();
+    $('pCategoria').value = r.id;
+    avisar('Categoria creada');
+  } catch (e) { avisar(e.message, true); }
+};
+
 $('btnNuevo').onclick = function () { abrirProd(null); };
 $('btnCerrarProd').onclick = function () { $('modalProd').classList.remove('on'); };
 
