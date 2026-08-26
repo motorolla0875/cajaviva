@@ -5176,7 +5176,11 @@ async function cargarPedidos() {
               (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
               '<button onclick="cambiarPedido(\'' + p.id + '\',\'cancelado\')">Cancelar</button>';
       } else if (p.estado === 'cancelado') {
-        acc = '<button onclick="cambiarPedido(\'' + p.id + '\',\'nuevo\')">Reactivar</button>';
+        acc = (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="cambiarPedido(\'' + p.id + '\',\'nuevo\')">Reactivar</button>';
+      } else {
+        acc = (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="cambiarPedido(\'' + p.id + '\',\'confirmado\')">Volver a pendientes</button>';
       }
 
       return '<div class="pedido' + (p.estado === 'nuevo' ? ' nuevo' : '') + '">' +
