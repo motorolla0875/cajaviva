@@ -128,7 +128,7 @@ router.post('/', (req, res) => {
   const desde = minutos(hora), hasta = desde + dur;
   const choques = db.prepare(`
     SELECT hora, duracion, cliente_nombre FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado != 'cancelado'
+    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
       AND IFNULL(empleado_id, '') = IFNULL(?, '')
   `).all(req.userId, fecha, empleadoId || null)
     .filter(function (t) {
@@ -238,7 +238,7 @@ router.get('/publico/:slug/libres', (req, res) => {
 
   const ocupados = db.prepare(`
     SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado != 'cancelado'
+    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
   `).all(n.user_id, fecha);
 
   // si es hoy, no ofrecer horas pasadas
@@ -279,7 +279,7 @@ router.post('/publico/:slug', (req, res) => {
 
   const choca = db.prepare(`
     SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado != 'cancelado'
+    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
   `).all(n.user_id, fecha).some(function (t) {
     const d = minutos(t.hora), h = d + t.duracion;
     return desde < h && hasta > d;
