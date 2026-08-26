@@ -486,13 +486,17 @@ $('btnPedir').onclick = function () {
   $('resumenPedido').textContent = 'Revisa antes de enviar';
 
   let filas = '';
+  total = 0; cant = 0;
   Object.keys(pedido).forEach(function (clave) {
     const d = datosDeClave(clave);
     if (!d.prod) return;
+    const sub = d.precio * pedido[clave];
+    total += sub;
+    cant += pedido[clave];
     filas += '<div class="det-linea"><div class="dn">' +
       pedido[clave] + ' x ' + esc(d.prod.nombre) +
       (d.variante ? '<br><small>' + esc(d.variante.nombre) + '</small>' : '') +
-      '</div><div class="dp">' + plata(d.precio * pedido[clave]) + '</div></div>';
+      '</div><div class="dp">' + plata(sub) + '</div></div>';
   });
 
   $('detallePedido').innerHTML = filas +
