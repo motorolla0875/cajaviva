@@ -248,6 +248,11 @@
   .prod .s { color: var(--muted); font-size: 12px; }
   .prod .s.bajo { color: var(--warn); font-weight: 500; }
   .prod .s.cero { color: var(--danger); font-weight: 500; }
+  .chip-servicio {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; background: var(--accent-soft);
+    color: var(--accent-dark); font-weight: 500;
+  }
   .prod.sin-stock { opacity: .55; }
   .prod .reponer-rapido {
     position: absolute; bottom: 8px; right: 8px;
@@ -2617,10 +2622,11 @@ function pintarGrilla() {
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="info-prod">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
-      '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
-        (esServ
-          ? 'servicio' + (p.duracion ? ' - ' + (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : '')
-          : (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : ''))) + '</div>' +
+      (esServ
+        ? '<div class="s"><span class="chip-servicio">servicio</span>' +
+          (p.duracion ? ' ' + (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : '') + '</div>'
+        : '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
+          (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>') +
       '</div>' +
       '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin && !esServ ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
