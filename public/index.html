@@ -701,6 +701,22 @@
   .panorama .caja span { font-size: 12px; color: var(--muted); }
   .panorama .caja.hoy span { color: var(--accent-dark); }
 
+  #modalRecordar { z-index: 124; }
+  .rec-cli {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .rec-cli .info { flex: 1; min-width: 0; }
+  .rec-cli .info .n { font-size: 14.5px; font-weight: 500; }
+  .rec-cli .info .d { font-size: 12.5px; color: var(--muted); }
+  .rec-cli button {
+    padding: 9px 14px; border-radius: 9px; flex-shrink: 0;
+    border: none; background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 500;
+  }
+  .rec-cli.hecho { opacity: .5; }
+  .rec-cli.hecho button { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+
   .dia-titulo {
     text-align: center; font-size: 14px; font-weight: 500;
     color: var(--accent-dark); margin-bottom: 12px;
@@ -1329,7 +1345,10 @@
       </div>
       <div id="panoramaAgenda"></div>
       <div class="dia-titulo" id="diaTitulo"></div>
-      <button class="btn-nuevo solo" id="btnNuevoTurno">+ Reservar un turno</button>
+      <div class="dos-arriba">
+        <button class="btn-nuevo" id="btnNuevoTurno">+ Reservar un turno</button>
+        <button class="btn-nuevo gris" id="btnRecordar" style="display:none;">Recordar</button>
+      </div>
       <div id="resumenAgenda"></div>
       <div id="listaAgenda"></div>
     </div>
@@ -1877,6 +1896,15 @@
     <div id="msgElegirVar"></div>
     <div id="opcionesVar" style="max-height:340px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarElegirVar" style="margin-top:14px;">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalRecordar">
+  <div class="modal">
+    <h3>Recordar turnos</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subRecordar"></p>
+    <div id="listaRecordar" style="max-height:360px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarRecordar" style="margin-top:14px;">Listo</button>
   </div>
 </div>
 
@@ -5980,6 +6008,15 @@ async function cargarAgenda() {
       (d.totales.atendidos > 0 ? '<div class="lbl">' + d.totales.atendidos + ' ya atendidos</div>' : '') +
       '</div>';
 
+    turnosParaRecordar = d.items.filter(function (t) {
+      return t.estado === 'reservado' && t.telefono;
+    });
+    const br = document.getElementById('btnRecordar');
+    if (br) {
+      br.style.display = turnosParaRecordar.length > 0 ? 'block' : 'none';
+      br.textContent = 'Recordar a ' + turnosParaRecordar.length;
+    }
+
     if (d.items.length === 0) {
       $('listaAgenda').innerHTML = '<div class="vacio">No hay turnos este dia.</div>';
       return;
@@ -6329,6 +6366,55 @@ async function guardarTurnosWeb() {
     if (el) el.innerHTML = '<div class="msg">No se pudieron guardar los horarios: ' + esc(e.message) + '</div>';
     throw e;
   }
+}
+
+/* ══ Recordar turnos por WhatsApp ══ */
+
+let turnosParaRecordar = [];
+let yaAvisados = {};
+
+$('btnRecordar').onclick = function () {
+  const td = textoDelDia(fechaAgenda());
+  $('subRecordar').textContent = 'Turnos de ' + td.rel.toLowerCase() + '. Tocá cada uno para mandarle el mensaje.';
+  pintarRecordatorios();
+  $('modalRecordar').classList.add('on');
+};
+$('btnCerrarRecordar').onclick = function () { $('modalRecordar').classList.remove('on'); };
+
+function pintarRecordatorios() {
+  if (turnosParaRecordar.length === 0) {
+    $('listaRecordar').innerHTML = '<div class="vacio">Ningun turno tiene telefono cargado.</div>';
+    return;
+  }
+
+  $('listaRecordar').innerHTML = turnosParaRecordar.map(function (t) {
+    const hecho = yaAvisados[t.id];
+    return '<div class="rec-cli' + (hecho ? ' hecho' : '') + '">' +
+      '<div class="info"><div class="n">' + esc(t.cliente_nombre) + '</div>' +
+      '<div class="d">' + t.hora + ' - ' + esc(t.servicio) + '</div></div>' +
+      '<button onclick="mandarRecordatorio(\'' + t.id + '\')">' +
+      (hecho ? 'Enviado' : 'WhatsApp') + '</button></div>';
+  }).join('');
+}
+
+function mandarRecordatorio(id) {
+  const t = turnosParaRecordar.filter(function (x) { return x.id === id; })[0];
+  if (!t) return;
+
+  const td = textoDelDia(t.fecha);
+  const cuando = td.rel === 'Hoy' ? 'hoy' : td.rel === 'Mañana' ? 'mañana' : 'el ' + fechaCorta(t.fecha);
+  const n = (negocio && negocio.nombre) ? negocio.nombre : '';
+
+  const texto = 'Hola ' + t.cliente_nombre + '! Te recordamos tu turno ' + cuando +
+    ' a las ' + t.hora + ' para ' + t.servicio + '.' +
+    (n ? ' Te esperamos en ' + n + '.' : '') +
+    ' Si no podes venir, avisanos.';
+
+  window.open('https://wa.me/54' + String(t.telefono).replace(/\D/g, '') +
+    '?text=' + encodeURIComponent(texto), '_blank');
+
+  yaAvisados[id] = true;
+  pintarRecordatorios();
 }
 
 /* ══ Vuelto ══ */
