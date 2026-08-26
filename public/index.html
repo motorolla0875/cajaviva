@@ -111,6 +111,17 @@
     border: 1px solid var(--line); border-radius: 10px;
     background: var(--panel); color: var(--text); font-size: 15px;
   }
+  .opcion-inicio {
+    display: block; width: 100%; text-align: left;
+    padding: 16px 18px; margin-bottom: 10px;
+    border: 1px solid var(--accent); border-radius: var(--radius);
+    background: var(--accent-soft); color: var(--accent-dark);
+  }
+  .opcion-inicio b { display: block; font-size: 15.5px; font-weight: 500; margin-bottom: 2px; }
+  .opcion-inicio span { font-size: 13px; color: var(--muted); }
+  .opcion-inicio.hecha { border-color: var(--line); background: var(--panel); }
+  .opcion-inicio.hecha b::after { content: ' - listo'; color: var(--accent); }
+
   .btn-seguir {
     width: 100%; padding: 15px; margin-top: 24px;
     border: none; border-radius: var(--radius);
@@ -1205,6 +1216,24 @@
 
     <button class="btn-seguir" id="btnEmpezar" disabled>Empezar</button>
     <p class="nota-cambio">Podes cambiarlo cuando quieras desde tu cuenta.</p>
+
+    <div id="pasoImportar" style="display:none;">
+      <h1 style="font-size:22px; margin-top:8px;">Ya tenes tu lista?</h1>
+      <p class="sub">Si tenes tus productos o clientes en un Excel, subilos ahora y arrancas con todo cargado.</p>
+
+      <button class="opcion-inicio" id="opcImpProd">
+        <b>Subir mis productos</b>
+        <span>Desde un Excel o CSV con nombres y precios</span>
+      </button>
+
+      <button class="opcion-inicio" id="opcImpCli">
+        <b>Subir mis clientes</b>
+        <span>Con telefonos y lo que te deben</span>
+      </button>
+
+      <button class="btn-seguir" id="btnListoInicio" style="margin-top:18px;">Entrar a la app</button>
+      <p class="nota-cambio">Podes subirlos cuando quieras desde Productos o Fiado.</p>
+    </div>
     <button class="btn-seguir" id="btnEmpDesdeBienvenida"
       style="background:none; color:var(--accent-dark); margin-top:6px;">
       Soy empleado, tengo un codigo
@@ -2585,11 +2614,45 @@ $('btnEmpezar').onclick = async function () {
       } catch (e) {}
     }
 
-    await arrancarApp();
+    // mostrar el paso de importar antes de entrar
+    document.querySelector('#bienvenida .cont > h1').style.display = 'none';
+    document.querySelector('#bienvenida .cont > p.sub').style.display = 'none';
+    document.querySelector('#bienvenida label').style.display = 'none';
+    $('bNombre').style.display = 'none';
+    document.querySelectorAll('#bienvenida label')[1].style.display = 'none';
+    $('rubros').style.display = 'none';
+    $('btnEmpezar').style.display = 'none';
+    document.querySelector('#bienvenida .nota-cambio').style.display = 'none';
+    const ph = document.getElementById('pasoHorarios');
+    if (ph) ph.style.display = 'none';
+    $('pasoImportar').style.display = 'block';
+    window.scrollTo(0, 0);
   } catch (e) {
     avisar(e.message, true);
     btn.disabled = false; btn.textContent = 'Empezar';
   }
+};
+
+$('btnListoInicio').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  await arrancarApp();
+};
+
+$('opcImpProd').onclick = async function () {
+  await arrancarApp();
+  setTimeout(function () {
+    document.querySelector('nav button[data-vista="productos"]').click();
+    abrirImportar('productos');
+  }, 300);
+};
+
+$('opcImpCli').onclick = async function () {
+  await arrancarApp();
+  setTimeout(function () {
+    document.querySelector('nav button[data-vista="clientes"]').click();
+    abrirImportar('clientes');
+  }, 300);
 };
 
 function usarDatosGuardados() {
