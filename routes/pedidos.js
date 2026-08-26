@@ -35,6 +35,7 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_transferencia INTEGER NOT N
 try { db.exec('ALTER TABLE negocio ADD COLUMN acepta_efectivo INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
 try { db.exec('ALTER TABLE pedidos_web ADD COLUMN comprobante TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE pedido_web_items ADD COLUMN variante_id TEXT'); } catch (e) {}
 try { db.exec("ALTER TABLE pedidos_web ADD COLUMN pago_estado TEXT NOT NULL DEFAULT 'pendiente'"); } catch (e) {}
 
 function hoyISO() { return new Date().toISOString().slice(0, 10); }
@@ -81,9 +82,9 @@ router.post('/publico/:slug', (req, res) => {
 
   lineas.forEach(function (l) {
     db.prepare(`
-      INSERT INTO pedido_web_items (id, pedido_id, producto_id, nombre, cantidad, precio_unitario)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(uuidv4(), id, l.p.id,
+      INSERT INTO pedido_web_items (id, pedido_id, producto_id, variante_id, nombre, cantidad, precio_unitario)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), id, l.p.id, l.variante ? l.variante.id : null,
            l.variante ? l.p.nombre + ' (' + l.variante.nombre + ')' : l.p.nombre,
            l.cantidad, l.precio);
   });
@@ -173,12 +174,16 @@ router.post('/:id/vender', (req, res) => {
     const prod = i.producto_id
       ? db.prepare('SELECT precio_costo FROM productos WHERE id = ?').get(i.producto_id) : null;
     db.prepare(`
-      INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(uuidv4(), ventaId, i.producto_id, i.nombre, i.cantidad, i.precio_unitario,
+      INSERT INTO venta_items (id, venta_id, producto_id, variante_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), ventaId, i.producto_id, i.variante_id || null, i.nombre, i.cantidad, i.precio_unitario,
            prod && prod.precio_costo ? prod.precio_costo : 0);
 
-    if (i.producto_id) {
+    if (i.variante_id) {
+      db.prepare('UPDATE producto_variantes SET stock = stock - ? WHERE id = ?').run(i.cantidad, i.variante_id);
+      const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(i.producto_id);
+      db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, i.producto_id);
+    } else if (i.producto_id) {
       db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(i.cantidad, i.producto_id);
     }
   });
