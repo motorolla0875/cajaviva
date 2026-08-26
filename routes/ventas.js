@@ -80,6 +80,13 @@ router.post('/', (req, res) => {
       db.prepare('UPDATE producto_variantes SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.variante.id);
       const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(l.prod.id);
       db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, l.prod.id);
+    } else if (l.prod.tiene_receta) {
+      // con receta: se descuentan los insumos, no el producto
+      const receta = db.prepare('SELECT insumo_id, cantidad FROM receta_items WHERE producto_id = ?').all(l.prod.id);
+      receta.forEach(function (r) {
+        db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?')
+          .run(r.cantidad * l.cantidad, r.insumo_id);
+      });
     } else {
       db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.prod.id);
     }
@@ -179,7 +186,16 @@ router.delete('/:id', (req, res) => {
         db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, it.producto_id);
       }
     } else if (it.producto_id) {
-      db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(it.cantidad, it.producto_id);
+      const prod = db.prepare('SELECT tiene_receta FROM productos WHERE id = ?').get(it.producto_id);
+      if (prod && prod.tiene_receta) {
+        const receta = db.prepare('SELECT insumo_id, cantidad FROM receta_items WHERE producto_id = ?').all(it.producto_id);
+        receta.forEach(function (r) {
+          db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?')
+            .run(r.cantidad * it.cantidad, r.insumo_id);
+        });
+      } else {
+        db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(it.cantidad, it.producto_id);
+      }
     }
   }
 

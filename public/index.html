@@ -645,6 +645,23 @@
   .venc-badge.verde { background: var(--accent-soft); color: var(--accent-dark); }
 
   #modalVariantes { z-index: 125; }
+  #modalReceta { z-index: 126; }
+  .rec-fila {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--line);
+  }
+  .rec-fila .nom { flex: 1; min-width: 0; font-size: 14.5px; }
+  .rec-fila .nom small { display: block; color: var(--muted); font-size: 12px; }
+  .rec-fila input {
+    width: 70px; padding: 8px; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  .rec-fila button {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--muted); font-size: 12px;
+  }
   #modalElegirVar { z-index: 128; }
   .opt-var {
     display: flex; align-items: center; gap: 12px; width: 100%;
@@ -1494,6 +1511,7 @@
     </div>
     <button class="btn-ppal" id="btnGuardarProd">Guardar</button>
     <button class="btn-sec" id="btnVariantes" style="display:none;">Talles y colores</button>
+    <button class="btn-sec" id="btnReceta" style="display:none;">Receta e insumos</button>
     <button class="btn-sec" id="btnHistorialPrecio" style="display:none;">Ver historial de precios</button>
     <button class="btn-del" id="btnBorrarProd" style="display:none;">Eliminar producto</button>
     <button class="btn-sec" id="btnCerrarProd">Cancelar</button>
@@ -1658,6 +1676,27 @@
     <div id="msgElegirVar"></div>
     <div id="opcionesVar" style="max-height:340px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarElegirVar" style="margin-top:14px;">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalReceta">
+  <div class="modal">
+    <h3 id="tituloRec">Receta</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Que lleva este producto. Al venderlo se descuentan estos insumos.</p>
+    <div id="msgRec"></div>
+
+    <div id="resumenRec"></div>
+
+    <label>Agregar un insumo</label>
+    <select id="recInsumo"></select>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="recCantidad" inputmode="decimal" placeholder="Cuanto lleva" style="flex:1;">
+      <button class="btn-pago" id="btnAgregarInsumo" style="border:none; border-radius:10px; padding:0 18px; font-weight:500;">Agregar</button>
+    </div>
+
+    <div id="listaRec" style="margin-top:16px;"></div>
+
+    <button class="btn-sec" id="btnCerrarRec" style="margin-top:14px;">Listo</button>
   </div>
 </div>
 
@@ -2807,6 +2846,7 @@ function abrirProd(id) {
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
   $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
+  $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   calcularMargen();
   $('modalProd').classList.add('on');
 }
@@ -5424,6 +5464,95 @@ function elegirVariante(prodId, varId, nombreVar, precio, stock) {
 
   $('modalElegirVar').classList.remove('on');
   pintarCarrito();
+}
+
+/* ══ Recetas ══ */
+
+let recProdId = null;
+
+$('btnReceta').onclick = function () {
+  if (!editandoId) return;
+  recProdId = editandoId;
+  $('msgRec').innerHTML = '';
+  $('recCantidad').value = '';
+  $('modalReceta').classList.add('on');
+  cargarReceta();
+};
+$('btnCerrarRec').onclick = async function () {
+  $('modalReceta').classList.remove('on');
+  await cargarProductos();
+};
+
+async function cargarReceta() {
+  $('listaRec').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const d = await api('GET', '/recetas/producto/' + recProdId);
+    $('tituloRec').textContent = 'Receta de ' + d.producto.nombre;
+
+    // el selector no puede incluirse a si mismo
+    $('recInsumo').innerHTML = '<option value="">Elegi un insumo...</option>' +
+      productos.filter(function (p) { return p.id !== recProdId; })
+        .map(function (p) {
+          return '<option value="' + p.id + '">' + esc(p.nombre) +
+            ' (' + fmtCant(p.stock) + ' ' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + ')</option>';
+        }).join('');
+
+    if (d.items.length === 0) {
+      $('resumenRec').innerHTML = '';
+      $('listaRec').innerHTML = '<div class="vacio">Todavia no tiene insumos.</div>';
+      return;
+    }
+
+    $('resumenRec').innerHTML =
+      '<div class="rep-resumen"><div class="lbl">Costo por unidad</div>' +
+      '<div class="val">' + plata(d.costo) + '</div>' +
+      '<div class="lbl">Se vende a ' + plata(d.producto.precio_venta) +
+        ' - ganas ' + plata(d.ganancia) +
+        (d.margen !== null ? ' (' + d.margen + '%)' : '') + '</div>' +
+      (d.alcanza !== null ? '<div class="lbl">Con el stock actual alcanza para ' + d.alcanza + '</div>' : '') +
+      '</div>';
+
+    $('listaRec').innerHTML = d.items.map(function (i) {
+      return '<div class="rec-fila">' +
+        '<div class="nom">' + esc(i.nombre) +
+        '<small>' + plata((i.precio_costo || 0) * i.cantidad) + ' por unidad</small></div>' +
+        '<input type="text" inputmode="decimal" value="' + fmtCant(i.cantidad) + '" ' +
+          'onchange="cambiarInsumo(\'' + i.id + '\', this.value)">' +
+        '<span style="font-size:12px;color:var(--muted);width:34px;">' +
+          (i.unidad === 'unidad' ? 'u.' : i.unidad) + '</span>' +
+        '<button onclick="sacarInsumo(\'' + i.id + '\')">&#10005;</button></div>';
+    }).join('');
+  } catch (e) {
+    $('listaRec').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnAgregarInsumo').onclick = async function () {
+  const insumoId = $('recInsumo').value;
+  const cantidad = num($('recCantidad').value);
+  if (!insumoId) { $('msgRec').innerHTML = '<div class="msg">Elegi un insumo.</div>'; return; }
+  if (cantidad <= 0) { $('msgRec').innerHTML = '<div class="msg">Poné cuanto lleva.</div>'; return; }
+
+  try {
+    await api('POST', '/recetas/producto/' + recProdId, { insumoId: insumoId, cantidad: cantidad });
+    $('recCantidad').value = ''; $('msgRec').innerHTML = '';
+    await cargarReceta();
+  } catch (e) { $('msgRec').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
+
+async function cambiarInsumo(id, cantidad) {
+  try {
+    await api('PUT', '/recetas/' + id, { cantidad: num(cantidad) });
+    await cargarReceta();
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function sacarInsumo(id) {
+  if (!confirm('Sacar este insumo de la receta?')) return;
+  try {
+    await api('DELETE', '/recetas/' + id);
+    await cargarReceta();
+  } catch (e) { avisar(e.message, true); }
 }
 
 /* ══ Vuelto ══ */
