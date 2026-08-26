@@ -1861,6 +1861,7 @@
     <button class="btn-sec" id="btnElegirProd">Elegir que productos mostrar</button>
 
     <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
+    <div id="msgTurnosWeb" style="margin-top:8px;"></div>
     <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
   </div>
 </div>
@@ -5087,6 +5088,7 @@ $('btnGuardarCatalogo').onclick = async function () {
   const btn = $('btnGuardarCatalogo');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
+    await guardarTurnosWeb();
     const d = await api('PUT', '/catalogo/config', {
       slug: $('catSlug').value.trim() || (negocio && negocio.nombre) || 'negocio',
       activo: catActivo,
@@ -5099,7 +5101,6 @@ $('btnGuardarCatalogo').onclick = async function () {
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
-    await guardarTurnosWeb();
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -6292,6 +6293,7 @@ async function cargarTurnosWeb() {
 
 async function guardarTurnosWeb() {
   if (!cap('cap_turnos')) return;
+  const el = document.getElementById('msgTurnosWeb');
   try {
     await api('PUT', '/turnos/horarios', {
       horarios: {
@@ -6301,7 +6303,11 @@ async function guardarTurnosWeb() {
       },
       turnosWeb: turnosWebOn
     });
-  } catch (e) {}
+    if (el) el.innerHTML = '';
+  } catch (e) {
+    if (el) el.innerHTML = '<div class="msg">No se pudieron guardar los horarios: ' + esc(e.message) + '</div>';
+    throw e;
+  }
 }
 
 /* ══ Vuelto ══ */
