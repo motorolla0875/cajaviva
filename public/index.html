@@ -667,6 +667,20 @@
     background: var(--panel); color: var(--text); font-size: 15px; text-align: center;
   }
 
+  .panorama {
+    display: flex; gap: 10px; margin-bottom: 14px;
+  }
+  .panorama .caja {
+    flex: 1; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 14px; text-align: center;
+    cursor: pointer;
+  }
+  .panorama .caja.hoy { border-color: var(--accent); background: var(--accent-soft); }
+  .panorama .caja b { display: block; font-size: 24px; font-weight: 500; }
+  .panorama .caja.hoy b { color: var(--accent-dark); }
+  .panorama .caja span { font-size: 12px; color: var(--muted); }
+  .panorama .caja.hoy span { color: var(--accent-dark); }
+
   .dia-titulo {
     text-align: center; font-size: 14px; font-weight: 500;
     color: var(--accent-dark); margin-bottom: 12px;
@@ -1275,6 +1289,7 @@
         <input type="date" id="fechaAgenda">
         <button id="diaSiguiente">&#8250;</button>
       </div>
+      <div id="panoramaAgenda"></div>
       <div class="dia-titulo" id="diaTitulo"></div>
       <button class="btn-nuevo solo" id="btnNuevoTurno">+ Reservar un turno</button>
       <div id="resumenAgenda"></div>
@@ -5864,6 +5879,8 @@ async function cargarAgenda() {
     const td = textoDelDia(fechaAgenda());
     $('diaTitulo').innerHTML = td.rel + '<small>' + td.fecha + '</small>';
 
+    pintarPanorama();
+
     $('resumenAgenda').innerHTML = d.items.length === 0 ? '' :
       '<div class="rep-resumen"><div class="lbl">' +
       d.totales.reservados + (d.totales.reservados === 1 ? ' turno por atender' : ' turnos por atender') +
@@ -6069,6 +6086,38 @@ async function revisarTurnos() {
   } catch (e) {}
 }
 setInterval(revisarTurnos, 120000);
+
+async function pintarPanorama() {
+  try {
+    const prox = await api('GET', '/turnos/proximos');
+    const hoy = hoyISO();
+    const deHoy = prox.filter(function (t) { return t.fecha === hoy; });
+    const adelante = prox.filter(function (t) { return t.fecha > hoy; });
+
+    if (prox.length === 0) { $('panoramaAgenda').innerHTML = ''; return; }
+
+    $('panoramaAgenda').innerHTML = '<div class="panorama">' +
+      '<div class="caja hoy" onclick="irAlDia(\'' + hoy + '\')">' +
+        '<b>' + deHoy.length + '</b><span>' +
+        (deHoy.length === 1 ? 'turno hoy' : 'turnos hoy') + '</span></div>' +
+      '<div class="caja" onclick="verProximo()">' +
+        '<b>' + adelante.length + '</b><span>' +
+        (adelante.length === 1 ? 'mas adelante' : 'mas adelante') + '</span></div>' +
+      '</div>';
+
+    window._proximoTurno = adelante.length > 0 ? adelante[0].fecha : null;
+  } catch (e) { $('panoramaAgenda').innerHTML = ''; }
+}
+
+function irAlDia(f) {
+  $('fechaAgenda').value = f;
+  cargarAgenda();
+}
+
+function verProximo() {
+  if (window._proximoTurno) irAlDia(window._proximoTurno);
+  else avisar('No hay turnos mas adelante');
+}
 
 /* ══ Vuelto ══ */
 
