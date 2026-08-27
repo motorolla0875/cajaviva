@@ -710,14 +710,21 @@
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 18px; font-weight: 700;
   }
-  .fondos { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fondos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .fondo-btn {
-    width: 60px; height: 46px; border-radius: 12px;
+    height: 68px; border-radius: 12px; padding: 0;
     border: 2px solid var(--line); overflow: hidden;
-    display: flex; flex-direction: column; padding: 0;
+    display: flex; flex-direction: column; position: relative;
   }
-  .fondo-btn.on { border-color: var(--text); }
+  .fondo-btn.on { border-color: var(--accent); border-width: 3px; }
   .fondo-btn i { display: block; flex: 1; }
+  .fondo-btn span {
+    position: absolute; bottom: 4px; left: 0; right: 0;
+    font-size: 10.5px; font-weight: 500; text-align: center;
+    color: var(--muted); background: rgba(255,255,255,.85);
+    padding: 1px 0;
+  }
+  .fondo-btn.oscura span { color: #ddd; background: rgba(0,0,0,.5); }
 
   .banner-prev {
     width: 100%; aspect-ratio: 3 / 1; border-radius: 12px;
@@ -7420,12 +7427,12 @@ document.getElementById('btnBorrarBanner').onclick = async function () {
 };
 
 const FONDOS = [
-  ['claro',  '#FAFAF7', '#FFFFFF'],
-  ['blanco', '#FFFFFF', '#F0F0F0'],
-  ['gris',   '#EFEFEF', '#FFFFFF'],
-  ['arena',  '#F5F0E8', '#FFFDF9'],
-  ['oscuro', '#1A1A1A', '#262626'],
-  ['carbon', '#0D0D0D', '#1C1C1C']
+  ['claro',  '#FAFAF7', '#FFFFFF', 'Claro'],
+  ['blanco', '#FFFFFF', '#F0F0F0', 'Blanco'],
+  ['gris',   '#EFEFEF', '#FFFFFF', 'Gris'],
+  ['arena',  '#F5F0E8', '#FFFDF9', 'Arena'],
+  ['oscuro', '#1A1A1A', '#262626', 'Oscuro'],
+  ['carbon', '#0D0D0D', '#1C1C1C', 'Carbon']
 ];
 
 let fondoCat = 'claro';
@@ -7434,10 +7441,12 @@ function pintarFondos() {
   const el = document.getElementById('fondosCat');
   if (!el) return;
   el.innerHTML = FONDOS.map(function (f) {
-    return '<button type="button" class="fondo-btn' + (fondoCat === f[0] ? ' on' : '') + '" ' +
-      'onclick="elegirFondo(\'' + f[0] + '\')">' +
+    const oscuro = f[0] === 'oscuro' || f[0] === 'carbon';
+    return '<button type="button" class="fondo-btn' + (fondoCat === f[0] ? ' on' : '') +
+      (oscuro ? ' oscura' : '') + '" onclick="elegirFondo(\'' + f[0] + '\')">' +
       '<i style="background:' + f[1] + ';"></i>' +
-      '<i style="background:' + f[2] + ';"></i></button>';
+      '<i style="background:' + f[2] + ';"></i>' +
+      '<span>' + f[3] + '</span></button>';
   }).join('');
 }
 
