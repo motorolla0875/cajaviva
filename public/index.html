@@ -3773,7 +3773,7 @@ async function guardarProductoRapido() {
   if (editandoId) {
     await api('PUT', '/productos/' + editandoId, cuerpo);
   } else {
-    cuerpo.stockInicial = cap('cap_variantes') ? 0 : num($('pStock').value);
+    cuerpo.stockInicial = ($('pStock') ? num($('pStock').value) : 0);
     const r = await api('POST', '/productos', cuerpo);
     editandoId = r.id;
   }
@@ -3807,7 +3807,7 @@ $('btnGuardarProd').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
-    else { cuerpo.stockInicial = cap('cap_variantes') ? 0 : num($('pStock').value); await api('POST', '/productos', cuerpo); }
+    else { cuerpo.stockInicial = ($('pStock') ? num($('pStock').value) : 0); await api('POST', '/productos', cuerpo); }
     await cargarProductos(); await cargarCategorias();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
