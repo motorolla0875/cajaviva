@@ -1133,6 +1133,24 @@
     color: var(--text); font-size: 13px;
   }
 
+  .sub-opciones {
+    display: flex; gap: 8px; margin: -4px 0 12px;
+    padding-left: 14px; border-left: 2px solid var(--line);
+  }
+  .op-venc {
+    flex: 1; padding: 11px 10px; border-radius: 10px; text-align: left;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-size: 13.5px; font-weight: 500;
+  }
+  .op-venc span {
+    display: block; font-size: 11.5px; font-weight: 400;
+    color: var(--muted); margin-top: 2px;
+  }
+  .op-venc.on {
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark);
+  }
+  .op-venc.on span { color: var(--accent-dark); }
+
   .cap-item {
     display: flex; align-items: center; gap: 12px;
     padding: 13px 0; border-bottom: 1px solid var(--line);
@@ -3090,11 +3108,34 @@ $('btnConfigNegocio').onclick = function () {
 $('btnCerrarNegocio').onclick = function () { $('modalNegocio').classList.remove('on'); };
 
 function pintarCaps() {
-  $('listaCaps').innerHTML = CAPS_INFO.map(function (c) {
-    return '<div class="cap-item"><div class="txt">' +
+  let html = '';
+
+  CAPS_INFO.forEach(function (c) {
+    // vencimientos ya no va suelto: se elige debajo de mostrador
+    if (c[0] === 'cap_vencimientos') return;
+
+    html += '<div class="cap-item"><div class="txt">' +
       '<div class="n">' + c[1] + '</div><div class="d">' + c[2] + '</div></div>' +
       '<button class="switch' + (cap(c[0]) ? ' on' : '') + '" onclick="alternarCap(\'' + c[0] + '\')"></button></div>';
-  }).join('');
+
+    // los dos botones justo despues de mostrador
+    if (c[0] === 'cap_mostrador' && cap('cap_mostrador')) {
+      const con = cap('cap_vencimientos');
+      html += '<div class="sub-opciones">' +
+        '<button class="op-venc' + (con ? '' : ' on') + '" onclick="ponerVencimientos(false)">' +
+          'Sin vencimiento<span>Ferreteria, bazar, ropa</span></button>' +
+        '<button class="op-venc' + (con ? ' on' : '') + '" onclick="ponerVencimientos(true)">' +
+          'Con vencimiento<span>Almacen, kiosco, farmacia</span></button>' +
+        '</div>';
+    }
+  });
+
+  $('listaCaps').innerHTML = html;
+}
+
+async function ponerVencimientos(valor) {
+  if (cap('cap_vencimientos') === valor) return;
+  await alternarCap('cap_vencimientos');
 }
 
 async function alternarCap(nombre) {
