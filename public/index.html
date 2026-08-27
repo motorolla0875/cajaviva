@@ -6616,6 +6616,50 @@ document.addEventListener('visibilitychange', function () {
 // Comprime en el navegador: el servidor recibe 40 KB en vez de 4 MB
 function comprimirImagen(archivo, ladoMax, calidad) {
   return new Promise(function (resolver, fallar) {
+    // el iPhone manda HEIC: se lee como blob directo
+    const url = URL.createObjectURL(archivo);
+    const img = new Image();
+
+    img.onload = function () {
+      try {
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) throw new Error('sin dimensiones');
+
+        if (w > h) { if (w > ladoMax) { h = h * (ladoMax / w); w = ladoMax; } }
+        else { if (h > ladoMax) { w = w * (ladoMax / h); h = ladoMax; } }
+
+        const c = document.createElement('canvas');
+        c.width = Math.round(w); c.height = Math.round(h);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+
+        c.toBlob(function (blob) {
+          if (blob) resolver(blob);
+          else c.toBlob(function (b2) {
+            b2 ? resolver(b2) : fallar(new Error('No se pudo procesar la imagen'));
+          }, 'image/jpeg', calidad);
+        }, 'image/webp', calidad);
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        fallar(new Error('No se pudo procesar la imagen'));
+      }
+    };
+
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      fallar(new Error('Ese formato de imagen no se puede usar. Proba sacarla de nuevo o elegir otra.'));
+    };
+
+    img.src = url;
+  });
+}
+
+function comprimirImagenVieja(archivo, ladoMax, calidad) {
+  return new Promise(function (resolver, fallar) {
     const lector = new FileReader();
     lector.onload = function (e) {
       const img = new Image();
