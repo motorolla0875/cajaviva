@@ -934,6 +934,41 @@
   }
   .dia-titulo small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
 
+  .unidad-card {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 13px 14px; margin-bottom: 8px;
+  }
+  .unidad-card.ocupada { opacity: .6; border-style: dashed; }
+  .unidad-card img { width: 62px; height: 62px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .unidad-card .datos { flex: 1; min-width: 0; }
+  .unidad-card .datos .n { font-weight: 500; font-size: 15px; }
+  .unidad-card .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .unidad-card .lado { text-align: right; flex-shrink: 0; }
+  .unidad-card .precio { font-weight: 500; font-size: 15px; }
+  .chip-libre {
+    display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent-dark); font-weight: 500; margin-top: 3px;
+  }
+  .chip-ocupada { background: var(--danger-soft); color: var(--danger); }
+
+  .reserva {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 13px 15px; margin-bottom: 8px;
+  }
+  .reserva.en_curso { border-color: var(--accent); }
+  .reserva.cancelada, .reserva.terminada { opacity: .55; }
+  .reserva .cab { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .reserva .cab .n { font-weight: 500; font-size: 15px; }
+  .reserva .cab .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .reserva .cab .m { font-weight: 500; font-size: 16px; flex-shrink: 0; }
+  .reserva .acc { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .reserva .acc button {
+    padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+  }
+  .reserva .acc button.ppal { background: var(--accent); color: #fff; border-color: var(--accent); }
+
   .turno {
     display: flex; gap: 12px; align-items: flex-start;
     background: var(--panel); border: 1px solid var(--line);
@@ -1500,6 +1535,7 @@
     <button data-vista="productos">Productos</button>
     <button data-vista="clientes">Fiado</button>
     <button data-vista="agenda" id="tabAgenda">Agenda</button>
+    <button data-vista="reservas" id="tabReservas">Reservas</button>
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
@@ -1604,6 +1640,25 @@
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
       <div class="lista" id="listaCli"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-reservas">
+    <div class="lista-wrap">
+      <div class="rango-fechas on" style="margin-bottom:12px;">
+        <input type="date" id="resDesde">
+        <span>a</span>
+        <input type="date" id="resHasta">
+      </div>
+
+      <button class="btn-nuevo solo" id="btnNuevaReserva">+ Nueva reserva</button>
+
+      <div class="chips" id="tabsReservas">
+        <button class="on" data-tab="disponibles">Disponibilidad</button>
+        <button data-tab="reservas">Reservas</button>
+      </div>
+
+      <div id="listaReservas"></div>
     </div>
   </div>
 
@@ -2261,6 +2316,44 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subRecordar"></p>
     <div id="listaRecordar" style="max-height:360px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarRecordar" style="margin-top:14px;">Listo</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalReserva">
+  <div class="modal">
+    <h3 id="tituloReserva">Nueva reserva</h3>
+    <div id="msgReserva"></div>
+
+    <label>Que se alquila</label>
+    <select id="rUnidad"></select>
+
+    <div class="fila2">
+      <div><label>Entrada</label><input type="date" id="rDesde"></div>
+      <div><label>Salida</label><input type="date" id="rHasta"></div>
+    </div>
+    <p class="hint" id="hintNoches"></p>
+
+    <label>A nombre de</label>
+    <input type="text" id="rNombre" placeholder="Nombre de quien reserva">
+
+    <div class="fila2">
+      <div><label>Telefono</label><input type="text" id="rTelefono" inputmode="tel"></div>
+      <div><label>Personas</label><input type="text" id="rPersonas" inputmode="numeric"></div>
+    </div>
+
+    <div class="fila2">
+      <div><label>Precio por noche</label><input type="text" id="rPrecio" inputmode="decimal"></div>
+      <div><label>Seña recibida</label><input type="text" id="rSena" inputmode="decimal" placeholder="0"></div>
+    </div>
+
+    <div class="cierre-linea total"><span>Total</span><b id="rTotal">$0</b></div>
+
+    <label>Nota (opcional)</label>
+    <input type="text" id="rNota" placeholder="Ej: llega despues de las 20">
+
+    <button class="btn-ppal" id="btnGuardarReserva">Guardar</button>
+    <button class="btn-del" id="btnCancelarReserva" style="display:none;">Cancelar la reserva</button>
+    <button class="btn-sec" id="btnCerrarReserva">Cerrar</button>
   </div>
 </div>
 
@@ -3049,6 +3142,9 @@ function aplicarCapacidades() {
   const ta = document.getElementById('tabAgenda');
   if (ta) ta.style.display = cap('cap_turnos') ? '' : 'none';
 
+  const trs = document.getElementById('tabReservas');
+  if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
+
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
 
@@ -3488,6 +3584,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'reportes') cargarReportes();
     if (b.dataset.vista === 'pedidos') cargarPedidos();
     if (b.dataset.vista === 'agenda') cargarAgenda();
+    if (b.dataset.vista === 'reservas') cargarReservas();
   };
 });
 
@@ -8228,6 +8325,272 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
     .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
   if (lv) lv.textContent = 'Precio por noche';
+};
+
+/* ══ Reservas de alquiler ══ */
+
+let tabReservas = 'disponibles';
+let reservaEditando = null;
+let unidadesCache = [];
+
+function rangoReservas() {
+  return {
+    desde: $('resDesde').value || hoyISO(),
+    hasta: $('resHasta').value || hoyISO()
+  };
+}
+
+document.getElementById('tabsReservas').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  tabReservas = b.dataset.tab;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+  cargarReservas();
+});
+
+$('resDesde').addEventListener('change', function () {
+  if ($('resHasta').value <= this.value) {
+    const d = new Date(this.value + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    $('resHasta').value = d.toISOString().slice(0, 10);
+  }
+  cargarReservas();
+});
+$('resHasta').addEventListener('change', cargarReservas);
+
+async function cargarReservas() {
+  if (!$('resDesde').value) {
+    $('resDesde').value = hoyISO();
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    $('resHasta').value = d.toISOString().slice(0, 10);
+  }
+
+  const r = rangoReservas();
+  $('listaReservas').innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    if (tabReservas === 'disponibles') {
+      const d = await api('GET', '/alquileres/disponibles?desde=' + r.desde + '&hasta=' + r.hasta);
+      unidadesCache = d.unidades;
+
+      if (d.unidades.length === 0) {
+        $('listaReservas').innerHTML = '<div class="vacio">Todavia no cargaste unidades.<br>' +
+          'Anda a Productos y toca "+ Unidad".</div>';
+        return;
+      }
+
+      const libres = d.unidades.filter(function (u) { return u.libre; }).length;
+
+      $('listaReservas').innerHTML =
+        '<div class="rep-resumen"><div class="lbl">' + d.noches +
+        (d.noches === 1 ? ' noche' : ' noches') + '</div>' +
+        '<div class="val">' + libres + ' de ' + d.unidades.length + ' libres</div></div>' +
+        d.unidades.map(function (u) {
+          return '<div class="unidad-card' + (u.libre ? '' : ' ocupada') + '">' +
+            (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
+            '<div class="datos"><div class="n">' + esc(u.nombre) + '</div>' +
+            '<div class="d">' + plata(u.precio_venta) + ' por ' + (u.cobro_por || 'noche') +
+              (u.capacidad ? ' - hasta ' + u.capacidad + ' personas' : '') + '</div>' +
+            '<span class="chip-libre' + (u.libre ? '' : ' chip-ocupada') + '">' +
+              (u.libre ? 'Libre' : 'Ocupada') + '</span></div>' +
+            '<div class="lado"><div class="precio">' + plata(u.precio_venta * d.noches) + '</div>' +
+            (u.libre ? '<button class="btn-pago" style="margin-top:6px;border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:500;" onclick="reservarUnidad(\'' + u.id + '\')">Reservar</button>' : '') +
+            '</div></div>';
+        }).join('');
+
+    } else {
+      const filas = await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
+
+      if (filas.length === 0) {
+        $('listaReservas').innerHTML = '<div class="vacio">No hay reservas en estas fechas.</div>';
+        return;
+      }
+
+      $('listaReservas').innerHTML = filas.map(function (x) {
+        let acc = '';
+        if (x.estado === 'reservada') {
+          acc = '<button class="ppal" onclick="cambiarReserva(\'' + x.id + '\',\'en_curso\')">Entro</button>' +
+                (x.telefono ? '<button onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '') +
+                '<button onclick="abrirReserva(\'' + x.id + '\')">Editar</button>';
+        } else if (x.estado === 'en_curso') {
+          acc = '<button class="ppal" onclick="cobrarReserva(\'' + x.id + '\')">Salio y cobrar</button>' +
+                (x.telefono ? '<button onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '') +
+                '<button onclick="abrirReserva(\'' + x.id + '\')">Editar</button>';
+        } else {
+          acc = (x.telefono ? '<button class="ppal" onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '');
+        }
+
+        const estado = x.estado === 'reservada' ? 'Reservada'
+          : x.estado === 'en_curso' ? 'En curso'
+          : x.estado === 'terminada' ? 'Terminada' : 'Cancelada';
+
+        return '<div class="reserva ' + x.estado + '">' +
+          '<div class="cab"><div>' +
+          '<div class="n">' + esc(x.cliente_nombre) + '</div>' +
+          '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
+            fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
+            (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+          '<span class="chip-libre' + (x.estado === 'cancelada' ? ' chip-ocupada' : '') + '">' + estado + '</span>' +
+          (x.sena > 0 ? '<span class="chip-libre">Seña ' + plata(x.sena) + '</span>' : '') +
+          (x.nota ? '<div class="d">' + esc(x.nota) + '</div>' : '') +
+          '</div><div class="m">' + plata(x.total) + '</div></div>' +
+          (acc ? '<div class="acc">' + acc + '</div>' : '') +
+          '</div>';
+      }).join('');
+    }
+  } catch (e) {
+    $('listaReservas').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function wppReserva(tel, id) {
+  const n = (negocio && negocio.nombre) ? negocio.nombre : '';
+  const texto = n ? 'Hola! Te escribimos de ' + n + '.' : '';
+  window.open('https://wa.me/54' + String(tel).replace(/\D/g, '') +
+    (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
+}
+
+async function cambiarReserva(id, estado) {
+  try {
+    await api('PUT', '/alquileres/' + id, { estado: estado });
+    await cargarReservas();
+    avisar('Reserva actualizada');
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function cobrarReserva(id) {
+  if (!confirm('Cerrar la reserva y registrar el cobro?')) return;
+  try {
+    const r = await api('POST', '/alquileres/' + id + '/cobrar', { fecha: hoyISO() });
+    await cargarReservas(); await cargarResumen();
+    avisar('Cobrado ' + plata(r.total));
+  } catch (e) { avisar(e.message, true); }
+}
+
+function reservarUnidad(unidadId) {
+  abrirReserva(null);
+  $('rUnidad').value = unidadId;
+  calcularTotalReserva();
+}
+
+$('btnNuevaReserva').onclick = function () { abrirReserva(null); };
+$('btnCerrarReserva').onclick = function () { $('modalReserva').classList.remove('on'); };
+
+async function abrirReserva(id) {
+  reservaEditando = id || null;
+  $('msgReserva').innerHTML = '';
+  $('tituloReserva').textContent = id ? 'Editar reserva' : 'Nueva reserva';
+  $('btnCancelarReserva').style.display = id ? 'block' : 'none';
+
+  const unidades = productos.filter(function (p) { return p.es_unidad; });
+  $('rUnidad').innerHTML = unidades.length === 0
+    ? '<option value="">Carga unidades en Productos</option>'
+    : unidades.map(function (u) {
+        return '<option value="' + u.id + '" data-precio="' + u.precio_venta + '">' +
+          esc(u.nombre) + '</option>';
+      }).join('');
+
+  const r = rangoReservas();
+
+  if (id) {
+    const filas = await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
+    const x = filas.filter(function (y) { return y.id === id; })[0];
+    if (x) {
+      $('rUnidad').value = x.unidad_id;
+      $('rDesde').value = x.desde;
+      $('rHasta').value = x.hasta;
+      $('rNombre').value = x.cliente_nombre;
+      $('rTelefono').value = x.telefono || '';
+      $('rPersonas').value = x.personas || '';
+      $('rPrecio').value = x.precio_noche;
+      $('rSena').value = x.sena || '';
+      $('rNota').value = x.nota || '';
+    }
+  } else {
+    $('rDesde').value = r.desde;
+    $('rHasta').value = r.hasta;
+    $('rNombre').value = ''; $('rTelefono').value = '';
+    $('rPersonas').value = ''; $('rSena').value = ''; $('rNota').value = '';
+    aplicarPrecioUnidad();
+  }
+
+  calcularTotalReserva();
+  $('modalReserva').classList.add('on');
+}
+
+function aplicarPrecioUnidad() {
+  const op = $('rUnidad').options[$('rUnidad').selectedIndex];
+  if (op && op.dataset.precio) $('rPrecio').value = op.dataset.precio;
+}
+
+function nochesEntre(a, b) {
+  if (!a || !b) return 0;
+  const d1 = new Date(a + 'T12:00:00'), d2 = new Date(b + 'T12:00:00');
+  return Math.max(0, Math.round((d2 - d1) / 86400000));
+}
+
+function calcularTotalReserva() {
+  const n = nochesEntre($('rDesde').value, $('rHasta').value);
+  const p = num($('rPrecio').value);
+  $('hintNoches').textContent = n > 0 ? n + (n === 1 ? ' noche' : ' noches') : 'Elegi las fechas';
+  $('rTotal').textContent = plata(n * p);
+}
+
+$('rUnidad').addEventListener('change', function () { aplicarPrecioUnidad(); calcularTotalReserva(); });
+$('rDesde').addEventListener('change', calcularTotalReserva);
+$('rHasta').addEventListener('change', calcularTotalReserva);
+$('rPrecio').addEventListener('input', calcularTotalReserva);
+
+$('btnGuardarReserva').onclick = async function () {
+  const nombre = $('rNombre').value.trim();
+  if (!nombre) { $('msgReserva').innerHTML = '<div class="msg">Poné el nombre.</div>'; return; }
+  if (!$('rUnidad').value) { $('msgReserva').innerHTML = '<div class="msg">Elegi que se alquila.</div>'; return; }
+  if (nochesEntre($('rDesde').value, $('rHasta').value) <= 0) {
+    $('msgReserva').innerHTML = '<div class="msg">La salida tiene que ser despues de la entrada.</div>'; return;
+  }
+
+  const cuerpo = {
+    unidadId: $('rUnidad').value,
+    clienteNombre: nombre,
+    telefono: $('rTelefono').value.trim() || null,
+    desde: $('rDesde').value,
+    hasta: $('rHasta').value,
+    personas: parseInt($('rPersonas').value) || null,
+    precioNoche: num($('rPrecio').value),
+    sena: num($('rSena').value),
+    nota: $('rNota').value.trim() || null
+  };
+
+  const btn = $('btnGuardarReserva');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (reservaEditando) await api('PUT', '/alquileres/' + reservaEditando, cuerpo);
+    else await api('POST', '/alquileres', cuerpo);
+
+    $('resDesde').value = cuerpo.desde;
+    $('resHasta').value = cuerpo.hasta;
+    $('modalReserva').classList.remove('on');
+    tabReservas = 'reservas';
+    Array.prototype.forEach.call($('tabsReservas').children, function (x, i) {
+      x.classList.toggle('on', i === 1);
+    });
+    await cargarReservas();
+    avisar(reservaEditando ? 'Reserva actualizada' : 'Reserva guardada');
+  } catch (e) {
+    $('msgReserva').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+$('btnCancelarReserva').onclick = async function () {
+  if (!reservaEditando || !confirm('Cancelar esta reserva?')) return;
+  try {
+    await api('PUT', '/alquileres/' + reservaEditando, { estado: 'cancelada' });
+    $('modalReserva').classList.remove('on');
+    await cargarReservas();
+    avisar('Reserva cancelada');
+  } catch (e) { avisar(e.message, true); }
 };
 
 /* ══ Vuelto ══ */
