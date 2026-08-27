@@ -2435,7 +2435,7 @@ const SINONIMOS = {
   bijouterie: 'accesorios aros collares',
   petshop: 'mascotas perros gatos balanceado',
   repuestos: 'auto moto autopartes',
-  electronica: 'celulares fundas cargadores tecnologia',
+  electronica: 'celulares fundas cargadores tecnologia arreglar reparar telefono',
   perfumeria: 'cosmetica maquillaje',
   farmacia: 'medicamentos remedios botica',
   vinoteca: 'vinos bebidas licores',
@@ -2466,7 +2466,7 @@ const SINONIMOS = {
   bar: 'cerveceria pub tragos',
   foodtruck: 'carrito comida hamburguesas',
   casa_comidas: 'viandas menu almuerzo',
-  peluqueria: 'pelo corte peinado salon belleza',
+  peluqueria: 'pelo corte peinado salon belleza cortar cabello',
   barberia: 'barba corte hombre',
   manicura: 'uñas manos pedicura',
   estetica: 'belleza depilacion cosmetologia facial',
@@ -2477,15 +2477,15 @@ const SINONIMOS = {
   nutricion: 'nutricionista dieta',
   psicologia: 'psicologo terapia',
   veterinaria: 'veterinario animales mascotas',
-  gomeria: 'cubiertas neumaticos ruedas',
-  taller: 'mecanico auto service arreglo',
+  gomeria: 'cubiertas neumaticos ruedas gomas arreglar pinchadura',
+  taller: 'mecanico auto service arreglo arreglar reparar reparacion coche vehiculo motor',
   chapa: 'chapista pintura auto',
   lavadero: 'lavado autos ropa lavanderia',
   fotografia: 'fotos fotografo estudio',
   canchas: 'futbol padel tenis alquiler',
   clases: 'profesor particular apoyo idiomas',
   entrenador: 'personal trainer gimnasio',
-  costurera: 'modista arreglos sastre',
+  costurera: 'modista arreglos sastre coser costura arreglar ropa',
   soda: 'sodero agua bidones dispenser',
   gas: 'garrafa envasado',
   hielo: 'cubos barra',
@@ -6939,15 +6939,26 @@ function buscarRubro() {
 
   if (t.length < 2) { cont.innerHTML = ''; return; }
 
+  // buscar cada palabra por separado, con raiz de 4 letras
+  const palabras = t.split(/\s+/).filter(function (w) { return w.length >= 3; });
+  if (palabras.length === 0) { cont.innerHTML = ''; return; }
+
   const puntajes = [];
   RUBROS.forEach(function (r) {
     const nombre = norm(r[1]);
+    const que = norm(r[2] || '');
     const sin = norm(SINONIMOS[r[0]] || '');
+    const todo = nombre + ' ' + que + ' ' + sin;
+
     let p = 0;
-    if (nombre.indexOf(t) === 0) p = 100;
-    else if (nombre.indexOf(t) >= 0) p = 70;
-    else if ((' ' + sin).indexOf(' ' + t) >= 0) p = 60;
-    else if (sin.indexOf(t) >= 0) p = 40;
+    palabras.forEach(function (w) {
+      const raiz = w.length > 4 ? w.slice(0, w.length - 1) : w;
+      if (nombre.indexOf(w) === 0) p += 100;
+      else if (nombre.indexOf(raiz) >= 0) p += 70;
+      else if ((' ' + todo).indexOf(' ' + w) >= 0) p += 60;
+      else if (todo.indexOf(raiz) >= 0) p += 35;
+    });
+
     if (p > 0) puntajes.push({ r: r, p: p });
   });
 
