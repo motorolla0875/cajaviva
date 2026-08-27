@@ -7905,6 +7905,34 @@ document.getElementById('btnNuevaReceta').onclick = function () {
   $('hintCostoReceta').textContent = 'El costo sale de los insumos que elijas.';
 };
 
+function alcanzaPara(prodId) {
+  const receta = recetasCache[prodId];
+  if (!receta || receta.length === 0) return null;
+
+  let min = null;
+  for (const r of receta) {
+    if (r.cantidad <= 0) continue;
+    const ins = productos.filter(function (x) { return x.id === r.insumo_id; })[0];
+    if (!ins) continue;
+    const posibles = Math.floor(ins.stock / r.cantidad);
+    if (min === null || posibles < min) min = posibles;
+  }
+  return min;
+}
+
+let recetasCache = {};
+
+async function cargarRecetas() {
+  const conReceta = productos.filter(function (p) { return p.tiene_receta; });
+  for (const p of conReceta) {
+    if (recetasCache[p.id]) continue;
+    try {
+      const d = await api('GET', '/recetas/producto/' + p.id);
+      recetasCache[p.id] = d.items;
+    } catch (e) {}
+  }
+}
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
