@@ -710,6 +710,15 @@
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 18px; font-weight: 700;
   }
+  .fondos { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fondo-btn {
+    width: 60px; height: 46px; border-radius: 12px;
+    border: 2px solid var(--line); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .fondo-btn.on { border-color: var(--text); }
+  .fondo-btn i { display: block; flex: 1; }
+
   .banner-prev {
     width: 100%; aspect-ratio: 3 / 1; border-radius: 12px;
     border: 1px solid var(--line); background: var(--panel-2);
@@ -2050,8 +2059,11 @@
 
     <div class="seccion">Como se ve</div>
 
-    <label>Color</label>
+    <label>Color principal</label>
     <div class="temas" id="temasCat"></div>
+
+    <label>Fondo</label>
+    <div class="fondos" id="fondosCat"></div>
 
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
@@ -5790,7 +5802,9 @@ $('btnCatalogo').onclick = async function () {
     $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
     temaCat = c.tema || 'verde';
+    fondoCat = c.fondo || 'claro';
     pintarTemas();
+    pintarFondos();
     mostrarBanner(c.banner || null);
     await cargarTurnosWeb();
   } catch (e) {
@@ -5829,7 +5843,8 @@ $('btnGuardarCatalogo').onclick = async function () {
       titular: $('catTitular').value.trim() || null,
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
-      tema: temaCat
+      tema: temaCat,
+      fondo: fondoCat
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -7403,6 +7418,60 @@ document.getElementById('btnBorrarBanner').onclick = async function () {
     avisar('Banner quitado');
   } catch (e) { avisar(e.message, true); }
 };
+
+const FONDOS = [
+  ['claro',  'Claro',   '#FAFAF7', '#FFFFFF'],
+  ['blanco', 'Blanco',  '#FFFFFF', '#F7F7F7'],
+  ['gris',   'Gris',    '#EFEFEF', '#FFFFFF'],
+  ['arena',  'Arena',   '#F5F0E8', '#FFFDF9'],
+  ['oscuro', 'Oscuro',  '#1A1A1A', '#262626'],
+  ['carbon', 'Carbon',  '#0D0D0D', '#1C1C1C']
+];
+
+let fondoCat = 'claro';
+
+function pintarFondos() {
+  const el = document.getElementById('fondosCat');
+  if (!el) return;
+  el.innerHTML = FONDOS.map(function (f) {
+    return '<button type="button" class="fondo-btn' + (fondoCat === f[0] ? ' on' : '') + '" ' +
+      'title="' + f[1] + '" onclick="elegirFondo(\'' + f[0] + '\')">' +
+      '<i style="background:' + f[2] + ';"></i>' +
+      '<i style="background:' + f[3] + ';"></i></button>';
+  }).join('');
+}
+
+function elegirFondo(f) {
+  fondoCat = f;
+  pintarFondos();
+}
+
+const FONDOS = [
+  ['claro',  'Claro',   '#FAFAF7', '#FFFFFF'],
+  ['blanco', 'Blanco',  '#FFFFFF', '#F7F7F7'],
+  ['gris',   'Gris',    '#EFEFEF', '#FFFFFF'],
+  ['arena',  'Arena',   '#F5F0E8', '#FFFDF9'],
+  ['oscuro', 'Oscuro',  '#1A1A1A', '#262626'],
+  ['carbon', 'Carbon',  '#0D0D0D', '#1C1C1C']
+];
+
+let fondoCat = 'claro';
+
+function pintarFondos() {
+  const el = document.getElementById('fondosCat');
+  if (!el) return;
+  el.innerHTML = FONDOS.map(function (f) {
+    return '<button type="button" class="fondo-btn' + (fondoCat === f[0] ? ' on' : '') + '" ' +
+      'title="' + f[1] + '" onclick="elegirFondo(\'' + f[0] + '\')">' +
+      '<i style="background:' + f[2] + ';"></i>' +
+      '<i style="background:' + f[3] + ';"></i></button>';
+  }).join('');
+}
+
+function elegirFondo(f) {
+  fondoCat = f;
+  pintarFondos();
+}
 
 /* ══ Vuelto ══ */
 
