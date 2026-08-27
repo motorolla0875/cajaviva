@@ -5111,7 +5111,23 @@ function pintarFiltrosProd() {
   }).length;
   const revisar = negativos + sinStock + bajos;
 
+  const nRecetas = productos.filter(function (p) { return p.tiene_receta; }).length;
+  const nInsumos = productos.filter(function (p) { return p.es_insumo; }).length;
+  const nSimples = productos.filter(function (p) { return !p.tiene_receta && !p.es_insumo && !p.es_servicio; }).length;
+
   let html = '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+
+  if (nInsumos > 0 || nRecetas > 0) {
+    if (nSimples > 0) {
+      html += '<button class="' + (filtroProd === 'simples' ? 'on' : '') + '" onclick="filtrarProductos(\'simples\')">Para vender (' + nSimples + ')</button>';
+    }
+    if (nRecetas > 0) {
+      html += '<button class="' + (filtroProd === 'recetas' ? 'on' : '') + '" onclick="filtrarProductos(\'recetas\')">Recetas (' + nRecetas + ')</button>';
+    }
+    if (nInsumos > 0) {
+      html += '<button class="' + (filtroProd === 'insumos' ? 'on' : '') + '" onclick="filtrarProductos(\'insumos\')">Insumos (' + nInsumos + ')</button>';
+    }
+  }
 
   if (revisar > 0) {
     html += '<button class="chip-alerta ' + (filtroProd === 'revisar' ? 'on' : '') + '" onclick="filtrarProductos(\'revisar\')">A revisar (' + revisar + ')</button>';
@@ -5137,6 +5153,9 @@ function filtrarProductos(cual) {
 
 function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
+  if (filtroProd === 'insumos') return !!p.es_insumo;
+  if (filtroProd === 'recetas') return !!p.tiene_receta;
+  if (filtroProd === 'simples') return !p.tiene_receta && !p.es_insumo && !p.es_servicio;
   if (p.es_servicio) return false;
   if (filtroProd === 'negativo') return p.stock < 0;
   if (filtroProd === 'cero') return p.stock === 0;
