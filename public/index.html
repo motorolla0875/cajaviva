@@ -3514,6 +3514,11 @@ async function cargarProductos() {
   productos = await api('GET', '/productos');
   LOCAL.guardar('productos', productos);
   pintarGrilla(); pintarLista();
+
+  // traer las recetas para saber para cuantos alcanza
+  if (typeof cargarRecetas === 'function') {
+    cargarRecetas().then(function () { pintarGrilla(); pintarLista(); });
+  }
 }
 
 async function cargarClientes() {
@@ -6911,6 +6916,7 @@ $('btnCerrarRec').onclick = async function () {
 };
 
 async function cargarReceta() {
+  if (recProdId) delete recetasCache[recProdId];
   $('listaRec').innerHTML = '<div class="vacio">Cargando...</div>';
   try {
     const d = await api('GET', '/recetas/producto/' + recProdId);
