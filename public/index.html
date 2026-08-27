@@ -1699,6 +1699,9 @@
     <div id="msgNegocio"></div>
     <label>Nombre del negocio</label>
     <input type="text" id="nNombre">
+    <div class="seccion">Como se ve la app</div>
+    <div class="fondos" id="temasApp" style="margin-bottom:6px;"></div>
+
     <div class="seccion">Que hace tu negocio</div>
     <p class="hint" style="margin:-4px 0 14px;">Prendé lo que uses. Podés cambiarlo cuando quieras.</p>
     <div id="listaCaps"></div>
@@ -3292,6 +3295,7 @@ $('btnConfigNegocio').onclick = function () {
   $('modalCuentaUsuario').classList.remove('on');
   $('msgNegocio').innerHTML = '';
   $('nNombre').value = negocio && negocio.nombre ? negocio.nombre : '';
+  pintarTemasApp();
   pintarCaps();
   $('modalNegocio').classList.add('on');
 };
@@ -7687,6 +7691,70 @@ function aplicarModoPieza(p) {
 document.getElementById('pUnidad').addEventListener('change', function () {
   aplicarModoPieza(null);
 });
+
+/* ══ Tema de la app ══ */
+
+const TEMAS_APP = {
+  verde: {
+    nombre: 'Verde', chip: '#1D9E75', fondo: '#FAFAF7',
+    a: '#1D9E75', d: '#0F6E56', s: '#E1F5EE',
+    bg: '#FAFAF7', panel: '#FFFFFF', panel2: '#F3F2EE',
+    line: '#E4E2DA', text: '#2C2C2A', muted: '#6E6D67'
+  },
+  amarillo: {
+    nombre: 'Amarillo', chip: '#FFE600', fondo: '#EBEBEB',
+    a: '#2D3277', d: '#1F2456', s: '#FFF6B3',
+    bg: '#EBEBEB', panel: '#FFFFFF', panel2: '#F5F5F5',
+    line: '#DEDEDE', text: '#333333', muted: '#737373'
+  },
+  oscuro: {
+    nombre: 'Oscuro', chip: '#1D9E75', fondo: '#161616',
+    a: '#22B583', d: '#3FD3A0', s: '#12332A',
+    bg: '#161616', panel: '#212121', panel2: '#2B2B2B',
+    line: '#363636', text: '#EDEDED', muted: '#9C9C9C'
+  }
+};
+
+let temaApp = localStorage.getItem('cajaviva_tema_app') || 'verde';
+
+function aplicarTemaApp(nombre) {
+  const t = TEMAS_APP[nombre] || TEMAS_APP.verde;
+  const r = document.documentElement;
+  r.style.setProperty('--accent', t.a);
+  r.style.setProperty('--accent-dark', t.d);
+  r.style.setProperty('--accent-soft', t.s);
+  r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--panel', t.panel);
+  r.style.setProperty('--panel-2', t.panel2);
+  r.style.setProperty('--line', t.line);
+  r.style.setProperty('--text', t.text);
+  r.style.setProperty('--muted', t.muted);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t.panel);
+}
+
+function pintarTemasApp() {
+  const el = document.getElementById('temasApp');
+  if (!el) return;
+  el.innerHTML = Object.keys(TEMAS_APP).map(function (k) {
+    const t = TEMAS_APP[k];
+    return '<button type="button" class="fondo-btn' + (temaApp === k ? ' on' : '') +
+      (k === 'oscuro' ? ' oscura' : '') + '" onclick="elegirTemaApp(\'' + k + '\')" ' +
+      'style="background:' + t.fondo + ';">' +
+      '<i style="background:' + t.chip + '; flex:0 0 22px;"></i>' +
+      '<i style="background:' + t.fondo + ';"></i>' +
+      '<span>' + t.nombre + '</span></button>';
+  }).join('');
+}
+
+function elegirTemaApp(k) {
+  temaApp = k;
+  localStorage.setItem('cajaviva_tema_app', k);
+  aplicarTemaApp(k);
+  pintarTemasApp();
+}
+
+aplicarTemaApp(temaApp);
 
 /* ══ Vuelto ══ */
 
