@@ -3882,6 +3882,7 @@ function abrirProd(id) {
   $('pNotas').value = p && p.notas ? p.notas : '';
   pintarSelectProvProd();
   $('pProveedor').value = p && p.proveedor_id ? p.proveedor_id : '';
+  revisarProveedor();
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
@@ -3925,6 +3926,7 @@ $('btnCatRapida').onclick = async function () {
     await cargarCategorias();
     pintarSelectCategorias();
     $('pCategoria').value = r.id;
+    revisarProveedor();
     avisar('Categoria creada');
   } catch (e) { avisar(e.message, true); }
 };
@@ -8001,6 +8003,15 @@ async function cargarRecetas() {
     } catch (e) {}
   }
 }
+
+function revisarProveedor() {
+  const w = document.getElementById('wrapProveedor');
+  if (!w) return;
+  const cat = document.getElementById('pCategoria');
+  w.style.display = (cat && cat.value) ? 'block' : 'none';
+}
+
+document.getElementById('pCategoria').addEventListener('change', revisarProveedor);
 
 /* ══ Vuelto ══ */
 
