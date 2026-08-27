@@ -1268,6 +1268,11 @@
 
     <label id="lblRubro">Que tipo de negocio es</label>
     <div class="rubros" id="familias"></div>
+    <div id="buscadorRubro" style="display:none;">
+      <input type="text" id="txtRubro" placeholder="Ej: vendo plantas, arreglo celulares..."
+        style="width:100%; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); font-size:15px; margin-bottom:14px;">
+      <div id="sugerencias"></div>
+    </div>
     <div class="rubros" id="rubros" style="display:none;"></div>
     <button id="btnVolverFamilias" style="display:none; width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--accent-dark); font-size:13.5px;">&#8592; Ver otras categorias</button>
 
@@ -2391,7 +2396,7 @@ const FAMILIAS = [
   ['comida', 'Preparo lo que vendo', 'Rotiseria, cafeteria, panaderia...'],
   ['turnos', 'Doy turnos', 'Peluqueria, taller, consultorio...'],
   ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
-  ['otro', 'Otro', 'Lo configuro a mano']
+  ['buscar', 'No encuentro mi rubro', 'Escribi que vendes y te sugerimos']
 ];
 
 const RUBROS_POR_FAMILIA = {
@@ -2411,10 +2416,88 @@ const RUBROS_POR_FAMILIA = {
            'clases', 'entrenador', 'costurera', 'consultorio'],
   reparto: ['soda', 'gas', 'lacteos', 'panaderia_reparto', 'hielo', 'diarios',
             'leña', 'distribuidora', 'mayorista'],
-  otro: ['otro']
+  otro: ['otro'],
+  buscar: []
 };
 
 let familiaElegida = null;
+
+const SINONIMOS = {
+  kiosco: 'kiosko golosinas caramelos cigarrillos maxikiosco',
+  almacen: 'despensa autoservicio provisiones',
+  minimercado: 'supermercado super mercadito',
+  libreria: 'papeleria escolar utiles fotocopias',
+  ferreteria: 'herramientas tornillos bulones',
+  'pinturería': 'pintura latex esmalte',
+  bazar: 'hogar cocina vajilla',
+  regalos: 'souvenirs cotillon fiestas',
+  jugueteria: 'juguetes juegos niños',
+  bijouterie: 'accesorios aros collares',
+  petshop: 'mascotas perros gatos balanceado',
+  repuestos: 'auto moto autopartes',
+  electronica: 'celulares fundas cargadores tecnologia',
+  perfumeria: 'cosmetica maquillaje',
+  farmacia: 'medicamentos remedios botica',
+  vinoteca: 'vinos bebidas licores',
+  tabaqueria: 'cigarrillos tabaco',
+  corralon: 'materiales construccion cemento arena',
+  forrajeria: 'forraje alimento animales campo',
+  vivero: 'plantas jardin macetas flores floreria',
+  verduleria: 'verduras frutas fruteria',
+  carniceria: 'carne asado cortes',
+  polleria: 'pollo aves',
+  pescaderia: 'pescado mariscos',
+  fiambreria: 'fiambres quesos embutidos',
+  dietetica: 'natural granel suplementos',
+  almacen_natural: 'granel saludable',
+  granja: 'huevos pollo campo',
+  ropa: 'indumentaria remeras pantalones boutique vestimenta',
+  calzado: 'zapatos zapatillas botas',
+  deportiva: 'deportes gimnasio running futbol',
+  lenceria: 'ropa interior corseteria',
+  blanqueria: 'sabanas toallas acolchados',
+  marroquineria: 'carteras mochilas bolsos cuero',
+  uniformes: 'trabajo laboral ambo',
+  rotiseria: 'comida milanesas empanadas viandas',
+  cafeteria: 'cafe desayuno merienda',
+  pizzeria: 'pizza empanadas',
+  panaderia: 'pan facturas confiteria pasteleria tortas',
+  heladeria: 'helado postres',
+  bar: 'cerveceria pub tragos',
+  foodtruck: 'carrito comida hamburguesas',
+  casa_comidas: 'viandas menu almuerzo',
+  peluqueria: 'pelo corte peinado salon belleza',
+  barberia: 'barba corte hombre',
+  manicura: 'uñas manos pedicura',
+  estetica: 'belleza depilacion cosmetologia facial',
+  tatuajes: 'tattoo piercing tatuador',
+  masajes: 'spa relax quiromasaje',
+  odontologia: 'dentista dientes odontologo',
+  kinesiologia: 'kinesiologo rehabilitacion fisioterapia',
+  nutricion: 'nutricionista dieta',
+  psicologia: 'psicologo terapia',
+  veterinaria: 'veterinario animales mascotas',
+  gomeria: 'cubiertas neumaticos ruedas',
+  taller: 'mecanico auto service arreglo',
+  chapa: 'chapista pintura auto',
+  lavadero: 'lavado autos ropa lavanderia',
+  fotografia: 'fotos fotografo estudio',
+  canchas: 'futbol padel tenis alquiler',
+  clases: 'profesor particular apoyo idiomas',
+  entrenador: 'personal trainer gimnasio',
+  costurera: 'modista arreglos sastre',
+  soda: 'sodero agua bidones dispenser',
+  gas: 'garrafa envasado',
+  hielo: 'cubos barra',
+  lacteos: 'leche queso yogur',
+  panaderia_reparto: 'pan reparto comercios',
+  diarios: 'revistas diario',
+  'leña': 'carbon parrilla',
+  distribuidora: 'mayorista reparto comercios',
+  mayorista: 'distribuidora por mayor',
+  otro: ''
+};
+
 
 const RUBROS = [
   ['kiosco', 'Kiosco', 'Golosinas, bebidas'],
@@ -2824,12 +2907,28 @@ function pintarFamilias() {
   }).join('');
   $('familias').style.display = 'grid';
   $('rubros').style.display = 'none';
+  const br = document.getElementById('buscadorRubro');
+  if (br) br.style.display = 'none';
   $('btnVolverFamilias').style.display = 'none';
   $('lblRubro').textContent = 'Que tipo de negocio es';
 }
 
 function elegirFamilia(f) {
   familiaElegida = f;
+
+  if (f === 'buscar') {
+    $('lblRubro').textContent = 'Que vendes o que hacés';
+    $('familias').style.display = 'none';
+    $('rubros').style.display = 'none';
+    $('buscadorRubro').style.display = 'block';
+    $('btnVolverFamilias').style.display = 'block';
+    $('txtRubro').value = '';
+    $('sugerencias').innerHTML = '';
+    setTimeout(function () { $('txtRubro').focus(); }, 150);
+    return;
+  }
+
+  $('buscadorRubro').style.display = 'none';
   const lista = RUBROS_POR_FAMILIA[f] || [];
 
   if (lista.length === 1) { elegirRubro(lista[0]); return; }
@@ -2860,7 +2959,8 @@ document.getElementById('btnVolverFamilias').onclick = function () {
 
 function elegirRubro(id) {
   rubroElegido = id;
-  if (familiaElegida) elegirFamilia(familiaElegida);
+  if (familiaElegida === 'buscar') buscarRubro();
+  else if (familiaElegida) elegirFamilia(familiaElegida);
   else pintarFamilias();
   $('btnEmpezar').disabled = false;
   revisarPasoHorarios();
@@ -6832,6 +6932,43 @@ function mandarRecordatorio(id) {
   yaAvisados[id] = true;
   pintarRecordatorios();
 }
+
+function buscarRubro() {
+  const t = norm($('txtRubro').value.trim());
+  const cont = $('sugerencias');
+
+  if (t.length < 2) { cont.innerHTML = ''; return; }
+
+  const puntajes = [];
+  RUBROS.forEach(function (r) {
+    const nombre = norm(r[1]);
+    const sin = norm(SINONIMOS[r[0]] || '');
+    let p = 0;
+    if (nombre.indexOf(t) === 0) p = 100;
+    else if (nombre.indexOf(t) >= 0) p = 70;
+    else if ((' ' + sin).indexOf(' ' + t) >= 0) p = 60;
+    else if (sin.indexOf(t) >= 0) p = 40;
+    if (p > 0) puntajes.push({ r: r, p: p });
+  });
+
+  puntajes.sort(function (a, b) { return b.p - a.p; });
+  const top = puntajes.slice(0, 6);
+
+  if (top.length === 0) {
+    cont.innerHTML = '<div class="vacio" style="padding:20px;">No encontramos nada parecido.<br>' +
+      '<button class="rubro-btn" style="margin-top:14px;" onclick="elegirRubro(\'otro\')">' +
+      'Seguir sin elegir rubro<span class="que">Despues configuras las funciones</span></button></div>';
+    return;
+  }
+
+  cont.innerHTML = '<div class="rubros">' + top.map(function (x) {
+    return '<button class="rubro-btn' + (rubroElegido === x.r[0] ? ' on' : '') + '" ' +
+      'onclick="elegirRubro(\'' + x.r[0] + '\')">' + esc(x.r[1]) +
+      '<span class="que">' + esc(x.r[2]) + '</span></button>';
+  }).join('') + '</div>';
+}
+
+document.getElementById('txtRubro').addEventListener('input', buscarRubro);
 
 /* ══ Vuelto ══ */
 
