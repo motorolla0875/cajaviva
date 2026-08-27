@@ -3848,6 +3848,10 @@ function abrirProd(id) {
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
   $('pNombre').placeholder = 'Ej: Coca Cola 500ml';
+  $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  $('wrapStockIni').style.display = p ? 'none' : 'block';
+  $('wrapCostoProd').style.display = '';
+  $('hintMargen').style.display = '';
   $('wrapCategoria').style.display = (p && p.es_insumo) ? 'none' : 'block';
   setTimeout(function () { aplicarModoPieza(p); }, 0);
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
