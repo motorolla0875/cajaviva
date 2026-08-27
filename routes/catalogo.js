@@ -12,6 +12,7 @@ try { db.exec('ALTER TABLE productos ADD COLUMN en_catalogo INTEGER NOT NULL DEF
 try { db.exec("ALTER TABLE negocio ADD COLUMN tema TEXT NOT NULL DEFAULT 'verde'"); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN banner TEXT'); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 
 function armarSlug(t) {
   return String(t || '').toLowerCase().normalize('NFD')

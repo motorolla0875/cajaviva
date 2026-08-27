@@ -370,6 +370,26 @@ function aplicarFondo(nombre) {
   r.style.setProperty('--muted', f.muted);
 }
 
+const FONDOS_CAT = {
+  claro:  { bg: '#FAFAF7', panel: '#FFFFFF', panel2: '#F3F2EE', line: '#E4E2DA', text: '#2C2C2A', muted: '#6E6D67' },
+  blanco: { bg: '#FFFFFF', panel: '#FFFFFF', panel2: '#F7F7F7', line: '#E8E8E8', text: '#1F1F1F', muted: '#707070' },
+  gris:   { bg: '#EFEFEF', panel: '#FFFFFF', panel2: '#F5F5F5', line: '#DDDDDD', text: '#242424', muted: '#6B6B6B' },
+  arena:  { bg: '#F5F0E8', panel: '#FFFDF9', panel2: '#EFE8DC', line: '#E0D7C6', text: '#33302A', muted: '#75705F' },
+  oscuro: { bg: '#1A1A1A', panel: '#262626', panel2: '#303030', line: '#3A3A3A', text: '#F0F0F0', muted: '#A0A0A0' },
+  carbon: { bg: '#0D0D0D', panel: '#1C1C1C', panel2: '#252525', line: '#333333', text: '#EDEDED', muted: '#999999' }
+};
+
+function aplicarFondo(nombre) {
+  const f = FONDOS_CAT[nombre] || FONDOS_CAT.claro;
+  const r = document.documentElement;
+  r.style.setProperty('--bg', f.bg);
+  r.style.setProperty('--panel', f.panel);
+  r.style.setProperty('--panel-2', f.panel2);
+  r.style.setProperty('--line', f.line);
+  r.style.setProperty('--text', f.text);
+  r.style.setProperty('--muted', f.muted);
+}
+
 function aplicarTema(nombre) {
   const t = TEMAS_CAT[nombre] || TEMAS_CAT.verde;
   const r = document.documentElement;
