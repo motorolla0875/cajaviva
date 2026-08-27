@@ -5162,7 +5162,16 @@ function pintarFiltrosProd() {
     }
     html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
   } else {
-    html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+    const nPeso = productos.filter(function (p) { return p.unidad && p.unidad !== 'unidad'; }).length;
+    const nUnidad = productos.filter(function (p) { return !p.unidad || p.unidad === 'unidad'; }).length;
+
+    if (nPeso > 0 && nUnidad > 0) {
+      html += '<button class="' + (filtroProd === 'unidad' ? 'on' : '') + '" onclick="filtrarProductos(\'unidad\')">Por unidad (' + nUnidad + ')</button>';
+      html += '<button class="' + (filtroProd === 'peso' ? 'on' : '') + '" onclick="filtrarProductos(\'peso\')">Por peso (' + nPeso + ')</button>';
+      html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+    } else {
+      html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+    }
   }
 
   if (revisar > 0) {
@@ -5190,6 +5199,8 @@ function filtrarProductos(cual) {
 function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
   if (filtroProd === 'insumos') return !!p.es_insumo;
+  if (filtroProd === 'peso') return !!(p.unidad && p.unidad !== 'unidad');
+  if (filtroProd === 'unidad') return !p.unidad || p.unidad === 'unidad';
   if (filtroProd === 'recetas') return !!p.tiene_receta;
   if (filtroProd === 'simples') return !p.es_insumo;
   if (p.es_servicio || p.tiene_receta) return false;
