@@ -3798,12 +3798,18 @@ function pintarLista() {
       (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
       (p.es_insumo ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">insumo</span>' : '') +
       (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
-      (esServ ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">servicio</span>'
+      (p.tiene_receta ? (function () {
+          const n = alcanzaPara(p.id);
+          if (n === null) return '';
+          return '<div class="alerta-stock' + (n <= 0 ? ' cero' : '') + '">' +
+            (n <= 0 ? 'Faltan insumos' : 'Alcanza para ' + n) + '</div>';
+        })()
+        : esServ ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">servicio</span>'
         : p.stock < 0 ? '<div class="alerta-stock cero">Faltan ' + fmtCant(-p.stock) + ' - revisa</div>'
         : p.stock === 0 ? '<div class="alerta-stock cero">Sin stock</div>'
         : (p.stock_minimo > 0 && p.stock <= p.stock_minimo) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
       '</div>' +
-      (esServ ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
+      ((esServ || p.tiene_receta) ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
       '<div class="acc">' +
         (esServ ? '' :
           '<button onclick="abrirStock(\'' + p.id + '\',\'reponer\')">+</button>' +
