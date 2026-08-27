@@ -1902,8 +1902,9 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subStock"></p>
     <div id="msgStock"></div>
     <div id="wrapVarStock" style="display:none;">
-      <label>A que talle o color</label>
-      <select id="sVariante"></select>
+      <label>Cuanto de cada uno</label>
+      <div id="listaVarStock" style="max-height:280px; overflow-y:auto;"></div>
+      <div class="var-total"><span>Total a cargar</span><b id="totalVarStock">0</b></div>
     </div>
 
     <label>Cantidad</label>
@@ -7148,6 +7149,15 @@ document.getElementById('btnTallesProd').onclick = async function () {
   $('modalVariantes').classList.add('on');
   cargarVariantes();
 };
+
+function sumarVarStock() {
+  let t = 0;
+  document.querySelectorAll('#listaVarStock input[data-var]').forEach(function (c) {
+    t += num(c.value);
+  });
+  const el = document.getElementById('totalVarStock');
+  if (el) el.textContent = fmtCant(t);
+}
 
 /* ══ Vuelto ══ */
 
