@@ -2818,7 +2818,9 @@ function pintarRubros() {
 }
 
 function pintarFamilias() {
-  $('familias').innerHTML = FAMILIAS.map(function (f) {
+  $('familias').innerHTML = FAMILIAS.filter(function (f) {
+    return f[0] !== 'otro';
+  }).map(function (f) {
     return '<button class="rubro-btn" onclick="elegirFamilia(\'' + f[0] + '\')">' +
       esc(f[1]) + '<span class="que">' + esc(f[2]) + '</span></button>';
   }).join('');
