@@ -3863,8 +3863,8 @@ function abrirProd(id) {
   $('wrapTalles').style.display = conTalles ? 'block' : 'none';
   if (conTalles) $('wrapStockIni').style.display = 'none';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
-  $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
-  $('wrapRecetaProd').style.display = (cap('cap_recetas') && !esInsumoActual) ? 'block' : 'none';
+  $('wrapEsInsumo').style.display = 'none';
+  $('wrapRecetaProd').style.display = (p && p.tiene_receta) ? 'block' : 'none';
   $('btnRecetaProd').textContent = (p && p.tiene_receta) ? 'Ver o cambiar insumos' : 'Elegir que lleva';
   $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
   esServicioActual = !!(p && p.es_servicio);
