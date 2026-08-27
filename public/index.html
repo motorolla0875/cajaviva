@@ -8568,8 +8568,6 @@ $('btnGuardarReserva').onclick = async function () {
     if (reservaEditando) await api('PUT', '/alquileres/' + reservaEditando, cuerpo);
     else await api('POST', '/alquileres', cuerpo);
 
-    $('resDesde').value = cuerpo.desde;
-    $('resHasta').value = cuerpo.hasta;
     $('modalReserva').classList.remove('on');
     tabReservas = 'reservas';
     Array.prototype.forEach.call($('tabsReservas').children, function (x, i) {
