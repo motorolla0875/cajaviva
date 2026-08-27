@@ -9,6 +9,8 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN catalogo_activo INTEGER NOT NULL D
 try { db.exec('ALTER TABLE negocio ADD COLUMN whatsapp TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN catalogo_mensaje TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN en_catalogo INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN tema TEXT NOT NULL DEFAULT 'verde'"); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN banner TEXT'); } catch (e) {}
 
 function armarSlug(t) {
   return String(t || '').toLowerCase().normalize('NFD')
@@ -21,7 +23,7 @@ function armarSlug(t) {
 router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
-    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia
+    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
   res.json({ config: n || null, productos: cuantos.n });
@@ -44,14 +46,16 @@ router.put('/config', (req, res) => {
 
   db.prepare(`
     UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
-      alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?
+      alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?,
+      tema = ?
     WHERE user_id = ?
   `).run(slug, req.body?.activo ? 1 : 0, req.body?.whatsapp || null,
          req.body?.mensaje || null, req.body?.alias || null, req.body?.titular || null,
-         req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0, req.userId);
+         req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0,
+         req.body?.tema || 'verde', req.userId);
 
   res.json(db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
-    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia
+    alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner
     FROM negocio WHERE user_id = ?`).get(req.userId));
 });
 
@@ -108,7 +112,9 @@ router.get('/publico/:slug', (req, res) => {
       alias_pago: n.alias_pago,
       titular_pago: n.titular_pago,
       acepta_transferencia: n.acepta_transferencia,
-      acepta_efectivo: n.acepta_efectivo
+      acepta_efectivo: n.acepta_efectivo,
+      tema: n.tema || 'verde',
+      banner: n.banner
     },
     productos: productos
   });

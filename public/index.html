@@ -699,6 +699,25 @@
   .mapeo-fila label { flex: 0 0 130px; font-size: 13px; color: var(--muted); margin: 0; }
   .mapeo-fila select { flex: 1; min-width: 0; }
 
+  .temas { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tema-btn {
+    width: 46px; height: 46px; border-radius: 12px;
+    border: 2px solid transparent; position: relative;
+  }
+  .tema-btn.on { border-color: var(--text); }
+  .tema-btn.on::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; font-weight: 700;
+  }
+  .banner-prev {
+    width: 100%; aspect-ratio: 3 / 1; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; color: var(--muted); font-size: 13px;
+  }
+  .banner-prev img { width: 100%; height: 100%; object-fit: cover; }
+
   .dias-cat { display: flex; gap: 5px; flex-wrap: wrap; }
   .dias-cat button {
     flex: 1; min-width: 40px; padding: 10px 3px; border-radius: 9px;
@@ -2028,6 +2047,20 @@
 
     <label>Mensaje de bienvenida (opcional)</label>
     <input type="text" id="catMensaje" placeholder="Ej: Hacemos envios sin cargo">
+
+    <div class="seccion">Como se ve</div>
+
+    <label>Color</label>
+    <div class="temas" id="temasCat"></div>
+
+    <label>Banner de portada (opcional)</label>
+    <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button type="button" class="btn-foto" id="btnSubirBanner" style="flex:1;">Subir imagen</button>
+      <button type="button" class="btn-foto borrar" id="btnBorrarBanner" style="display:none; flex:0 0 auto; padding:10px 16px;">Quitar</button>
+    </div>
+    <input type="file" id="archBanner" accept="image/*" style="display:none;">
+    <p class="hint">Ideal 1200 x 400 pixeles. Se comprime sola.</p>
 
     <div id="bloqueTurnosWeb" style="display:none;">
       <div class="seccion">Turnos por la web</div>
@@ -5756,6 +5789,9 @@ $('btnCatalogo').onclick = async function () {
     $('swTransfer').classList.toggle('on', aceptaTransfer);
     $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
+    temaCat = c.tema || 'verde';
+    pintarTemas();
+    mostrarBanner(c.banner || null);
     await cargarTurnosWeb();
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -5792,7 +5828,8 @@ $('btnGuardarCatalogo').onclick = async function () {
       alias: $('catAlias').value.trim() || null,
       titular: $('catTitular').value.trim() || null,
       efectivo: aceptaEfectivo,
-      transferencia: aceptaTransfer
+      transferencia: aceptaTransfer,
+      tema: temaCat
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -7283,6 +7320,87 @@ document.getElementById('btnProvRapido').onclick = async function () {
     pintarSelectProvProd();
     $('pProveedor').value = r.id;
     avisar('Proveedor creado');
+  } catch (e) { avisar(e.message, true); }
+};
+
+/* ══ Aspecto del catalogo ══ */
+
+const TEMAS = [
+  ['verde', '#1D9E75'],
+  ['azul', '#2563EB'],
+  ['naranja', '#EA580C'],
+  ['violeta', '#7C3AED'],
+  ['rojo', '#DC2626'],
+  ['negro', '#1F2937']
+];
+
+let temaCat = 'verde';
+
+function pintarTemas() {
+  const el = document.getElementById('temasCat');
+  if (!el) return;
+  el.innerHTML = TEMAS.map(function (t) {
+    return '<button type="button" class="tema-btn' + (temaCat === t[0] ? ' on' : '') + '" ' +
+      'style="background:' + t[1] + ';" onclick="elegirTema(\'' + t[0] + '\')"></button>';
+  }).join('');
+}
+
+function elegirTema(t) {
+  temaCat = t;
+  pintarTemas();
+}
+
+function mostrarBanner(url) {
+  const p = document.getElementById('bannerPrev');
+  if (url) {
+    p.innerHTML = '<img src="' + url + '?t=' + Date.now() + '">';
+    document.getElementById('btnBorrarBanner').style.display = 'block';
+    document.getElementById('btnSubirBanner').textContent = 'Cambiar imagen';
+  } else {
+    p.innerHTML = '<span>Sin banner</span>';
+    document.getElementById('btnBorrarBanner').style.display = 'none';
+    document.getElementById('btnSubirBanner').textContent = 'Subir imagen';
+  }
+}
+
+document.getElementById('btnSubirBanner').onclick = function () {
+  document.getElementById('archBanner').click();
+};
+
+document.getElementById('archBanner').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f) return;
+
+  const btn = document.getElementById('btnSubirBanner');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const img = await comprimirImagen(f, 1200, 0.82);
+    const fd = new FormData();
+    fd.append('foto', img, 'banner.webp');
+
+    const r = await fetch(API + '/fotos/banner', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+
+    mostrarBanner(d.banner);
+    avisar('Banner guardado');
+  } catch (err) { avisar(err.message, true); }
+
+  btn.disabled = false;
+  e.target.value = '';
+};
+
+document.getElementById('btnBorrarBanner').onclick = async function () {
+  if (!confirm('Quitar el banner?')) return;
+  try {
+    await api('DELETE', '/fotos/banner');
+    mostrarBanner(null);
+    avisar('Banner quitado');
   } catch (e) { avisar(e.message, true); }
 };
 

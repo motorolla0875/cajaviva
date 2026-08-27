@@ -109,4 +109,34 @@ router.post('/sena/:turnoId', subir.single('foto'), (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── banner del catalogo ──
+router.post('/banner', subir.single('foto'), (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
+
+  const n = db.prepare('SELECT banner FROM negocio WHERE user_id = ?').get(req.userId);
+  if (n && n.banner) {
+    const ruta = path.join(CARPETA, path.basename(n.banner));
+    if (fs.existsSync(ruta)) { try { fs.unlinkSync(ruta); } catch (e) {} }
+  }
+
+  const nombre = uuidv4() + '-banner.webp';
+  guardarArchivo(req.file.buffer, nombre);
+  db.prepare('UPDATE negocio SET banner = ? WHERE user_id = ?').run('/fotos/' + nombre, req.userId);
+
+  res.json({ banner: '/fotos/' + nombre });
+});
+
+router.delete('/banner', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  const n = db.prepare('SELECT banner FROM negocio WHERE user_id = ?').get(req.userId);
+  if (n && n.banner) {
+    const ruta = path.join(CARPETA, path.basename(n.banner));
+    if (fs.existsSync(ruta)) { try { fs.unlinkSync(ruta); } catch (e) {} }
+  }
+  db.prepare('UPDATE negocio SET banner = NULL WHERE user_id = ?').run(req.userId);
+  res.json({ ok: true });
+});
+
 module.exports = router;
