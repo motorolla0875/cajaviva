@@ -3836,6 +3836,8 @@ function pintarLista() {
       (margen !== null ? '<div class="margen">Ganas ' + plata(p.precio_venta - p.precio_costo) + ' (' + margen + '%)</div>' : '') +
       (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
       (p.es_insumo ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">insumo</span>' : '') +
+      (p.unidad && p.unidad !== 'unidad'
+        ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">por ' + esc(p.unidad) + '</span>' : '') +
       (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
       (p.tiene_receta ? (function () {
           const n = alcanzaPara(p.id);
