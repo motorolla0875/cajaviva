@@ -353,7 +353,7 @@
     border-radius: 20px; font-weight: 500; margin-top: 2px;
   }
   .venc-chip.rojo { background: var(--danger-soft); color: var(--danger); }
-  .venc-chip.naranja { background: #FDF3E3; color: #8A5A0F; }
+  .venc-chip.naranja { background: var(--warn-soft); color: var(--warn-text); }
 
   .chip-servicio {
     display: inline-block; font-size: 11px; padding: 2px 8px;
@@ -7730,6 +7730,9 @@ let temaApp = localStorage.getItem('cajaviva_tema_app') || 'verde';
 function aplicarTemaApp(nombre) {
   const t = TEMAS_APP[nombre] || TEMAS_APP.verde;
   const r = document.documentElement;
+  const oscuro = nombre === 'oscuro';
+  r.style.setProperty('--warn-soft', oscuro ? '#3A2E15' : '#FDF3E3');
+  r.style.setProperty('--warn-text', oscuro ? '#E8B84B' : '#8A5A0F');
   r.style.setProperty('--accent', t.a);
   r.style.setProperty('--accent-dark', t.d);
   r.style.setProperty('--accent-soft', t.s);
