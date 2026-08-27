@@ -3942,7 +3942,8 @@ $('btnGuardarStock').onclick = async function () {
           await api('POST', '/gastos', {
             descripcion: 'Reposicion de stock',
             monto: total * num($('sCosto').value),
-            fecha: hoyISO()
+            fecha: hoyISO(),
+            proveedorId: $('sProveedor').value || null
           });
         } catch (e) {}
       }
