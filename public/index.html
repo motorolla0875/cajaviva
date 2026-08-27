@@ -715,6 +715,12 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .aviso-talles {
+    padding: 12px 14px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent-dark);
+    font-size: 12.5px; line-height: 1.4;
+  }
+
   .foto-wrap {
     display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   }
@@ -3708,6 +3714,16 @@ function abrirProd(id) {
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
   $('btnVariantes').style.display = cap('cap_variantes') ? 'block' : 'none';
   $('btnVariantes').textContent = p ? 'Talles y colores' : 'Guardar y cargar talles';
+
+  // con talles, el stock se carga desde las combinaciones
+  const wsi = $('wrapStockIni');
+  if (cap('cap_variantes')) {
+    wsi.innerHTML = '<label>Stock</label>' +
+      '<div class="aviso-talles">Cargá los talles primero. El stock se define ahi.</div>';
+  } else if (!wsi.querySelector('#pStock')) {
+    wsi.innerHTML = '<label>Stock inicial</label>' +
+      '<input type="text" id="pStock" inputmode="decimal" placeholder="0">';
+  }
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
   $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
@@ -3759,7 +3775,7 @@ async function guardarProductoRapido() {
   if (editandoId) {
     await api('PUT', '/productos/' + editandoId, cuerpo);
   } else {
-    cuerpo.stockInicial = num($('pStock').value);
+    cuerpo.stockInicial = $('pStock') ? num($('pStock').value) : 0;
     const r = await api('POST', '/productos', cuerpo);
     editandoId = r.id;
   }
@@ -3793,7 +3809,7 @@ $('btnGuardarProd').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
-    else { cuerpo.stockInicial = num($('pStock').value); await api('POST', '/productos', cuerpo); }
+    else { cuerpo.stockInicial = $('pStock') ? num($('pStock').value) : 0; await api('POST', '/productos', cuerpo); }
     await cargarProductos(); await cargarCategorias();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
