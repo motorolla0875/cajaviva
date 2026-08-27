@@ -2579,6 +2579,11 @@ let editandoId = null, editandoCli = null;
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
 let periodo = 'hoy';
 let filtroProd = 'todos';
+
+function filtroInicial() {
+  const hayEspeciales = productos.some(function (p) { return p.es_insumo || p.tiene_receta; });
+  if (hayEspeciales && filtroProd === 'todos') filtroProd = 'simples';
+}
 let ventasCaja = [], gastosCaja = [];
 let rubroElegido = '';
 
@@ -3783,6 +3788,7 @@ function pintarLista() {
   let lista = productos.filter(pasaFiltroProd);
   if (t) lista = lista.filter(function (p) { return norm(p.nombre).indexOf(t) >= 0; });
 
+  filtroInicial();
   pintarFiltrosProd();
 
   if (lista.length === 0) {
@@ -5115,18 +5121,19 @@ function pintarFiltrosProd() {
   const nInsumos = productos.filter(function (p) { return p.es_insumo; }).length;
   const nSimples = productos.filter(function (p) { return !p.tiene_receta && !p.es_insumo && !p.es_servicio; }).length;
 
-  let html = '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+  let html = '';
 
   if (nInsumos > 0 || nRecetas > 0) {
-    if (nSimples > 0) {
-      html += '<button class="' + (filtroProd === 'simples' ? 'on' : '') + '" onclick="filtrarProductos(\'simples\')">Para vender (' + nSimples + ')</button>';
-    }
+    html += '<button class="' + (filtroProd === 'simples' ? 'on' : '') + '" onclick="filtrarProductos(\'simples\')">Para vender (' + nSimples + ')</button>';
     if (nRecetas > 0) {
       html += '<button class="' + (filtroProd === 'recetas' ? 'on' : '') + '" onclick="filtrarProductos(\'recetas\')">Recetas (' + nRecetas + ')</button>';
     }
     if (nInsumos > 0) {
       html += '<button class="' + (filtroProd === 'insumos' ? 'on' : '') + '" onclick="filtrarProductos(\'insumos\')">Insumos (' + nInsumos + ')</button>';
     }
+    html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
+  } else {
+    html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
   }
 
   if (revisar > 0) {
