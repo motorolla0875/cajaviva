@@ -1960,6 +1960,9 @@
       </select>
     </div>
 
+    <button type="button" id="btnMasOpciones" class="mas-op">Mas opciones</button>
+
+    <div id="masOpciones" style="display:none;">
     <div id="wrapBarras">
       <label>Codigo de barras (opcional)</label>
       <div style="display:flex; gap:8px;">
@@ -1970,6 +1973,8 @@
     <div id="wrapMinimo">
       <label>Avisar cuando el stock baje de</label>
       <input type="text" id="pMinimo" inputmode="decimal" placeholder="0">
+    </div>
+
     </div>
 
     <div class="cap-item" id="wrapEsInsumo" style="display:none;">
@@ -3888,6 +3893,12 @@ function abrirProd(id) {
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
+  const mo = document.getElementById('masOpciones');
+  if (mo) {
+    mo.style.display = 'none';
+    const bmo = document.getElementById('btnMasOpciones');
+    if (bmo) { bmo.classList.remove('abierto'); bmo.textContent = 'Mas opciones'; }
+  }
   $('pNombre').placeholder = 'Ej: Coca Cola 500ml';
   $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
@@ -8011,7 +8022,8 @@ function revisarProveedor(sugerir) {
   if (!w) return;
   const cat = document.getElementById('pCategoria');
   const hayCat = !!(cat && cat.value);
-  w.style.display = hayCat ? 'block' : 'none';
+  const hayProv = (proveedores || []).length > 0;
+  w.style.display = (hayCat && hayProv) ? 'block' : 'none';
 
   if (!hayCat || !sugerir) return;
 
@@ -8044,6 +8056,14 @@ document.getElementById('pCategoria').addEventListener('change', function () {
   if (hint) hint.style.display = 'none';
   revisarProveedor(true);
 });
+
+document.getElementById('btnMasOpciones').onclick = function () {
+  const m = document.getElementById('masOpciones');
+  const abierto = m.style.display !== 'none';
+  m.style.display = abierto ? 'none' : 'block';
+  this.classList.toggle('abierto', !abierto);
+  this.textContent = abierto ? 'Mas opciones' : 'Menos opciones';
+};
 
 /* ══ Vuelto ══ */
 
