@@ -528,6 +528,10 @@
     .fila .acc button { width: 38px; height: 38px; }
   }
   .fila .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .fila .datos .lleva {
+    color: var(--accent-dark); font-size: 12px;
+    margin-top: 2px; line-height: 1.3;
+  }
   .fila .datos .desc-p {
     color: var(--muted); font-size: 12px; font-style: italic;
     margin-top: 1px; line-height: 1.3;
@@ -3797,6 +3801,8 @@ function pintarLista() {
       '<div class="datos">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-p">' + esc(p.notas) + '</div>' : '') +
+      (p.tiene_receta && textoReceta(p.id)
+        ? '<div class="lleva">Lleva ' + esc(textoReceta(p.id)) + '</div>' : '') +
       (cap('cap_vencimientos') ? avisoVence(p) : '') +
       '<div class="d">' + plata(p.precio_venta) +
         (esServ
@@ -7921,6 +7927,14 @@ document.getElementById('btnNuevaReceta').onclick = function () {
   $('wrapRecetaProd').style.display = 'block';
   $('hintCostoReceta').textContent = 'El costo sale de los insumos que elijas.';
 };
+
+function textoReceta(prodId) {
+  const r = recetasCache[prodId];
+  if (!r || r.length === 0) return '';
+  return r.map(function (i) {
+    return fmtCant(i.cantidad) + ' ' + i.nombre;
+  }).join(' + ');
+}
 
 function alcanzaPara(prodId) {
   const receta = recetasCache[prodId];
