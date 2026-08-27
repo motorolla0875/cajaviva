@@ -2463,6 +2463,8 @@ const RUBROS_POR_FAMILIA = {
   mostrador_sin: ['libreria', 'ferreteria', 'pinturería', 'bazar', 'regalos',
                   'jugueteria', 'bijouterie', 'repuestos', 'electronica',
                   'corralon', 'vivero'],
+  peso_venc: ['fiambreria', 'polleria', 'pescaderia', 'lacteos', 'granja'],
+  peso_sin: ['verduleria', 'carniceria', 'dietetica', 'almacen_natural'],
   peso: ['verduleria', 'carniceria', 'polleria', 'pescaderia', 'fiambreria',
          'dietetica', 'almacen_natural', 'granja'],
   ropa: ['ropa', 'calzado', 'deportiva', 'lenceria', 'blanqueria',
@@ -2899,6 +2901,20 @@ let conVencimiento = null;
 function elegirFamilia(f) {
   familiaElegida = f;
 
+  // peso tambien pregunta por vencimientos
+  if (f === 'peso' && conVencimiento === null) {
+    $('lblRubro').textContent = 'Tus productos se vencen?';
+    $('familias').innerHTML =
+      '<button class="rubro-btn" onclick="elegirVencPeso(true)">Si, se vencen' +
+        '<span class="que">Fiambres, lacteos, pollo, pescado</span></button>' +
+      '<button class="rubro-btn" onclick="elegirVencPeso(false)">No se vencen' +
+        '<span class="que">Verduras, carne, granel</span></button>';
+    $('familias').style.display = 'grid';
+    $('rubros').style.display = 'none';
+    $('btnVolverFamilias').style.display = 'block';
+    return;
+  }
+
   // mostrador pregunta primero si maneja vencimientos
   if (f === 'mostrador' && conVencimiento === null) {
     $('lblRubro').textContent = 'Tus productos se vencen?';
@@ -2928,6 +2944,27 @@ function elegirFamilia(f) {
       '<span class="que">' + esc(r[2]) + '</span></button>';
   }).join('');
 
+  $('familias').style.display = 'none';
+  $('rubros').style.display = 'grid';
+  $('btnVolverFamilias').style.display = 'block';
+}
+
+function elegirVencPeso(si) {
+  conVencimiento = si;
+  familiaElegida = si ? 'peso_venc' : 'peso_sin';
+  pintarSubRubros(familiaElegida);
+}
+
+function pintarSubRubros(fam) {
+  const lista = RUBROS_POR_FAMILIA[fam] || [];
+  $('lblRubro').textContent = 'Que vendes';
+  $('rubros').innerHTML = lista.map(function (id) {
+    const r = RUBROS.filter(function (x) { return x[0] === id; })[0];
+    if (!r) return '';
+    return '<button class="rubro-btn' + (rubroElegido === r[0] ? ' on' : '') + '" ' +
+      'onclick="elegirRubro(\'' + r[0] + '\')">' + esc(r[1]) +
+      '<span class="que">' + esc(r[2]) + '</span></button>';
+  }).join('');
   $('familias').style.display = 'none';
   $('rubros').style.display = 'grid';
   $('btnVolverFamilias').style.display = 'block';
@@ -2966,6 +3003,7 @@ function elegirRubro(id) {
   rubroElegido = id;
   if (familiaElegida === 'mostrador_venc') elegirVenc(true);
   else if (familiaElegida === 'mostrador_sin') elegirVenc(false);
+  else if (familiaElegida === 'peso_venc' || familiaElegida === 'peso_sin') pintarSubRubros(familiaElegida);
   else if (familiaElegida) elegirFamilia(familiaElegida);
   else pintarFamilias();
   $('btnEmpezar').disabled = false;
