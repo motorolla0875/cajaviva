@@ -715,6 +715,12 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .btn-talles {
+    width: 100%; padding: 13px; border-radius: 10px;
+    border: 1px solid var(--accent); background: var(--accent-soft);
+    color: var(--accent-dark); font-size: 14px; font-weight: 500;
+  }
+
   .foto-wrap {
     display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   }
@@ -3706,8 +3712,21 @@ function abrirProd(id) {
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
-  $('btnVariantes').style.display = cap('cap_variantes') ? 'block' : 'none';
-  $('btnVariantes').textContent = p ? 'Talles y colores' : 'Guardar y cargar talles';
+  // con talles: el boton reemplaza el stock y el de abajo no se muestra
+  $('btnVariantes').style.display = 'none';
+
+  const wsi = $('wrapStockIni');
+  if (cap('cap_variantes')) {
+    wsi.innerHTML = '<label>Stock</label>' +
+      '<button type="button" class="btn-talles" onclick="abrirTallesDesdeProd()">' +
+      'Cargar talles y colores</button>' +
+      '<p class="hint">El stock se define ahi, por cada talle.</p>';
+    wsi.style.display = 'block';
+  } else if (!wsi.querySelector('#pStock')) {
+    wsi.innerHTML = '<label>Stock inicial</label>' +
+      '<input type="text" id="pStock" inputmode="decimal" placeholder="0">';
+    wsi.style.display = p ? 'none' : 'block';
+  }
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
   $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
@@ -3759,7 +3778,7 @@ async function guardarProductoRapido() {
   if (editandoId) {
     await api('PUT', '/productos/' + editandoId, cuerpo);
   } else {
-    cuerpo.stockInicial = num($('pStock').value);
+    cuerpo.stockInicial = $('pStock') ? num($('pStock').value) : 0;
     const r = await api('POST', '/productos', cuerpo);
     editandoId = r.id;
   }
@@ -3793,7 +3812,7 @@ $('btnGuardarProd').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
-    else { cuerpo.stockInicial = num($('pStock').value); await api('POST', '/productos', cuerpo); }
+    else { cuerpo.stockInicial = $('pStock') ? num($('pStock').value) : 0; await api('POST', '/productos', cuerpo); }
     await cargarProductos(); await cargarCategorias();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
@@ -7058,6 +7077,29 @@ function mandarRecordatorio(id) {
 
   yaAvisados[id] = true;
   pintarRecordatorios();
+}
+
+async function abrirTallesDesdeProd() {
+  // si el producto no existe todavia, se guarda por dentro
+  if (!editandoId) {
+    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    try {
+      await guardarProductoRapido();
+    } catch (e) {
+      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+      return;
+    }
+  }
+
+  varProdId = editandoId;
+  $('msgVar').innerHTML = '';
+  $('varTalles').value = '';
+  $('varColores').value = '';
+  $('modalVariantes').classList.add('on');
+  cargarVariantes();
 }
 
 /* ══ Vuelto ══ */
