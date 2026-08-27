@@ -3781,6 +3781,7 @@ function abrirProd(id) {
   $('pProveedor').value = p && p.proveedor_id ? p.proveedor_id : '';
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
+  fotoPendiente = null;
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
   $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
   $('pVence').value = p && p.vence ? p.vence : '';
@@ -3879,8 +3880,30 @@ $('btnGuardarProd').onclick = async function () {
   const btn = $('btnGuardarProd');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    if (editandoId) await api('PUT', '/productos/' + editandoId, cuerpo);
-    else { cuerpo.stockInicial = ($('pStock') ? num($('pStock').value) : 0); await api('POST', '/productos', cuerpo); }
+    let idNuevo = editandoId;
+    if (editandoId) {
+      await api('PUT', '/productos/' + editandoId, cuerpo);
+    } else {
+      cuerpo.stockInicial = ($('pStock') ? num($('pStock').value) : 0);
+      const r = await api('POST', '/productos', cuerpo);
+      idNuevo = r.id;
+    }
+
+    // si habia una foto esperando, se sube ahora
+    if (fotoPendiente && idNuevo) {
+      try {
+        const fd = new FormData();
+        fd.append('grande', fotoPendiente.grande, 'g.webp');
+        fd.append('mini', fotoPendiente.mini, 'm.webp');
+        await fetch(API + '/fotos/producto/' + idNuevo, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token },
+          body: fd
+        });
+      } catch (e) {}
+      fotoPendiente = null;
+    }
+
     await cargarProductos(); await cargarCategorias(); await cargarProveedores();
     $('modalProd').classList.remove('on');
     avisar(editandoId ? 'Producto actualizado' : 'Producto creado');
@@ -6296,9 +6319,30 @@ function comprimirImagen(archivo, ladoMax, calidad) {
   });
 }
 
+let fotoPendiente = null;
+
 $('archivoFoto').onchange = async function (e) {
   const f = e.target.files[0];
-  if (!f || !editandoId) return;
+  if (!f) return;
+
+  if (!f.type.startsWith('image/')) { avisar('Elegi una imagen', true); return; }
+
+  // producto nuevo: la foto espera al guardado
+  if (!editandoId) {
+    const btn = $('btnSubirFoto');
+    btn.disabled = true; btn.textContent = 'Procesando...';
+    try {
+      const grande = await comprimirImagen(f, 800, 0.8);
+      const mini = await comprimirImagen(f, 240, 0.75);
+      fotoPendiente = { grande: grande, mini: mini };
+      $('previewFoto').innerHTML = '<img src="' + URL.createObjectURL(grande) + '">';
+      $('btnSubirFoto').textContent = 'Cambiar foto';
+      $('btnBorrarFoto').style.display = 'block';
+    } catch (err) { avisar(err.message, true); }
+    btn.disabled = false;
+    e.target.value = '';
+    return;
+  }
 
   if (!f.type.startsWith('image/')) {
     avisar('Elegi una imagen', true); return;
@@ -6350,29 +6394,14 @@ function mostrarFotoProd(url) {
   }
 }
 
-$('btnSubirFoto').onclick = async function () {
-  // si el producto todavia no existe, se guarda solo
-  if (!editandoId) {
-    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
-      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
-      return;
-    }
-    const b = this;
-    b.disabled = true; b.textContent = 'Guardando...';
-    try {
-      await guardarProductoRapido();
-    } catch (e) {
-      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
-      b.disabled = false; b.textContent = 'Agregar foto';
-      return;
-    }
-    b.disabled = false; b.textContent = 'Agregar foto';
-  }
-
-  $('archivoFoto').click();
-};
+$('btnSubirFoto').onclick = function () { $('archivoFoto').click(); };
 
 $('btnBorrarFoto').onclick = async function () {
+  if (fotoPendiente) {
+    fotoPendiente = null;
+    mostrarFotoProd(null);
+    return;
+  }
   if (!editandoId || !confirm('Borrar la foto?')) return;
   try {
     await api('DELETE', '/fotos/producto/' + editandoId);
