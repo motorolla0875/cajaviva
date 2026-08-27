@@ -719,15 +719,6 @@
   .fondo-btn.on { border-color: var(--text); }
   .fondo-btn i { display: block; flex: 1; }
 
-  .fuente-btn {
-    display: block; width: 100%; text-align: left;
-    padding: 12px 14px; margin-bottom: 7px; border-radius: 10px;
-    border: 1px solid var(--line); background: var(--panel); color: var(--text);
-  }
-  .fuente-btn.on { border-color: var(--accent); background: var(--accent-soft); }
-  .fuente-btn b { display: block; font-size: 16px; font-weight: 600; }
-  .fuente-btn small { color: var(--muted); font-size: 12px; }
-
   .banner-prev {
     width: 100%; aspect-ratio: 3 / 1; border-radius: 12px;
     border: 1px solid var(--line); background: var(--panel-2);
@@ -2073,9 +2064,6 @@
 
     <label>Fondo</label>
     <div class="fondos" id="fondosCat"></div>
-
-    <label>Tipografia</label>
-    <div id="fuentesCat"></div>
 
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
@@ -5815,10 +5803,8 @@ $('btnCatalogo').onclick = async function () {
     mostrarLink(c.slug);
     temaCat = c.tema || 'verde';
     fondoCat = c.fondo || 'claro';
-    fuenteCat = c.fuente || 'sistema';
     pintarTemas();
     pintarFondos();
-    pintarFuentes();
     mostrarBanner(c.banner || null);
     await cargarTurnosWeb();
   } catch (e) {
@@ -5858,8 +5844,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
       tema: temaCat,
-      fondo: fondoCat,
-      fuente: fuenteCat
+      fondo: fondoCat
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -7486,33 +7471,6 @@ function pintarFondos() {
 function elegirFondo(f) {
   fondoCat = f;
   pintarFondos();
-}
-
-const FUENTES = [
-  ['sistema',   'Estandar',   'Simple y clara',        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"],
-  ['moderna',   'Moderna',    'Redondeada, amigable',  "'Nunito', sans-serif"],
-  ['elegante',  'Elegante',   'Con serifas, clasica',  "'Playfair Display', serif"],
-  ['tecnica',   'Tecnica',    'Recta, prolija',        "'Inter', sans-serif"],
-  ['fuerte',    'Fuerte',     'Gruesa, llamativa',     "'Archivo Black', sans-serif"],
-  ['manuscrita','Manuscrita', 'Informal, artesanal',   "'Caveat', cursive"]
-];
-
-let fuenteCat = 'sistema';
-
-function pintarFuentes() {
-  const el = document.getElementById('fuentesCat');
-  if (!el) return;
-  el.innerHTML = FUENTES.map(function (f) {
-    return '<button type="button" class="fuente-btn' + (fuenteCat === f[0] ? ' on' : '') + '" ' +
-      'onclick="elegirFuente(\'' + f[0] + '\')">' +
-      '<b style="font-family:' + f[3].replace(/"/g, "'") + ';">' + f[1] + '</b>' +
-      '<small>' + f[2] + '</small></button>';
-  }).join('');
-}
-
-function elegirFuente(f) {
-  fuenteCat = f;
-  pintarFuentes();
 }
 
 /* ══ Vuelto ══ */
