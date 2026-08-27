@@ -5131,7 +5131,7 @@ function pintarFiltrosProd() {
 
   const nRecetas = productos.filter(function (p) { return p.tiene_receta; }).length;
   const nInsumos = productos.filter(function (p) { return p.es_insumo; }).length;
-  const nSimples = productos.filter(function (p) { return !p.tiene_receta && !p.es_insumo && !p.es_servicio; }).length;
+  const nSimples = productos.filter(function (p) { return !p.es_insumo; }).length;
 
   let html = '';
 
@@ -5174,7 +5174,7 @@ function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
   if (filtroProd === 'insumos') return !!p.es_insumo;
   if (filtroProd === 'recetas') return !!p.tiene_receta;
-  if (filtroProd === 'simples') return !p.tiene_receta && !p.es_insumo && !p.es_servicio;
+  if (filtroProd === 'simples') return !p.es_insumo;
   if (p.es_servicio || p.tiene_receta) return false;
   if (filtroProd === 'negativo') return p.stock < 0;
   if (filtroProd === 'cero') return p.stock === 0;
