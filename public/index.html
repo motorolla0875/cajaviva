@@ -1901,6 +1901,11 @@
     <h3 id="tituloStock">Reponer stock</h3>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subStock"></p>
     <div id="msgStock"></div>
+    <div id="wrapVarStock" style="display:none;">
+      <label>A que talle o color</label>
+      <select id="sVariante"></select>
+    </div>
+
     <label>Cantidad</label>
     <input type="text" id="sCantidad" inputmode="decimal" placeholder="0">
     <div id="wrapCosto">
@@ -3862,6 +3867,24 @@ function abrirStock(id, modo) {
   pintarSelectProv();
   calcularGasto();
   $('modalStock').classList.add('on');
+
+  // si tiene talles, elegir a cual va
+  const wv = $('wrapVarStock');
+  if (p.tiene_variantes) {
+    wv.style.display = 'block';
+    $('sVariante').innerHTML = '<option value="">Cargando...</option>';
+    api('GET', '/variantes/producto/' + id).then(function (d) {
+      $('sVariante').innerHTML = d.variantes.map(function (v) {
+        return '<option value="' + v.id + '">' + esc(v.nombre) +
+          ' (' + fmtCant(v.stock) + ')</option>';
+      }).join('');
+    }).catch(function () {
+      $('sVariante').innerHTML = '<option value="">No se pudieron cargar</option>';
+    });
+  } else {
+    wv.style.display = 'none';
+    $('sVariante').innerHTML = '';
+  }
 }
 $('btnCerrarStock').onclick = function () { $('modalStock').classList.remove('on'); };
 
@@ -3871,6 +3894,32 @@ $('btnGuardarStock').onclick = async function () {
   const btn = $('btnGuardarStock');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
+    const varId = $('wrapVarStock').style.display !== 'none' ? $('sVariante').value : null;
+
+    // con talles, el stock va a la variante elegida
+    if (varId) {
+      await api('POST', '/variantes/' + varId + '/reponer', {
+        cantidad: stockModo === 'reponer' ? cantidad : -cantidad
+      });
+
+      // el gasto de la compra se anota igual
+      if (stockModo === 'reponer' && $('sCosto').value.trim() !== '') {
+        try {
+          await api('POST', '/gastos', {
+            descripcion: 'Reposicion de stock',
+            monto: cantidad * num($('sCosto').value),
+            fecha: hoyISO()
+          });
+        } catch (e) {}
+      }
+
+      await cargarProductos();
+      $('modalStock').classList.remove('on');
+      avisar(stockModo === 'reponer' ? 'Stock repuesto' : 'Stock descontado');
+      btn.disabled = false; btn.textContent = 'Confirmar';
+      return;
+    }
+
     if (stockModo === 'reponer') {
       await api('POST', '/productos/' + stockProdId + '/reponer', {
         cantidad: cantidad, fecha: hoyISO(),
