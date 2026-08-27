@@ -5457,6 +5457,19 @@ function limpiarFilas(filas, iTitulos) {
       .filter(function (c, j) { return c && c === titulos[j]; }).length;
     if (igualATitulo >= 2) continue;
 
+    // corta si empieza otro bloque distinto (ej: clientes abajo de productos)
+    if (llenas.length === 1 && String(f[0] || '').trim().length > 3) {
+      const t = norm(String(f[0]));
+      const otrosBloques = ['cliente', 'proveedor', 'gasto', 'venta', 'deuda', 'fiado', 'pago'];
+      if (otrosBloques.some(function (x) { return t.indexOf(x) >= 0; })) break;
+    }
+
+    // o si aparece un encabezado nuevo con columnas distintas
+    const parecenTitulos = llenas.length >= 3 && llenas.every(function (c) {
+      return isNaN(num(c)) && String(c).trim().length > 1;
+    });
+    if (parecenTitulos && salida.length > 2) break;
+
     salida.push(f);
   }
 
