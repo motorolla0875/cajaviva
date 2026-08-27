@@ -6700,7 +6700,7 @@ $('archivoFoto').onchange = async function (e) {
     const btn = $('btnSubirFoto');
     btn.disabled = true; btn.textContent = 'Procesando...';
     try {
-      const grande = await comprimirImagen(f, 800, 0.8);
+      const grande = await comprimirImagen(f, 800, 0.7);
       const mini = await comprimirImagen(f, 240, 0.75);
       fotoPendiente = { grande: grande, mini: mini };
       $('previewFoto').innerHTML = '<img src="' + URL.createObjectURL(grande) + '">';
@@ -6720,7 +6720,7 @@ $('archivoFoto').onchange = async function (e) {
   btn.disabled = true; btn.textContent = 'Procesando...';
 
   try {
-    const grande = await comprimirImagen(f, 800, 0.8);
+    const grande = await comprimirImagen(f, 800, 0.7);
     const mini = await comprimirImagen(f, 240, 0.75);
 
     const fd = new FormData();

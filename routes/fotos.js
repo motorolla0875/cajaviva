@@ -15,7 +15,7 @@ try { db.exec('ALTER TABLE productos ADD COLUMN foto_mini TEXT'); } catch (e) {}
 // el navegador ya manda la imagen chica y comprimida
 const subir = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 600 * 1024 }
+  limits: { fileSize: 3 * 1024 * 1024 }
 });
 
 function guardarArchivo(buffer, nombre) {
