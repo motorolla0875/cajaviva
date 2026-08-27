@@ -1133,6 +1133,17 @@
     color: var(--text); font-size: 13px;
   }
 
+  .grupo-cap {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .grupo-cap:first-child { margin-top: 6px; }
+  .grupo-cap.apagado { opacity: .4; }
+  .hijos {
+    border-left: 2px solid var(--line); padding-left: 14px; margin-left: 4px;
+  }
+  .hijos.apagado { opacity: .45; pointer-events: none; }
+
   .cap-item {
     display: flex; align-items: center; gap: 12px;
     padding: 13px 0; border-bottom: 1px solid var(--line);
@@ -3090,11 +3101,31 @@ $('btnConfigNegocio').onclick = function () {
 $('btnCerrarNegocio').onclick = function () { $('modalNegocio').classList.remove('on'); };
 
 function pintarCaps() {
-  $('listaCaps').innerHTML = CAPS_INFO.map(function (c) {
-    return '<div class="cap-item"><div class="txt">' +
+  function item(id, sangria) {
+    const c = CAPS_INFO.filter(function (x) { return x[0] === id; })[0];
+    if (!c) return '';
+    return '<div class="cap-item' + (sangria ? ' hijo' : '') + '"><div class="txt">' +
       '<div class="n">' + c[1] + '</div><div class="d">' + c[2] + '</div></div>' +
       '<button class="switch' + (cap(c[0]) ? ' on' : '') + '" onclick="alternarCap(\'' + c[0] + '\')"></button></div>';
-  }).join('');
+  }
+
+  const puedeVender = cap('cap_mostrador') || cap('cap_reparto');
+
+  $('listaCaps').innerHTML =
+    '<div class="grupo-cap">Como vendes</div>' +
+    item('cap_mostrador') +
+    item('cap_reparto') +
+
+    '<div class="grupo-cap' + (puedeVender ? '' : ' apagado') + '">Como son tus productos</div>' +
+    '<div class="hijos' + (puedeVender ? '' : ' apagado') + '">' +
+      item('cap_peso', true) +
+      item('cap_vencimientos', true) +
+      item('cap_variantes', true) +
+      item('cap_recetas', true) +
+    '</div>' +
+
+    '<div class="grupo-cap">Ademas</div>' +
+    item('cap_turnos');
 }
 
 async function alternarCap(nombre) {
