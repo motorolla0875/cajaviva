@@ -4237,8 +4237,14 @@ let ventaAbierta = null;
 async function verVenta(id) {
   const r = rango();
   try {
-    const ventas = await api('GET', '/ventas?desde=' + r.desde + '&hasta=' + r.hasta);
-    const v = ventas.filter(function (x) { return x.id === id; })[0];
+    // primero buscar en lo que ya esta cargado
+    let v = (ventasCaja || []).filter(function (x) { return x.id === id; })[0];
+
+    if (!v) {
+      const ventas = await api('GET', '/ventas?desde=' + r.desde + '&hasta=' + r.hasta);
+      v = ventas.filter(function (x) { return x.id === id; })[0];
+    }
+
     if (!v) { avisar('No se encontro la venta', true); return; }
     ventaAbierta = v;
     pintarVentaDet();
@@ -4297,6 +4303,7 @@ async function refrescarTrasEditar() {
   const id = ventaAbierta.id;
   await cargarProductos(); await cargarResumen(); await cargarClientes();
   await cargarCaja();
+  ventaAbierta = null;
   await verVenta(id);
   avisar('Venta actualizada');
 }
