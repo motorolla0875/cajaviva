@@ -3322,12 +3322,12 @@ function agregar(id) {
 }
 
 function cambiarCantidad(id, delta) {
-  const l = carrito.filter(function (x) { return x.clave === id; })[0];
+  const l = lineaDelCarrito(id);
   if (!l) return;
   const p = productos.filter(function (x) { return x.id === l.productoId; })[0];
   const nueva = l.cantidad + delta;
   if (nueva <= 0) {
-    carrito = carrito.filter(function (x) { return x.clave !== id; });
+    carrito = carrito.filter(function (x) { return (x.clave || x.productoId) !== id; });
   } else {
     l.cantidad = nueva;
     if (p && !p.es_servicio && nueva > p.stock) {
@@ -3348,8 +3348,16 @@ function fijarCantidad(id, valor) {
   pintarCarrito();
 }
 
+function lineaDelCarrito(id) {
+  return carrito.filter(function (x) {
+    return (x.clave || x.productoId) === id;
+  })[0];
+}
+
 function quitarDelCarrito(id) {
-  carrito = carrito.filter(function (x) { return x.clave !== id; });
+  carrito = carrito.filter(function (x) {
+    return (x.clave || x.productoId) !== id;
+  });
   pintarCarrito();
 }
 
