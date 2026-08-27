@@ -95,7 +95,7 @@ router.get('/publico/:slug', (req, res) => {
            p.foto_mini AS foto, p.foto_url AS foto_grande, c.nombre AS categoria
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id
-    WHERE p.user_id = ? AND p.activo = 1 AND p.en_catalogo = 1
+    WHERE p.user_id = ? AND p.activo = 1 AND p.en_catalogo = 1 AND p.es_insumo = 0
     ORDER BY c.nombre, p.nombre
   `).all(n.user_id);
 
