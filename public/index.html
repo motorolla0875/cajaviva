@@ -3884,7 +3884,7 @@ function abrirProd(id) {
   $('pNotas').value = p && p.notas ? p.notas : '';
   pintarSelectProvProd();
   $('pProveedor').value = p && p.proveedor_id ? p.proveedor_id : '';
-  revisarProveedor();
+  revisarProveedor(false);
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
@@ -8006,14 +8006,44 @@ async function cargarRecetas() {
   }
 }
 
-function revisarProveedor() {
+function revisarProveedor(sugerir) {
   const w = document.getElementById('wrapProveedor');
   if (!w) return;
   const cat = document.getElementById('pCategoria');
-  w.style.display = (cat && cat.value) ? 'block' : 'none';
+  const hayCat = !!(cat && cat.value);
+  w.style.display = hayCat ? 'block' : 'none';
+
+  if (!hayCat || !sugerir) return;
+
+  // sugerir el proveedor mas usado en esa categoria
+  const cuenta = {};
+  productos.forEach(function (p) {
+    if (p.categoria_id !== cat.value || !p.proveedor_id) return;
+    cuenta[p.proveedor_id] = (cuenta[p.proveedor_id] || 0) + 1;
+  });
+
+  let mejor = null, max = 0;
+  Object.keys(cuenta).forEach(function (id) {
+    if (cuenta[id] > max) { max = cuenta[id]; mejor = id; }
+  });
+
+  const sel = document.getElementById('pProveedor');
+  if (mejor && sel && !sel.value) {
+    sel.value = mejor;
+    const nom = (proveedores || []).filter(function (x) { return x.id === mejor; })[0];
+    const hint = document.getElementById('hintProv');
+    if (hint && nom) {
+      hint.textContent = 'Sugerido: es a quien mas le comprás de esta categoria. Podes cambiarlo.';
+      hint.style.display = 'block';
+    }
+  }
 }
 
-document.getElementById('pCategoria').addEventListener('change', revisarProveedor);
+document.getElementById('pCategoria').addEventListener('change', function () {
+  const hint = document.getElementById('hintProv');
+  if (hint) hint.style.display = 'none';
+  revisarProveedor(true);
+});
 
 /* ══ Vuelto ══ */
 
