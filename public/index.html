@@ -3201,6 +3201,16 @@ function pintarCaps() {
       '<div class="n">' + c[1] + '</div><div class="d">' + c[2] + '</div></div>' +
       '<button class="switch' + (cap(c[0]) ? ' on' : '') + '" onclick="alternarCap(\'' + c[0] + '\')"></button></div>';
 
+    if (c[0] === 'cap_peso' && cap('cap_peso')) {
+      const cp = cap('cap_vencimientos');
+      html += '<div class="sub-opciones">' +
+        '<button class="op-venc' + (cp ? '' : ' on') + '" onclick="ponerVencimientos(false)">' +
+          'Sin vencimiento<span>Verduras, carne, granel</span></button>' +
+        '<button class="op-venc' + (cp ? ' on' : '') + '" onclick="ponerVencimientos(true)">' +
+          'Con vencimiento<span>Fiambres, lacteos, pollo</span></button>' +
+        '</div>';
+    }
+
     // los dos botones justo despues de mostrador
     if (c[0] === 'cap_mostrador' && cap('cap_mostrador')) {
       const con = cap('cap_vencimientos');
