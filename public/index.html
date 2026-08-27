@@ -1662,6 +1662,7 @@
         <button class="on" data-tab="disponibles">Disponibilidad</button>
         <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
+        <button data-tab="historial">Ya estuvieron</button>
       </div>
 
       <div id="listaReservas"></div>
@@ -8376,7 +8377,7 @@ async function cargarReservas() {
   $('listaReservas').innerHTML = '<div class="vacio">Cargando...</div>';
 
   const rf = document.querySelector('#v-reservas .rango-fechas');
-  if (rf) rf.style.display = tabReservas === 'todas' ? 'none' : 'flex';
+  if (rf) rf.style.display = (tabReservas === 'todas' || tabReservas === 'historial') ? 'none' : 'flex';
 
   try {
     if (tabReservas === 'disponibles') {
@@ -8409,18 +8410,31 @@ async function cargarReservas() {
         }).join('');
 
     } else {
-      const filas = tabReservas === 'todas'
-        ? await api('GET', '/alquileres/proximas')
-        : await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
+      let filas, totalHist = 0;
+      if (tabReservas === 'historial') {
+        const d = await api('GET', '/alquileres/historial');
+        filas = d.items; totalHist = d.total;
+      } else if (tabReservas === 'todas') {
+        filas = await api('GET', '/alquileres/proximas');
+      } else {
+        filas = await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
+      }
 
       if (filas.length === 0) {
         $('listaReservas').innerHTML = '<div class="vacio">' +
-          (tabReservas === 'todas' ? 'No tenes reservas proximas.' : 'No hay reservas en estas fechas.') +
+          (tabReservas === 'historial' ? 'Todavia no hay estadias terminadas.'
+            : tabReservas === 'todas' ? 'No tenes reservas proximas.'
+            : 'No hay reservas en estas fechas.') +
           '</div>';
         return;
       }
 
-      $('listaReservas').innerHTML = filas.map(function (x) {
+      const encabezado = tabReservas === 'historial' && totalHist > 0
+        ? '<div class="rep-resumen"><div class="lbl">Facturado en alquileres</div>' +
+          '<div class="val">' + plata(totalHist) + '</div></div>'
+        : '';
+
+      $('listaReservas').innerHTML = encabezado + filas.map(function (x) {
         let acc = '';
         if (x.estado === 'reservada') {
           acc = '<button class="ppal" onclick="cambiarReserva(\'' + x.id + '\',\'en_curso\')">Entro</button>' +

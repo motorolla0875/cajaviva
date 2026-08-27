@@ -206,4 +206,21 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── historial: lo que ya paso ──
+router.get('/historial', (req, res) => {
+  const filas = db.prepare(`
+    SELECT r.*, p.nombre AS unidad_nombre
+    FROM reservas r
+    LEFT JOIN productos p ON p.id = r.unidad_id
+    WHERE r.user_id = ? AND (r.estado IN ('terminada','cancelada') OR r.hasta < ?)
+    ORDER BY r.desde DESC LIMIT 100
+  `).all(req.userId, hoyISO());
+
+  const total = filas.filter(function (r) { return r.estado === 'terminada'; })
+    .reduce(function (s, r) { return s + r.total; }, 0);
+
+  res.json({ items: filas, total: total });
+});
+
 module.exports = router;
