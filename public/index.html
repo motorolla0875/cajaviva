@@ -5109,7 +5109,9 @@ function aplicarModoEmpleado(nombre) {
 /* ══ Filtros de la lista de productos ══ */
 
 function pintarFiltrosProd() {
-  const conStock = productos.filter(function (p) { return !p.es_servicio; });
+  const conStock = productos.filter(function (p) {
+    return !p.es_servicio && !p.tiene_receta;
+  });
   const negativos = conStock.filter(function (p) { return p.stock < 0; }).length;
   const sinStock = conStock.filter(function (p) { return p.stock === 0; }).length;
   const bajos = conStock.filter(function (p) {
@@ -5163,7 +5165,7 @@ function pasaFiltroProd(p) {
   if (filtroProd === 'insumos') return !!p.es_insumo;
   if (filtroProd === 'recetas') return !!p.tiene_receta;
   if (filtroProd === 'simples') return !p.tiene_receta && !p.es_insumo && !p.es_servicio;
-  if (p.es_servicio) return false;
+  if (p.es_servicio || p.tiene_receta) return false;
   if (filtroProd === 'negativo') return p.stock < 0;
   if (filtroProd === 'cero') return p.stock === 0;
   if (filtroProd === 'bajo') return p.stock > 0 && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
