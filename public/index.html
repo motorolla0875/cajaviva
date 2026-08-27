@@ -3873,42 +3873,57 @@ function abrirStock(id, modo) {
   const wv = $('wrapVarStock');
   if (p.tiene_variantes) {
     wv.style.display = 'block';
-    $('sVariante').innerHTML = '<option value="">Cargando...</option>';
+    $('listaVarStock').innerHTML = '<div class="vacio">Cargando...</div>';
     api('GET', '/variantes/producto/' + id).then(function (d) {
-      $('sVariante').innerHTML = d.variantes.map(function (v) {
-        return '<option value="' + v.id + '">' + esc(v.nombre) +
-          ' (' + fmtCant(v.stock) + ')</option>';
+      $('listaVarStock').innerHTML = d.variantes.map(function (v) {
+        return '<div class="var-fila">' +
+          '<div class="nom">' + esc(v.nombre) +
+          '<small>hay ' + fmtCant(v.stock) + '</small></div>' +
+          '<input type="text" inputmode="decimal" placeholder="0" ' +
+            'data-var="' + v.id + '" oninput="sumarVarStock()"></div>';
       }).join('');
+      sumarVarStock();
     }).catch(function () {
-      $('sVariante').innerHTML = '<option value="">No se pudieron cargar</option>';
+      $('listaVarStock').innerHTML = '<div class="vacio">No se pudieron cargar.</div>';
     });
   } else {
     wv.style.display = 'none';
-    $('sVariante').innerHTML = '';
+    $('listaVarStock').innerHTML = '';
   }
 }
 $('btnCerrarStock').onclick = function () { $('modalStock').classList.remove('on'); };
 
 $('btnGuardarStock').onclick = async function () {
   const cantidad = num($('sCantidad').value);
-  if (cantidad <= 0) { $('msgStock').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
+  if ($('wrapVarStock').style.display === 'none' && cantidad <= 0) { $('msgStock').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
   const btn = $('btnGuardarStock');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    const varId = $('wrapVarStock').style.display !== 'none' ? $('sVariante').value : null;
+    // con talles: cargar cada combinacion
+    if ($('wrapVarStock').style.display !== 'none') {
+      const campos = $('listaVarStock').querySelectorAll('input[data-var]');
+      let total = 0, hechos = 0;
 
-    // con talles, el stock va a la variante elegida
-    if (varId) {
-      await api('POST', '/variantes/' + varId + '/reponer', {
-        cantidad: stockModo === 'reponer' ? cantidad : -cantidad
-      });
+      for (const c of campos) {
+        const n = num(c.value);
+        if (n <= 0) continue;
+        await api('POST', '/variantes/' + c.dataset.var + '/reponer', {
+          cantidad: stockModo === 'reponer' ? n : -n
+        });
+        total += n; hechos++;
+      }
 
-      // el gasto de la compra se anota igual
+      if (hechos === 0) {
+        $('msgStock').innerHTML = '<div class="msg">Poné cuanto lleva alguna combinacion.</div>';
+        btn.disabled = false; btn.textContent = 'Confirmar';
+        return;
+      }
+
       if (stockModo === 'reponer' && $('sCosto').value.trim() !== '') {
         try {
           await api('POST', '/gastos', {
             descripcion: 'Reposicion de stock',
-            monto: cantidad * num($('sCosto').value),
+            monto: total * num($('sCosto').value),
             fecha: hoyISO()
           });
         } catch (e) {}
