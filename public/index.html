@@ -6350,8 +6350,25 @@ function mostrarFotoProd(url) {
   }
 }
 
-$('btnSubirFoto').onclick = function () {
-  if (!editandoId) { avisar('Guarda el producto primero', true); return; }
+$('btnSubirFoto').onclick = async function () {
+  // si el producto todavia no existe, se guarda solo
+  if (!editandoId) {
+    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    const b = this;
+    b.disabled = true; b.textContent = 'Guardando...';
+    try {
+      await guardarProductoRapido();
+    } catch (e) {
+      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+      b.disabled = false; b.textContent = 'Agregar foto';
+      return;
+    }
+    b.disabled = false; b.textContent = 'Agregar foto';
+  }
+
   $('archivoFoto').click();
 };
 
