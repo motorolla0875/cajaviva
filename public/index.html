@@ -1820,6 +1820,13 @@
       <button type="button" id="btnCatRapida" title="Nueva categoria"
         style="flex-shrink:0; width:48px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft); color:var(--accent-dark); font-size:22px; line-height:1;">+</button>
     </div>
+
+    <label>Proveedor (opcional)</label>
+    <div style="display:flex; gap:8px;">
+      <select id="pProveedor" style="flex:1; min-width:0;"><option value="">Sin proveedor</option></select>
+      <button type="button" id="btnProvRapido" title="Nuevo proveedor"
+        style="flex-shrink:0; width:48px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft); color:var(--accent-dark); font-size:22px; line-height:1;">+</button>
+    </div>
     <div class="fila2">
       <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
       <div id="wrapCostoProd"><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
@@ -3721,6 +3728,8 @@ function abrirProd(id) {
   $('pStock').value = '';
   $('pBarras').value = p && p.codigo_barras ? p.codigo_barras : '';
   $('pNotas').value = p && p.notas ? p.notas : '';
+  pintarSelectProvProd();
+  $('pProveedor').value = p && p.proveedor_id ? p.proveedor_id : '';
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
@@ -3776,6 +3785,7 @@ async function guardarProductoRapido() {
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
+    proveedorId: $('pProveedor').value || null,
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
@@ -3809,6 +3819,7 @@ $('btnGuardarProd').onclick = async function () {
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
+    proveedorId: $('pProveedor').value || null,
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
@@ -7232,6 +7243,29 @@ function sumarVarVenta(varId, d) {
 function cerrarElegirVar() {
   $('modalElegirVar').classList.remove('on');
 }
+
+function pintarSelectProvProd() {
+  const sel = document.getElementById('pProveedor');
+  if (!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Sin proveedor</option>' +
+    (proveedores || []).map(function (p) {
+      return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>';
+    }).join('');
+  sel.value = actual;
+}
+
+document.getElementById('btnProvRapido').onclick = async function () {
+  const nombre = prompt('Nombre del proveedor:');
+  if (!nombre || !nombre.trim()) return;
+  try {
+    const r = await api('POST', '/proveedores', { nombre: nombre.trim() });
+    await cargarProveedores();
+    pintarSelectProvProd();
+    $('pProveedor').value = r.id;
+    avisar('Proveedor creado');
+  } catch (e) { avisar(e.message, true); }
+};
 
 /* ══ Vuelto ══ */
 

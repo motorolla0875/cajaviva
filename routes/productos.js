@@ -4,6 +4,8 @@ const db = require('../db');
 
 const router = express.Router();
 
+try { db.exec('ALTER TABLE productos ADD COLUMN proveedor_id TEXT'); } catch (e) {}
+
 try { db.exec('ALTER TABLE productos ADD COLUMN vence TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN aviso_dias INTEGER NOT NULL DEFAULT 7'); } catch (e) {}
 
@@ -12,9 +14,10 @@ function hoyISO() { return new Date().toISOString().slice(0, 10); }
 // ── listar productos activos ──
 router.get('/', (req, res) => {
   const rows = db.prepare(`
-    SELECT p.*, c.nombre AS categoria_nombre
+    SELECT p.*, c.nombre AS categoria_nombre, pr.nombre AS proveedor_nombre
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id
+    LEFT JOIN proveedores pr ON pr.id = p.proveedor_id
     WHERE p.user_id = ? AND p.activo = 1
     ORDER BY p.created_at DESC
   `).all(req.userId);
@@ -30,7 +33,7 @@ router.post('/', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
           unidad, stockInicial, stockMinimo, notas, vence, avisoDias, esInsumo,
-          esServicio, duracion } = req.body || {};
+          esServicio, duracion, proveedorId } = req.body || {};
 
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Falta el nombre del producto.' });
 
@@ -44,13 +47,13 @@ router.post('/', (req, res) => {
   db.prepare(`
     INSERT INTO productos (id, user_id, categoria_id, nombre, codigo_barras,
       precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias, es_insumo,
-      es_servicio, duracion)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      es_servicio, duracion, proveedor_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, categoriaId || null, nombre.trim(), codigoBarras || null,
          pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
          parseInt(avisoDias) || 7, esInsumo ? 1 : 0,
-         esServicio ? 1 : 0, parseInt(duracion) || null);
+         esServicio ? 1 : 0, parseInt(duracion) || null, proveedorId || null);
 
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {
@@ -67,7 +70,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
-          unidad, stockMinimo, notas, vence, avisoDias, esServicio, duracion } = req.body || {};
+          unidad, stockMinimo, notas, vence, avisoDias, esServicio, duracion, proveedorId } = req.body || {};
 
   const prod = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!prod) return res.status(404).json({ error: 'Producto no encontrado.' });
@@ -92,7 +95,8 @@ router.put('/:id', (req, res) => {
   db.prepare(`
     UPDATE productos SET nombre = ?, categoria_id = ?, codigo_barras = ?,
       precio_venta = ?, precio_costo = ?, unidad = ?, stock_minimo = ?,
-      notas = ?, vence = ?, aviso_dias = ?, es_servicio = ?, duracion = ?, updated_at = datetime('now')
+      notas = ?, vence = ?, aviso_dias = ?, es_servicio = ?, duracion = ?,
+      proveedor_id = ?, updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
   `).run(nombre.trim(), categoriaId || null, codigoBarras || null,
          parseFloat(precioVenta) || 0,
@@ -100,6 +104,7 @@ router.put('/:id', (req, res) => {
          unidad || 'unidad', parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
          parseInt(avisoDias) || 7, esServicio ? 1 : 0, parseInt(duracion) || null,
+         proveedorId || null,
          req.params.id, req.userId);
 
   res.json({ ok: true });
