@@ -1656,6 +1656,7 @@
       <div class="chips" id="tabsReservas">
         <button class="on" data-tab="disponibles">Disponibilidad</button>
         <button data-tab="reservas">Reservas</button>
+        <button data-tab="todas">Todas mis reservas</button>
       </div>
 
       <div id="listaReservas"></div>
@@ -8369,6 +8370,9 @@ async function cargarReservas() {
   const r = rangoReservas();
   $('listaReservas').innerHTML = '<div class="vacio">Cargando...</div>';
 
+  const rf = document.querySelector('#v-reservas .rango-fechas');
+  if (rf) rf.style.display = tabReservas === 'todas' ? 'none' : 'flex';
+
   try {
     if (tabReservas === 'disponibles') {
       const d = await api('GET', '/alquileres/disponibles?desde=' + r.desde + '&hasta=' + r.hasta);
@@ -8400,10 +8404,14 @@ async function cargarReservas() {
         }).join('');
 
     } else {
-      const filas = await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
+      const filas = tabReservas === 'todas'
+        ? await api('GET', '/alquileres/proximas')
+        : await api('GET', '/alquileres?desde=' + r.desde + '&hasta=' + r.hasta);
 
       if (filas.length === 0) {
-        $('listaReservas').innerHTML = '<div class="vacio">No hay reservas en estas fechas.</div>';
+        $('listaReservas').innerHTML = '<div class="vacio">' +
+          (tabReservas === 'todas' ? 'No tenes reservas proximas.' : 'No hay reservas en estas fechas.') +
+          '</div>';
         return;
       }
 
