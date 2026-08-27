@@ -3373,15 +3373,15 @@ function pintarCarrito() {
       const porPeso = cap('cap_peso') && l.unidad && l.unidad !== 'unidad';
       const control = porPeso
         ? '<input type="text" inputmode="decimal" value="' + fmtCant(l.cantidad) + '" ' +
-          'onchange="fijarCantidad(\'' + l.clave + '\', this.value)">'
-        : '<button onclick="cambiarCantidad(\'' + l.clave + '\',-1)">-</button>' +
+          'onchange="fijarCantidad(\'' + (l.clave || l.productoId) + '\', this.value)">'
+        : '<button onclick="cambiarCantidad(\'' + (l.clave || l.productoId) + '\',-1)">-</button>' +
           '<span>' + l.cantidad + '</span>' +
-          '<button onclick="cambiarCantidad(\'' + l.clave + '\',1)">+</button>';
+          '<button onclick="cambiarCantidad(\'' + (l.clave || l.productoId) + '\',1)">+</button>';
       return '<div class="linea"><div class="info"><div class="n">' + esc(l.nombre) + '</div>' +
         '<div class="d">' + plata(l.precio) + (porPeso ? ' /' + l.unidad : ' c/u') + '</div></div>' +
         '<div class="cant">' + control + '</div>' +
         '<div class="sub">' + plata(l.precio * l.cantidad) + '</div>' +
-        '<button class="quitar-linea" onclick="quitarDelCarrito(\'' + l.clave + '\')">&#10005;</button></div>';
+        '<button class="quitar-linea" onclick="quitarDelCarrito(\'' + (l.clave || l.productoId) + '\')">&#10005;</button></div>';
     }).join('');
   }
   const t = totalCarrito();
