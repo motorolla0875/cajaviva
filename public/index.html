@@ -1545,6 +1545,7 @@
         <button class="btn-nuevo gris" id="btnProveedores">Proveedores</button>
         <button class="btn-nuevo gris" id="btnImportarProd" title="Importar desde Excel">&#8681;</button>
         <button class="btn-nuevo gris" id="btnPrecios" title="Cambiar precios">$</button>
+        <button class="btn-nuevo gris" id="btnNuevoInsumo" style="display:none;">+ Insumo</button>
       </div>
       <div class="buscador buscador-con-scan">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
@@ -2974,6 +2975,9 @@ function aplicarCapacidades() {
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
 
+  const bi = document.getElementById('btnNuevoInsumo');
+  if (bi) bi.style.display = cap('cap_recetas') ? '' : 'none';
+
   const bn = document.getElementById('btnNuevo');
   if (bn) bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
 
@@ -3825,6 +3829,7 @@ function abrirProd(id) {
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
+  $('pNombre').placeholder = 'Ej: Coca Cola 500ml';
   setTimeout(function () { aplicarModoPieza(p); }, 0);
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
   $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
@@ -7781,6 +7786,17 @@ function avisoVence(p) {
   if (dias <= limite) return '<span class="venc-chip naranja">Vence en ' + dias + (dias === 1 ? ' dia' : ' dias') + '</span>';
   return '';
 }
+
+document.getElementById('btnNuevoInsumo').onclick = function () {
+  abrirProd(null);
+  esInsumoActual = true;
+  $('swEsInsumo').classList.add('on');
+  $('tituloProd').textContent = 'Nuevo insumo';
+  $('pNombre').placeholder = 'Ej: Pan de hamburguesa';
+  // un insumo no se vende suelto
+  $('pVenta').value = '0';
+  $('wrapEsInsumo').style.display = 'none';
+};
 
 /* ══ Vuelto ══ */
 
