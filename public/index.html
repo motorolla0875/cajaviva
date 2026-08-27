@@ -2066,11 +2066,8 @@
 
     <div class="seccion">Como se ve</div>
 
-    <label>Color</label>
-    <div class="temas" id="temasCat"></div>
-
-    <label>Fondo</label>
-    <div class="fondos" id="fondosCat"></div>
+    <label>Estilo del catalogo</label>
+    <div class="fondos" id="temasCat"></div>
 
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
@@ -5809,9 +5806,7 @@ $('btnCatalogo').onclick = async function () {
     $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
     temaCat = c.tema || 'verde';
-    fondoCat = c.fondo || 'claro';
     pintarTemas();
-    pintarFondos();
     mostrarBanner(c.banner || null);
     await cargarTurnosWeb();
   } catch (e) {
@@ -5850,8 +5845,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       titular: $('catTitular').value.trim() || null,
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
-      tema: temaCat,
-      fondo: fondoCat
+      tema: temaCat
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -7348,12 +7342,15 @@ document.getElementById('btnProvRapido').onclick = async function () {
 /* ══ Aspecto del catalogo ══ */
 
 const TEMAS = [
-  ['verde', '#1D9E75'],
-  ['azul', '#2563EB'],
-  ['naranja', '#EA580C'],
-  ['violeta', '#7C3AED'],
-  ['rojo', '#DC2626'],
-  ['negro', '#1F2937']
+  ['verde',     'Verde',     '#1D9E75', '#FAFAF7'],
+  ['azul',      'Azul',      '#1D6FD1', '#F7FAFD'],
+  ['rojo',      'Rojo',      '#C62828', '#FBF7F5'],
+  ['amarillo',  'Ambar',     '#D98A00', '#FEFAF2'],
+  ['violeta',   'Violeta',   '#7C3AED', '#FAF8FE'],
+  ['salmon',    'Salmon',    '#E2725B', '#FDF6F2'],
+  ['terracota', 'Terracota', '#A85D3C', '#FAF5F0'],
+  ['blanco',    'Minimal',   '#2C2C2C', '#FFFFFF'],
+  ['negro',     'Negro',     '#D4AF37', '#0F0F0F']
 ];
 
 let temaCat = 'verde';
@@ -7362,8 +7359,13 @@ function pintarTemas() {
   const el = document.getElementById('temasCat');
   if (!el) return;
   el.innerHTML = TEMAS.map(function (t) {
-    return '<button type="button" class="tema-btn' + (temaCat === t[0] ? ' on' : '') + '" ' +
-      'style="background:' + t[1] + ';" onclick="elegirTema(\'' + t[0] + '\')"></button>';
+    const oscuro = t[0] === 'negro';
+    return '<button type="button" class="fondo-btn' + (temaCat === t[0] ? ' on' : '') +
+      (oscuro ? ' oscura' : '') + '" onclick="elegirTema(\'' + t[0] + '\')" ' +
+      'style="background:' + t[3] + ';">' +
+      '<i style="background:' + t[2] + '; flex:0 0 22px;"></i>' +
+      '<i style="background:' + t[3] + ';"></i>' +
+      '<span>' + t[1] + '</span></button>';
   }).join('');
 }
 
