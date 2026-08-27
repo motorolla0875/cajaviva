@@ -3600,7 +3600,12 @@ function agregar(id) {
   const nuevaCant = (l ? l.cantidad : 0) + paso;
   if (l) l.cantidad += paso;
   else carrito.push({ productoId: id, nombre: p.nombre, precio: p.precio_venta, cantidad: paso, unidad: p.unidad });
-  if (!p.es_servicio && nuevaCant > p.stock) {
+  if (p.tiene_receta) {
+    const posibles = alcanzaPara(p.id);
+    if (posibles !== null && nuevaCant > posibles) {
+      avisar('No alcanzan los insumos para ' + fmtCant(nuevaCant), true);
+    }
+  } else if (!p.es_servicio && nuevaCant > p.stock) {
     avisar(p.nombre + ': quedaria en -' + fmtCant(nuevaCant - p.stock) + ', revisa el stock', true);
   }
   pintarCarrito();
@@ -3615,7 +3620,12 @@ function cambiarCantidad(id, delta) {
     carrito = carrito.filter(function (x) { return (x.clave || x.productoId) !== id; });
   } else {
     l.cantidad = nueva;
-    if (p && !p.es_servicio && nueva > p.stock) {
+    if (p && p.tiene_receta) {
+      const posibles = alcanzaPara(p.id);
+      if (posibles !== null && nueva > posibles) {
+        avisar('No alcanzan los insumos para ' + fmtCant(nueva), true);
+      }
+    } else if (p && !p.es_servicio && nueva > p.stock) {
       avisar(p.nombre + ': quedaria en -' + fmtCant(nueva - p.stock), true);
     }
   }
