@@ -494,8 +494,13 @@
     background: var(--panel); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 13px 14px; margin-bottom: 8px;
   }
-  .fila .datos { flex: 1; min-width: 0; }
-  .fila .datos .n { font-weight: 500; font-size: 15px; }
+  .fila .datos { flex: 1 1 0; min-width: 0; }
+  .fila .datos .n { font-weight: 500; font-size: 15px; line-height: 1.25; }
+
+  /* la foto y los controles no pueden comerse el texto */
+  .fila .foto-fila { flex: 0 0 auto; }
+  .fila .stock { flex: 0 0 auto; white-space: nowrap; }
+  .fila .acc { flex: 0 0 auto; }
   .fila .datos .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
   .fila .datos .margen { color: var(--accent-dark); font-size: 12.5px; }
   .fila .datos .debe { color: var(--danger); font-size: 13px; font-weight: 500; margin-top: 2px; }
