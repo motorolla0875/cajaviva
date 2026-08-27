@@ -111,6 +111,22 @@
     border: 1px solid var(--line); border-radius: 10px;
     background: var(--panel); color: var(--text); font-size: 15px;
   }
+  .temas-inicio { display: flex; gap: 14px; justify-content: center; margin: 4px 0 10px; }
+  .circulo-tema {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid transparent; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .circulo-tema.on { border-color: var(--accent); }
+  .circulo-tema i {
+    width: 34px; height: 34px; border-radius: 50%; display: block;
+  }
+  .circulo-tema span {
+    position: absolute; bottom: -20px; left: -10px; right: -10px;
+    font-size: 11.5px; color: var(--muted); text-align: center;
+  }
+  .temas-inicio { margin-bottom: 28px; }
+
   .opcion-inicio {
     display: block; width: 100%; text-align: left;
     padding: 16px 18px; margin-bottom: 10px;
@@ -1443,6 +1459,9 @@
         <b>Subir mis clientes</b>
         <span>Con telefonos y lo que te deben</span>
       </button>
+
+      <div class="seccion" style="margin-top:22px;">Como queres ver la app</div>
+      <div class="temas-inicio" id="temasInicio"></div>
 
       <button class="btn-seguir" id="btnListoInicio" style="margin-top:18px; background:none; color:var(--accent-dark); border:1px solid var(--line);">Ahora no, entrar a la app</button>
       <p class="nota-cambio">Vas a poder subirlos cuando quieras desde Productos o Fiado.</p>
@@ -3210,6 +3229,7 @@ $('btnEmpezar').onclick = async function () {
     const ph = document.getElementById('pasoHorarios');
     if (ph) ph.style.display = 'none';
     $('pasoImportar').style.display = 'block';
+    pintarTemasInicio();
     window.scrollTo(0, 0);
   } catch (e) {
     avisar(e.message, true);
@@ -8094,6 +8114,25 @@ document.getElementById('btnAbrirVuelto').onclick = function () {
   setTimeout(function () { document.getElementById('pagaCon').focus(); }, 100);
 };
 
+
+function pintarTemasInicio() {
+  const el = document.getElementById('temasInicio');
+  if (!el) return;
+  el.innerHTML = Object.keys(TEMAS_APP).map(function (k) {
+    const t = TEMAS_APP[k];
+    return '<button type="button" class="circulo-tema' + (temaApp === k ? ' on' : '') + '" ' +
+      'onclick="elegirTemaInicio(\'' + k + '\')" style="background:' + t.fondo + ';">' +
+      '<i style="background:' + t.chip + ';"></i>' +
+      '<span>' + t.nombre + '</span></button>';
+  }).join('');
+}
+
+function elegirTemaInicio(k) {
+  temaApp = k;
+  localStorage.setItem('cajaviva_tema_app', k);
+  aplicarTemaApp(k);
+  pintarTemasInicio();
+}
 
 /* ══ Vuelto ══ */
 
