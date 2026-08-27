@@ -918,7 +918,14 @@
     background: var(--panel); text-align: left;
   }
   .opt-var:active { border-color: var(--accent); background: var(--accent-soft); }
-  .opt-var .nom { flex: 1; font-size: 15px; font-weight: 500; }
+  .opt-var .nom { flex: 1; font-size: 15px; font-weight: 500; min-width: 0; }
+  .opt-var .ctrl-var { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .opt-var .ctrl-var button {
+    width: 36px; height: 36px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font-size: 18px; line-height: 1;
+  }
+  .opt-var .ctrl-var .cv { min-width: 24px; text-align: center; font-weight: 500; }
   .opt-var .stk { font-size: 13px; color: var(--muted); }
   .opt-var .stk.poco { color: var(--warn); font-weight: 500; }
   .opt-var .pre { font-size: 15px; font-weight: 500; color: var(--accent); }
@@ -6466,17 +6473,9 @@ async function abrirElegirVariante(prodId) {
       return;
     }
 
-    $('opcionesVar').innerHTML = d.variantes.map(function (v) {
-      const sin = v.stock <= 0;
-      const poco = !sin && v.stock <= 2;
-      const precio = v.precio_venta || d.producto.precio_venta;
-      return '<button class="opt-var' + (sin ? ' sin' : '') + '" ' +
-        'onclick="elegirVariante(\'' + prodId + '\', \'' + v.id + '\', \'' + esc(v.nombre).replace(/'/g, '') + '\', ' + precio + ', ' + v.stock + ')">' +
-        '<span class="nom">' + esc(v.nombre) + '</span>' +
-        '<span class="stk' + (poco ? ' poco' : '') + '">' +
-          (sin ? 'sin stock' : fmtCant(v.stock) + ' u.') + '</span>' +
-        '<span class="pre">' + plata(precio) + '</span></button>';
-    }).join('');
+    varsProducto = d.variantes;
+    varProdActual = { id: prodId, precio: d.producto.precio_venta, nombre: d.producto.nombre };
+    pintarOpcionesVenta();
   } catch (e) {
     $('opcionesVar').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
@@ -7172,6 +7171,66 @@ function sumarVarStock() {
   });
   const el = document.getElementById('totalVarStock');
   if (el) el.textContent = fmtCant(t);
+}
+
+let varsProducto = [], varProdActual = null;
+
+function pintarOpcionesVenta() {
+  if (!varProdActual) return;
+
+  $('opcionesVar').innerHTML = varsProducto.map(function (v) {
+    const sin = v.stock <= 0;
+    const precio = v.precio_venta || varProdActual.precio;
+    const clave = varProdActual.id + '|' + v.id;
+    const c = carrito.filter(function (l) { return l.clave === clave; })
+      .reduce(function (a, l) { return a + l.cantidad; }, 0);
+
+    return '<div class="opt-var' + (sin ? ' sin' : '') + '">' +
+      '<span class="nom">' + esc(v.nombre) +
+        '<small style="display:block;color:var(--muted);font-weight:400;font-size:12px;">' +
+        plata(precio) + ' - ' + (sin ? 'sin stock' : fmtCant(v.stock) + ' u.') + '</small></span>' +
+      '<div class="ctrl-var">' +
+        (c > 0
+          ? '<button onclick="sumarVarVenta(\'' + v.id + '\',-1)">-</button>' +
+            '<span class="cv">' + fmtCant(c) + '</span>'
+          : '') +
+        '<button onclick="sumarVarVenta(\'' + v.id + '\',1)">+</button>' +
+      '</div></div>';
+  }).join('') +
+  '<button class="btn-ppal" style="margin-top:14px;" onclick="cerrarElegirVar()">Listo</button>';
+}
+
+function sumarVarVenta(varId, d) {
+  const v = varsProducto.filter(function (x) { return x.id === varId; })[0];
+  if (!v || !varProdActual) return;
+
+  const clave = varProdActual.id + '|' + varId;
+  const precio = v.precio_venta || varProdActual.precio;
+  const l = carrito.filter(function (x) { return x.clave === clave; })[0];
+  const nueva = (l ? l.cantidad : 0) + d;
+
+  if (nueva <= 0) {
+    carrito = carrito.filter(function (x) { return x.clave !== clave; });
+  } else if (l) {
+    l.cantidad = nueva;
+  } else {
+    carrito.push({
+      clave: clave, productoId: varProdActual.id, varianteId: varId,
+      nombre: varProdActual.nombre + ' (' + v.nombre + ')',
+      precio: precio, cantidad: 1, unidad: 'unidad'
+    });
+  }
+
+  if (nueva > v.stock) {
+    avisar(v.nombre + ': quedaria en -' + fmtCant(nueva - v.stock), true);
+  }
+
+  pintarOpcionesVenta();
+  pintarCarrito();
+}
+
+function cerrarElegirVar() {
+  $('modalElegirVar').classList.remove('on');
 }
 
 /* ══ Vuelto ══ */
