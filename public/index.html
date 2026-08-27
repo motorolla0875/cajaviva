@@ -1546,6 +1546,7 @@
         <button class="btn-nuevo gris" id="btnImportarProd" title="Importar desde Excel">&#8681;</button>
         <button class="btn-nuevo gris" id="btnPrecios" title="Cambiar precios">$</button>
         <button class="btn-nuevo gris" id="btnNuevoInsumo" style="display:none;">+ Insumo</button>
+        <button class="btn-nuevo gris" id="btnNuevaReceta" style="display:none;">+ Receta</button>
       </div>
       <div class="buscador buscador-con-scan">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
@@ -2992,6 +2993,8 @@ function aplicarCapacidades() {
 
   const bi = document.getElementById('btnNuevoInsumo');
   if (bi) bi.style.display = cap('cap_recetas') ? '' : 'none';
+  const br = document.getElementById('btnNuevaReceta');
+  if (br) br.style.display = cap('cap_recetas') ? '' : 'none';
 
   const bn = document.getElementById('btnNuevo');
   if (bn) bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
@@ -7873,6 +7876,29 @@ document.getElementById('swDescuenta').onclick = async function () {
       await cargarProductos();
     } catch (e) { avisar(e.message, true); }
   }
+};
+
+document.getElementById('btnNuevaReceta').onclick = function () {
+  const insumos = productos.filter(function (p) { return p.es_insumo; });
+
+  if (insumos.length === 0) {
+    if (confirm('Primero necesitas cargar los insumos.\n\nQueres crear uno ahora?')) {
+      document.getElementById('btnNuevoInsumo').click();
+    }
+    return;
+  }
+
+  abrirProd(null);
+  $('tituloProd').textContent = 'Nuevo producto con receta';
+  $('pNombre').placeholder = 'Ej: Hamburguesa completa';
+
+  // el stock lo definen los insumos
+  $('wrapStockIni').style.display = 'none';
+  $('wrapCostoProd').style.display = 'none';
+  $('hintMargen').style.display = 'none';
+  $('wrapEsInsumo').style.display = 'none';
+  $('wrapRecetaProd').style.display = 'block';
+  $('hintCostoReceta').textContent = 'El costo sale de los insumos que elijas.';
 };
 
 /* ══ Vuelto ══ */
