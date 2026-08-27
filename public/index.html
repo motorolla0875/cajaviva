@@ -6440,12 +6440,30 @@ $('btnGenerarVar').onclick = async function () {
   const btn = $('btnGenerarVar');
   btn.disabled = true; btn.textContent = 'Creando...';
   try {
+    const stockIni = num($('varStock').value);
     const r = await api('POST', '/variantes/producto/' + varProdId + '/generar',
-      { talles: talles, colores: colores, stockInicial: num($('varStock').value) });
+      { talles: talles, colores: colores, stockInicial: stockIni });
+
+    // si se cargo stock, queda como compra al proveedor del producto
+    if (stockIni > 0 && r.creadas > 0) {
+      const prod = productos.filter(function (x) { return x.id === varProdId; })[0];
+      if (prod && prod.precio_costo > 0) {
+        try {
+          await api('POST', '/gastos', {
+            descripcion: 'Stock inicial - ' + prod.nombre,
+            monto: stockIni * r.creadas * prod.precio_costo,
+            fecha: hoyISO(),
+            proveedorId: prod.proveedor_id || null
+          });
+        } catch (e) {}
+      }
+    }
     $('varTalles').value = ''; $('varColores').value = '';
     $('msgVar').innerHTML = '';
     contarCombinaciones();
     await cargarVariantes();
+    await cargarProductos();
+    await cargarProveedores();
     avisar(r.creadas + (r.creadas === 1 ? ' combinacion creada' : ' combinaciones creadas'));
   } catch (e) {
     $('msgVar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
