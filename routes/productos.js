@@ -37,7 +37,8 @@ router.post('/', (req, res) => {
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
           unidad, stockInicial, stockMinimo, notas, vence, avisoDias, esInsumo,
           esServicio, duracion, proveedorId,
-          vendePieza, pesoPieza, precioPieza } = req.body || {};
+          vendePieza, pesoPieza, precioPieza,
+          esUnidad, cobroPor, capacidad } = req.body || {};
 
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Falta el nombre del producto.' });
 
@@ -51,14 +52,16 @@ router.post('/', (req, res) => {
   db.prepare(`
     INSERT INTO productos (id, user_id, categoria_id, nombre, codigo_barras,
       precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias, es_insumo,
-      es_servicio, duracion, proveedor_id, vende_pieza, peso_pieza, precio_pieza)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      es_servicio, duracion, proveedor_id, vende_pieza, peso_pieza, precio_pieza,
+      es_unidad, cobro_por, capacidad)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, categoriaId || null, nombre.trim(), codigoBarras || null,
          pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
          parseInt(avisoDias) || 7, esInsumo ? 1 : 0,
          esServicio ? 1 : 0, parseInt(duracion) || null, proveedorId || null,
-         vendePieza ? 1 : 0, parseFloat(pesoPieza) || null, parseFloat(precioPieza) || null);
+         vendePieza ? 1 : 0, parseFloat(pesoPieza) || null, parseFloat(precioPieza) || null,
+         esUnidad ? 1 : 0, cobroPor || 'noche', parseInt(capacidad) || null);
 
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {
@@ -104,6 +107,7 @@ router.put('/:id', (req, res) => {
       precio_venta = ?, precio_costo = ?, unidad = ?, stock_minimo = ?,
       notas = ?, vence = ?, aviso_dias = ?, es_servicio = ?, duracion = ?,
       proveedor_id = ?, vende_pieza = ?, peso_pieza = ?, precio_pieza = ?,
+      es_unidad = ?, cobro_por = ?, capacidad = ?,
       updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
   `).run(nombre.trim(), categoriaId || null, codigoBarras || null,
@@ -114,6 +118,7 @@ router.put('/:id', (req, res) => {
          parseInt(avisoDias) || 7, esServicio ? 1 : 0, parseInt(duracion) || null,
          proveedorId || null,
          vendePieza ? 1 : 0, parseFloat(pesoPieza) || null, parseFloat(precioPieza) || null,
+         esUnidad ? 1 : 0, cobroPor || 'noche', parseInt(capacidad) || null,
          req.params.id, req.userId);
 
   res.json({ ok: true });

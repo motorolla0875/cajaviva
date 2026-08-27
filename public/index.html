@@ -1579,6 +1579,7 @@
         <button class="btn-nuevo gris" id="btnPrecios" title="Cambiar precios">$</button>
         <button class="btn-nuevo" id="btnNuevoInsumo" style="display:none;">+ Insumo</button>
         <button class="btn-nuevo" id="btnNuevaReceta" style="display:none;">+ Receta</button>
+        <button class="btn-nuevo" id="btnNuevaUnidad" style="display:none;">+ Unidad</button>
       </div>
       <div class="buscador buscador-con-scan">
         <input type="text" id="buscarProd" placeholder="Buscar..." autocomplete="off">
@@ -1949,6 +1950,21 @@
       <label>Insumos</label>
       <button type="button" class="btn-talles" id="btnRecetaProd">Elegir que lleva</button>
       <p class="hint" id="hintCostoReceta">El costo se calcula solo con lo que pongas.</p>
+    </div>
+
+    <div id="wrapUnidadAlq" style="display:none;">
+      <div class="fila2">
+        <div>
+          <label>Se cobra por</label>
+          <select id="pCobroPor">
+            <option value="noche">Noche</option>
+            <option value="dia">Dia</option>
+            <option value="hora">Hora</option>
+          </select>
+        </div>
+        <div><label>Capacidad</label>
+          <input type="text" id="pCapacidad" inputmode="numeric" placeholder="Ej: 4"></div>
+      </div>
     </div>
 
     <div id="wrapPieza" style="display:none;">
@@ -2746,7 +2762,8 @@ const CAPS_INFO = [
   ['cap_vencimientos', 'Vencimientos', 'Avisar antes de que se venza'],
   ['cap_variantes', 'Talles y colores', 'Un producto con variantes'],
   ['cap_recetas', 'Recetas', 'Descontar insumos al vender'],
-  ['cap_turnos', 'Turnos', 'Agenda de citas']
+  ['cap_turnos', 'Turnos', 'Agenda de citas'],
+  ['cap_alquiler', 'Alquiler', 'Cabañas, salones, equipos por dia u hora']
 ];
 
 // sin ninguna de estas, el negocio no puede cobrar
@@ -3039,6 +3056,8 @@ function aplicarCapacidades() {
   if (bi) bi.style.display = cap('cap_recetas') ? '' : 'none';
   const br = document.getElementById('btnNuevaReceta');
   if (br) br.style.display = cap('cap_recetas') ? '' : 'none';
+  const bu = document.getElementById('btnNuevaUnidad');
+  if (bu) bu.style.display = cap('cap_alquiler') ? '' : 'none';
 
   const bn = document.getElementById('btnNuevo');
   if (bn) bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
@@ -3994,6 +4013,9 @@ async function guardarProductoRapido() {
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
     proveedorId: $('pProveedor').value || null,
+    esUnidad: esUnidadActual,
+    cobroPor: esUnidadActual ? $('pCobroPor').value : null,
+    capacidad: esUnidadActual ? parseInt($('pCapacidad').value) || null : null,
     vendePieza: vendePiezaActual,
     precioPieza: vendePiezaActual ? num($('pPrecioPieza').value) : null,
     pesoPieza: vendePiezaActual ? num($('pPesoPieza').value) : null,
@@ -4031,6 +4053,9 @@ $('btnGuardarProd').onclick = async function () {
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
     proveedorId: $('pProveedor').value || null,
+    esUnidad: esUnidadActual,
+    cobroPor: esUnidadActual ? $('pCobroPor').value : null,
+    capacidad: esUnidadActual ? parseInt($('pCapacidad').value) || null : null,
     vendePieza: vendePiezaActual,
     precioPieza: vendePiezaActual ? num($('pPrecioPieza').value) : null,
     pesoPieza: vendePiezaActual ? num($('pPesoPieza').value) : null,
@@ -8184,6 +8209,26 @@ function elegirTemaInicio(k) {
   aplicarTemaApp(k);
   pintarTemasInicio();
 }
+
+let esUnidadActual = false;
+
+document.getElementById('btnNuevaUnidad').onclick = function () {
+  abrirProd(null);
+  esUnidadActual = true;
+  $('tituloProd').textContent = 'Nueva unidad para alquilar';
+  $('pNombre').placeholder = 'Ej: Cabaña 1, Salon principal';
+  $('wrapUnidadAlq').style.display = 'block';
+  $('wrapStockIni').style.display = 'none';
+  $('wrapCostoProd').style.display = 'none';
+  $('hintMargen').style.display = 'none';
+  $('wrapEsInsumo').style.display = 'none';
+  $('wrapRecetaProd').style.display = 'none';
+
+  const lbl = document.querySelector('#modalProd label');
+  const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
+    .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+  if (lv) lv.textContent = 'Precio por noche';
+};
 
 /* ══ Vuelto ══ */
 
