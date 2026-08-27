@@ -95,7 +95,7 @@ router.get('/publico/:slug', (req, res) => {
     if (!p.tiene_variantes) return;
     p.variantes = db.prepare(`
       SELECT id, nombre, precio_venta, stock FROM producto_variantes
-      WHERE producto_id = ? AND activa = 1 AND stock > 0
+      WHERE producto_id = ? AND activa = 1
       ORDER BY talle, color, nombre
     `).all(p.id);
   });

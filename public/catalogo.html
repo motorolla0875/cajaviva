@@ -121,6 +121,12 @@
   .opt-v .ctrl-v .cv { min-width: 22px; text-align: center; font-weight: 500; }
   .opt-v .sv { font-size: 12.5px; color: var(--muted); }
   .opt-v .pv { font-size: 15px; font-weight: 500; color: var(--accent); }
+  .chip-sinstock {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; background: #FDF3E3; color: #8A5A0F;
+    margin-top: 3px; font-weight: 500;
+  }
+
   .badge-var {
     display: inline-block; font-size: 11px; padding: 2px 8px;
     border-radius: 20px; background: var(--accent-soft);
@@ -389,6 +395,8 @@ function pintar() {
       '<div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
+      (!p.es_servicio && !p.tiene_variantes && p.stock <= 0
+        ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
       '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
         (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (p.tiene_variantes ? '<span class="badge-var">' +
@@ -463,7 +471,7 @@ function abrirVarCat(p) {
   document.getElementById('tituloVarCat').textContent = p.nombre;
 
   const vs = p.variantes || [];
-  if (vs.length === 0) { alert('Sin stock disponible.'); return; }
+  if (vs.length === 0) { alert('Este producto no tiene combinaciones cargadas.'); return; }
 
   pintarOpcionesVar();
   document.getElementById('modalVar').style.display = 'block';
@@ -477,10 +485,11 @@ function pintarOpcionesVar() {
     const precio = v.precio_venta || p.precio_venta;
     const clave = p.id + '|' + v.id;
     const c = pedido[clave] || 0;
+    const sinStock = v.stock <= 0;
     return '<div class="opt-v">' +
       '<span class="nv">' + esc(v.nombre) +
-        '<small style="display:block;color:var(--muted);font-weight:400;">' +
-        plata(precio) + ' - ' + v.stock + ' disp.</small></span>' +
+        '<small style="display:block;color:' + (sinStock ? '#8A5A0F' : 'var(--muted)') + ';font-weight:400;">' +
+        plata(precio) + ' - ' + (sinStock ? 'sin stock, consultanos' : v.stock + ' disp.') + '</small></span>' +
       '<div class="ctrl-v">' +
         (c > 0
           ? '<button onclick="sumarVar(\'' + v.id + '\',\'' + esc(v.nombre).replace(/'/g, '') + '\',' + precio + ',-1)">-</button>' +
