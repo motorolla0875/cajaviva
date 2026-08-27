@@ -350,24 +350,68 @@ const TEMAS_CAT = {
   negro:    { a: '#1F2937', d: '#111827', s: '#F3F4F6' }
 };
 
-const FONDOS_CAT = {
-  claro:  { bg: '#FAFAF7', panel: '#FFFFFF', panel2: '#F3F2EE', line: '#E4E2DA', text: '#2C2C2A', muted: '#6E6D67' },
-  blanco: { bg: '#FFFFFF', panel: '#FFFFFF', panel2: '#F7F7F7', line: '#E8E8E8', text: '#1F1F1F', muted: '#707070' },
-  gris:   { bg: '#EFEFEF', panel: '#FFFFFF', panel2: '#F5F5F5', line: '#DDDDDD', text: '#242424', muted: '#6B6B6B' },
-  arena:  { bg: '#F5F0E8', panel: '#FFFDF9', panel2: '#EFE8DC', line: '#E0D7C6', text: '#33302A', muted: '#75705F' },
-  oscuro: { bg: '#1A1A1A', panel: '#262626', panel2: '#303030', line: '#3A3A3A', text: '#F0F0F0', muted: '#A0A0A0' },
-  carbon: { bg: '#0D0D0D', panel: '#1C1C1C', panel2: '#252525', line: '#333333', text: '#EDEDED', muted: '#999999' }
+const TEMAS_COMPLETOS = {
+  verde: {
+    a: '#1D9E75', d: '#0F6E56', s: '#E1F5EE',
+    bg: '#FAFAF7', panel: '#FFFFFF', panel2: '#F3F2EE',
+    line: '#E4E2DA', text: '#2C2C2A', muted: '#6E6D67'
+  },
+  negro: {
+    a: '#D4AF37', d: '#F0CE5C', s: '#2E2A1F',
+    bg: '#0F0F0F', panel: '#1A1A1A', panel2: '#242424',
+    line: '#333333', text: '#F2F2F2', muted: '#9A9A9A'
+  },
+  rojo: {
+    a: '#C62828', d: '#8E1F1F', s: '#FDEAEA',
+    bg: '#FBF7F5', panel: '#FFFFFF', panel2: '#F5EFED',
+    line: '#E8DEDA', text: '#2A2222', muted: '#6E625F'
+  },
+  amarillo: {
+    a: '#D98A00', d: '#9C6200', s: '#FFF3DA',
+    bg: '#FEFAF2', panel: '#FFFFFF', panel2: '#F7F0E2',
+    line: '#EADFC8', text: '#2B2517', muted: '#6E6553'
+  },
+  blanco: {
+    a: '#2C2C2C', d: '#000000', s: '#F0F0F0',
+    bg: '#FFFFFF', panel: '#FFFFFF', panel2: '#F7F7F7',
+    line: '#E6E6E6', text: '#141414', muted: '#767676'
+  },
+  violeta: {
+    a: '#7C3AED', d: '#5B21B6', s: '#EFE9FE',
+    bg: '#FAF8FE', panel: '#FFFFFF', panel2: '#F3EFFB',
+    line: '#E4DCF3', text: '#28203A', muted: '#6B6280'
+  },
+  salmon: {
+    a: '#E2725B', d: '#B04A36', s: '#FDEDE8',
+    bg: '#FDF6F2', panel: '#FFFFFF', panel2: '#F8EDE7',
+    line: '#EDDCD3', text: '#33261F', muted: '#7A6961'
+  },
+  azul: {
+    a: '#1D6FD1', d: '#134A8E', s: '#E3EEFC',
+    bg: '#F7FAFD', panel: '#FFFFFF', panel2: '#EEF3F9',
+    line: '#DCE5EF', text: '#1E2733', muted: '#63707F'
+  },
+  terracota: {
+    a: '#A85D3C', d: '#7A3F26', s: '#F7E9E0',
+    bg: '#FAF5F0', panel: '#FFFDFB', panel2: '#F2E9E0',
+    line: '#E2D4C7', text: '#2E241D', muted: '#6F6156'
+  }
 };
 
-function aplicarFondo(nombre) {
-  const f = FONDOS_CAT[nombre] || FONDOS_CAT.claro;
+function aplicarTemaCompleto(nombre) {
+  const t = TEMAS_COMPLETOS[nombre] || TEMAS_COMPLETOS.verde;
   const r = document.documentElement;
-  r.style.setProperty('--bg', f.bg);
-  r.style.setProperty('--panel', f.panel);
-  r.style.setProperty('--panel-2', f.panel2);
-  r.style.setProperty('--line', f.line);
-  r.style.setProperty('--text', f.text);
-  r.style.setProperty('--muted', f.muted);
+  r.style.setProperty('--accent', t.a);
+  r.style.setProperty('--accent-dark', t.d);
+  r.style.setProperty('--accent-soft', t.s);
+  r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--panel', t.panel);
+  r.style.setProperty('--panel-2', t.panel2);
+  r.style.setProperty('--line', t.line);
+  r.style.setProperty('--text', t.text);
+  r.style.setProperty('--muted', t.muted);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t.a);
 }
 
 function aplicarTema(nombre) {
@@ -386,8 +430,7 @@ async function cargar() {
     if (!r.ok) throw new Error('no existe');
     datos = await r.json();
 
-    aplicarTema(datos.negocio.tema);
-    aplicarFondo(datos.negocio.fondo);
+    aplicarTemaCompleto(datos.negocio.tema);
 
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
@@ -846,8 +889,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
-    aplicarTema(datos.negocio.tema);
-    aplicarFondo(datos.negocio.fondo);
+    aplicarTemaCompleto(datos.negocio.tema);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {
