@@ -4470,8 +4470,6 @@ async function borrarEmp(id) {
 let codigoEmpleado = null;
 
 function abrirIngresoEmpleado() {
-  token = null;
-  localStorage.removeItem('cajaviva_token');
   localStorage.removeItem('cajaviva_empleado');
   $('msgIngEmp').innerHTML = '';
   $('empUser').value = ''; $('empPass').value = '';
