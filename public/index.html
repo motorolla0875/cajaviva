@@ -1895,6 +1895,24 @@
     <label id="lblDescripcion">Descripcion (opcional)</label>
     <input type="text" id="pNotas" placeholder="Ej: incluye lavado y peinado">
 
+    <div id="wrapPieza" style="display:none;">
+      <div class="cap-item">
+        <div class="txt"><div class="n">Tambien se vende entero</div>
+          <div class="d">Ademas del precio por kilo, una pieza completa</div></div>
+        <button class="switch" id="swVendePieza"></button>
+      </div>
+
+      <div id="datosPieza" style="display:none;">
+        <div class="fila2">
+          <div><label>Precio de la pieza</label>
+            <input type="text" id="pPrecioPieza" inputmode="decimal" placeholder="0"></div>
+          <div><label>Peso aproximado</label>
+            <input type="text" id="pPesoPieza" inputmode="decimal" placeholder="Ej: 0.8"></div>
+        </div>
+        <p class="hint">Al vender una pieza se descuenta ese peso del stock.</p>
+      </div>
+    </div>
+
     <div id="wrapDuracion" style="display:none;">
       <label>Cuanto dura</label>
       <select id="pDuracion">
@@ -3793,6 +3811,7 @@ function abrirProd(id) {
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
+  setTimeout(function () { aplicarModoPieza(p); }, 0);
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
   $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
   $('pVence').value = p && p.vence ? p.vence : '';
@@ -3847,6 +3866,9 @@ async function guardarProductoRapido() {
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
     proveedorId: $('pProveedor').value || null,
+    vendePieza: vendePiezaActual,
+    precioPieza: vendePiezaActual ? num($('pPrecioPieza').value) : null,
+    pesoPieza: vendePiezaActual ? num($('pPesoPieza').value) : null,
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
@@ -3881,6 +3903,9 @@ $('btnGuardarProd').onclick = async function () {
     stockMinimo: num($('pMinimo').value),
     notas: $('pNotas').value.trim() || null,
     proveedorId: $('pProveedor').value || null,
+    vendePieza: vendePiezaActual,
+    precioPieza: vendePiezaActual ? num($('pPrecioPieza').value) : null,
+    pesoPieza: vendePiezaActual ? num($('pPesoPieza').value) : null,
     vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
@@ -7627,6 +7652,28 @@ function elegirFondo(f) {
   fondoCat = f;
   pintarFondos();
 }
+
+let vendePiezaActual = false;
+
+document.getElementById('swVendePieza').onclick = function () {
+  vendePiezaActual = !vendePiezaActual;
+  this.classList.toggle('on', vendePiezaActual);
+  document.getElementById('datosPieza').style.display = vendePiezaActual ? 'block' : 'none';
+};
+
+function aplicarModoPieza(p) {
+  const porPeso = cap('cap_peso') && $('pUnidad').value !== 'unidad';
+  $('wrapPieza').style.display = porPeso ? 'block' : 'none';
+  vendePiezaActual = !!(p && p.vende_pieza);
+  $('swVendePieza').classList.toggle('on', vendePiezaActual);
+  $('datosPieza').style.display = vendePiezaActual ? 'block' : 'none';
+  $('pPrecioPieza').value = p && p.precio_pieza ? p.precio_pieza : '';
+  $('pPesoPieza').value = p && p.peso_pieza ? p.peso_pieza : '';
+}
+
+document.getElementById('pUnidad').addEventListener('change', function () {
+  aplicarModoPieza(null);
+});
 
 /* ══ Vuelto ══ */
 
