@@ -3706,7 +3706,8 @@ function abrirProd(id) {
   $('wrapUnidad').style.display = cap('cap_peso') ? 'block' : 'none';
   $('btnBorrarProd').style.display = p ? 'block' : 'none';
   $('btnHistorialPrecio').style.display = p ? 'block' : 'none';
-  $('btnVariantes').style.display = (p && cap('cap_variantes')) ? 'block' : 'none';
+  $('btnVariantes').style.display = cap('cap_variantes') ? 'block' : 'none';
+  $('btnVariantes').textContent = p ? 'Talles y colores' : 'Guardar y cargar talles';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
   $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
@@ -3732,6 +3733,40 @@ $('btnCatRapida').onclick = async function () {
 
 $('btnNuevo').onclick = function () { abrirProd(null); };
 $('btnCerrarProd').onclick = function () { $('modalProd').classList.remove('on'); };
+
+// guarda el producto; si es nuevo devuelve su id
+async function guardarProductoRapido() {
+  const nombre = $('pNombre').value.trim();
+  if (!nombre) throw new Error('Ponele un nombre al producto.');
+  const venta = num($('pVenta').value);
+  if (venta <= 0) throw new Error('El precio de venta tiene que ser mayor a 0.');
+
+  const cuerpo = {
+    nombre: nombre, precioVenta: venta,
+    categoriaId: $('pCategoria').value || null,
+    precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
+    unidad: cap('cap_peso') ? $('pUnidad').value : 'unidad',
+    codigoBarras: $('pBarras').value.trim() || null,
+    stockMinimo: num($('pMinimo').value),
+    notas: $('pNotas').value.trim() || null,
+    vence: cap('cap_vencimientos') && $('pVence').value ? $('pVence').value : null,
+    avisoDias: parseInt($('pAvisoDias').value) || 7,
+    esInsumo: cap('cap_recetas') && esInsumoActual,
+    esServicio: cap('cap_turnos') && esServicioActual,
+    duracion: esServicioActual ? parseInt($('pDuracion').value) : null
+  };
+
+  if (editandoId) {
+    await api('PUT', '/productos/' + editandoId, cuerpo);
+  } else {
+    cuerpo.stockInicial = num($('pStock').value);
+    const r = await api('POST', '/productos', cuerpo);
+    editandoId = r.id;
+  }
+
+  await cargarProductos(); await cargarCategorias();
+  return editandoId;
+}
 
 $('btnGuardarProd').onclick = async function () {
   const nombre = $('pNombre').value.trim();
@@ -6219,8 +6254,25 @@ function cajaComprobante(p) {
 
 let varProdId = null;
 
-$('btnVariantes').onclick = function () {
-  if (!editandoId) return;
+$('btnVariantes').onclick = async function () {
+  // si el producto todavia no existe, guardarlo primero
+  if (!editandoId) {
+    if (!$('pNombre').value.trim()) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    const btn = $('btnVariantes');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    try {
+      await guardarProductoRapido();
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Guardar y cargar talles';
+      return;
+    }
+    btn.disabled = false;
+    if (!editandoId) return;
+  }
+
   varProdId = editandoId;
   $('msgVar').innerHTML = '';
   $('varTalles').value = '';
