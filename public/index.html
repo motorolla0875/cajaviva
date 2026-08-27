@@ -5175,7 +5175,7 @@ function pintarFiltrosProd() {
   }
 
   if (revisar > 0) {
-    html += '<button class="chip-alerta ' + (filtroProd === 'revisar' ? 'on' : '') + '" onclick="filtrarProductos(\'revisar\')">A revisar (' + revisar + ')</button>';
+    html += '<button class="' + (filtroProd === 'revisar' ? 'on' : '') + '" onclick="filtrarProductos(\'revisar\')">A revisar (' + revisar + ')</button>';
   }
   if (negativos > 0) {
     html += '<button class="' + (filtroProd === 'negativo' ? 'on' : '') + '" onclick="filtrarProductos(\'negativo\')">En negativo (' + negativos + ')</button>';
