@@ -2390,7 +2390,8 @@ const FAMILIAS = [
   ['ropa', 'Vendo ropa o calzado', 'Con talles y colores'],
   ['comida', 'Preparo lo que vendo', 'Rotiseria, cafeteria, panaderia...'],
   ['turnos', 'Doy turnos', 'Peluqueria, taller, consultorio...'],
-  ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...']
+  ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
+  ['otro', 'Otro', 'Lo configuro a mano']
 ];
 
 const RUBROS_POR_FAMILIA = {
@@ -2409,87 +2410,11 @@ const RUBROS_POR_FAMILIA = {
            'gomeria', 'taller', 'chapa', 'lavadero', 'fotografia', 'canchas',
            'clases', 'entrenador', 'costurera', 'consultorio'],
   reparto: ['soda', 'gas', 'lacteos', 'panaderia_reparto', 'hielo', 'diarios',
-            'leña', 'distribuidora', 'mayorista']
+            'leña', 'distribuidora', 'mayorista'],
+  otro: ['otro']
 };
 
 let familiaElegida = null;
-
-const SINONIMOS = {
-  kiosco: 'kiosko golosinas caramelos cigarrillos maxikiosco',
-  almacen: 'despensa autoservicio provisiones',
-  minimercado: 'supermercado super mercadito',
-  libreria: 'papeleria escolar utiles fotocopias',
-  ferreteria: 'herramientas tornillos bulones',
-  'pinturería': 'pintura latex esmalte',
-  bazar: 'hogar cocina vajilla',
-  regalos: 'souvenirs cotillon fiestas',
-  jugueteria: 'juguetes juegos niños',
-  bijouterie: 'accesorios aros collares',
-  petshop: 'mascotas perros gatos balanceado',
-  repuestos: 'auto moto autopartes',
-  electronica: 'celulares fundas cargadores tecnologia arreglar reparar telefono',
-  perfumeria: 'cosmetica maquillaje',
-  farmacia: 'medicamentos remedios botica',
-  vinoteca: 'vinos bebidas licores',
-  tabaqueria: 'cigarrillos tabaco',
-  corralon: 'materiales construccion cemento arena',
-  forrajeria: 'forraje alimento animales campo',
-  vivero: 'plantas jardin macetas flores floreria',
-  verduleria: 'verduras frutas fruteria',
-  carniceria: 'carne asado cortes',
-  polleria: 'pollo aves',
-  pescaderia: 'pescado mariscos',
-  fiambreria: 'fiambres quesos embutidos',
-  dietetica: 'natural granel suplementos',
-  almacen_natural: 'granel saludable',
-  granja: 'huevos pollo campo',
-  ropa: 'indumentaria remeras pantalones boutique vestimenta',
-  calzado: 'zapatos zapatillas botas',
-  deportiva: 'deportes gimnasio running futbol',
-  lenceria: 'ropa interior corseteria',
-  blanqueria: 'sabanas toallas acolchados',
-  marroquineria: 'carteras mochilas bolsos cuero',
-  uniformes: 'trabajo laboral ambo',
-  rotiseria: 'comida milanesas empanadas viandas',
-  cafeteria: 'cafe desayuno merienda',
-  pizzeria: 'pizza empanadas',
-  panaderia: 'pan facturas confiteria pasteleria tortas',
-  heladeria: 'helado postres',
-  bar: 'cerveceria pub tragos',
-  foodtruck: 'carrito comida hamburguesas',
-  casa_comidas: 'viandas menu almuerzo',
-  peluqueria: 'pelo corte peinado salon belleza cortar cabello',
-  barberia: 'barba corte hombre',
-  manicura: 'uñas manos pedicura',
-  estetica: 'belleza depilacion cosmetologia facial',
-  tatuajes: 'tattoo piercing tatuador',
-  masajes: 'spa relax quiromasaje',
-  odontologia: 'dentista dientes odontologo',
-  kinesiologia: 'kinesiologo rehabilitacion fisioterapia',
-  nutricion: 'nutricionista dieta',
-  psicologia: 'psicologo terapia',
-  veterinaria: 'veterinario animales mascotas',
-  gomeria: 'cubiertas neumaticos ruedas gomas arreglar pinchadura',
-  taller: 'mecanico auto service arreglo arreglar reparar reparacion coche vehiculo motor',
-  chapa: 'chapista pintura auto',
-  lavadero: 'lavado autos ropa lavanderia',
-  fotografia: 'fotos fotografo estudio',
-  canchas: 'futbol padel tenis alquiler',
-  clases: 'profesor particular apoyo idiomas',
-  entrenador: 'personal trainer gimnasio',
-  costurera: 'modista arreglos sastre coser costura arreglar ropa',
-  soda: 'sodero agua bidones dispenser',
-  gas: 'garrafa envasado',
-  hielo: 'cubos barra',
-  lacteos: 'leche queso yogur',
-  panaderia_reparto: 'pan reparto comercios',
-  diarios: 'revistas diario',
-  'leña': 'carbon parrilla',
-  distribuidora: 'mayorista reparto comercios',
-  mayorista: 'distribuidora por mayor',
-  otro: ''
-};
-
 
 const RUBROS = [
   ['kiosco', 'Kiosco', 'Golosinas, bebidas'],
@@ -2905,7 +2830,6 @@ function pintarFamilias() {
 
 function elegirFamilia(f) {
   familiaElegida = f;
-
   const lista = RUBROS_POR_FAMILIA[f] || [];
 
   if (lista.length === 1) { elegirRubro(lista[0]); return; }
@@ -3019,7 +2943,6 @@ function usarDatosGuardados() {
 }
 
 async function arrancarApp() {
-  await arrancarTour();
   mostrar('app');
   aplicarCapacidades();
   pintarCarrito();
@@ -6910,7 +6833,6 @@ function mandarRecordatorio(id) {
   pintarRecordatorios();
 }
 
-
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -7225,6 +7147,8 @@ $('btnGuardarGasto').onclick = async function () {
 /* ══ Arranque ══ */
 
 (async function iniciar() {
+  await arrancarTour();
+
   if (token) {
     try {
       const d = await api('GET', '/auth/yo');
