@@ -1902,9 +1902,8 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subStock"></p>
     <div id="msgStock"></div>
     <div id="wrapVarStock" style="display:none;">
-      <label>Cuanto de cada uno</label>
-      <div id="listaVarStock" style="max-height:280px; overflow-y:auto;"></div>
-      <div class="var-total"><span>Total a cargar</span><b id="totalVarStock">0</b></div>
+      <label>A que talle o color</label>
+      <select id="sVariante"></select>
     </div>
 
     <label>Cantidad</label>
@@ -3873,61 +3872,42 @@ function abrirStock(id, modo) {
   const wv = $('wrapVarStock');
   if (p.tiene_variantes) {
     wv.style.display = 'block';
-    $('sCantidad').parentElement.style.display = 'none';
-    $('listaVarStock').innerHTML = '<div class="vacio">Cargando...</div>';
-
+    $('sVariante').innerHTML = '<option value="">Cargando...</option>';
     api('GET', '/variantes/producto/' + id).then(function (d) {
-      $('listaVarStock').innerHTML = d.variantes.map(function (v) {
-        return '<div class="var-fila">' +
-          '<div class="nom">' + esc(v.nombre) +
-          '<small>hay ' + fmtCant(v.stock) + '</small></div>' +
-          '<input type="text" inputmode="decimal" placeholder="0" ' +
-            'data-var="' + v.id + '" oninput="sumarVarStock()"></div>';
+      $('sVariante').innerHTML = d.variantes.map(function (v) {
+        return '<option value="' + v.id + '">' + esc(v.nombre) +
+          ' (' + fmtCant(v.stock) + ')</option>';
       }).join('');
-      sumarVarStock();
     }).catch(function () {
-      $('listaVarStock').innerHTML = '<div class="vacio">No se pudieron cargar.</div>';
+      $('sVariante').innerHTML = '<option value="">No se pudieron cargar</option>';
     });
   } else {
     wv.style.display = 'none';
-    $('sCantidad').parentElement.style.display = '';
-    $('listaVarStock').innerHTML = '';
+    $('sVariante').innerHTML = '';
   }
 }
 $('btnCerrarStock').onclick = function () { $('modalStock').classList.remove('on'); };
 
 $('btnGuardarStock').onclick = async function () {
-  const conTalles = $('wrapVarStock').style.display !== 'none';
   const cantidad = num($('sCantidad').value);
-  if (!conTalles && cantidad <= 0) { $('msgStock').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
+  if (cantidad <= 0) { $('msgStock').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
   const btn = $('btnGuardarStock');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    // con talles: cargar cada combinacion
-    if ($('wrapVarStock').style.display !== 'none') {
-      const campos = $('listaVarStock').querySelectorAll('input[data-var]');
-      let total = 0, hechos = 0;
+    const varId = $('wrapVarStock').style.display !== 'none' ? $('sVariante').value : null;
 
-      for (const c of campos) {
-        const n = num(c.value);
-        if (n <= 0) continue;
-        await api('POST', '/variantes/' + c.dataset.var + '/reponer', {
-          cantidad: stockModo === 'reponer' ? n : -n
-        });
-        total += n; hechos++;
-      }
+    // con talles, el stock va a la variante elegida
+    if (varId) {
+      await api('POST', '/variantes/' + varId + '/reponer', {
+        cantidad: stockModo === 'reponer' ? cantidad : -cantidad
+      });
 
-      if (hechos === 0) {
-        $('msgStock').innerHTML = '<div class="msg">Poné cuanto lleva alguna combinacion.</div>';
-        btn.disabled = false; btn.textContent = 'Confirmar';
-        return;
-      }
-
+      // el gasto de la compra se anota igual
       if (stockModo === 'reponer' && $('sCosto').value.trim() !== '') {
         try {
           await api('POST', '/gastos', {
             descripcion: 'Reposicion de stock',
-            monto: total * num($('sCosto').value),
+            monto: cantidad * num($('sCosto').value),
             fecha: hoyISO()
           });
         } catch (e) {}
@@ -3935,7 +3915,7 @@ $('btnGuardarStock').onclick = async function () {
 
       await cargarProductos();
       $('modalStock').classList.remove('on');
-      avisar(fmtCant(total) + (stockModo === 'reponer' ? ' unidades cargadas' : ' unidades quitadas'));
+      avisar(stockModo === 'reponer' ? 'Stock repuesto' : 'Stock descontado');
       btn.disabled = false; btn.textContent = 'Confirmar';
       return;
     }
@@ -7168,15 +7148,6 @@ document.getElementById('btnTallesProd').onclick = async function () {
   $('modalVariantes').classList.add('on');
   cargarVariantes();
 };
-
-function sumarVarStock() {
-  let t = 0;
-  $('listaVarStock').querySelectorAll('input[data-var]').forEach(function (c) {
-    t += num(c.value);
-  });
-  $('totalVarStock').textContent = fmtCant(t);
-  calcularGasto();
-}
 
 /* ══ Vuelto ══ */
 
