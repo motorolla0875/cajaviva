@@ -82,8 +82,8 @@ router.post('/', (req, res) => {
       db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, l.prod.id);
     } else if (l.prod.es_servicio) {
       // un servicio no descuenta stock
-    } else if (l.prod.tiene_receta) {
-      // con receta: se descuentan los insumos, no el producto
+    } else if (l.prod.tiene_receta && l.prod.descuenta_insumos) {
+      // descuenta los insumos, no el producto
       const receta = db.prepare('SELECT insumo_id, cantidad FROM receta_items WHERE producto_id = ?').all(l.prod.id);
       receta.forEach(function (r) {
         db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?')
@@ -188,10 +188,10 @@ router.delete('/:id', (req, res) => {
         db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, it.producto_id);
       }
     } else if (it.producto_id) {
-      const prod = db.prepare('SELECT tiene_receta, es_servicio FROM productos WHERE id = ?').get(it.producto_id);
+      const prod = db.prepare('SELECT tiene_receta, es_servicio, descuenta_insumos FROM productos WHERE id = ?').get(it.producto_id);
       if (prod && prod.es_servicio) {
         // un servicio no devuelve stock
-      } else if (prod && prod.tiene_receta) {
+      } else if (prod && prod.tiene_receta && prod.descuenta_insumos) {
         const receta = db.prepare('SELECT insumo_id, cantidad FROM receta_items WHERE producto_id = ?').all(it.producto_id);
         receta.forEach(function (r) {
           db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?')

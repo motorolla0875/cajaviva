@@ -17,6 +17,7 @@ db.exec(`
 
 try { db.exec('ALTER TABLE productos ADD COLUMN es_insumo INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN tiene_receta INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE productos ADD COLUMN descuenta_insumos INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
 // recalcula el costo del producto sumando sus insumos
 function recalcularCosto(productoId) {
@@ -66,7 +67,8 @@ router.get('/producto/:id', (req, res) => {
   });
 
   res.json({
-    producto: { id: p.id, nombre: p.nombre, precio_venta: p.precio_venta, tiene_receta: p.tiene_receta },
+    producto: { id: p.id, nombre: p.nombre, precio_venta: p.precio_venta,
+                tiene_receta: p.tiene_receta, descuenta_insumos: p.descuenta_insumos },
     items: items,
     costo: costo,
     ganancia: ganancia,
@@ -149,6 +151,15 @@ router.post('/recalcular', (req, res) => {
   const conReceta = db.prepare('SELECT id FROM productos WHERE user_id = ? AND tiene_receta = 1').all(req.userId);
   conReceta.forEach(function (p) { recalcularCosto(p.id); });
   res.json({ actualizados: conReceta.length });
+});
+
+
+// ── elegir si descuenta insumos o solo calcula ──
+router.put('/modo/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  db.prepare('UPDATE productos SET descuenta_insumos = ? WHERE id = ? AND user_id = ?')
+    .run(req.body?.descuenta ? 1 : 0, req.params.id, req.userId);
+  res.json({ ok: true });
 });
 
 module.exports = { router, recalcularCosto };

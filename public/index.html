@@ -2269,6 +2269,12 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Que lleva este producto. Al venderlo se descuentan estos insumos.</p>
     <div id="msgRec"></div>
 
+    <div class="cap-item">
+      <div class="txt"><div class="n">Descontar al vender</div>
+        <div class="d" id="dModoRec">Cada venta baja estos insumos del stock</div></div>
+      <button class="switch on" id="swDescuenta"></button>
+    </div>
+
     <div id="resumenRec"></div>
 
     <label>Agregar un insumo</label>
@@ -6896,6 +6902,11 @@ async function cargarReceta() {
   try {
     const d = await api('GET', '/recetas/producto/' + recProdId);
     $('tituloRec').textContent = 'Receta de ' + d.producto.nombre;
+    descuentaInsumos = d.producto.descuenta_insumos !== 0;
+    $('swDescuenta').classList.toggle('on', descuentaInsumos);
+    $('dModoRec').textContent = descuentaInsumos
+      ? 'Cada venta baja estos insumos del stock'
+      : 'Solo para saber cuanto te cuesta. El stock lo manejas vos';
 
     // el selector no puede incluirse a si mismo
     $('recInsumo').innerHTML = '<option value="">Elegi un insumo...</option>' +
@@ -7845,6 +7856,23 @@ document.getElementById('btnRecetaProd').onclick = async function () {
   $('recCantidad').value = '';
   $('modalReceta').classList.add('on');
   cargarReceta();
+};
+
+let descuentaInsumos = true;
+
+document.getElementById('swDescuenta').onclick = async function () {
+  descuentaInsumos = !descuentaInsumos;
+  this.classList.toggle('on', descuentaInsumos);
+  document.getElementById('dModoRec').textContent = descuentaInsumos
+    ? 'Cada venta baja estos insumos del stock'
+    : 'Solo para saber cuanto te cuesta. El stock lo manejas vos';
+
+  if (recProdId) {
+    try {
+      await api('PUT', '/recetas/modo/' + recProdId, { descuenta: descuentaInsumos });
+      await cargarProductos();
+    } catch (e) { avisar(e.message, true); }
+  }
 };
 
 /* ══ Vuelto ══ */
