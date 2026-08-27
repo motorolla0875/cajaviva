@@ -710,6 +710,15 @@
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 18px; font-weight: 700;
   }
+  .fondos { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fondo-btn {
+    width: 60px; height: 46px; border-radius: 12px;
+    border: 2px solid var(--line); overflow: hidden;
+    display: flex; flex-direction: column; padding: 0;
+  }
+  .fondo-btn.on { border-color: var(--text); }
+  .fondo-btn i { display: block; flex: 1; }
+
   .banner-prev {
     width: 100%; aspect-ratio: 3 / 1; border-radius: 12px;
     border: 1px solid var(--line); background: var(--panel-2);
@@ -2052,6 +2061,9 @@
 
     <label>Color</label>
     <div class="temas" id="temasCat"></div>
+
+    <label>Fondo</label>
+    <div class="fondos" id="fondosCat"></div>
 
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
