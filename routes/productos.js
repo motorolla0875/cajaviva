@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id
     WHERE p.user_id = ? AND p.activo = 1
-    ORDER BY p.nombre
+    ORDER BY p.created_at DESC
   `).all(req.userId);
 
   // el empleado no ve el costo
