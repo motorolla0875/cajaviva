@@ -1910,6 +1910,12 @@
     <label id="lblDescripcion">Descripcion (opcional)</label>
     <input type="text" id="pNotas" placeholder="Ej: incluye lavado y peinado">
 
+    <div id="wrapRecetaProd" style="display:none;">
+      <label>Insumos</label>
+      <button type="button" class="btn-talles" id="btnRecetaProd">Elegir que lleva</button>
+      <p class="hint" id="hintCostoReceta">El costo se calcula solo con lo que pongas.</p>
+    </div>
+
     <div id="wrapPieza" style="display:none;">
       <div class="cap-item">
         <div class="txt"><div class="n">Tambien se vende entero</div>
@@ -3849,6 +3855,8 @@ function abrirProd(id) {
   if (conTalles) $('wrapStockIni').style.display = 'none';
   $('btnReceta').style.display = (p && cap('cap_recetas')) ? 'block' : 'none';
   $('wrapEsInsumo').style.display = cap('cap_recetas') ? 'flex' : 'none';
+  $('wrapRecetaProd').style.display = (cap('cap_recetas') && !esInsumoActual) ? 'block' : 'none';
+  $('btnRecetaProd').textContent = (p && p.tiene_receta) ? 'Ver o cambiar insumos' : 'Elegir que lleva';
   $('wrapEsServicio').style.display = cap('cap_turnos') ? 'flex' : 'none';
   esServicioActual = !!(p && p.es_servicio);
   $('pDuracion').value = (p && p.duracion) ? p.duracion : 30;
@@ -6872,6 +6880,15 @@ $('btnReceta').onclick = function () {
 $('btnCerrarRec').onclick = async function () {
   $('modalReceta').classList.remove('on');
   await cargarProductos();
+
+  // reflejar el costo calculado en el formulario
+  const p = productos.filter(function (x) { return x.id === recProdId; })[0];
+  if (p && p.precio_costo > 0) {
+    $('pCosto').value = p.precio_costo;
+    calcularMargen();
+    $('hintCostoReceta').textContent = 'Costo calculado: ' + plata(p.precio_costo);
+    $('btnRecetaProd').textContent = 'Ver o cambiar insumos';
+  }
 };
 
 async function cargarReceta() {
@@ -7802,6 +7819,32 @@ document.getElementById('btnNuevoInsumo').onclick = function () {
   $('wrapEsInsumo').style.display = 'none';
   $('wrapCategoria').style.display = 'none';
   $('pCategoria').value = '';
+  $('wrapRecetaProd').style.display = 'none';
+};
+
+document.getElementById('btnRecetaProd').onclick = async function () {
+  if (!editandoId) {
+    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    const b = this;
+    b.disabled = true; b.textContent = 'Guardando...';
+    try {
+      await guardarProductoRapido();
+    } catch (e) {
+      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+      b.disabled = false; b.textContent = 'Elegir que lleva';
+      return;
+    }
+    b.disabled = false; b.textContent = 'Elegir que lleva';
+  }
+
+  recProdId = editandoId;
+  $('msgRec').innerHTML = '';
+  $('recCantidad').value = '';
+  $('modalReceta').classList.add('on');
+  cargarReceta();
 };
 
 /* ══ Vuelto ══ */
