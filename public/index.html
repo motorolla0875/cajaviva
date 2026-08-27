@@ -611,9 +611,15 @@
   .mov .x { flex: 0 0 auto; }
 
   @media (max-width: 460px) {
-    .mov { flex-wrap: wrap; gap: 8px 10px; padding: 12px; }
-    .mov .info { flex: 1 1 120px; }
+    .mov { flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .mov .info { flex: 1 1 140px; }
     .mov .monto { font-size: 16px; }
+    .mov .x {
+      flex: 1 0 100%; width: auto; height: 36px;
+      padding-top: 0; margin-top: 2px;
+      border-top: 1px solid var(--line); border-radius: 0 0 8px 8px;
+      background: none; border-left: none; border-right: none; border-bottom: none;
+    }
   }
   .mov .info .d { font-size: 12px; color: var(--muted); }
   .mov .monto { font-weight: 500; font-size: 15px; }
