@@ -292,4 +292,18 @@ router.put('/:ventaId/items/:itemId', (req, res) => {
   res.json({ ok: true, nuevoTotal: nuevoTotal });
 });
 
+
+// ── una venta puntual ──
+router.get('/:id', (req, res) => {
+  const v = db.prepare(`
+    SELECT v.*, c.nombre AS cliente_nombre
+    FROM ventas v LEFT JOIN clientes c ON c.id = v.cliente_id
+    WHERE v.id = ? AND v.user_id = ?
+  `).get(req.params.id, req.userId);
+
+  if (!v) return res.status(404).json({ error: 'Venta no encontrada.' });
+  v.items = db.prepare('SELECT * FROM venta_items WHERE venta_id = ?').all(v.id);
+  res.json(v);
+});
+
 module.exports = router;
