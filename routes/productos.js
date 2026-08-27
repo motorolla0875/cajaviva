@@ -58,9 +58,10 @@ router.post('/', (req, res) => {
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {
     db.prepare(`
-      INSERT INTO gastos (id, user_id, descripcion, monto, fecha, categoria, automatico)
-      VALUES (?, ?, ?, ?, ?, 'stock', 1)
-    `).run(uuidv4(), req.userId, `Stock inicial - ${nombre.trim()}`, stock * pc, hoyISO());
+      INSERT INTO gastos (id, user_id, descripcion, monto, fecha, categoria, automatico, proveedor_id)
+      VALUES (?, ?, ?, ?, ?, 'stock', 1, ?)
+    `).run(uuidv4(), req.userId, `Stock inicial - ${nombre.trim()}`, stock * pc, hoyISO(),
+           proveedorId || null);
   }
 
   res.json({ id });
