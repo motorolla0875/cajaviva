@@ -6978,7 +6978,7 @@ async function cargarReceta() {
 
     // el selector no puede incluirse a si mismo
     $('recInsumo').innerHTML = '<option value="">Elegi un insumo...</option>' +
-      productos.filter(function (p) { return p.id !== recProdId; })
+      productos.filter(function (p) { return p.es_insumo && p.id !== recProdId; })
         .map(function (p) {
           return '<option value="' + p.id + '">' + esc(p.nombre) +
             ' (' + fmtCant(p.stock) + ' ' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + ')</option>';
