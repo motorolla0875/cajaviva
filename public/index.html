@@ -1624,11 +1624,8 @@
     <div id="msgNegocio"></div>
     <label>Nombre del negocio</label>
     <input type="text" id="nNombre">
-    <label>Tipo de negocio</label>
-    <select id="nRubro"></select>
-    <p class="hint">Cambiar el rubro reordena que funciones se ven. Tus datos no se tocan.</p>
-
-    <div class="seccion">Funciones</div>
+    <div class="seccion">Que hace tu negocio</div>
+    <p class="hint" style="margin:-4px 0 14px;">Prendé lo que uses. Podés cambiarlo cuando quieras.</p>
     <div id="listaCaps"></div>
 
     <button class="btn-ppal" id="btnGuardarNegocio">Guardar</button>
@@ -3087,9 +3084,6 @@ $('btnConfigNegocio').onclick = function () {
   $('modalCuentaUsuario').classList.remove('on');
   $('msgNegocio').innerHTML = '';
   $('nNombre').value = negocio && negocio.nombre ? negocio.nombre : '';
-  $('nRubro').innerHTML = RUBROS.map(function (r) {
-    return '<option value="' + r[0] + '"' + (negocio && negocio.rubro === r[0] ? ' selected' : '') + '>' + esc(r[1]) + '</option>';
-  }).join('');
   pintarCaps();
   $('modalNegocio').classList.add('on');
 };
@@ -3133,13 +3127,8 @@ $('btnGuardarNegocio').onclick = async function () {
   const btn = $('btnGuardarNegocio');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    const nuevoRubro = $('nRubro').value;
     const nombre = $('nNombre').value.trim() || 'Mi negocio';
-    if (nuevoRubro !== (negocio && negocio.rubro)) {
-      negocio = await api('PUT', '/negocio/rubro', { rubro: nuevoRubro, nombre: nombre });
-    } else {
-      negocio = await api('PUT', '/negocio/nombre', { nombre: nombre });
-    }
+    negocio = await api('PUT', '/negocio/nombre', { nombre: nombre });
     aplicarCapacidades();
     pintarCaps();
     $('modalNegocio').classList.remove('on');
