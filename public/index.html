@@ -1885,11 +1885,13 @@
 
     </div>
 
-    <label>Proveedor (opcional)</label>
-    <div style="display:flex; gap:8px;">
-      <select id="pProveedor" style="flex:1; min-width:0;"><option value="">Sin proveedor</option></select>
-      <button type="button" id="btnProvRapido" title="Nuevo proveedor"
-        style="flex-shrink:0; width:48px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft); color:var(--accent-dark); font-size:22px; line-height:1;">+</button>
+    <div id="wrapProveedor" class="sub-campo" style="display:none;">
+      <label>Proveedor (opcional)</label>
+      <div style="display:flex; gap:8px;">
+        <select id="pProveedor" style="flex:1; min-width:0;"><option value="">Sin proveedor</option></select>
+        <button type="button" id="btnProvRapido" title="Nuevo proveedor"
+          style="flex-shrink:0; width:48px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft); color:var(--accent-dark); font-size:22px; line-height:1;">+</button>
+      </div>
     </div>
     <div class="fila2">
       <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
