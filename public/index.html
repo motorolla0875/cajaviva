@@ -3873,18 +3873,25 @@ function abrirStock(id, modo) {
   const wv = $('wrapVarStock');
   if (p.tiene_variantes) {
     wv.style.display = 'block';
-    $('sVariante').innerHTML = '<option value="">Cargando...</option>';
+    $('sCantidad').parentElement.style.display = 'none';
+    $('listaVarStock').innerHTML = '<div class="vacio">Cargando...</div>';
+
     api('GET', '/variantes/producto/' + id).then(function (d) {
-      $('sVariante').innerHTML = d.variantes.map(function (v) {
-        return '<option value="' + v.id + '">' + esc(v.nombre) +
-          ' (' + fmtCant(v.stock) + ')</option>';
+      $('listaVarStock').innerHTML = d.variantes.map(function (v) {
+        return '<div class="var-fila">' +
+          '<div class="nom">' + esc(v.nombre) +
+          '<small>hay ' + fmtCant(v.stock) + '</small></div>' +
+          '<input type="text" inputmode="decimal" placeholder="0" ' +
+            'data-var="' + v.id + '" oninput="sumarVarStock()"></div>';
       }).join('');
+      sumarVarStock();
     }).catch(function () {
-      $('sVariante').innerHTML = '<option value="">No se pudieron cargar</option>';
+      $('listaVarStock').innerHTML = '<div class="vacio">No se pudieron cargar.</div>';
     });
   } else {
     wv.style.display = 'none';
-    $('sVariante').innerHTML = '';
+    $('sCantidad').parentElement.style.display = '';
+    $('listaVarStock').innerHTML = '';
   }
 }
 $('btnCerrarStock').onclick = function () { $('modalStock').classList.remove('on'); };
