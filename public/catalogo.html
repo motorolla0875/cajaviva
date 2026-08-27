@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catalogo</title>
 <meta name="theme-color" content="#1D9E75">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&family=Archivo+Black&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #FAFAF7; --panel: #FFFFFF; --panel-2: #F3F2EE;
@@ -359,6 +362,22 @@ const FONDOS_CAT = {
   carbon: { bg: '#0D0D0D', panel: '#1C1C1C', panel2: '#252525', line: '#333333', text: '#EDEDED', muted: '#999999' }
 };
 
+const FUENTES_CAT = {
+  sistema:    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  moderna:    "'Nunito', sans-serif",
+  elegante:   "'Playfair Display', serif",
+  tecnica:    "'Inter', sans-serif",
+  fuerte:     "'Archivo Black', sans-serif",
+  manuscrita: "'Caveat', cursive"
+};
+
+function aplicarFuente(nombre) {
+  const f = FUENTES_CAT[nombre] || FUENTES_CAT.sistema;
+  document.body.style.fontFamily = f;
+  // la manuscrita necesita mas tamaño para leerse
+  document.body.style.fontSize = nombre === 'manuscrita' ? '17px' : '15px';
+}
+
 function aplicarFondo(nombre) {
   const f = FONDOS_CAT[nombre] || FONDOS_CAT.claro;
   const r = document.documentElement;
@@ -408,6 +427,7 @@ async function cargar() {
 
     aplicarTema(datos.negocio.tema);
     aplicarFondo(datos.negocio.fondo);
+    aplicarFuente(datos.negocio.fuente);
 
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
