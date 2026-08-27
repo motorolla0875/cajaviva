@@ -5802,7 +5802,9 @@ $('btnCatalogo').onclick = async function () {
     $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
     temaCat = c.tema || 'verde';
+    fondoCat = c.fondo || 'claro';
     pintarTemas();
+    pintarFondos();
     mostrarBanner(c.banner || null);
     await cargarTurnosWeb();
   } catch (e) {
@@ -5841,7 +5843,8 @@ $('btnGuardarCatalogo').onclick = async function () {
       titular: $('catTitular').value.trim() || null,
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
-      tema: temaCat
+      tema: temaCat,
+      fondo: fondoCat
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
