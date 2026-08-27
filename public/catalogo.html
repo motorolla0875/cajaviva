@@ -128,8 +128,11 @@
   }
 
   .foto-cat {
-    width: 56px; height: 56px; flex-shrink: 0; border-radius: 9px;
+    width: 92px; height: 92px; flex-shrink: 0; border-radius: 11px;
     object-fit: cover; background: var(--panel-2); cursor: pointer;
+  }
+  @media (max-width: 420px) {
+    .foto-cat { width: 78px; height: 78px; }
   }
   .prod .info .n { font-weight: 500; font-size: 15px; }
   .desc-prod { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
