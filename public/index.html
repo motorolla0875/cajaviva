@@ -2943,7 +2943,6 @@ function usarDatosGuardados() {
 }
 
 async function arrancarApp() {
-  await arrancarTour();
   mostrar('app');
   aplicarCapacidades();
   pintarCarrito();
@@ -7148,6 +7147,8 @@ $('btnGuardarGasto').onclick = async function () {
 /* ══ Arranque ══ */
 
 (async function iniciar() {
+  await arrancarTour();
+
   if (token) {
     try {
       const d = await api('GET', '/auth/yo');
