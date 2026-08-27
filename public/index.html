@@ -445,6 +445,13 @@
   .nota-desc { font-size: 12px; color: var(--accent-dark); margin: -6px 0 12px; }
   .nota-desc.vacia { display: none; }
 
+  .abrir-vuelto {
+    display: none; width: 100%; padding: 11px; margin-bottom: 10px;
+    border: 1px dashed var(--line); border-radius: 10px;
+    background: none; color: var(--muted); font-size: 13.5px; font-weight: 500;
+  }
+  .abrir-vuelto.on { display: block; }
+
   .vuelto-box {
     display: none; background: var(--accent-soft); border: 1px solid var(--accent);
     border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
@@ -1514,6 +1521,7 @@
           <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
         </div>
         <div class="nota-desc vacia" id="notaDesc"></div>
+        <button type="button" class="abrir-vuelto" id="btnAbrirVuelto">Calcular vuelto</button>
         <div class="vuelto-box" id="vueltoBox">
           <div class="fila-v">
             <label>Paga con</label>
@@ -3759,7 +3767,7 @@ $('btnCobrar').onclick = async function () {
 
     try {
       const resp = await api('POST', '/ventas', cuerpo);
-      carrito = []; pintarCarrito();
+      carrito = []; vueltoAbierto = false; pintarCarrito();
       if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       await cargarProductos(); await cargarResumen();
       if (esFiado) await cargarClientes();
@@ -3780,7 +3788,7 @@ $('btnCobrar').onclick = async function () {
         const cli = clientes.filter(function (x) { return x.id === clienteId; })[0];
         if (cli) { cli.saldo = (cli.saldo || 0) + total; LOCAL.guardar('clientes', clientes); pintarClientes(); pintarSelectClientes(); }
       }
-      carrito = []; pintarCarrito();
+      carrito = []; vueltoAbierto = false; pintarCarrito();
       if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       marcarConexion(false);
       mostrarHecho({
@@ -8078,6 +8086,15 @@ document.getElementById('btnMasOpciones').onclick = function () {
   this.textContent = abierto ? 'Mas opciones' : 'Menos opciones';
 };
 
+let vueltoAbierto = false;
+
+document.getElementById('btnAbrirVuelto').onclick = function () {
+  vueltoAbierto = true;
+  actualizarVueltoBox();
+  setTimeout(function () { document.getElementById('pagaCon').focus(); }, 100);
+};
+
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -8119,10 +8136,25 @@ function calcularVuelto() {
 }
 
 function actualizarVueltoBox() {
-  const mostrar = medioPago === 'efectivo' && carrito.length > 0;
-  $('vueltoBox').classList.toggle('on', mostrar);
-  if (mostrar) { pintarRapidos(); calcularVuelto(); }
-  else { $('pagaCon').value = ''; }
+  const esEfectivo = medioPago === 'efectivo' && carrito.length > 0;
+  const btn = document.getElementById('btnAbrirVuelto');
+
+  if (!esEfectivo) {
+    if (btn) btn.classList.remove('on');
+    $('vueltoBox').classList.remove('on');
+    $('pagaCon').value = '';
+    vueltoAbierto = false;
+    return;
+  }
+
+  if (vueltoAbierto) {
+    if (btn) btn.classList.remove('on');
+    $('vueltoBox').classList.add('on');
+    pintarRapidos(); calcularVuelto();
+  } else {
+    if (btn) btn.classList.add('on');
+    $('vueltoBox').classList.remove('on');
+  }
 }
 
 $('pagaCon').addEventListener('input', calcularVuelto);
