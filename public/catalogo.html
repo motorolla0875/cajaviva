@@ -18,6 +18,9 @@
     background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
     padding-bottom: 90px;
   }
+  #bannerNeg { width: 100%; line-height: 0; }
+  #bannerNeg img { width: 100%; max-height: 260px; object-fit: cover; }
+
   header {
     background: var(--panel); border-bottom: 1px solid var(--line);
     padding: 18px 18px; text-align: center; position: sticky; top: 0; z-index: 10;
@@ -187,6 +190,8 @@
 </head>
 <body>
 
+<div id="bannerNeg" style="display:none;"><img id="bannerImg" alt=""></div>
+
 <header>
   <h1 id="nombreNeg">Cargando...</h1>
   <p id="mensajeNeg"></p>
@@ -336,11 +341,37 @@ const plata = n => '$' + Math.round(n || 0).toLocaleString('es-AR');
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
 
+const TEMAS_CAT = {
+  verde:    { a: '#1D9E75', d: '#0F6E56', s: '#E1F5EE' },
+  azul:     { a: '#2563EB', d: '#1E40AF', s: '#E0EAFF' },
+  naranja:  { a: '#EA580C', d: '#9A3412', s: '#FFEDD5' },
+  violeta:  { a: '#7C3AED', d: '#5B21B6', s: '#EDE9FE' },
+  rojo:     { a: '#DC2626', d: '#991B1B', s: '#FEE2E2' },
+  negro:    { a: '#1F2937', d: '#111827', s: '#F3F4F6' }
+};
+
+function aplicarTema(nombre) {
+  const t = TEMAS_CAT[nombre] || TEMAS_CAT.verde;
+  const r = document.documentElement;
+  r.style.setProperty('--accent', t.a);
+  r.style.setProperty('--accent-dark', t.d);
+  r.style.setProperty('--accent-soft', t.s);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t.a);
+}
+
 async function cargar() {
   try {
     const r = await fetch('/api/catalogo/publico/' + slug);
     if (!r.ok) throw new Error('no existe');
     datos = await r.json();
+
+    aplicarTema(datos.negocio.tema);
+
+    if (datos.negocio.banner) {
+      document.getElementById('bannerImg').src = datos.negocio.banner;
+      document.getElementById('bannerNeg').style.display = 'block';
+    }
 
     document.title = datos.negocio.nombre;
     $('nombreNeg').textContent = datos.negocio.nombre;
@@ -787,6 +818,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
+    aplicarTema(datos.negocio.tema);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {
