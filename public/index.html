@@ -348,6 +348,13 @@
   }
   .prod .s.bajo { color: var(--warn); font-weight: 500; }
   .prod .s.cero { color: var(--danger); font-weight: 500; }
+  .venc-chip {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; font-weight: 500; margin-top: 2px;
+  }
+  .venc-chip.rojo { background: var(--danger-soft); color: var(--danger); }
+  .venc-chip.naranja { background: #FDF3E3; color: #8A5A0F; }
+
   .chip-servicio {
     display: inline-block; font-size: 11px; padding: 2px 8px;
     border-radius: 20px; background: var(--accent-soft);
@@ -3528,6 +3535,7 @@ function pintarGrilla() {
       '<div class="info-prod">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-v">' + esc(p.notas) + '</div>' : '') +
+      (cap('cap_vencimientos') ? avisoVence(p) : '') +
       (esServ
         ? '<div class="s"><span class="chip-servicio">servicio</span>' +
           (p.duracion ? ' ' + (p.duracion >= 60 ? (p.duracion / 60) + 'h' : p.duracion + ' min') : '') + '</div>'
@@ -3757,6 +3765,7 @@ function pintarLista() {
       '<div class="datos">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-p">' + esc(p.notas) + '</div>' : '') +
+      (cap('cap_vencimientos') ? avisoVence(p) : '') +
       '<div class="d">' + plata(p.precio_venta) +
         (esServ
           ? (p.duracion ? ' &middot; ' + (p.duracion >= 60
@@ -7756,6 +7765,19 @@ function elegirTemaApp(k) {
 }
 
 aplicarTemaApp(temaApp);
+
+function avisoVence(p) {
+  if (!p.vence) return '';
+  const hoy = new Date(hoyISO() + 'T12:00:00');
+  const v = new Date(p.vence + 'T12:00:00');
+  const dias = Math.round((v - hoy) / 86400000);
+  const limite = p.aviso_dias || 7;
+
+  if (dias < 0) return '<span class="venc-chip rojo">Vencido hace ' + (-dias) + (dias === -1 ? ' dia' : ' dias') + '</span>';
+  if (dias === 0) return '<span class="venc-chip rojo">Vence hoy</span>';
+  if (dias <= limite) return '<span class="venc-chip naranja">Vence en ' + dias + (dias === 1 ? ' dia' : ' dias') + '</span>';
+  return '';
+}
 
 /* ══ Vuelto ══ */
 
