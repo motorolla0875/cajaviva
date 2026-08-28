@@ -249,4 +249,45 @@ router.get('/historial', (req, res) => {
   res.json({ items: filas, total: total });
 });
 
+
+// ── calendario de un mes ──
+router.get('/calendario', (req, res) => {
+  const mes = req.query.mes || hoyISO().slice(0, 7);
+  const primero = mes + '-01';
+  const d = new Date(primero + 'T12:00:00');
+  d.setMonth(d.getMonth() + 1);
+  const siguiente = d.toISOString().slice(0, 10);
+
+  const unidades = db.prepare(`
+    SELECT id, nombre FROM productos
+    WHERE user_id = ? AND activo = 1 AND es_unidad = 1
+    ORDER BY nombre
+  `).all(req.userId);
+
+  const reservas = db.prepare(`
+    SELECT r.id, r.unidad_id, r.cliente_nombre, r.desde, r.hasta, r.estado
+    FROM reservas r
+    WHERE r.user_id = ? AND r.estado IN ('reservada','en_curso')
+      AND r.desde < ? AND r.hasta > ?
+  `).all(req.userId, siguiente, primero);
+
+  // dias del mes con cuantas unidades ocupadas
+  const dias = {};
+  const cursor = new Date(primero + 'T12:00:00');
+  while (cursor.toISOString().slice(0, 10) < siguiente) {
+    const dia = cursor.toISOString().slice(0, 10);
+    const ocupadas = reservas.filter(function (r) {
+      return r.desde <= dia && r.hasta > dia;
+    });
+    dias[dia] = {
+      ocupadas: ocupadas.length,
+      total: unidades.length,
+      quienes: ocupadas.map(function (r) { return r.cliente_nombre; })
+    };
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  res.json({ mes: mes, unidades: unidades.length, dias: dias, reservas: reservas });
+});
+
 module.exports = router;

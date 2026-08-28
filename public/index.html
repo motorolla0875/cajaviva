@@ -934,6 +934,47 @@
   }
   .dia-titulo small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
 
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .cal-nav button {
+    width: 42px; height: 42px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 20px; line-height: 1;
+  }
+  .cal-nav .mes {
+    flex: 1; text-align: center; font-size: 16px; font-weight: 500;
+    text-transform: capitalize;
+  }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .cal-dia-nom {
+    text-align: center; font-size: 11px; color: var(--muted);
+    font-weight: 500; padding: 4px 0;
+  }
+  .cal-dia {
+    aspect-ratio: 1; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--panel); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 1px;
+    font-size: 13px; padding: 0;
+  }
+  .cal-dia.vacio { border: none; background: none; }
+  .cal-dia.hoy { border-color: var(--accent); border-width: 2px; }
+  .cal-dia.libre { background: var(--accent-soft); }
+  .cal-dia.parcial { background: var(--warn-soft, #FDF3E3); }
+  .cal-dia.lleno { background: var(--danger-soft); }
+  .cal-dia .n { font-weight: 500; }
+  .cal-dia .p { font-size: 9.5px; color: var(--muted); line-height: 1; }
+  .cal-dia.lleno .p { color: var(--danger); }
+  .cal-ref {
+    display: flex; gap: 14px; justify-content: center;
+    margin-top: 14px; font-size: 11.5px; color: var(--muted);
+  }
+  .cal-ref span { display: flex; align-items: center; gap: 5px; }
+  .cal-ref i { width: 12px; height: 12px; border-radius: 3px; display: block; }
+
   .unidad-card {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -1658,7 +1699,8 @@
       <button class="btn-nuevo solo" id="btnNuevaReserva">+ Nueva reserva</button>
 
       <div class="chips" id="tabsReservas">
-        <button class="on" data-tab="disponibles">Disponibilidad</button>
+        <button class="on" data-tab="calendario">Calendario</button>
+        <button data-tab="disponibles">Disponibilidad</button>
         <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
         <button data-tab="historial">Ya estuvieron</button>
@@ -8468,9 +8510,97 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   if (lv) lv.textContent = 'Precio por noche';
 };
 
+/* ══ Calendario de reservas ══ */
+
+let mesCal = null;
+
+function mesActual() {
+  if (!mesCal) mesCal = hoyISO().slice(0, 7);
+  return mesCal;
+}
+
+function moverMes(n) {
+  const d = new Date(mesActual() + '-01T12:00:00');
+  d.setMonth(d.getMonth() + n);
+  mesCal = d.toISOString().slice(0, 7);
+  cargarReservas();
+}
+
+async function pintarCalendario() {
+  const cont = $('listaReservas');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/alquileres/calendario?mes=' + mesActual());
+
+    if (d.unidades === 0) {
+      cont.innerHTML = '<div class="vacio">Todavia no cargaste unidades.</div>';
+      return;
+    }
+
+    const primero = new Date(mesActual() + '-01T12:00:00');
+    const nombreMes = primero.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+    const arranque = primero.getDay();
+    const ultimo = new Date(primero.getFullYear(), primero.getMonth() + 1, 0).getDate();
+    const hoy = hoyISO();
+
+    let html = '<div class="cal-nav">' +
+      '<button onclick="moverMes(-1)">&#8249;</button>' +
+      '<div class="mes">' + nombreMes + '</div>' +
+      '<button onclick="moverMes(1)">&#8250;</button></div>';
+
+    html += '<div class="cal-grid">' +
+      ['D','L','M','M','J','V','S'].map(function (x) {
+        return '<div class="cal-dia-nom">' + x + '</div>';
+      }).join('');
+
+    for (let i = 0; i < arranque; i++) html += '<div class="cal-dia vacio"></div>';
+
+    for (let n = 1; n <= ultimo; n++) {
+      const dia = mesActual() + '-' + String(n).padStart(2, '0');
+      const info = d.dias[dia] || { ocupadas: 0, total: d.unidades };
+      const libres = info.total - info.ocupadas;
+
+      let clase = 'libre';
+      if (info.ocupadas > 0 && libres > 0) clase = 'parcial';
+      if (libres <= 0) clase = 'lleno';
+
+      html += '<button class="cal-dia ' + clase + (dia === hoy ? ' hoy' : '') + '" ' +
+        'onclick="verDia(\'' + dia + '\')">' +
+        '<span class="n">' + n + '</span>' +
+        '<span class="p">' + (libres <= 0 ? 'lleno' : libres) + '</span>' +
+        '</button>';
+    }
+
+    html += '</div>';
+
+    html += '<div class="cal-ref">' +
+      '<span><i style="background:var(--accent-soft);"></i>Libre</span>' +
+      '<span><i style="background:#FDF3E3;"></i>Parcial</span>' +
+      '<span><i style="background:var(--danger-soft);"></i>Completo</span></div>';
+
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function verDia(dia) {
+  const d = new Date(dia + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  $('resDesde').value = dia;
+  $('resHasta').value = d.toISOString().slice(0, 10);
+
+  tabReservas = 'disponibles';
+  Array.prototype.forEach.call($('tabsReservas').children, function (x) {
+    x.classList.toggle('on', x.dataset.tab === 'disponibles');
+  });
+  cargarReservas();
+}
+
 /* ══ Reservas de alquiler ══ */
 
-let tabReservas = 'disponibles';
+let tabReservas = 'calendario';
 let reservaEditando = null;
 let unidadesCache = [];
 
@@ -8514,9 +8644,16 @@ async function cargarReservas() {
   if (rd && tabReservas !== 'disponibles') rd.innerHTML = '';
 
   const bf = document.getElementById('buscadorFechas');
-  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial') ? 'none' : 'block';
+  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial' || tabReservas === 'calendario') ? 'none' : 'block';
 
   try {
+    if (tabReservas === 'calendario') {
+      const rd0 = document.getElementById('resumenDisp');
+      if (rd0) rd0.innerHTML = '';
+      await pintarCalendario();
+      return;
+    }
+
     if (tabReservas === 'disponibles') {
       const d = await api('GET', '/alquileres/disponibles?desde=' + r.desde + '&hasta=' + r.hasta);
       unidadesCache = d.unidades;
