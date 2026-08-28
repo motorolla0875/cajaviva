@@ -5738,10 +5738,22 @@ let prExcluidos = {};
 $('btnPrecios').onclick = function () {
   $('msgPrecios').innerHTML = '';
   $('prValor').value = '';
-  $('prCategoria').innerHTML = '<option value="">Todos los productos (' + productos.length + ')</option>' +
-    categorias.filter(function (c) { return c.cantidad > 0; }).map(function (c) {
-      return '<option value="' + c.id + '">' + esc(c.nombre) + ' (' + c.cantidad + ')</option>';
-    }).join('');
+  const nUnid = productos.filter(function (p) { return p.es_unidad; }).length;
+  const nProd = productos.filter(function (p) { return !p.es_unidad; }).length;
+  const nomU = cap('cap_canchas') && !cap('cap_alquiler') ? 'canchas' : 'unidades';
+
+  let ops = '<option value="">Todo (' + productos.length + ')</option>';
+
+  if (nUnid > 0 && nProd > 0) {
+    ops += '<option value="__solo_prod">Solo productos (' + nProd + ')</option>' +
+           '<option value="__solo_unid">Solo ' + nomU + ' (' + nUnid + ')</option>';
+  }
+
+  ops += categorias.filter(function (c) { return c.cantidad > 0; }).map(function (c) {
+    return '<option value="' + c.id + '">' + esc(c.nombre) + ' (' + c.cantidad + ')</option>';
+  }).join('');
+
+  $('prCategoria').innerHTML = ops;
   prExcluidos = {}; prItems = [];
   $('prPreview').innerHTML = '<div class="vacio">Poné un valor para ver el resultado.</div>';
   $('modalPrecios').classList.add('on');

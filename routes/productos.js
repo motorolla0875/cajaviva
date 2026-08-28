@@ -215,6 +215,12 @@ router.post('/precios-lote', (req, res) => {
     const q = ids.map(function () { return '?'; }).join(',');
     productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND id IN (' + q + ')')
       .all(req.userId, ...ids);
+  } else if (categoriaId === '__solo_prod') {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND COALESCE(es_unidad,0) = 0')
+      .all(req.userId);
+  } else if (categoriaId === '__solo_unid') {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND es_unidad = 1')
+      .all(req.userId);
   } else if (categoriaId) {
     productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ?')
       .all(req.userId, categoriaId);
