@@ -2486,13 +2486,24 @@
     <label>Que se alquila</label>
     <select id="rUnidad"></select>
 
-    <div class="fila2">
-      <div><label>Entrada</label><input type="date" id="rDesde"></div>
-      <div><label>Hora</label><input type="time" id="rHoraEnt" value="14:00"></div>
+    <div id="modoDias">
+      <div class="fila2">
+        <div><label>Entrada</label><input type="date" id="rDesde"></div>
+        <div><label>Hora</label><input type="time" id="rHoraEnt" value="14:00"></div>
+      </div>
+      <div class="fila2">
+        <div><label>Salida</label><input type="date" id="rHasta"></div>
+        <div><label>Hora</label><input type="time" id="rHoraSal" value="10:00"></div>
+      </div>
     </div>
-    <div class="fila2">
-      <div><label>Salida</label><input type="date" id="rHasta"></div>
-      <div><label>Hora</label><input type="time" id="rHoraSal" value="10:00"></div>
+
+    <div id="modoHoras" style="display:none;">
+      <label>Dia</label>
+      <input type="date" id="rDiaUnico">
+      <div class="fila2">
+        <div><label>Desde</label><input type="time" id="rHoraIni"></div>
+        <div><label>Hasta</label><input type="time" id="rHoraFin"></div>
+      </div>
     </div>
     <p class="hint" id="hintNoches"></p>
 
@@ -8952,6 +8963,36 @@ async function guardarFinde() {
   } catch (e) { avisar(e.message, true); }
 }
 
+// en canchas se usa un solo dia con horarios
+function aplicarModoReserva() {
+  const porHora = cap('cap_canchas') && !cap('cap_alquiler');
+  document.getElementById('modoDias').style.display = porHora ? 'none' : 'block';
+  document.getElementById('modoHoras').style.display = porHora ? 'block' : 'none';
+  return porHora;
+}
+
+function sincronizarHoras() {
+  // lo que se escribe en el modo horas va a los campos reales
+  const d = document.getElementById('rDiaUnico').value;
+  $('rDesde').value = d;
+  $('rHasta').value = d;
+  $('rHoraEnt').value = document.getElementById('rHoraIni').value;
+  $('rHoraSal').value = document.getElementById('rHoraFin').value;
+  calcularTotalReserva();
+}
+
+document.getElementById('rDiaUnico').addEventListener('change', sincronizarHoras);
+document.getElementById('rHoraIni').addEventListener('change', function () {
+  // sugerir una hora despues
+  const f = document.getElementById('rHoraFin');
+  if (!f.value || f.value <= this.value) {
+    const h = parseInt(this.value.split(':')[0]);
+    f.value = String((h + 1) % 24).padStart(2, '0') + ':' + this.value.split(':')[1];
+  }
+  sincronizarHoras();
+});
+document.getElementById('rHoraFin').addEventListener('change', sincronizarHoras);
+
 /* ══ Grilla de canchas por hora ══ */
 
 let diaCancha = null;
@@ -9048,6 +9089,11 @@ function reservarCancha(unidadId, hora, precio) {
   const h = parseInt(hora.split(':')[0]);
   $('rHoraSal').value = String(h + 1).padStart(2, '0') + ':' + hora.split(':')[1];
   $('rPrecio').value = precio;
+
+  document.getElementById('rDiaUnico').value = diaActualCancha();
+  document.getElementById('rHoraIni').value = hora;
+  document.getElementById('rHoraFin').value = $('rHoraSal').value;
+
   calcularTotalReserva();
 }
 
@@ -9383,6 +9429,13 @@ async function abrirReserva(id) {
     $('rNombre').value = ''; $('rTelefono').value = '';
     $('rPersonas').value = ''; $('rSena').value = ''; $('rNota').value = '';
     aplicarPrecioUnidad();
+  }
+
+  const porHora = aplicarModoReserva();
+  if (porHora) {
+    document.getElementById('rDiaUnico').value = $('rDesde').value;
+    document.getElementById('rHoraIni').value = $('rHoraEnt').value || '';
+    document.getElementById('rHoraFin').value = $('rHoraSal').value || '';
   }
 
   calcularTotalReserva();
