@@ -8729,6 +8729,28 @@ $('btnGuardarReserva').onclick = async function () {
   const btn = $('btnGuardarReserva');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
+    // si es alguien nuevo, queda guardado como huesped
+    let huespedNuevo = false;
+    if (!cuerpo.clienteId && !reservaEditando) {
+      const yaEsta = (clientes || []).filter(function (c) {
+        return norm(c.nombre) === norm(nombre);
+      })[0];
+
+      if (yaEsta) {
+        cuerpo.clienteId = yaEsta.id;
+      } else {
+        try {
+          const nc = await api('POST', '/clientes', {
+            nombre: nombre,
+            whatsapp: cuerpo.telefono || null
+          });
+          cuerpo.clienteId = nc.id;
+          huespedNuevo = true;
+          await cargarClientes();
+        } catch (e) {}
+      }
+    }
+
     if (reservaEditando) await api('PUT', '/alquileres/' + reservaEditando, cuerpo);
     else await api('POST', '/alquileres', cuerpo);
 
@@ -8738,7 +8760,9 @@ $('btnGuardarReserva').onclick = async function () {
       x.classList.toggle('on', i === 1);
     });
     await cargarReservas();
-    avisar(reservaEditando ? 'Reserva actualizada' : 'Reserva guardada');
+    avisar(reservaEditando ? 'Reserva actualizada'
+      : huespedNuevo ? 'Reserva guardada. ' + nombre + ' quedo en tus huespedes'
+      : 'Reserva guardada');
   } catch (e) {
     $('msgReserva').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
