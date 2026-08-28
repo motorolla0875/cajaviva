@@ -3346,12 +3346,14 @@ function aplicarCapacidades() {
 
   const tc = document.querySelector('nav button[data-vista="clientes"]');
   if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
-    : cap('cap_turnos') ? 'Clientes' : 'Fiado';
+    : (cap('cap_canchas') || cap('cap_turnos')) ? 'Clientes' : 'Fiado';
 
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) {
-    tp.textContent = cap('cap_alquiler') && !cap('cap_mostrador') ? 'Unidades'
-      : cap('cap_alquiler') ? 'Productos/Unidades'
+    const conUnid = cap('cap_alquiler') || cap('cap_canchas');
+    tp.textContent = conUnid && !cap('cap_mostrador')
+        ? (cap('cap_canchas') ? 'Canchas' : 'Unidades')
+      : conUnid ? (cap('cap_canchas') ? 'Productos/Canchas' : 'Productos/Unidades')
       : cap('cap_turnos') ? 'Productos/Servicios'
       : 'Productos';
   }
@@ -3361,7 +3363,10 @@ function aplicarCapacidades() {
   const br = document.getElementById('btnNuevaReceta');
   if (br) br.style.display = cap('cap_recetas') ? '' : 'none';
   const bu = document.getElementById('btnNuevaUnidad');
-  if (bu) bu.style.display = cap('cap_alquiler') ? '' : 'none';
+  if (bu) {
+    bu.style.display = (cap('cap_alquiler') || cap('cap_canchas')) ? '' : 'none';
+    bu.textContent = cap('cap_canchas') && !cap('cap_alquiler') ? '+ Cancha' : '+ Unidad';
+  }
 
   const bn = document.getElementById('btnNuevo');
   if (bn) {
