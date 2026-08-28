@@ -3160,6 +3160,10 @@ function aplicarCapacidades() {
   const trs = document.getElementById('tabReservas');
   if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
 
+  const tc = document.querySelector('nav button[data-vista="clientes"]');
+  if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
+    : cap('cap_turnos') ? 'Clientes' : 'Fiado';
+
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) {
     tp.textContent = cap('cap_alquiler') && !cap('cap_mostrador') ? 'Unidades'
