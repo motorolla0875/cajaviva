@@ -1720,6 +1720,11 @@
         <button onclick="moverDiaCancha(1)">&#8250;</button>
       </div>
       <input type="date" id="fechaCanchas" style="margin-bottom:14px;">
+      <div class="chips" id="tabsCanchas">
+        <button class="on" data-tab="grilla">Del dia</button>
+        <button data-tab="cobrados">Ya cobrados</button>
+      </div>
+
       <div id="grillaCanchas"></div>
     </div>
   </div>
@@ -9015,6 +9020,48 @@ document.getElementById('rHoraIni').addEventListener('change', function () {
 });
 document.getElementById('rHoraFin').addEventListener('change', sincronizarHoras);
 
+let tabCanchas = 'grilla';
+
+document.getElementById('tabsCanchas').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  tabCanchas = b.dataset.tab;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+  cargarGrillaCanchas();
+});
+
+async function pintarCobrados() {
+  const cont = $('grillaCanchas');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/alquileres/historial');
+    const items = d.items.filter(function (x) { return x.desde === x.hasta; });
+
+    if (items.length === 0) {
+      cont.innerHTML = '<div class="vacio">Todavia no cobraste ningun turno.</div>';
+      return;
+    }
+
+    cont.innerHTML =
+      '<div class="rep-resumen"><div class="lbl">Cobrado en turnos</div>' +
+      '<div class="val">' + plata(items.reduce(function (s, x) {
+        return s + (x.estado === 'terminada' ? x.total : 0); }, 0)) + '</div></div>' +
+      items.map(function (x) {
+        return '<div class="reserva ' + x.estado + '">' +
+          '<div class="cab"><div>' +
+          '<div class="n">' + esc(x.cliente_nombre) + '</div>' +
+          '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' + fechaCorta(x.desde) +
+            (x.hora_entrada ? ' ' + x.hora_entrada + ' a ' + (x.hora_salida || '') : '') + '</div>' +
+          '<span class="cuando-res' + (x.estado === 'cancelada' ? ' chip-ocupada' : '') + '">' +
+            (x.estado === 'terminada' ? 'Cobrado' : 'Cancelado') + '</span>' +
+          '</div><div class="m">' + plata(x.total) + '</div></div></div>';
+      }).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
 /* ══ Grilla de canchas por hora ══ */
 
 let diaCancha = null;
@@ -9038,6 +9085,14 @@ $('fechaCanchas').addEventListener('change', function () {
 });
 
 async function cargarGrillaCanchas() {
+  const navDia = document.querySelector('#v-canchas .nav-dia');
+  const fech = document.getElementById('fechaCanchas');
+  const esGrilla = tabCanchas === 'grilla';
+  if (navDia) navDia.style.display = esGrilla ? 'flex' : 'none';
+  if (fech) fech.style.display = esGrilla ? 'block' : 'none';
+
+  if (!esGrilla) { await pintarCobrados(); return; }
+
   const dia = diaActualCancha();
   $('fechaCanchas').value = dia;
 
