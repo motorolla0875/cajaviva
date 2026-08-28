@@ -3158,7 +3158,12 @@ function aplicarCapacidades() {
   if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
 
   const tp = document.querySelector('nav button[data-vista="productos"]');
-  if (tp) tp.textContent = cap('cap_turnos') ? 'Productos/Servicios' : 'Productos';
+  if (tp) {
+    tp.textContent = cap('cap_alquiler') && !cap('cap_mostrador') ? 'Unidades'
+      : cap('cap_alquiler') ? 'Productos/Unidades'
+      : cap('cap_turnos') ? 'Productos/Servicios'
+      : 'Productos';
+  }
 
   const bi = document.getElementById('btnNuevoInsumo');
   if (bi) bi.style.display = cap('cap_recetas') ? '' : 'none';
@@ -3168,7 +3173,10 @@ function aplicarCapacidades() {
   if (bu) bu.style.display = cap('cap_alquiler') ? '' : 'none';
 
   const bn = document.getElementById('btnNuevo');
-  if (bn) bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
+  if (bn) {
+    bn.textContent = cap('cap_turnos') ? '+ Nuevo producto o servicio' : '+ Nuevo producto';
+    bn.style.display = (cap('cap_alquiler') && !cap('cap_mostrador')) ? 'none' : '';
+  }
 
   // Productos siempre visible: ahi se cargan los servicios
   document.querySelector('nav button[data-vista="productos"]')
