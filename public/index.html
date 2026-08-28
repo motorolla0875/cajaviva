@@ -8958,31 +8958,36 @@ async function cargarReservasWeb() {
     if (d.cantidad === 0) { cont.innerHTML = ''; return 0; }
 
     cont.innerHTML = d.items.map(function (x) {
-        const foto = x.foto_mini || x.foto_url;
-        const n = Math.round((new Date(x.hasta + 'T12:00:00') - new Date(x.desde + 'T12:00:00')) / 86400000);
+      const foto = x.foto_mini || x.foto_url;
+      const n = Math.round((new Date(x.hasta + 'T12:00:00') - new Date(x.desde + 'T12:00:00')) / 86400000);
 
-        return '<div class="pedido nuevo">' +
-          '<div class="cab">' +
-          (foto ? '<img class="foto-res" src="' + foto + '" style="width:52px;height:52px;border-radius:9px;object-fit:cover;margin-right:10px;">' : '') +
-          '<div><div class="n">' + esc(x.cliente_nombre) + '<span class="badge-nuevo">NUEVA</span></div>' +
-          '<div class="d">' + esc(x.unidad_nombre || '') + '</div>' +
-          '<div class="d">' + fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
-            ' - ' + n + (n === 1 ? ' noche' : ' noches') +
-            (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
-          (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
-          '</div><div class="m">' + plata(x.total) + '</div></div>' +
-          (x.comprobante
-            ? '<div class="comp-box ok"><img src="' + x.comprobante + '" onclick="verComprobante(this.src)">' +
-              '<div class="comp-txt"><div class="n">Mando el comprobante</div>' +
-              '<div style="font-size:11.5px;color:var(--muted);margin-top:1px;">Bloqueada ' +
-              (x.horas_restantes != null ? x.horas_restantes + 'h mas' : '24h') +
-              '</div></div></div>'
-            : '<div class="comp-box vacio-comp">Sin seña todavia - la fecha sigue libre</div>') +
-          '<div class="acc">' +
-            '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
-            (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
-            '<button onclick="confirmarReservaWeb(\'' + x.id + '\', false)">Rechazar</button>' +
-          '</div></div>';
+      return '<div class="reserva en_curso">' +
+        '<div class="cab">' +
+        (foto ? '<img class="foto-res" src="' + foto + '" loading="lazy">' : '') +
+        '<div>' +
+        '<div class="n">' + esc(x.cliente_nombre) + '</div>' +
+        '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
+          fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
+          (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+        (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
+        '<span class="cuando-res">' + n + (n === 1 ? ' noche' : ' noches') + '</span>' +
+        (x.comprobante
+          ? '<span class="cuando-res">Pago la seña' +
+            (x.horas_restantes != null ? ' - quedan ' + x.horas_restantes + 'h' : '') + '</span>'
+          : '<span class="cuando-res" style="background:var(--warn-soft,#FDF3E3);color:var(--warn-text,#8A5A0F);">Sin seña</span>') +
+        '</div><div class="m">' + plata(x.total) + '</div></div>' +
+        (x.comprobante
+          ? '<div class="comp-box ok" style="margin-top:10px;">' +
+            '<img src="' + x.comprobante + '" onclick="verComprobante(this.src)">' +
+            '<div class="comp-txt"><div class="n">Comprobante recibido</div>' +
+            '<div style="font-size:11.5px;color:var(--muted);">Confirmala antes de que se libere</div>' +
+            '</div></div>'
+          : '') +
+        '<div class="acc">' +
+          '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
+          (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
+          '<button onclick="confirmarReservaWeb(\'' + x.id + '\', false)">Rechazar</button>' +
+        '</div></div>';
       }).join('');
 
     return d.cantidad;
