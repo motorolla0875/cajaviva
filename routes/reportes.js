@@ -198,4 +198,38 @@ router.get('/vencimientos', (req, res) => {
   });
 });
 
+
+// ── unidades mas alquiladas ──
+router.get('/unidades', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const desde = req.query.desde || menosDias(29);
+  const hasta = req.query.hasta || hoyISO();
+
+  const filas = db.prepare(`
+    SELECT p.id, p.nombre, p.precio_venta, p.capacidad, p.cobro_por,
+           p.foto_mini, p.foto_url,
+           COUNT(r.id) AS reservas,
+           COALESCE(SUM(r.total), 0) AS facturado,
+           COALESCE(SUM(julianday(r.hasta) - julianday(r.desde)), 0) AS noches
+    FROM productos p
+    LEFT JOIN reservas r ON r.unidad_id = p.id
+      AND r.estado = 'terminada' AND r.desde >= ? AND r.desde <= ?
+    WHERE p.user_id = ? AND p.activo = 1 AND p.es_unidad = 1
+    GROUP BY p.id
+    ORDER BY facturado DESC
+  `).all(desde, hasta, req.userId);
+
+  const dias = Math.max(1, Math.round(
+    (new Date(hasta + 'T12:00:00') - new Date(desde + 'T12:00:00')) / 86400000
+  ) + 1);
+
+  filas.forEach(function (u) {
+    u.ocupacion = Math.round((u.noches / dias) * 100);
+  });
+
+  const total = filas.reduce(function (s, u) { return s + u.facturado; }, 0);
+  res.json({ items: filas, total: total, dias: dias });
+});
+
 module.exports = router;

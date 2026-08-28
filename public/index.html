@@ -1726,6 +1726,7 @@
         <button data-tab="quietos">No se venden</button>
         <button data-tab="empleados">Por empleado</button>
         <button data-tab="vencen" id="tabVencen">Vencimientos</button>
+        <button data-tab="unidades" id="tabRepUnidades">Unidades</button>
       </div>
 
       <div id="repContenido"></div>
@@ -3163,6 +3164,9 @@ function aplicarCapacidades() {
 
   const tv = document.getElementById('tabVencen');
   if (tv) tv.style.display = cap('cap_vencimientos') ? '' : 'none';
+
+  const tru = document.getElementById('tabRepUnidades');
+  if (tru) tru.style.display = cap('cap_alquiler') ? '' : 'none';
 
   const ta = document.getElementById('tabAgenda');
   if (ta) ta.style.display = cap('cap_turnos') ? '' : 'none';
@@ -5647,6 +5651,27 @@ async function cargarReportes() {
             '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
         }).join('');
       window._listaReponer = d.items;
+
+    } else if (repTab === 'unidades') {
+      const d = await api('GET', '/reportes/unidades' + qs);
+
+      if (d.items.length === 0) {
+        cont.innerHTML = '<div class="vacio">No hay unidades cargadas.</div>';
+        return;
+      }
+
+      cont.innerHTML =
+        '<div class="rep-resumen"><div class="lbl">Facturado en alquileres</div>' +
+        '<div class="val">' + plata(d.total) + '</div></div>' +
+        d.items.map(function (u, n) {
+          return '<div class="rep-item">' +
+            '<div class="rep-pos' + (n === 0 && u.facturado > 0 ? ' top' : '') + '">' + (n + 1) + '</div>' +
+            '<div class="datos"><div class="n">' + esc(u.nombre) + '</div>' +
+            '<div class="d">' + u.reservas + (u.reservas === 1 ? ' estadia' : ' estadias') +
+              ' - ' + fmtCant(u.noches) + (u.noches === 1 ? ' noche' : ' noches') + '</div>' +
+            '<div class="g">Ocupacion ' + u.ocupacion + '%</div></div>' +
+            '<div class="cifra"><b>' + plata(u.facturado) + '</b><span>facturado</span></div></div>';
+        }).join('');
 
     } else if (repTab === 'vencen') {
       const d = await api('GET', '/reportes/vencimientos');
