@@ -8803,7 +8803,7 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   const esCancha = cap('cap_canchas') && !cap('cap_alquiler');
   $('tituloProd').textContent = esCancha ? 'Nueva cancha' : 'Nueva unidad para alquilar';
   aplicarEjemplos(true);
-  $('pNotas').placeholder = esCancha ? '' : 'Ej: con parrilla y vista al lago';
+  $('pNotas').placeholder = '';
 
   const wc = document.getElementById('wrapCapacidad');
   if (wc) wc.style.display = esCancha ? 'none' : 'block';
