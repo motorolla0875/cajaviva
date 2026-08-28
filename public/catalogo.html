@@ -582,7 +582,7 @@ function pintar() {
       '<div class="info">' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
-      (!p.es_servicio && !p.tiene_variantes && p.stock <= 0
+      (!p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0
         ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
       '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
         (p.es_unidad ? ' por ' + (p.cobro_por || 'noche') : (p.unidad !== 'unidad' ? ' /' + p.unidad : '')) + '</div>' +
@@ -1186,12 +1186,14 @@ function consultarUnidad(p) {
   f1.value = hoy; f1.min = hoy;
   f2.value = m.toISOString().slice(0, 10); f2.min = hoy;
 
+  unidadFija = p.id;
   unidadPreferida = p.id;
   document.getElementById('modalAlq').style.display = 'block';
   buscarDisponibles();
 }
 
 let unidadPreferida = null;
+let unidadFija = null;
 
 function cerrarAlq() { document.getElementById('modalAlq').style.display = 'none'; }
 
@@ -1224,9 +1226,20 @@ async function buscarDisponibles() {
       return;
     }
 
+    const lista = unidadFija
+      ? d.unidades.filter(function (u) { return u.id === unidadFija; })
+      : d.unidades;
+
+    if (lista.length === 0) {
+      cont.innerHTML = '<div style="color:#8A5A0F;font-size:13.5px;background:#FDF3E3;padding:12px;border-radius:10px;">' +
+        'No esta libre en esas fechas. Proba con otras.</div>';
+      return;
+    }
+
     cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">' +
-      d.noches + (d.noches === 1 ? ' noche' : ' noches') + ' - elegi cual queres</div>' +
-      d.unidades.map(function (u) {
+      d.noches + (d.noches === 1 ? ' noche' : ' noches') +
+      (unidadFija ? ' - disponible' : ' - elegi cual queres') + '</div>' +
+      lista.map(function (u) {
         return '<button class="unid-op" onclick="elegirUnidad(\'' + u.id + '\', this)">' +
           (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
           '<span class="nu">' + esc(u.nombre) +
@@ -1235,12 +1248,14 @@ async function buscarDisponibles() {
       }).join('');
 
     // si venia de tocar una unidad puntual, seleccionarla
-    if (unidadPreferida) {
-      const btns = cont.querySelectorAll('.unid-op');
-      const i = d.unidades.findIndex(function (u) { return u.id === unidadPreferida; });
+    const btns = cont.querySelectorAll('.unid-op');
+    if (lista.length === 1 && btns[0]) {
+      elegirUnidad(lista[0].id, btns[0]);
+    } else if (unidadPreferida) {
+      const i = lista.findIndex(function (u) { return u.id === unidadPreferida; });
       if (i >= 0 && btns[i]) elegirUnidad(unidadPreferida, btns[i]);
-      unidadPreferida = null;
     }
+    unidadPreferida = null;
   } catch (e) {
     cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudo consultar.</div>';
   }
