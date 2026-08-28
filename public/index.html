@@ -4413,7 +4413,7 @@ function abrirProd(id) {
       bmo.textContent = 'Mas opciones';
     }
   }
-  $('pNombre').placeholder = 'Ej: Coca Cola 500ml';
+  aplicarEjemplos(false);
   $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   $('wrapCostoProd').style.display = '';
@@ -8802,7 +8802,7 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   esUnidadActual = true;
   const esCancha = cap('cap_canchas') && !cap('cap_alquiler');
   $('tituloProd').textContent = esCancha ? 'Nueva cancha' : 'Nueva unidad para alquilar';
-  $('pNombre').placeholder = esCancha ? '' : 'Ej: Cabaña 1, Salon principal';
+  aplicarEjemplos(true);
   $('pNotas').placeholder = esCancha ? '' : 'Ej: con parrilla y vista al lago';
 
   const wc = document.getElementById('wrapCapacidad');
@@ -10190,6 +10190,94 @@ async function guardarPaisNegocio() {
       zonaHoraria: (p ? p[2] : zonaDetectada()) || 'America/Argentina/Buenos_Aires'
     });
   } catch (e) {}
+}
+
+/* ══ Ejemplos segun el rubro ══ */
+
+const EJEMPLOS = {
+  kiosco:      ['Coca Cola 500ml', 'Alfajor, golosinas, cigarrillos'],
+  almacen:     ['Fideos 500g', 'Marca, presentacion'],
+  minimercado: ['Leche entera 1L', 'Marca, presentacion'],
+  libreria:    ['Cuaderno rayado 48h', 'Marca, tamaño'],
+  ferreteria:  ['Tornillo 6x40', 'Medida, material'],
+  'pinturería':['Latex interior 4L', 'Color, acabado'],
+  bazar:       ['Juego de ollas 5 piezas', 'Material, medidas'],
+  regalos:     ['Taza personalizada', 'Detalles del producto'],
+  jugueteria:  ['Pelota de futbol N5', 'Edad recomendada'],
+  bijouterie:  ['Aros de plata', 'Material, medidas'],
+  petshop:     ['Alimento perro adulto 15kg', 'Marca, tamaño'],
+  repuestos:   ['Filtro de aceite', 'Marca, compatibilidad'],
+  electronica: ['Cargador USB-C', 'Marca, compatibilidad'],
+  perfumeria:  ['Shampoo 400ml', 'Marca, tipo'],
+  farmacia:    ['Ibuprofeno 400mg', 'Presentacion'],
+  vinoteca:    ['Malbec reserva', 'Bodega, cosecha'],
+  tabaqueria:  ['Marlboro box', 'Presentacion'],
+  corralon:    ['Cemento 50kg', 'Marca, medida'],
+  forrajeria:  ['Alimento balanceado 25kg', 'Marca, tipo'],
+  vivero:      ['Ficus lyrata', 'Tamaño de maceta, cuidados'],
+
+  verduleria:  ['Tomate perita', 'Origen, calidad'],
+  carniceria:  ['Asado de tira', 'Corte, calidad'],
+  polleria:    ['Pollo entero', 'Origen'],
+  pescaderia:  ['Merluza filet', 'Fresco o congelado'],
+  fiambreria:  ['Jamon cocido', 'Marca'],
+  dietetica:   ['Almendras', 'Origen'],
+  granja:      ['Huevos docena', 'Tamaño'],
+
+  ropa:        ['Remera lisa', 'Tela, calce'],
+  calzado:     ['Zapatilla urbana', 'Material, colores'],
+  deportiva:   ['Camiseta deportiva', 'Tela, uso'],
+  lenceria:    ['Conjunto de encaje', 'Tela, talles'],
+  blanqueria:  ['Sabanas 2 plazas', 'Tela, medidas'],
+  marroquineria:['Mochila urbana', 'Material, capacidad'],
+  uniformes:   ['Ambo medico', 'Tela, talles'],
+
+  rotiseria:   ['Milanesa con pure', 'Que trae la porcion'],
+  cafeteria:   ['Cafe con leche', 'Tamaño'],
+  pizzeria:    ['Pizza muzzarella', 'Tamaño, porciones'],
+  panaderia:   ['Pan frances', 'Peso'],
+  heladeria:   ['Helado 1/4 kg', 'Gustos'],
+  bar:         ['Cerveza tirada', 'Tamaño'],
+  foodtruck:   ['Hamburguesa completa', 'Que trae'],
+  casa_comidas:['Vianda del dia', 'Que trae'],
+
+  cabanas:     ['Cabaña 1', 'Con parrilla y vista al lago'],
+  hotel:       ['Habitacion doble', 'Que incluye'],
+  salon:       ['Salon principal', 'Capacidad, que incluye'],
+  vehiculos:   ['Ford Fiesta 2020', 'Automatico, 5 puertas'],
+  equipos:     ['Hidrolavadora 1800W', 'Que incluye'],
+  eventos:     ['Mesa redonda 10 personas', 'Material'],
+
+  padel:       ['Cancha 1', 'Techada, con luces'],
+  futbol5:     ['Cancha 1', 'Cesped sintetico, con luces'],
+  tenis:       ['Cancha 1', 'Polvo de ladrillo'],
+  salas:       ['Sala A', 'Equipada, insonorizada'],
+  canchas_alq: ['Cancha 1', 'Que incluye'],
+
+  soda:        ['Bidon 20L', 'Retornable'],
+  gas:         ['Garrafa 10kg', 'Marca'],
+  lacteos:     ['Leche 1L', 'Marca'],
+  distribuidora:['Caja de 12 unidades', 'Marca'],
+  mayorista:   ['Bulto x24', 'Marca']
+};
+
+function ejemploDe(cual) {
+  const r = negocio && negocio.rubro;
+  const e = EJEMPLOS[r];
+  if (!e) return '';
+  return 'Ej: ' + (cual === 'desc' ? e[1] : e[0]);
+}
+
+function aplicarEjemplos(esUnidad) {
+  const n = document.getElementById('pNombre');
+  const d = document.getElementById('pNotas');
+  if (!n) return;
+
+  const nom = ejemploDe('nombre');
+  const des = ejemploDe('desc');
+
+  n.placeholder = nom || 'Nombre del producto';
+  if (d) d.placeholder = des || 'Detalles que quieras aclarar';
 }
 
 /* ══ Vuelto ══ */
