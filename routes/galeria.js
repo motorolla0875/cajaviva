@@ -52,7 +52,7 @@ router.post('/:productoId', subir.single('foto'), (req, res) => {
 
   const cuantas = db.prepare('SELECT COUNT(*) AS n FROM galeria WHERE producto_id = ?')
     .get(req.params.productoId);
-  if (cuantas.n >= 5) return res.status(400).json({ error: 'Ya tenes 5 fotos. Borra alguna primero.' });
+  if (cuantas.n >= 12) return res.status(400).json({ error: 'Ya tenes 12 fotos. Borra alguna primero.' });
 
   const nombre = uuidv4() + '-gal.webp';
   fs.writeFileSync(path.join(CARPETA, nombre), req.file.buffer);

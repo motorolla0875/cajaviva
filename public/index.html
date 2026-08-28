@@ -2366,7 +2366,7 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Esto solo lo ven tus clientes en el catalogo.</p>
     <div id="msgVid"></div>
 
-    <label>Fotos (hasta 5)</label>
+    <label>Fotos (hasta 12)</label>
     <div id="galeriaVid" class="galeria-grid"></div>
     <button type="button" class="btn-foto" id="btnAgregarFotoVid" style="margin-top:8px;">Agregar foto</button>
     <input type="file" id="archFotoVid" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
@@ -9094,7 +9094,7 @@ async function cargarVidriera() {
             '<button onclick="borrarFotoVid(\'' + f.id + '\')">&#10005;</button></div>';
         }).join('');
 
-    $('btnAgregarFotoVid').style.display = d.fotos.length >= 5 ? 'none' : 'block';
+    $('btnAgregarFotoVid').style.display = d.fotos.length >= 12 ? 'none' : 'block';
   } catch (e) {
     $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">' + esc(e.message) + '</div>';
   }
