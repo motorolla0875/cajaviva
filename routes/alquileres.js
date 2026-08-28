@@ -548,12 +548,13 @@ router.post('/publico/:slug', (req, res) => {
   const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
   if (!n) return res.status(404).json({ error: 'No encontrado.' });
 
-  const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
+  const { unidadId, nombre, telefono, desde, hasta, personas, nota,
+          horaEntrada, horaSalida } = req.body || {};
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
   if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
   if (hasta < desde) return res.status(400).json({ error: 'La salida no puede ser antes de la entrada.' });
-  if (hasta === desde && !req.body?.horaEntrada) {
-    return res.status(400).json({ error: 'Para el mismo dia poné los horarios.' });
+  if (hasta === desde && !horaEntrada) {
+    return res.status(400).json({ error: 'Elegi un horario.' });
   }
 
   const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
@@ -570,17 +571,23 @@ router.post('/publico/:slug', (req, res) => {
   if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon. Proba con otras.' });
 
   const nn2 = noches(desde, hasta);
-  const calcPub = calcularTotal(n.user_id, u.precio_venta || 0, desde, hasta);
-  const total = calcPub.total;
+  let total;
+  if (hasta === desde) {
+    total = Math.round((u.precio_venta || 0) * horasEntre(horaEntrada, horaSalida));
+  } else {
+    total = calcularTotal(n.user_id, u.precio_venta || 0, desde, hasta).total;
+  }
   const id = uuidv4();
 
   db.prepare(`
     INSERT INTO reservas (id, user_id, unidad_id, cliente_nombre, telefono,
-      desde, hasta, personas, precio_noche, total, estado, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)
+      desde, hasta, personas, precio_noche, total, estado, nota,
+      hora_entrada, hora_salida)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)
   `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
          desde, hasta, parseInt(personas) || null, Math.round(total / nn2), total,
-         (nota ? nota + ' - ' : '') + 'Pedido por la web');
+         (nota ? nota + ' - ' : '') + 'Pedido por la web',
+         horaEntrada || null, horaSalida || null);
 
   res.json({
     id: id, unidad: u.nombre, desde: desde, hasta: hasta,
