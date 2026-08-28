@@ -2368,8 +2368,8 @@
 
     <label>Fotos (hasta 12)</label>
     <div id="galeriaVid" class="galeria-grid"></div>
-    <button type="button" class="btn-foto" id="btnAgregarFotoVid" style="margin-top:8px;">Agregar foto</button>
-    <input type="file" id="archFotoVid" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
+    <button type="button" class="btn-foto" id="btnAgregarFotoVid" style="margin-top:8px;">Agregar fotos</button>
+    <input type="file" id="archFotoVid" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none;">
 
     <label style="margin-top:16px;">Descripcion completa</label>
     <textarea id="descLargaVid" rows="6" placeholder="Que incluye, como llegar, reglas de la casa..."></textarea>
@@ -9095,6 +9095,7 @@ async function cargarVidriera() {
         }).join('');
 
     $('btnAgregarFotoVid').style.display = d.fotos.length >= 12 ? 'none' : 'block';
+    $('btnAgregarFotoVid').textContent = 'Agregar fotos';
   } catch (e) {
     $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">' + esc(e.message) + '</div>';
   }
@@ -9103,31 +9104,51 @@ async function cargarVidriera() {
 $('btnAgregarFotoVid').onclick = function () { $('archFotoVid').click(); };
 
 $('archFotoVid').onchange = async function (e) {
-  const f = e.target.files[0];
-  if (!f || !vidProdId) return;
+  const archivos = Array.prototype.slice.call(e.target.files);
+  if (archivos.length === 0 || !vidProdId) return;
 
   const btn = $('btnAgregarFotoVid');
-  btn.disabled = true; btn.textContent = 'Subiendo...';
+  btn.disabled = true;
+  $('msgVid').innerHTML = '';
 
-  try {
-    const img = await comprimirImagen(f, 1000, 0.75);
-    const fd = new FormData();
-    fd.append('foto', img, 'g.webp');
+  let subidas = 0, fallidas = 0;
 
-    const r = await fetch(API + '/galeria/' + vidProdId, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + token },
-      body: fd
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+  for (let i = 0; i < archivos.length; i++) {
+    btn.textContent = 'Subiendo ' + (i + 1) + ' de ' + archivos.length + '...';
+    try {
+      const img = await comprimirImagen(archivos[i], 1000, 0.75);
+      const fd = new FormData();
+      fd.append('foto', img, 'g.webp');
 
-    await cargarVidriera();
-  } catch (err) {
-    $('msgVid').innerHTML = '<div class="msg">' + esc(err.message) + '</div>';
+      const r = await fetch(API + '/galeria/' + vidProdId, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+        body: fd
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        // si llego al tope, cortar
+        if (d.error && d.error.indexOf('12 fotos') >= 0) {
+          $('msgVid').innerHTML = '<div class="msg">' + esc(d.error) + '</div>';
+          break;
+        }
+        throw new Error(d.error || 'error');
+      }
+      subidas++;
+    } catch (err) { fallidas++; }
   }
 
-  btn.disabled = false; btn.textContent = 'Agregar foto';
+  await cargarVidriera();
+
+  if (subidas > 0) {
+    avisar(subidas === 1 ? 'Foto subida' : subidas + ' fotos subidas');
+  }
+  if (fallidas > 0 && !$('msgVid').innerHTML) {
+    $('msgVid').innerHTML = '<div class="msg">' + fallidas +
+      (fallidas === 1 ? ' foto no se pudo subir' : ' fotos no se pudieron subir') + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Agregar fotos';
   e.target.value = '';
 };
 
