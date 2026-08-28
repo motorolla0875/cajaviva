@@ -2921,7 +2921,7 @@ let periodo = 'hoy';
 let filtroProd = 'todos';
 
 function filtroInicial() {
-  if (cap('cap_alquiler') && filtroProd === 'todos') {
+  if ((cap('cap_alquiler') || cap('cap_canchas')) && filtroProd === 'todos') {
     if (productos.some(function (p) { return p.es_unidad; })) { filtroProd = 'unidades'; return; }
   }
   const hayEspeciales = productos.some(function (p) { return p.es_insumo || p.tiene_receta; });
@@ -5599,12 +5599,13 @@ function pintarFiltrosProd() {
       html += '<button class="' + (filtroProd === 'insumos' ? 'on' : '') + '" onclick="filtrarProductos(\'insumos\')">Insumos (' + nInsumos + ')</button>';
     }
     html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
-  } else if (cap('cap_alquiler')) {
+  } else if (cap('cap_alquiler') || cap('cap_canchas')) {
     const nUnid = productos.filter(function (p) { return p.es_unidad; }).length;
     const nProd = productos.filter(function (p) { return !p.es_unidad; }).length;
+    const nomUnid = cap('cap_canchas') && !cap('cap_alquiler') ? 'Canchas' : 'Unidades';
 
     if (nUnid > 0) {
-      html += '<button class="' + (filtroProd === 'unidades' ? 'on' : '') + '" onclick="filtrarProductos(\'unidades\')">Unidades (' + nUnid + ')</button>';
+      html += '<button class="' + (filtroProd === 'unidades' ? 'on' : '') + '" onclick="filtrarProductos(\'unidades\')">' + nomUnid + ' (' + nUnid + ')</button>';
     }
     if (nProd > 0) {
       html += '<button class="' + (filtroProd === 'paraVender' ? 'on' : '') + '" onclick="filtrarProductos(\'paraVender\')">Para vender (' + nProd + ')</button>';
