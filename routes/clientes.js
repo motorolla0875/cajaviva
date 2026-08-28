@@ -4,7 +4,10 @@ const db = require('../db');
 
 const router = express.Router();
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── listar clientes ──
 router.get('/', (req, res) => {
@@ -92,7 +95,7 @@ router.post('/:id/pagos', (req, res) => {
   db.prepare(`
     INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(uuidv4(), req.userId, req.params.id, monto, req.body?.fecha || hoyISO(),
+  `).run(uuidv4(), req.userId, req.params.id, monto, req.body?.fecha || hoyISO(req.userId),
          req.body?.nota || null, tipo);
 
   db.prepare('UPDATE clientes SET saldo = saldo + ? WHERE id = ?').run(signo * monto, req.params.id);

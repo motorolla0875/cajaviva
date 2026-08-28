@@ -178,3 +178,36 @@ db.exec(`
 console.log('Base de datos CajaViva lista.');
 
 module.exports = db;
+
+// ── fecha y hora en la zona del negocio ──
+function zonaDe(userId) {
+  try {
+    const n = db.prepare('SELECT zona_horaria FROM negocio WHERE user_id = ?').get(userId);
+    return (n && n.zona_horaria) || 'America/Argentina/Buenos_Aires';
+  } catch (e) { return 'America/Argentina/Buenos_Aires'; }
+}
+
+// devuelve YYYY-MM-DD en la zona del negocio
+function hoyEn(userId) {
+  try {
+    return new Date().toLocaleDateString('en-CA', { timeZone: zonaDe(userId) });
+  } catch (e) { return new Date().toISOString().slice(0, 10); }
+}
+
+// devuelve los minutos desde medianoche en la zona del negocio
+function minutosAhoraEn(userId) {
+  try {
+    const h = new Date().toLocaleTimeString('en-GB', {
+      timeZone: zonaDe(userId), hour: '2-digit', minute: '2-digit'
+    });
+    const p = h.split(':');
+    return parseInt(p[0]) * 60 + parseInt(p[1]);
+  } catch (e) {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+}
+
+module.exports.zonaDe = zonaDe;
+module.exports.hoyEn = hoyEn;
+module.exports.minutosAhoraEn = minutosAhoraEn;

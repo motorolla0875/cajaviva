@@ -109,7 +109,10 @@ try { db.exec('ALTER TABLE productos ADD COLUMN es_unidad INTEGER NOT NULL DEFAU
 try { db.exec('ALTER TABLE productos ADD COLUMN capacidad INTEGER'); } catch (e) {}
 try { db.exec("ALTER TABLE productos ADD COLUMN cobro_por TEXT NOT NULL DEFAULT 'noche'"); } catch (e) {}
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 function noches(desde, hasta) {
   const d = new Date(desde + 'T12:00:00');
@@ -234,7 +237,7 @@ router.get('/proximas', (req, res) => {
     LEFT JOIN productos p ON p.id = r.unidad_id
     WHERE r.user_id = ? AND r.hasta >= ? AND r.estado IN ('reservada','en_curso')
     ORDER BY r.desde LIMIT 60
-  `).all(req.userId, hoyISO());
+  `).all(req.userId, hoyISO(req.userId));
   res.json(filas);
 });
 
@@ -297,7 +300,7 @@ router.post('/', (req, res) => {
       INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
         costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
       VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, 0, ?, ?, 0, ?, ?)
-    `).run(ventaSena, req.userId, clienteId || null, hoyISO(), montoSena,
+    `).run(ventaSena, req.userId, clienteId || null, hoyISO(req.userId), montoSena,
            'efectivo', montoSena,
            'Seña: ' + u.nombre + ' - ' + clienteNombre.trim(), req.empleadoId || null);
 
@@ -379,7 +382,7 @@ router.post('/:id/cobrar', (req, res) => {
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, 0, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, r.cliente_id, req.body?.fecha || hoyISO(), total,
+  `).run(ventaId, req.userId, r.cliente_id, req.body?.fecha || hoyISO(req.userId), total,
          medio, total,
          'Alquiler: ' + (u ? u.nombre : '') + ' - ' + r.cliente_nombre, req.empleadoId || null);
 
@@ -420,7 +423,7 @@ router.get('/historial', (req, res) => {
     LEFT JOIN productos p ON p.id = r.unidad_id
     WHERE r.user_id = ? AND (r.estado IN ('terminada','cancelada') OR r.hasta < ?)
     ORDER BY r.desde DESC LIMIT 100
-  `).all(req.userId, hoyISO());
+  `).all(req.userId, hoyISO(req.userId));
 
   const total = filas.filter(function (r) { return r.estado === 'terminada'; })
     .reduce(function (s, r) { return s + r.total; }, 0);
@@ -766,7 +769,7 @@ router.put('/temporadas/finde', (req, res) => {
 
 // ── los que estan ahora ──
 router.get('/encurso', (req, res) => {
-  const hoy = hoyISO();
+  const hoy = hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
@@ -885,7 +888,7 @@ router.put('/horarios', (req, res) => {
 
 // ── grilla de un dia: canchas x horarios ──
 router.get('/grilla', (req, res) => {
-  const dia = req.query.dia || hoyISO();
+  const dia = req.query.dia || hoyISO(req.userId);
 
   const n = db.prepare(`
     SELECT hora_desde, hora_hasta, turno_partido, hora_desde2, hora_hasta2
@@ -943,7 +946,7 @@ router.get('/publico/:slug/horas', (req, res) => {
   const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
   if (!n) return res.status(404).json({ error: 'No encontrado.' });
 
-  const dia = req.query.dia || hoyISO();
+  const dia = req.query.dia || hoyISO(req.userId);
   const unidadId = req.query.unidad;
   if (!unidadId) return res.status(400).json({ error: 'Falta la cancha.' });
 
@@ -972,11 +975,9 @@ router.get('/publico/:slug/horas', (req, res) => {
     rangos.push([aMin(n.hora_desde2), aMin(n.hora_hasta2)]);
   }
 
-  // el servidor esta en UTC: Argentina son 3 horas menos
-  const ahora = new Date(Date.now() - 3 * 3600000);
-  const hoyLocal = ahora.toISOString().slice(0, 10);
+  const hoyLocal = db.hoyEn ? db.hoyEn(n.user_id) : new Date().toISOString().slice(0, 10);
   const esHoy = dia === hoyLocal;
-  const minAhora = ahora.getUTCHours() * 60 + ahora.getUTCMinutes();
+  const minAhora = db.minutosAhoraEn ? db.minutosAhoraEn(n.user_id) : 0;
 
   const libres = [];
   rangos.forEach(function (r) {

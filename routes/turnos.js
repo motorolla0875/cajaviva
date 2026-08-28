@@ -30,7 +30,10 @@ db.exec(`
 try { db.exec('ALTER TABLE productos ADD COLUMN duracion INTEGER'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN es_servicio INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 function minutos(hora) {
   const p = String(hora).split(':');
@@ -67,7 +70,7 @@ router.put('/horarios', (req, res) => {
 
 // ── turnos de un dia ──
 router.get('/', (req, res) => {
-  const fecha = req.query.fecha || hoyISO();
+  const fecha = req.query.fecha || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT t.*, e.nombre AS empleado_nombre
@@ -97,7 +100,7 @@ router.get('/proximos', (req, res) => {
     LEFT JOIN empleados e ON e.id = t.empleado_id
     WHERE t.user_id = ? AND t.fecha >= ? AND t.estado = 'reservado'
     ORDER BY t.fecha, t.hora LIMIT 60
-  `).all(req.userId, hoyISO());
+  `).all(req.userId, hoyISO(req.userId));
   res.json(filas);
 });
 
@@ -196,7 +199,7 @@ router.post('/:id/cobrar', (req, res) => {
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, ?, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, t.cliente_id, req.body?.fecha || hoyISO(), total, costo,
+  `).run(ventaId, req.userId, t.cliente_id, req.body?.fecha || hoyISO(req.userId), total, costo,
          medio, total, 'Turno: ' + t.servicio + ' - ' + t.cliente_nombre, t.empleado_id);
 
   db.prepare(`
@@ -223,7 +226,7 @@ router.get('/publico/:slug/libres', (req, res) => {
   if (!n) return res.status(404).json({ error: 'No encontrado.' });
   if (!n.turnos_web) return res.json({ activo: false, horas: [] });
 
-  const fecha = req.query.fecha || hoyISO();
+  const fecha = req.query.fecha || hoyISO(req.userId);
   const duracion = parseInt(req.query.duracion) || 30;
 
   let cfg = {};
@@ -243,7 +246,7 @@ router.get('/publico/:slug/libres', (req, res) => {
 
   // si es hoy, no ofrecer horas pasadas
   const ahora = new Date();
-  const esHoy = fecha === hoyISO();
+  const esHoy = fecha === hoyISO(req.userId);
   const minAhora = ahora.getHours() * 60 + ahora.getMinutes() + 30;
 
   const horas = [];

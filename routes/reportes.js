@@ -3,7 +3,10 @@ const db = require('../db');
 
 const router = express.Router();
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 function menosDias(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -15,7 +18,7 @@ router.get('/mas-vendidos', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT i.producto_id AS id, i.nombre,
@@ -41,7 +44,7 @@ router.get('/sin-movimiento', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT p.id, p.nombre, p.stock, p.precio_venta, p.precio_costo, p.unidad,
@@ -72,7 +75,7 @@ router.get('/reponer', (req, res) => {
 
   const dias = parseInt(req.query.dias) || 30;
   const desde = menosDias(dias);
-  const hasta = hoyISO();
+  const hasta = hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT p.id, p.nombre, p.stock, p.stock_minimo, p.unidad,
@@ -108,7 +111,7 @@ router.get('/por-dia', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT fecha, COUNT(*) AS ventas,
@@ -127,7 +130,7 @@ router.get('/empleados', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT
@@ -157,7 +160,7 @@ router.get('/empleados/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
   const cond = req.params.id === 'dueno' ? 'v.empleado_id IS NULL' : 'v.empleado_id = ?';
   const args = req.params.id === 'dueno'
     ? [req.userId, desde, hasta]
@@ -179,7 +182,7 @@ router.get('/empleados/:id', (req, res) => {
 router.get('/vencimientos', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
-  const hoy = hoyISO();
+  const hoy = hoyISO(req.userId);
   const filas = db.prepare(`
     SELECT p.id, p.nombre, p.vence, p.stock, p.unidad, p.precio_venta, p.precio_costo,
            p.aviso_dias, c.nombre AS categoria_nombre,
@@ -209,7 +212,7 @@ router.get('/unidades', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
   const desde = req.query.desde || menosDias(29);
-  const hasta = req.query.hasta || hoyISO();
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const filas = db.prepare(`
     SELECT p.id, p.nombre, p.precio_venta, p.capacidad, p.cobro_por,

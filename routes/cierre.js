@@ -18,11 +18,14 @@ db.exec(`
   );
 `);
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── resumen del dia para cerrar la caja ──
 router.get('/', (req, res) => {
-  const fecha = req.query.fecha || hoyISO();
+  const fecha = req.query.fecha || hoyISO(req.userId);
 
   const ventas = db.prepare(`
     SELECT medio_pago,
@@ -78,7 +81,7 @@ router.get('/', (req, res) => {
 
 // ── guardar el cierre ──
 router.post('/', (req, res) => {
-  const fecha = req.body?.fecha || hoyISO();
+  const fecha = req.body?.fecha || hoyISO(req.userId);
   const contado = parseFloat(req.body?.contado);
   if (isNaN(contado) || contado < 0) return res.status(400).json({ error: 'Poné cuanto contaste.' });
 

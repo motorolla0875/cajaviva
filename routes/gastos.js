@@ -4,11 +4,14 @@ const db = require('../db');
 
 const router = express.Router();
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 router.get('/', (req, res) => {
-  const desde = req.query.desde || hoyISO();
-  const hasta = req.query.hasta || hoyISO();
+  const desde = req.query.desde || hoyISO(req.userId);
+  const hasta = req.query.hasta || hoyISO(req.userId);
   const rows = db.prepare(`
     SELECT * FROM gastos
     WHERE user_id = ? AND fecha >= ? AND fecha <= ?
@@ -29,7 +32,7 @@ router.post('/', (req, res) => {
     INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, automatico)
     VALUES (?, ?, ?, ?, ?, ?, 0)
   `).run(id, req.userId, proveedorId || null, descripcion.trim(), m,
-         /^\d{4}-\d{2}-\d{2}$/.test(fecha || '') ? fecha : hoyISO());
+         /^\d{4}-\d{2}-\d{2}$/.test(fecha || '') ? fecha : hoyISO(req.userId));
 
   res.json({ id });
 });

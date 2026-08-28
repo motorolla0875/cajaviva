@@ -9,7 +9,10 @@ try { db.exec('ALTER TABLE cheques ADD COLUMN numero TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE cheques ADD COLUMN banco TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE cheques ADD COLUMN rechazado INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── listar ──
 router.get('/', (req, res) => {
@@ -29,7 +32,7 @@ router.get('/', (req, res) => {
     ORDER BY ch.fecha_cobro ASC
   `).all(req.userId);
 
-  const hoy = hoyISO();
+  const hoy = hoyISO(req.userId);
   const resumen = db.prepare(`
     SELECT
       COALESCE(SUM(CASE WHEN acreditado = 0 AND rechazado = 0 THEN monto ELSE 0 END), 0) AS pendiente,
@@ -66,7 +69,7 @@ router.post('/', (req, res) => {
     db.prepare(`
       INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
       VALUES (?, ?, ?, ?, ?, ?, 'pago')
-    `).run(uuidv4(), req.userId, clienteId, monto, hoyISO(),
+    `).run(uuidv4(), req.userId, clienteId, monto, hoyISO(req.userId),
            'Cheque ' + (req.body?.numero || '') + ' al ' + req.body.fechaCobro);
   }
 
@@ -99,7 +102,7 @@ router.post('/:id/rechazar', (req, res) => {
     db.prepare(`
       INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
       VALUES (?, ?, ?, ?, ?, 'Cheque rechazado', 'devolucion')
-    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO());
+    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO(req.userId));
   }
 
   res.json({ ok: true });

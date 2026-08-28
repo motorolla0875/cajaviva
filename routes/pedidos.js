@@ -38,7 +38,10 @@ try { db.exec('ALTER TABLE pedidos_web ADD COLUMN comprobante TEXT'); } catch (e
 try { db.exec('ALTER TABLE pedido_web_items ADD COLUMN variante_id TEXT'); } catch (e) {}
 try { db.exec("ALTER TABLE pedidos_web ADD COLUMN pago_estado TEXT NOT NULL DEFAULT 'pendiente'"); } catch (e) {}
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── el cliente manda el pedido (publico) ──
 router.post('/publico/:slug', (req, res) => {
@@ -167,7 +170,7 @@ router.post('/:id/vender', (req, res) => {
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, req.body?.fecha || hoyISO(), p.total, costoTotal,
+  `).run(ventaId, req.userId, req.body?.fecha || hoyISO(req.userId), p.total, costoTotal,
          p.forma_pago || 'efectivo', p.total,
          'Pedido web de ' + p.nombre, req.empleadoId || null);
 

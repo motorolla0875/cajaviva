@@ -12,7 +12,10 @@ try { db.exec('ALTER TABLE productos ADD COLUMN precio_pieza REAL'); } catch (e)
 try { db.exec('ALTER TABLE productos ADD COLUMN vence TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN aviso_dias INTEGER NOT NULL DEFAULT 7'); } catch (e) {}
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── listar productos activos ──
 router.get('/', (req, res) => {
@@ -68,7 +71,7 @@ router.post('/', (req, res) => {
     db.prepare(`
       INSERT INTO gastos (id, user_id, descripcion, monto, fecha, categoria, automatico, proveedor_id)
       VALUES (?, ?, ?, ?, ?, 'stock', 1, ?)
-    `).run(uuidv4(), req.userId, `Stock inicial - ${nombre.trim()}`, stock * pc, hoyISO(),
+    `).run(uuidv4(), req.userId, `Stock inicial - ${nombre.trim()}`, stock * pc, hoyISO(req.userId),
            proveedorId || null);
   }
 
@@ -171,7 +174,7 @@ router.post('/:id/reponer', (req, res) => {
       INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, categoria, automatico)
       VALUES (?, ?, ?, ?, ?, ?, 'stock', 1)
     `).run(uuidv4(), req.userId, req.body?.proveedorId || null,
-           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO());
+           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO(req.userId));
   }
 
   res.json({ ok: true, stock: prod.stock + cantidad });

@@ -4,7 +4,10 @@ const db = require('../db');
 
 const router = express.Router();
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO(userId) {
+  if (userId && db.hoyEn) return db.hoyEn(userId);
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ── registrar una venta ──
 router.post('/', (req, res) => {
@@ -57,7 +60,7 @@ router.post('/', (req, res) => {
   const estado = pagado >= total ? 'cobrada' : 'pendiente';
 
   // la fecha la manda el navegador: vale la del negocio, no la del servidor
-  const fechaVenta = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || '') ? req.body.fecha : hoyISO();
+  const fechaVenta = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || '') ? req.body.fecha : hoyISO(req.userId);
 
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
@@ -105,8 +108,8 @@ router.post('/', (req, res) => {
 
 // ── listar ventas de un período ──
 router.get('/', (req, res) => {
-  const desde = req.query.desde || hoyISO();
-  const hasta = req.query.hasta || hoyISO();
+  const desde = req.query.desde || hoyISO(req.userId);
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const ventas = req.esEmpleado
     ? db.prepare(`
@@ -133,8 +136,8 @@ router.get('/', (req, res) => {
 
 // ── resumen del día: vendido, ganancia y gastos ──
 router.get('/resumen', (req, res) => {
-  const desde = req.query.desde || hoyISO();
-  const hasta = req.query.hasta || hoyISO();
+  const desde = req.query.desde || hoyISO(req.userId);
+  const hasta = req.query.hasta || hoyISO(req.userId);
 
   const v = req.esEmpleado
     ? db.prepare(`
