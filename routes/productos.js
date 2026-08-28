@@ -80,7 +80,8 @@ router.put('/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
           unidad, stockMinimo, notas, vence, avisoDias, esServicio, duracion, proveedorId,
-          vendePieza, pesoPieza, precioPieza } = req.body || {};
+          vendePieza, pesoPieza, precioPieza,
+          esUnidad, cobroPor, capacidad } = req.body || {};
 
   const prod = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!prod) return res.status(404).json({ error: 'Producto no encontrado.' });
