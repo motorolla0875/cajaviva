@@ -965,8 +965,11 @@
   }
 
   #v-canchas .nav-dia {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     max-width: 420px; margin: 0 auto 10px; position: relative;
+  }
+  #v-canchas .nav-dia .dia-actual {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   #v-canchas .nav-dia button {
     width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
@@ -977,11 +980,13 @@
     flex: 1; text-align: left; font-size: 16px; font-weight: 500;
     text-transform: capitalize;
   }
-  .wrap-cal { position: relative; flex-shrink: 0; }
+  .wrap-cal { position: relative; flex-shrink: 0; width: 42px; height: 42px; }
+  .wrap-cal .btn-cal { position: absolute; inset: 0; pointer-events: none; }
   .wrap-cal input[type="date"] {
     position: absolute; inset: 0; opacity: 0;
     width: 100%; height: 100%; padding: 0; border: 0;
-    pointer-events: none;
+    -webkit-appearance: none; appearance: none;
+    z-index: 2;
   }
   .btn-cal {
     width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
@@ -1744,7 +1749,7 @@
         <button onclick="moverDiaCancha(-1)">&#8249;</button>
         <button onclick="moverDiaCancha(1)">&#8250;</button>
         <div class="wrap-cal">
-          <button class="btn-cal" onclick="abrirFechaCancha()" title="Elegir dia">&#128197;</button>
+          <button class="btn-cal" type="button" tabindex="-1">&#128197;</button>
           <input type="date" id="fechaCanchas">
         </div>
       </div>
