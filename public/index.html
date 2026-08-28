@@ -6898,18 +6898,30 @@ async function revisarPedidos(avisarSiHay) {
   if (esEmpleado || !token) return;
   try {
     const d = await api('GET', '/pedidos?estado=pendientes');
-    pintarContadorPedidos(d.nuevos);
+    let total = d.nuevos;
 
-    if (avisarSiHay && ultimosPedidos !== null && d.nuevos > ultimosPedidos) {
-      const cuantos = d.nuevos - ultimosPedidos;
+    // las reservas web tambien cuentan
+    if (cap('cap_alquiler')) {
+      try {
+        const r = await api('GET', '/alquileres/pendientes?estado=pendientes');
+        total += r.cantidad;
+      } catch (e) {}
+    }
+
+    pintarContadorPedidos(total);
+
+    if (avisarSiHay && ultimosPedidos !== null && total > ultimosPedidos) {
+      const cuantos = total - ultimosPedidos;
       sonidoPedido();
       vibrar([100, 60, 100]);
-      avisar(cuantos === 1 ? 'Entro un pedido nuevo' : 'Entraron ' + cuantos + ' pedidos');
+      avisar(cap('cap_alquiler')
+        ? (cuantos === 1 ? 'Entro una reserva nueva' : 'Entraron ' + cuantos + ' reservas')
+        : (cuantos === 1 ? 'Entro un pedido nuevo' : 'Entraron ' + cuantos + ' pedidos'));
       if (document.querySelector('.vista.on') === document.getElementById('v-pedidos')) {
         cargarPedidos();
       }
     }
-    ultimosPedidos = d.nuevos;
+    ultimosPedidos = total;
   } catch (e) {}
 }
 
