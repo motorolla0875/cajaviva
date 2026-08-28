@@ -4352,10 +4352,7 @@ function abrirProd(id) {
       const wc2 = document.getElementById('wrapCapacidad');
       if (wc2) wc2.style.display = esC ? 'none' : 'block';
 
-      if (esC) {
-        $('pCobroPor').innerHTML = '<option value="hora">Hora</option>';
-        $('pCobroPor').value = 'hora';
-      }
+      if (esC && !p.cobro_por) $('pCobroPor').value = 'hora';
       $('btnBorrarProd').textContent = 'Eliminar unidad';
 
       const bmo = document.getElementById('btnMasOpciones');
@@ -8764,13 +8761,9 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   const wc = document.getElementById('wrapCapacidad');
   if (wc) wc.style.display = esCancha ? 'none' : 'block';
 
-  if (esCancha) {
-    $('pCobroPor').innerHTML = '<option value="hora">Hora</option>';
-    $('pCobroPor').value = 'hora';
-  } else {
-    $('pCobroPor').innerHTML =
-      '<option value="noche">Noche</option><option value="dia">Dia</option><option value="hora">Hora</option>';
-  }
+  $('pCobroPor').innerHTML =
+    '<option value="noche">Noche</option><option value="dia">Dia</option><option value="hora">Hora</option>';
+  $('pCobroPor').value = esCancha ? 'hora' : 'noche';
   $('wrapUnidadAlq').style.display = 'block';
   $('wrapStockIni').style.display = 'none';
   $('wrapCostoProd').style.display = 'none';
