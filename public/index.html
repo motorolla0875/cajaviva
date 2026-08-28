@@ -1020,6 +1020,9 @@
     color: var(--text); line-height: 1.25; overflow: hidden;
   }
   .gc-celda.libre { border-style: dashed; color: var(--muted); }
+  .gc-celda .gc-rango {
+    display: block; font-size: 10px; font-weight: 400; opacity: .85;
+  }
   .gc-celda.libre:active { background: var(--accent-soft); }
   .gc-celda.ocupada {
     background: var(--danger-soft); border-color: var(--danger);
@@ -9321,10 +9324,14 @@ async function cargarGrillaCanchas() {
 
         if (r) {
           const pago = (r.pagado || 0) >= r.total && r.total > 0;
+          const rango = (r.hora_entrada || '').slice(0, 5) +
+            (r.hora_salida ? '-' + r.hora_salida.slice(0, 5) : '');
+
           html += '<button class="gc-celda ' + (pago ? 'pagada' : 'ocupada') + '" ' +
             'onclick="verTurnoCancha(\'' + r.id + '\')">' +
             esc(r.cliente_nombre) +
-            (pago ? '<br>pagado' : '') + '</button>';
+            '<span class="gc-rango">' + rango + (pago ? ' - pagado' : '') + '</span>' +
+            '</button>';
         } else {
           html += '<button class="gc-celda libre" ' +
             'onclick="reservarCancha(\'' + c.id + '\', \'' + h + '\', ' + (c.precio_venta || 0) + ')">' +
