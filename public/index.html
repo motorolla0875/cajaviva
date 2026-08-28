@@ -2153,7 +2153,7 @@
             <option value="hora">Hora</option>
           </select>
         </div>
-        <div><label>Capacidad</label>
+        <div id="wrapCapacidad"><label>Capacidad</label>
           <input type="text" id="pCapacidad" inputmode="numeric" placeholder="Ej: 4"></div>
       </div>
     </div>
@@ -4345,7 +4345,17 @@ function abrirProd(id) {
       $('wrapCategoria').style.display = 'none';
       $('wrapEsInsumo').style.display = 'none';
       $('wrapRecetaProd').style.display = 'none';
-      $('tituloProd').textContent = 'Editar unidad';
+      const esC = cap('cap_canchas') && !cap('cap_alquiler');
+      $('tituloProd').textContent = esC ? 'Editar cancha' : 'Editar unidad';
+      $('btnBorrarProd').textContent = esC ? 'Eliminar cancha' : 'Eliminar unidad';
+
+      const wc2 = document.getElementById('wrapCapacidad');
+      if (wc2) wc2.style.display = esC ? 'none' : 'block';
+
+      if (esC) {
+        $('pCobroPor').innerHTML = '<option value="hora">Hora</option>';
+        $('pCobroPor').value = 'hora';
+      }
       $('btnBorrarProd').textContent = 'Eliminar unidad';
 
       const bmo = document.getElementById('btnMasOpciones');
@@ -4355,7 +4365,7 @@ function abrirProd(id) {
 
       const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
         .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
-      if (lv) lv.textContent = 'Precio por noche';
+      if (lv) lv.textContent = esC ? 'Precio por turno' : 'Precio por noche';
     }, 0);
   } else {
     $('wrapUnidadAlq').style.display = 'none';
@@ -8746,8 +8756,21 @@ let esUnidadActual = false;
 document.getElementById('btnNuevaUnidad').onclick = function () {
   abrirProd(null);
   esUnidadActual = true;
-  $('tituloProd').textContent = 'Nueva unidad para alquilar';
-  $('pNombre').placeholder = 'Ej: Cabaña 1, Salon principal';
+  const esCancha = cap('cap_canchas') && !cap('cap_alquiler');
+  $('tituloProd').textContent = esCancha ? 'Nueva cancha' : 'Nueva unidad para alquilar';
+  $('pNombre').placeholder = esCancha ? '' : 'Ej: Cabaña 1, Salon principal';
+  $('pNotas').placeholder = esCancha ? '' : 'Ej: con parrilla y vista al lago';
+
+  const wc = document.getElementById('wrapCapacidad');
+  if (wc) wc.style.display = esCancha ? 'none' : 'block';
+
+  if (esCancha) {
+    $('pCobroPor').innerHTML = '<option value="hora">Hora</option>';
+    $('pCobroPor').value = 'hora';
+  } else {
+    $('pCobroPor').innerHTML =
+      '<option value="noche">Noche</option><option value="dia">Dia</option><option value="hora">Hora</option>';
+  }
   $('wrapUnidadAlq').style.display = 'block';
   $('wrapStockIni').style.display = 'none';
   $('wrapCostoProd').style.display = 'none';
@@ -8767,7 +8790,7 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   const lbl = document.querySelector('#modalProd label');
   const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
     .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
-  if (lv) lv.textContent = 'Precio por noche';
+  if (lv) lv.textContent = esCancha ? 'Precio por turno' : 'Precio por noche';
 };
 
 /* ══ Temporadas y precios ══ */
