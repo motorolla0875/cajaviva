@@ -2138,7 +2138,7 @@
       </div>
     </div>
     <label id="lblDescripcion">Descripcion (opcional)</label>
-    <input type="text" id="pNotas" placeholder="Ej: incluye lavado y peinado">
+    <input type="text" id="pNotas">
 
     <div id="wrapRecetaProd" style="display:none;">
       <label>Insumos</label>
@@ -10278,17 +10278,14 @@ function aplicarEjemplos(esUnidad) {
                      'padel','futbol5','tenis','salas','canchas_alq'];
   const esAlq = negocio && rubrosAlq.indexOf(negocio.rubro) >= 0;
 
+  if (d) d.placeholder = '';
+
   if (!esUnidad && esAlq) {
     n.placeholder = 'Ej: Gaseosa 500ml';
-    if (d) d.placeholder = 'Detalles que quieras aclarar';
     return;
   }
 
-  const nom = ejemploDe('nombre');
-  const des = ejemploDe('desc');
-
-  n.placeholder = nom || 'Nombre del producto';
-  if (d) d.placeholder = des || 'Detalles que quieras aclarar';
+  n.placeholder = ejemploDe('nombre') || 'Nombre del producto';
 }
 
 /* ══ Vuelto ══ */
