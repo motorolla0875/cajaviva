@@ -967,7 +967,22 @@
   .grilla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .grilla-canchas {
     display: grid; gap: 4px; min-width: max-content;
+    max-width: 900px;
   }
+  #v-canchas .nav-dia {
+    display: flex; align-items: center; gap: 10px;
+    max-width: 900px; margin-bottom: 10px;
+  }
+  #v-canchas .nav-dia button {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 20px; line-height: 1;
+  }
+  #v-canchas .nav-dia .dia-actual {
+    flex: 1; text-align: center; font-size: 16px; font-weight: 500;
+    text-transform: capitalize;
+  }
+  #fechaCanchas { max-width: 200px; }
   .gc-cab {
     font-size: 12px; font-weight: 500; text-align: center;
     padding: 8px 6px; color: var(--muted);
@@ -979,7 +994,7 @@
     position: sticky; left: 0; background: var(--bg); z-index: 1;
   }
   .gc-celda {
-    min-width: 92px; height: 46px; border-radius: 8px;
+    min-width: 92px; max-width: 170px; height: 46px; border-radius: 8px;
     border: 1px solid var(--line); background: var(--panel);
     font-size: 11.5px; padding: 4px 6px; text-align: left;
     color: var(--text); line-height: 1.25; overflow: hidden;
