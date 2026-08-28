@@ -959,6 +959,11 @@
   .reserva.en_curso { border-color: var(--accent); }
   .reserva.cancelada, .reserva.terminada { opacity: .55; }
   .reserva .cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .reserva .cuando-res {
+    display: inline-block; font-size: 11.5px; font-weight: 500;
+    color: var(--accent-dark); background: var(--accent-soft);
+    padding: 2px 9px; border-radius: 20px; margin-top: 4px;
+  }
   .reserva .foto-res {
     width: 58px; height: 58px; border-radius: 10px;
     object-fit: cover; flex-shrink: 0; background: var(--panel-2);
@@ -8524,6 +8529,8 @@ async function cargarReservas() {
           '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
             fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
             (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+          (x.estado === 'reservada' || x.estado === 'en_curso'
+            ? '<div class="cuando-res">' + cuandoLlega(x) + '</div>' : '') +
           '<span class="chip-libre' + (x.estado === 'cancelada' ? ' chip-ocupada' : '') + '">' + estado + '</span>' +
           (x.sena > 0 ? '<span class="chip-libre">Seña ' + plata(x.sena) + '</span>' : '') +
           (x.nota ? '<div class="d">' + esc(x.nota) + '</div>' : '') +
@@ -8567,6 +8574,25 @@ document.getElementById('rCliente').addEventListener('change', function () {
   $('rNombre').value = op.textContent;
   $('rTelefono').value = op.dataset.tel || '';
 });
+
+function cuandoLlega(x) {
+  const hoy = new Date(hoyISO() + 'T12:00:00');
+  const d = new Date(x.desde + 'T12:00:00');
+  const h = new Date(x.hasta + 'T12:00:00');
+  const dias = Math.round((d - hoy) / 86400000);
+  const salida = Math.round((h - hoy) / 86400000);
+
+  if (x.estado === 'en_curso') {
+    if (salida === 0) return 'Se va hoy';
+    if (salida === 1) return 'Se va mañana';
+    return 'Se va en ' + salida + ' dias';
+  }
+
+  if (dias < 0) return 'Tendria que haber llegado';
+  if (dias === 0) return 'Llega hoy';
+  if (dias === 1) return 'Llega mañana';
+  return 'Llega en ' + dias + ' dias';
+}
 
 function wppReserva(tel, id) {
   const n = (negocio && negocio.nombre) ? negocio.nombre : '';
