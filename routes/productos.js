@@ -283,9 +283,16 @@ router.post('/precios-preview', (req, res) => {
 
   const col = campo === 'costo' ? 'precio_costo' : 'precio_venta';
 
-  const productos = categoriaId
-    ? db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ? ORDER BY nombre').all(req.userId, categoriaId)
-    : db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 ORDER BY nombre').all(req.userId);
+  let productos;
+  if (categoriaId === '__solo_prod') {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND COALESCE(es_unidad,0) = 0 ORDER BY nombre').all(req.userId);
+  } else if (categoriaId === '__solo_unid') {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND es_unidad = 1 ORDER BY nombre').all(req.userId);
+  } else if (categoriaId) {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 AND categoria_id = ? ORDER BY nombre').all(req.userId, categoriaId);
+  } else {
+    productos = db.prepare('SELECT * FROM productos WHERE user_id = ? AND activo = 1 ORDER BY nombre').all(req.userId);
+  }
 
   function redondear(n) {
     if (!redondeo || redondeo <= 0) return Math.round(n * 100) / 100;
