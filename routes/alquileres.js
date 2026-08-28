@@ -54,13 +54,33 @@ router.get('/disponibles', (req, res) => {
   `).all(req.userId);
 
   const ocupadas = db.prepare(`
-    SELECT unidad_id FROM reservas
+    SELECT unidad_id, cliente_nombre, desde, hasta FROM reservas
     WHERE user_id = ? AND estado IN ('reservada','en_curso')
       AND desde < ? AND hasta > ?
-  `).all(req.userId, hasta, desde).map(function (r) { return r.unidad_id; });
+  `).all(req.userId, hasta, desde);
 
   unidades.forEach(function (u) {
-    u.libre = ocupadas.indexOf(u.id) < 0;
+    const o = ocupadas.filter(function (r) { return r.unidad_id === u.id; })[0];
+    u.libre = !o;
+    if (o) {
+      u.ocupada_por = o.cliente_nombre;
+      u.ocupada_desde = o.desde;
+      u.ocupada_hasta = o.hasta;
+
+      // cuando se libera de verdad: la ultima reserva encadenada
+      let libreDesde = o.hasta;
+      for (let i = 0; i < 20; i++) {
+        const sig = db.prepare(`
+          SELECT hasta FROM reservas
+          WHERE user_id = ? AND unidad_id = ? AND estado IN ('reservada','en_curso')
+            AND desde <= ? AND hasta > ?
+          ORDER BY hasta DESC LIMIT 1
+        `).get(req.userId, u.id, libreDesde, libreDesde);
+        if (!sig) break;
+        libreDesde = sig.hasta;
+      }
+      u.libre_desde = libreDesde;
+    }
   });
 
   res.json({ desde: desde, hasta: hasta, noches: noches(desde, hasta), unidades: unidades });
