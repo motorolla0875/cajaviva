@@ -514,14 +514,17 @@ function pintar() {
       (!p.es_servicio && !p.tiene_variantes && p.stock <= 0
         ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
       '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
-        (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
+        (p.es_unidad ? ' por ' + (p.cobro_por || 'noche') : (p.unidad !== 'unidad' ? ' /' + p.unidad : '')) + '</div>' +
+      (p.es_unidad && p.capacidad ? '<div class="desc-prod">Hasta ' + p.capacidad + ' personas</div>' : '') +
       (p.tiene_variantes ? '<span class="badge-var">' +
         (c > 0 ? c + ' en el pedido' : 'elegi talle') + '</span>' : '') +
       '</div>' +
       '<div class="ctrl">' +
       (c > 0
         ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
-        : (p.es_servicio
+        : (p.es_unidad
+            ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
+            : p.es_servicio
             ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
             : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>')) +
       '</div></div>';
@@ -554,6 +557,7 @@ let prodVarActual = null;
 function cambiar(id, d) {
   const p = datos.productos.filter(function (x) { return x.id === id; })[0];
 
+  if (p && p.es_unidad && d > 0) { consultarUnidad(p); return; }
   if (p && p.es_servicio && d > 0) { abrirTurnoWeb(p); return; }
 
   // con variantes: siempre abre el selector al sumar
@@ -883,6 +887,23 @@ document.getElementById('archSena').onchange = async function (e) {
     btn.disabled = false; btn.textContent = 'Subir comprobante de la seña';
   }
 };
+
+
+function consultarUnidad(p) {
+  const n = datos.negocio.nombre || '';
+  const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
+
+  const texto = 'Hola! Quiero consultar por ' + p.nombre +
+    ' (' + plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche') + ')' +
+    (p.capacidad ? ', para hasta ' + p.capacidad + ' personas' : '') + '. Que fechas tenes disponibles?';
+
+  if (wpp) {
+    window.open('https://wa.me/54' + wpp + '?text=' + encodeURIComponent(texto), '_blank');
+  } else {
+    alert('Consultanos por ' + p.nombre + '.\n' +
+      plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche') + '.');
+  }
+}
 
 function verFoto(url) {
   const d = document.createElement('div');
