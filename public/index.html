@@ -4008,7 +4008,8 @@ function pintarLista() {
       (p.unidad && p.unidad !== 'unidad'
         ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">por ' + esc(p.unidad) + '</span>' : '') +
       (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
-      (p.tiene_receta ? (function () {
+      (p.es_unidad ? ''
+        : p.tiene_receta ? (function () {
           const n = alcanzaPara(p.id);
           if (n === null) return '';
           return '<div class="alerta-stock' + (n <= 0 ? ' cero' : '') + '">' +
@@ -4019,9 +4020,9 @@ function pintarLista() {
         : p.stock === 0 ? '<div class="alerta-stock cero">Sin stock</div>'
         : (p.stock_minimo > 0 && p.stock <= p.stock_minimo) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
       '</div>' +
-      ((esServ || p.tiene_receta) ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
+      ((esServ || p.tiene_receta || p.es_unidad) ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
       '<div class="acc">' +
-        (esServ ? '' :
+        ((esServ || p.es_unidad) ? '' :
           '<button onclick="abrirStock(\'' + p.id + '\',\'reponer\')">+</button>' +
           '<button onclick="abrirStock(\'' + p.id + '\',\'quitar\')">&minus;</button>') +
         '<button onclick="abrirProd(\'' + p.id + '\')">&#9998;</button>' +
@@ -5313,7 +5314,7 @@ function aplicarModoEmpleado(nombre) {
 
 function pintarFiltrosProd() {
   const conStock = productos.filter(function (p) {
-    return !p.es_servicio && !p.tiene_receta;
+    return !p.es_servicio && !p.tiene_receta && !p.es_unidad;
   });
   const negativos = conStock.filter(function (p) { return p.stock < 0; }).length;
   const sinStock = conStock.filter(function (p) { return p.stock === 0; }).length;
