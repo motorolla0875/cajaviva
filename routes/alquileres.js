@@ -289,7 +289,7 @@ router.post('/', (req, res) => {
          desde, hasta, parseInt(personas) || null, pn, total, parseFloat(sena) || 0, nota || null,
          horaEntrada || null, horaSalida || null);
 
-  res.json({ id: id, noches: n, total: total });
+  res.json({ id: id, noches: noches(desde, hasta), total: total });
 });
 
 // ── editar o cambiar estado ──
