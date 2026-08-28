@@ -9493,7 +9493,11 @@ $('btnGuardarReserva').onclick = async function () {
     Array.prototype.forEach.call($('tabsReservas').children, function (x, i) {
       x.classList.toggle('on', i === 1);
     });
-    await cargarReservas();
+    // refrescar la vista que este abierta
+    const vista = document.querySelector('.vista.on');
+    if (vista && vista.id === 'v-canchas') await cargarGrillaCanchas();
+    else await cargarReservas();
+
     avisar(reservaEditando ? 'Reserva actualizada'
       : huespedNuevo ? 'Reserva guardada. ' + nombre + ' quedo en tus huespedes'
       : 'Reserva guardada');
@@ -9508,7 +9512,9 @@ $('btnCancelarReserva').onclick = async function () {
   try {
     await api('PUT', '/alquileres/' + reservaEditando, { estado: 'cancelada' });
     $('modalReserva').classList.remove('on');
-    await cargarReservas();
+    const v2 = document.querySelector('.vista.on');
+    if (v2 && v2.id === 'v-canchas') await cargarGrillaCanchas();
+    else await cargarReservas();
     avisar('Reserva cancelada');
   } catch (e) { avisar(e.message, true); }
 };
