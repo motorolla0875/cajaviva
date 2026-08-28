@@ -30,6 +30,8 @@ db.exec(`
 // las unidades son productos marcados como tal
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE reservas ADD COLUMN comprobante TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE reservas ADD COLUMN sena_estado TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_salida TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN es_unidad INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN capacidad INTEGER'); } catch (e) {}
@@ -57,7 +59,8 @@ router.get('/disponibles', (req, res) => {
 
   const ocupadas = db.prepare(`
     SELECT unidad_id, cliente_nombre, desde, hasta FROM reservas
-    WHERE user_id = ? AND estado IN ('reservada','en_curso')
+    WHERE user_id = ? AND (estado IN ('reservada','en_curso')
+      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
       AND desde < ? AND hasta > ?
   `).all(req.userId, hasta, desde);
 
@@ -309,7 +312,8 @@ router.get('/publico/:slug/libres', (req, res) => {
 
   const ocupadas = db.prepare(`
     SELECT unidad_id FROM reservas
-    WHERE user_id = ? AND estado IN ('reservada','en_curso')
+    WHERE user_id = ? AND (estado IN ('reservada','en_curso')
+      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
       AND desde < ? AND hasta > ?
   `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
 
@@ -338,7 +342,8 @@ router.post('/publico/:slug', (req, res) => {
 
   const choque = db.prepare(`
     SELECT id FROM reservas
-    WHERE user_id = ? AND unidad_id = ? AND estado IN ('reservada','en_curso')
+    WHERE user_id = ? AND unidad_id = ? AND (estado IN ('reservada','en_curso')
+      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
       AND desde < ? AND hasta > ?
   `).get(n.user_id, unidadId, hasta, desde);
 
@@ -439,6 +444,14 @@ router.post('/publico/:slug', (req, res) => {
 
 // ── reservas pedidas por la web, sin confirmar ──
 router.get('/pendientes', (req, res) => {
+  // las que nadie pago se vencen a las 24 horas
+  db.prepare(`
+    DELETE FROM reservas
+    WHERE user_id = ? AND estado = 'pendiente'
+      AND (sena_estado IS NULL OR sena_estado != 'enviado')
+      AND created_at < datetime('now', '-1 day')
+  `).run(req.userId);
+
   const filas = db.prepare(`
     SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
     FROM reservas r

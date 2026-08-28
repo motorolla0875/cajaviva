@@ -375,6 +375,21 @@
       Nos vamos a comunicar para confirmarla.
     </p>
     <div id="senaAlqListo"></div>
+
+    <div id="zonaCompAlq" style="display:none; background:var(--accent-soft); border-radius:12px; padding:16px; margin-bottom:12px; text-align:left;">
+      <div style="font-size:13.5px; color:var(--accent-dark); font-weight:500; margin-bottom:6px;">
+        Subi el comprobante y la fecha queda tuya
+      </div>
+      <div style="font-size:12.5px; color:var(--accent-dark); margin-bottom:10px;">
+        Hasta que no lo mandes, otra persona puede tomar esas fechas.
+      </div>
+      <div id="prevCompAlq" style="display:none; margin-bottom:10px;">
+        <img id="imgCompAlq" style="width:100%; border-radius:9px;">
+      </div>
+      <button id="btnSubirCompAlq" style="width:100%; padding:12px; border:1px solid var(--accent); border-radius:10px; background:var(--panel); color:var(--accent-dark); font-size:14px; font-weight:500;">Subir comprobante</button>
+      <input type="file" id="archCompAlq" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
+    </div>
+
     <div id="wppAlqListo"></div>
     <button onclick="location.reload()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Listo</button>
   </div>
@@ -1365,6 +1380,8 @@ document.getElementById('btnReservarAlq').onclick = async function () {
         'style="width:100%; padding:13px; border:1px solid var(--accent); border-radius:12px; background:var(--panel); color:var(--accent-dark); font-size:14.5px; font-weight:500;">Avisar por WhatsApp</button>';
     }
 
+    document.getElementById('zonaCompAlq').style.display = d.sena > 0 ? 'block' : 'none';
+
     cerrarAlq();
     document.getElementById('alqListo').style.display = 'block';
   } catch (e) {
@@ -1415,6 +1432,37 @@ document.getElementById('btnVerDisp').onclick = function () {
   saltarFicha = true;
   cerrarFicha();
   consultarUnidad(unidadFicha);
+};
+
+
+document.getElementById('btnSubirCompAlq').onclick = function () {
+  document.getElementById('archCompAlq').click();
+};
+
+document.getElementById('archCompAlq').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f || !reservaCreada) return;
+
+  const btn = document.getElementById('btnSubirCompAlq');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const chica = await comprimirComp(f, 900, 0.75);
+    const fd = new FormData();
+    fd.append('foto', chica, 'comp.webp');
+
+    const r = await fetch('/api/fotos/reserva/' + reservaCreada, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('No se pudo subir');
+
+    document.getElementById('imgCompAlq').src = URL.createObjectURL(chica);
+    document.getElementById('prevCompAlq').style.display = 'block';
+    btn.textContent = 'Listo, la fecha es tuya';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+  } catch (err) {
+    alert('No se pudo subir el comprobante');
+    btn.disabled = false; btn.textContent = 'Subir comprobante';
+  }
 };
 
 </script>

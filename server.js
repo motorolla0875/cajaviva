@@ -51,7 +51,7 @@ app.use('/api/turnos', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/turnos'));
 app.use('/api/fotos', function (req, res, next) {
-  if (req.path.indexOf('/comprobante/') === 0 || req.path.indexOf('/sena/') === 0) return next();
+  if (req.path.indexOf('/comprobante/') === 0 || req.path.indexOf('/sena/') === 0 || req.path.indexOf('/reserva/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/fotos'));
 app.use('/api/pedidos', function (req, res, next) {

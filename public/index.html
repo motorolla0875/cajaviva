@@ -8937,6 +8937,10 @@ async function cargarReservasWeb() {
             (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
           (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
           '</div><div class="m">' + plata(x.total) + '</div></div>' +
+          (x.comprobante
+            ? '<div class="comp-box ok"><img src="' + x.comprobante + '" onclick="verComprobante(this.src)">' +
+              '<div class="comp-txt"><div class="n">Pago la seña - fecha reservada</div></div></div>'
+            : '<div class="comp-box vacio-comp">Sin seña todavia - la fecha sigue libre</div>') +
           '<div class="acc">' +
             '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
             (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +

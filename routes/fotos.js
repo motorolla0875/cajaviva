@@ -139,4 +139,20 @@ router.delete('/banner', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── comprobante de una reserva (publico) ──
+router.post('/reserva/:id', subir.single('foto'), (req, res) => {
+  const r = db.prepare('SELECT * FROM reservas WHERE id = ?').get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'Reserva no encontrada.' });
+  if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
+
+  const nombre = uuidv4() + '-res.webp';
+  guardarArchivo(req.file.buffer, nombre);
+
+  db.prepare("UPDATE reservas SET comprobante = ?, sena_estado = 'enviado' WHERE id = ?")
+    .run('/fotos/' + nombre, r.id);
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
