@@ -1708,6 +1708,7 @@
         <button data-estado="listos">Entregados</button>
         <button data-estado="cancelados">Cancelados</button>
       </div>
+      <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
     </div>
   </div>
@@ -6739,10 +6740,13 @@ async function cargarPedidos() {
   try {
     const d = await api('GET', '/pedidos?estado=' + estadoPedidos);
     pedidosCargados = d.items;
-    pintarContadorPedidos(d.nuevos);
+
+    const nRes = await cargarReservasWeb();
+    pintarContadorPedidos(d.nuevos + nRes);
 
     if (d.items.length === 0) {
-      $('listaPedidos').innerHTML = '<div class="vacio">No hay pedidos ' + estadoPedidos + '.</div>';
+      $('listaPedidos').innerHTML = nRes > 0 ? ''
+        : '<div class="vacio">No hay pedidos ' + estadoPedidos + '.</div>';
       return;
     }
 
@@ -8860,6 +8864,52 @@ $('btnCancelarReserva').onclick = async function () {
     avisar('Reserva cancelada');
   } catch (e) { avisar(e.message, true); }
 };
+
+/* ══ Reservas pedidas por la web ══ */
+
+async function cargarReservasWeb() {
+  const cont = document.getElementById('reservasWeb');
+  if (!cont || !cap('cap_alquiler')) { if (cont) cont.innerHTML = ''; return 0; }
+
+  try {
+    const d = await api('GET', '/alquileres/pendientes');
+
+    if (d.cantidad === 0) { cont.innerHTML = ''; return 0; }
+
+    cont.innerHTML = '<div class="seccion">Reservas por la web (' + d.cantidad + ')</div>' +
+      d.items.map(function (x) {
+        const foto = x.foto_mini || x.foto_url;
+        const n = Math.round((new Date(x.hasta + 'T12:00:00') - new Date(x.desde + 'T12:00:00')) / 86400000);
+
+        return '<div class="pedido nuevo">' +
+          '<div class="cab">' +
+          (foto ? '<img class="foto-res" src="' + foto + '" style="width:52px;height:52px;border-radius:9px;object-fit:cover;margin-right:10px;">' : '') +
+          '<div><div class="n">' + esc(x.cliente_nombre) + '<span class="badge-nuevo">NUEVA</span></div>' +
+          '<div class="d">' + esc(x.unidad_nombre || '') + '</div>' +
+          '<div class="d">' + fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
+            ' - ' + n + (n === 1 ? ' noche' : ' noches') +
+            (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+          (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
+          '</div><div class="m">' + plata(x.total) + '</div></div>' +
+          '<div class="acc">' +
+            '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
+            (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
+            '<button onclick="confirmarReservaWeb(\'' + x.id + '\', false)">Rechazar</button>' +
+          '</div></div>';
+      }).join('');
+
+    return d.cantidad;
+  } catch (e) { cont.innerHTML = ''; return 0; }
+}
+
+async function confirmarReservaWeb(id, aceptar) {
+  if (!aceptar && !confirm('Rechazar esta reserva?')) return;
+  try {
+    await api('POST', '/alquileres/' + id + '/confirmar', { aceptar: aceptar });
+    await cargarPedidos();
+    avisar(aceptar ? 'Reserva aceptada' : 'Reserva rechazada');
+  } catch (e) { avisar(e.message, true); }
+}
 
 /* ══ Vuelto ══ */
 

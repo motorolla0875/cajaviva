@@ -351,7 +351,7 @@ router.post('/publico/:slug', (req, res) => {
   db.prepare(`
     INSERT INTO reservas (id, user_id, unidad_id, cliente_nombre, telefono,
       desde, hasta, personas, precio_noche, total, estado, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservada', ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)
   `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
          desde, hasta, parseInt(personas) || null, u.precio_venta || 0, total,
          (nota ? nota + ' - ' : '') + 'Pedido por la web');
@@ -434,6 +434,43 @@ router.post('/publico/:slug', (req, res) => {
     noches: nn, total: total,
     sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago
   });
+});
+
+
+// ── reservas pedidas por la web, sin confirmar ──
+router.get('/pendientes', (req, res) => {
+  const filas = db.prepare(`
+    SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
+    FROM reservas r
+    LEFT JOIN productos p ON p.id = r.unidad_id
+    WHERE r.user_id = ? AND r.estado = 'pendiente'
+    ORDER BY r.created_at DESC
+  `).all(req.userId);
+  res.json({ items: filas, cantidad: filas.length });
+});
+
+// ── aceptar o rechazar ──
+router.post('/:id/confirmar', (req, res) => {
+  const r = db.prepare('SELECT * FROM reservas WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!r) return res.status(404).json({ error: 'Reserva no encontrada.' });
+
+  if (req.body?.aceptar) {
+    // revisar que las fechas sigan libres
+    const choque = db.prepare(`
+      SELECT cliente_nombre FROM reservas
+      WHERE user_id = ? AND unidad_id = ? AND id != ?
+        AND estado IN ('reservada','en_curso')
+        AND desde < ? AND hasta > ?
+    `).get(req.userId, r.unidad_id, r.id, r.hasta, r.desde);
+
+    if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon por ' + choque.cliente_nombre + '.' });
+
+    db.prepare("UPDATE reservas SET estado = 'reservada' WHERE id = ?").run(r.id);
+  } else {
+    db.prepare("UPDATE reservas SET estado = 'cancelada' WHERE id = ?").run(r.id);
+  }
+
+  res.json({ ok: true });
 });
 
 module.exports = router;
