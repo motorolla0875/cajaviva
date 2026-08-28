@@ -30,6 +30,9 @@ db.exec(`
 // las unidades son productos marcados como tal
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_canchas INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN turno_partido INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN hora_desde2 TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN hora_hasta2 TEXT"); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN comprobante TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN sena_estado TEXT'); } catch (e) {}
@@ -797,6 +800,83 @@ router.delete('/extras/:id', (req, res) => {
   }
   db.prepare('DELETE FROM reserva_extras WHERE id = ?').run(e.id);
   res.json({ ok: true });
+});
+
+
+// ── horarios del negocio para la grilla ──
+router.get('/horarios', (req, res) => {
+  const n = db.prepare(`
+    SELECT hora_desde, hora_hasta, turno_partido, hora_desde2, hora_hasta2
+    FROM negocio WHERE user_id = ?
+  `).get(req.userId);
+  res.json(n || {});
+});
+
+router.put('/horarios', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  const b = req.body || {};
+  db.prepare(`
+    UPDATE negocio SET hora_desde = ?, hora_hasta = ?,
+      turno_partido = ?, hora_desde2 = ?, hora_hasta2 = ?
+    WHERE user_id = ?
+  `).run(b.desde || '08:00', b.hasta || '22:00',
+         b.partido ? 1 : 0, b.desde2 || null, b.hasta2 || null, req.userId);
+  res.json({ ok: true });
+});
+
+
+// ── grilla de un dia: canchas x horarios ──
+router.get('/grilla', (req, res) => {
+  const dia = req.query.dia || hoyISO();
+
+  const n = db.prepare(`
+    SELECT hora_desde, hora_hasta, turno_partido, hora_desde2, hora_hasta2
+    FROM negocio WHERE user_id = ?
+  `).get(req.userId);
+
+  const canchas = db.prepare(`
+    SELECT id, nombre, precio_venta, foto_mini, foto_url
+    FROM productos
+    WHERE user_id = ? AND activo = 1 AND es_unidad = 1
+    ORDER BY nombre
+  `).all(req.userId);
+
+  const reservas = db.prepare(`
+    SELECT id, unidad_id, cliente_nombre, telefono, hora_entrada, hora_salida,
+           estado, total, pagado, sena
+    FROM reservas
+    WHERE user_id = ? AND desde = ? AND estado IN ('reservada','en_curso','terminada')
+    ORDER BY hora_entrada
+  `).all(req.userId, dia);
+
+  // armar las franjas
+  function aMin(h) {
+    if (!h) return 0;
+    const p = h.split(':');
+    return parseInt(p[0]) * 60 + parseInt(p[1] || 0);
+  }
+  function aHora(m) {
+    const h = Math.floor(m / 60) % 24;
+    return String(h).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  }
+
+  const rangos = [];
+  rangos.push([aMin(n.hora_desde || '08:00'), aMin(n.hora_hasta || '22:00')]);
+  if (n.turno_partido && n.hora_desde2 && n.hora_hasta2) {
+    rangos.push([aMin(n.hora_desde2), aMin(n.hora_hasta2)]);
+  }
+
+  const franjas = [];
+  rangos.forEach(function (r) {
+    let ini = r[0];
+    let fin = r[1] > r[0] ? r[1] : r[1] + 1440;
+    while (ini < fin) {
+      franjas.push(aHora(ini));
+      ini += 60;
+    }
+  });
+
+  res.json({ dia: dia, canchas: canchas, franjas: franjas, reservas: reservas });
 });
 
 module.exports = router;

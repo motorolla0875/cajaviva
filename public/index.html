@@ -964,6 +964,34 @@
     font-size: 14.5px; font-family: inherit; resize: vertical;
   }
 
+  .grilla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .grilla-canchas {
+    display: grid; gap: 4px; min-width: max-content;
+  }
+  .gc-cab {
+    font-size: 12px; font-weight: 500; text-align: center;
+    padding: 8px 6px; color: var(--muted);
+    position: sticky; top: 0; background: var(--bg); z-index: 2;
+  }
+  .gc-hora {
+    font-size: 12px; color: var(--muted); padding: 0 8px 0 0;
+    display: flex; align-items: center; justify-content: flex-end;
+    position: sticky; left: 0; background: var(--bg); z-index: 1;
+  }
+  .gc-celda {
+    min-width: 92px; height: 46px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel);
+    font-size: 11.5px; padding: 4px 6px; text-align: left;
+    color: var(--text); line-height: 1.25; overflow: hidden;
+  }
+  .gc-celda.libre { border-style: dashed; color: var(--muted); }
+  .gc-celda.libre:active { background: var(--accent-soft); }
+  .gc-celda.ocupada {
+    background: var(--accent-soft); border-color: var(--accent);
+    color: var(--accent-dark); font-weight: 500;
+  }
+  .gc-celda.pagada { background: var(--accent); border-color: var(--accent); color: #fff; }
+
   .unidad-card {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -1574,6 +1602,7 @@
     <button data-vista="vender" class="on">Vender</button>
     <button data-vista="productos">Productos</button>
     <button data-vista="reservas" id="tabReservas">Reservas</button>
+    <button data-vista="canchas" id="tabCanchas">Canchas</button>
     <button data-vista="clientes">Fiado</button>
     <button data-vista="agenda" id="tabAgenda">Agenda</button>
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
@@ -1680,6 +1709,18 @@
         <input type="text" id="buscarCli" placeholder="Buscar cliente..." autocomplete="off">
       </div>
       <div class="lista" id="listaCli"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-canchas">
+    <div class="lista-wrap">
+      <div class="nav-dia">
+        <button onclick="moverDiaCancha(-1)">&#8249;</button>
+        <div class="dia-actual" id="diaCanchas"></div>
+        <button onclick="moverDiaCancha(1)">&#8250;</button>
+      </div>
+      <input type="date" id="fechaCanchas" style="margin-bottom:14px;">
+      <div id="grillaCanchas"></div>
     </div>
   </div>
 
@@ -3290,6 +3331,9 @@ function aplicarCapacidades() {
   const trs = document.getElementById('tabReservas');
   if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
 
+  const tcn = document.getElementById('tabCanchas');
+  if (tcn) tcn.style.display = cap('cap_canchas') ? '' : 'none';
+
   const tp2 = document.getElementById('tabPedidos');
   if (tp2 && !tp2.querySelector('.contador')) {
     tp2.textContent = cap('cap_alquiler') ? 'Reservas web' : 'Pedidos';
@@ -3752,6 +3796,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'pedidos') cargarPedidos();
     if (b.dataset.vista === 'agenda') cargarAgenda();
     if (b.dataset.vista === 'reservas') cargarReservas();
+    if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
   };
 });
 
@@ -8900,6 +8945,109 @@ async function guardarFinde() {
     await api('PUT', '/alquileres/temporadas/finde', { recargo: num($('recFinde').value) });
     avisar('Guardado');
   } catch (e) { avisar(e.message, true); }
+}
+
+/* ══ Grilla de canchas por hora ══ */
+
+let diaCancha = null;
+
+function diaActualCancha() {
+  if (!diaCancha) diaCancha = hoyISO();
+  return diaCancha;
+}
+
+function moverDiaCancha(n) {
+  const d = new Date(diaActualCancha() + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  diaCancha = d.toISOString().slice(0, 10);
+  $('fechaCanchas').value = diaCancha;
+  cargarGrillaCanchas();
+}
+
+$('fechaCanchas').addEventListener('change', function () {
+  diaCancha = this.value;
+  cargarGrillaCanchas();
+});
+
+async function cargarGrillaCanchas() {
+  const dia = diaActualCancha();
+  $('fechaCanchas').value = dia;
+
+  const d0 = new Date(dia + 'T12:00:00');
+  const hoy = new Date(hoyISO() + 'T12:00:00');
+  const dif = Math.round((d0 - hoy) / 86400000);
+  $('diaCanchas').textContent = dif === 0 ? 'Hoy'
+    : dif === 1 ? 'Mañana'
+    : dif === -1 ? 'Ayer'
+    : d0.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' });
+
+  const cont = $('grillaCanchas');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/alquileres/grilla?dia=' + dia);
+
+    if (d.canchas.length === 0) {
+      cont.innerHTML = '<div class="vacio">Todavia no cargaste canchas.<br>' +
+        'Anda a Productos y toca "+ Unidad".</div>';
+      return;
+    }
+
+    let html = '<div class="grilla-wrap"><div class="grilla-canchas" ' +
+      'style="grid-template-columns: 52px repeat(' + d.canchas.length + ', 1fr);">';
+
+    html += '<div class="gc-cab"></div>';
+    d.canchas.forEach(function (c) {
+      html += '<div class="gc-cab">' + esc(c.nombre) + '</div>';
+    });
+
+    d.franjas.forEach(function (h) {
+      html += '<div class="gc-hora">' + h + '</div>';
+
+      d.canchas.forEach(function (c) {
+        const r = d.reservas.filter(function (x) {
+          if (x.unidad_id !== c.id) return false;
+          const ini = (x.hora_entrada || '').slice(0, 5);
+          const fin = (x.hora_salida || '').slice(0, 5);
+          return ini <= h && (fin > h || (!fin && ini === h));
+        })[0];
+
+        if (r) {
+          const pago = (r.pagado || 0) >= r.total && r.total > 0;
+          html += '<button class="gc-celda ' + (pago ? 'pagada' : 'ocupada') + '" ' +
+            'onclick="verTurnoCancha(\'' + r.id + '\')">' +
+            esc(r.cliente_nombre) +
+            (pago ? '<br>pagado' : '') + '</button>';
+        } else {
+          html += '<button class="gc-celda libre" ' +
+            'onclick="reservarCancha(\'' + c.id + '\', \'' + h + '\', ' + (c.precio_venta || 0) + ')">' +
+            'libre</button>';
+        }
+      });
+    });
+
+    html += '</div></div>';
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function reservarCancha(unidadId, hora, precio) {
+  abrirReserva(null);
+  $('rUnidad').value = unidadId;
+  $('rDesde').value = diaActualCancha();
+  $('rHasta').value = diaActualCancha();
+  $('rHoraEnt').value = hora;
+
+  const h = parseInt(hora.split(':')[0]);
+  $('rHoraSal').value = String(h + 1).padStart(2, '0') + ':' + hora.split(':')[1];
+  $('rPrecio').value = precio;
+  calcularTotalReserva();
+}
+
+async function verTurnoCancha(id) {
+  await abrirReserva(id);
 }
 
 /* ══ Reservas de alquiler ══ */
