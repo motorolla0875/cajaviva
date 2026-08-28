@@ -2572,11 +2572,11 @@
 
     <div class="fila2">
       <div><label>Telefono</label><input type="text" id="rTelefono" inputmode="tel"></div>
-      <div><label>Personas</label><input type="text" id="rPersonas" inputmode="numeric"></div>
+      <div id="wrapPersonas"><label>Personas</label><input type="text" id="rPersonas" inputmode="numeric"></div>
     </div>
 
     <div class="fila2">
-      <div><label>Precio por noche</label><input type="text" id="rPrecio" inputmode="decimal"></div>
+      <div><label id="lblPrecioRes">Precio por noche</label><input type="text" id="rPrecio" inputmode="decimal"></div>
       <div><label>Seña recibida</label><input type="text" id="rSena" inputmode="decimal" placeholder="0"></div>
     </div>
 
@@ -9034,6 +9034,13 @@ function aplicarModoReserva() {
   const porHora = cap('cap_canchas') && !cap('cap_alquiler');
   document.getElementById('modoDias').style.display = porHora ? 'none' : 'block';
   document.getElementById('modoHoras').style.display = porHora ? 'block' : 'none';
+
+  const wp = document.getElementById('wrapPersonas');
+  if (wp) wp.style.display = porHora ? 'none' : 'block';
+
+  const lp = document.getElementById('lblPrecioRes');
+  if (lp) lp.textContent = porHora ? 'Precio por turno' : 'Precio por noche';
+
   return porHora;
 }
 
