@@ -117,7 +117,40 @@ router.get('/disponibles', (req, res) => {
       AND desde < ? AND hasta > ?
   `).all(req.userId, hasta, desde);
 
+  // calcular el precio real de esas noches
+  const nn = noches(desde, hasta);
+  const neg = db.prepare('SELECT recargo_finde FROM negocio WHERE user_id = ?').get(req.userId);
+
+  const temps = db.prepare('SELECT nombre, desde, hasta, recargo FROM temporadas WHERE user_id = ?').all(req.userId);
+
   unidades.forEach(function (u) {
+    const calc = calcularTotal(req.userId, u.precio_venta || 0, desde, hasta);
+    u.total_real = calc.total;
+    u.total_base = (u.precio_venta || 0) * nn;
+    u.hay_recargo = calc.total > u.total_base;
+
+    // por que se recarga
+    const motivos = [];
+    const cursor = new Date(desde + 'T12:00:00');
+    const fin = new Date(hasta + 'T12:00:00');
+    let hayFinde = false;
+
+    while (cursor < fin) {
+      const dia = cursor.toISOString().slice(0, 10);
+      const md = dia.slice(5);
+      temps.forEach(function (t) {
+        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && motivos.indexOf(t.nombre) < 0) {
+          motivos.push(t.nombre);
+        }
+      });
+      const d = cursor.getDay();
+      if ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) hayFinde = true;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (hayFinde) motivos.push('fin de semana');
+    u.motivos = motivos;
+
     const o = ocupadas.filter(function (r) { return r.unidad_id === u.id; })[0];
     u.libre = !o;
     if (o) {
