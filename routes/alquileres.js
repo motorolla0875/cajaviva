@@ -405,9 +405,39 @@ router.get('/publico/:slug/libres', (req, res) => {
   `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
 
   const libres = unidades.filter(function (u) { return ocupadas.indexOf(u.id) < 0; });
+  const nn = noches(desde, hasta);
+  const neg = db.prepare('SELECT recargo_finde FROM negocio WHERE user_id = ?').get(n.user_id);
+  const temps = db.prepare('SELECT nombre, desde, hasta, recargo FROM temporadas WHERE user_id = ?').all(n.user_id);
+
+  libres.forEach(function (u) {
+    const calc = calcularTotal(n.user_id, u.precio_venta || 0, desde, hasta);
+    u.total_real = calc.total;
+    u.total_base = (u.precio_venta || 0) * nn;
+    u.hay_recargo = calc.total > u.total_base;
+
+    const motivos = [];
+    const cursor = new Date(desde + 'T12:00:00');
+    const fin = new Date(hasta + 'T12:00:00');
+    let hayFinde = false;
+
+    while (cursor < fin) {
+      const md = cursor.toISOString().slice(5, 10);
+      temps.forEach(function (t) {
+        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && motivos.indexOf(t.nombre) < 0) {
+          motivos.push(t.nombre);
+        }
+      });
+      const d = cursor.getDay();
+      if ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) hayFinde = true;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (hayFinde) motivos.push('fin de semana');
+    u.motivos = motivos;
+  });
 
   res.json({
-    desde: desde, hasta: hasta, noches: noches(desde, hasta),
+    desde: desde, hasta: hasta, noches: nn,
     unidades: libres, sena: n.sena_monto || 0,
     alias: n.alias_pago, titular: n.titular_pago
   });
@@ -436,8 +466,9 @@ router.post('/publico/:slug', (req, res) => {
 
   if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon. Proba con otras.' });
 
-  const nn = noches(desde, hasta);
-  const total = (u.precio_venta || 0) * nn;
+  const nn2 = noches(desde, hasta);
+  const calcPub = calcularTotal(n.user_id, u.precio_venta || 0, desde, hasta);
+  const total = calcPub.total;
   const id = uuidv4();
 
   db.prepare(`
@@ -445,12 +476,12 @@ router.post('/publico/:slug', (req, res) => {
       desde, hasta, personas, precio_noche, total, estado, nota)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)
   `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
-         desde, hasta, parseInt(personas) || null, u.precio_venta || 0, total,
+         desde, hasta, parseInt(personas) || null, Math.round(total / nn2), total,
          (nota ? nota + ' - ' : '') + 'Pedido por la web');
 
   res.json({
     id: id, unidad: u.nombre, desde: desde, hasta: hasta,
-    noches: nn, total: total,
+    noches: nn2, total: total,
     sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago
   });
 });

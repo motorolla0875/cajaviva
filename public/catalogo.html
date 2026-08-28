@@ -1325,7 +1325,14 @@ async function buscarDisponibles() {
           (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
           '<span class="nu">' + esc(u.nombre) +
           (u.capacidad ? '<small>hasta ' + u.capacidad + ' personas</small>' : '') + '</span>' +
-          '<span class="pu">' + plata(u.precio_venta * d.noches) + '</span></button>';
+          '<span class="pu">' +
+          (u.hay_recargo
+            ? '<small style="display:block;font-size:11px;color:var(--muted);text-decoration:line-through;font-weight:400;">' +
+              plata(u.total_base) + '</small>' + plata(u.total_real) +
+              '<small style="display:block;font-size:10px;font-weight:400;">' +
+              esc((u.motivos || []).join(', ')) + '</small>'
+            : plata(u.total_real != null ? u.total_real : u.precio_venta * d.noches)) +
+          '</span></button>';
       }).join('');
 
     // si venia de tocar una unidad puntual, seleccionarla
