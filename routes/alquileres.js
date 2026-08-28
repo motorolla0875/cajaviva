@@ -666,4 +666,36 @@ router.put('/temporadas/finde', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── los que estan ahora ──
+router.get('/encurso', (req, res) => {
+  const hoy = hoyISO();
+
+  const filas = db.prepare(`
+    SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
+    FROM reservas r
+    LEFT JOIN productos p ON p.id = r.unidad_id
+    WHERE r.user_id = ? AND r.estado = 'en_curso'
+    ORDER BY r.hasta
+  `).all(req.userId);
+
+  // los que tendrian que entrar hoy
+  const entranHoy = db.prepare(`
+    SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
+    FROM reservas r
+    LEFT JOIN productos p ON p.id = r.unidad_id
+    WHERE r.user_id = ? AND r.estado = 'reservada' AND r.desde <= ?
+    ORDER BY r.desde
+  `).all(req.userId, hoy);
+
+  filas.forEach(function (r) {
+    const dias = Math.round((new Date(r.hasta + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000);
+    r.dias_restantes = dias;
+    r.se_va_hoy = dias <= 0;
+    r.saldo = Math.max(0, r.total - (r.pagado || 0));
+  });
+
+  res.json({ encurso: filas, porEntrar: entranHoy });
+});
+
 module.exports = router;

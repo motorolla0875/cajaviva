@@ -1678,7 +1678,8 @@
       <button class="btn-nuevo solo" id="btnNuevaReserva">+ Nueva reserva</button>
 
       <div class="chips" id="tabsReservas">
-        <button class="on" data-tab="disponibles">Disponibilidad</button>
+        <button class="on" data-tab="encurso">Ahora</button>
+        <button data-tab="disponibles">Disponibilidad</button>
         <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
         <button data-tab="historial">Ya estuvieron</button>
@@ -8603,6 +8604,71 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
 
 /* ══ Temporadas y precios ══ */
 
+async function pintarEnCurso() {
+  const cont = $('listaReservas');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/alquileres/encurso');
+
+    if (d.encurso.length === 0 && d.porEntrar.length === 0) {
+      cont.innerHTML = '<div class="vacio">No hay nadie alojado ahora.</div>';
+      return;
+    }
+
+    let html = '';
+
+    if (d.porEntrar.length > 0) {
+      html += '<div class="seccion">Tendrian que llegar (' + d.porEntrar.length + ')</div>' +
+        d.porEntrar.map(function (x) {
+          const foto = x.foto_mini || x.foto_url;
+          return '<div class="reserva">' +
+            '<div class="cab">' +
+            (foto ? '<img class="foto-res" src="' + foto + '">' : '') +
+            '<div><div class="n">' + esc(x.cliente_nombre) + '</div>' +
+            '<div class="d">' + esc(x.unidad_nombre || '') + '</div>' +
+            '<span class="cuando-res">Entrada ' + fechaCorta(x.desde) +
+              (x.hora_entrada ? ' ' + x.hora_entrada : '') + '</span>' +
+            '</div><div class="m">' + plata(x.total) + '</div></div>' +
+            '<div class="acc">' +
+            '<button class="ppal" onclick="cambiarReserva(\'' + x.id + '\',\'en_curso\')">Llego</button>' +
+            (x.telefono ? '<button onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '') +
+            '</div></div>';
+        }).join('');
+    }
+
+    if (d.encurso.length > 0) {
+      html += '<div class="seccion">Alojados ahora (' + d.encurso.length + ')</div>' +
+        d.encurso.map(function (x) {
+          const foto = x.foto_mini || x.foto_url;
+          return '<div class="reserva en_curso">' +
+            '<div class="cab">' +
+            (foto ? '<img class="foto-res" src="' + foto + '">' : '') +
+            '<div><div class="n">' + esc(x.cliente_nombre) + '</div>' +
+            '<div class="d">' + esc(x.unidad_nombre || '') +
+              (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+            '<span class="cuando-res">' +
+              (x.se_va_hoy ? 'Se va hoy' + (x.hora_salida ? ' ' + x.hora_salida : '')
+                : x.dias_restantes === 1 ? 'Se va mañana'
+                : 'Se va en ' + x.dias_restantes + ' dias') + '</span>' +
+            (x.saldo > 0
+              ? '<span class="cuando-res" style="background:var(--warn-soft,#FDF3E3);color:var(--warn-text,#8A5A0F);">Debe ' + plata(x.saldo) + '</span>'
+              : '<span class="cuando-res">Todo pagado</span>') +
+            '</div><div class="m">' + plata(x.total) + '</div></div>' +
+            '<div class="acc">' +
+            '<button class="ppal" onclick="cobrarReserva(\'' + x.id + '\')">Se va y cobrar</button>' +
+            (x.telefono ? '<button onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '') +
+            '<button onclick="abrirReserva(\'' + x.id + '\')">Editar</button>' +
+            '</div></div>';
+        }).join('');
+    }
+
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
 async function pintarTemporadas() {
   const cont = $('listaReservas');
   cont.innerHTML = '<div class="vacio">Cargando...</div>';
@@ -8697,7 +8763,7 @@ async function guardarFinde() {
 
 /* ══ Reservas de alquiler ══ */
 
-let tabReservas = 'disponibles';
+let tabReservas = 'encurso';
 let reservaEditando = null;
 let unidadesCache = [];
 
@@ -8741,9 +8807,16 @@ async function cargarReservas() {
   if (rd && tabReservas !== 'disponibles') rd.innerHTML = '';
 
   const bf = document.getElementById('buscadorFechas');
-  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial' || tabReservas === 'temporadas') ? 'none' : 'block';
+  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial' || tabReservas === 'temporadas' || tabReservas === 'encurso') ? 'none' : 'block';
 
   try {
+    if (tabReservas === 'encurso') {
+      const rd2 = document.getElementById('resumenDisp');
+      if (rd2) rd2.innerHTML = '';
+      await pintarEnCurso();
+      return;
+    }
+
     if (tabReservas === 'temporadas') {
       const rd1 = document.getElementById('resumenDisp');
       if (rd1) rd1.innerHTML = '';
