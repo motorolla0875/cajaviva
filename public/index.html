@@ -8635,7 +8635,15 @@ async function cargarReservas() {
           d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div></div>';
       }
 
-      $('listaReservas').innerHTML = d.unidades.map(function (u) {
+      const fmt = function (f) {
+        const x = new Date(f + 'T12:00:00');
+        return x.getDate() + '/' + (x.getMonth() + 1);
+      };
+
+      $('listaReservas').innerHTML =
+        '<div style="text-align:center; font-size:13px; color:var(--muted); margin:4px 0 12px;">' +
+        'Resultado del ' + fmt(r.desde) + ' al ' + fmt(r.hasta) + '</div>' +
+        d.unidades.map(function (u) {
           return '<div class="unidad-card' + (u.libre ? '' : ' ocupada') + '">' +
             (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
             '<div class="datos"><div class="n">' + esc(u.nombre) + '</div>' +
