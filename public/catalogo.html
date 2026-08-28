@@ -134,13 +134,21 @@
   }
 
   .fila-alq { display: flex; gap: 10px; }
+  .fila-alq > div { min-width: 0; }
   .lbl-alq {
     display: block; font-size: 12.5px; color: var(--muted);
     margin: 0 0 5px; font-weight: 500;
   }
   .inp-alq {
-    width: 100%; padding: 12px; border: 1px solid var(--line);
-    border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px;
+    width: 100%; max-width: 100%; padding: 12px 10px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--text); font-size: 15px;
+    box-sizing: border-box; -webkit-appearance: none; appearance: none;
+  }
+  .inp-alq[type="date"] { font-size: 14px; padding: 12px 8px; }
+  @media (max-width: 400px) {
+    .fila-alq { gap: 8px; }
+    .inp-alq[type="date"] { font-size: 13px; padding: 12px 6px; }
   }
   .unid-op {
     display: flex; align-items: center; gap: 12px; width: 100%;
