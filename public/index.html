@@ -2020,6 +2020,25 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCobroTurno">
+  <div class="modal" style="max-width:380px;">
+    <h3>Cobrar el turno</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subCobroTurno"></p>
+    <div id="msgCobroTurno"></div>
+
+    <div id="detalleCobroTurno"></div>
+
+    <label>Como paga</label>
+    <div class="medios" id="mediosCobroTurno">
+      <button data-medio="efectivo" class="on">Efectivo</button>
+      <button data-medio="transferencia">Transfer.</button>
+    </div>
+
+    <button class="btn-ppal" id="btnConfirmarCobroTurno">Cobrar</button>
+    <button class="btn-sec" id="btnCerrarCobroTurno">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalDuracion">
   <div class="modal" style="max-width:380px;">
     <h3 id="tituloDur"></h3>
@@ -7942,16 +7961,68 @@ async function estadoTurno(id, estado) {
   } catch (e) { avisar(e.message, true); }
 }
 
-async function cobrarTurno(id) {
-  if (!confirm('Marcar como atendido y registrar el cobro?')) return;
+let turnoCobroId = null;
+let medioCobroTurno = 'efectivo';
+
+document.getElementById('mediosCobroTurno').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  medioCobroTurno = b.dataset.medio;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+});
+
+function cobrarTurno(id) {
+  turnoCobroId = id;
+  medioCobroTurno = 'efectivo';
+  Array.prototype.forEach.call($('mediosCobroTurno').children, function (x, i) {
+    x.classList.toggle('on', i === 0);
+  });
+
+  const t = (turnosDelDia || []).filter(function (x) { return x.id === id; })[0];
+  $('msgCobroTurno').innerHTML = '';
+
+  if (!t) {
+    $('detalleCobroTurno').innerHTML = '<div class="vacio">No se encontro el turno.</div>';
+  } else {
+    const falta = Math.max(0, t.precio - (t.sena || 0));
+    $('subCobroTurno').textContent = t.cliente_nombre +
+      (t.hora ? ' - ' + t.hora : '');
+
+    $('detalleCobroTurno').innerHTML =
+      '<div class="cierre-linea"><span>' + esc(t.servicio_nombre || 'Servicio') + '</span>' +
+      '<b>' + plata(t.precio) + '</b></div>' +
+      (t.duracion ? '<div class="cierre-linea"><span>Duracion</span><b>' +
+        (t.duracion >= 60 ? (t.duracion / 60) + 'h' : t.duracion + ' min') + '</b></div>' : '') +
+      (t.sena > 0
+        ? '<div class="cierre-linea" style="color:var(--accent-dark);"><span>Ya pago (seña)</span><b>-' +
+          plata(t.sena) + '</b></div>' : '') +
+      '<div class="cierre-linea total"><span>A cobrar</span><b>' + plata(falta) + '</b></div>';
+
+    $('btnConfirmarCobroTurno').textContent = falta > 0 ? 'Cobrar ' + plata(falta) : 'Cerrar sin cobrar';
+  }
+
+  $('modalCobroTurno').classList.add('on');
+}
+
+$('btnCerrarCobroTurno').onclick = function () { $('modalCobroTurno').classList.remove('on'); };
+
+$('btnConfirmarCobroTurno').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
-    const r = await api('POST', '/turnos/' + id + '/cobrar', { fecha: hoyISO() });
+    const r = await api('POST', '/turnos/' + turnoCobroId + '/cobrar', {
+      fecha: hoyISO(), medioPago: medioCobroTurno
+    });
+    $('modalCobroTurno').classList.remove('on');
     await cargarAgenda();
     await revisarTurnos();
     await cargarResumen();
     avisar('Cobrado ' + plata(r.total));
-  } catch (e) { avisar(e.message, true); }
-}
+  } catch (e) {
+    $('msgCobroTurno').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Cobrar';
+};
 
 function serviciosDisponibles() {
   return productos.filter(function (p) { return p.es_servicio; });
