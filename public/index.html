@@ -6796,7 +6796,7 @@ async function cargarPedidos() {
     pintarContadorPedidos(d.nuevos + nRes);
 
     if (d.items.length === 0) {
-      $('listaPedidos').innerHTML = nRes > 0 ? ''
+      $('listaPedidos').innerHTML = (nRes > 0 || cap('cap_alquiler')) ? ''
         : '<div class="vacio">' + (cap('cap_alquiler')
             ? (estadoPedidos === 'pendientes' ? 'No hay reservas nuevas.'
               : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguna.'
@@ -8964,7 +8964,7 @@ async function cargarReservasWeb() {
   try {
     const d = await api('GET', '/alquileres/pendientes?estado=' + estadoPedidos);
 
-    if (d.cantidad === 0) { cont.innerHTML = ''; return 0; }
+    if (d.items.length === 0) { cont.innerHTML = ''; return 0; }
 
     cont.innerHTML = d.items.map(function (x) {
       const foto = x.foto_mini || x.foto_url;
