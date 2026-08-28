@@ -468,6 +468,16 @@
   }
   .abrir-vuelto.on { display: block; }
 
+  input, textarea, select {
+    color: var(--text);
+    background: var(--panel);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: var(--icon-filter, none);
+  }
+
   .vuelto-box {
     display: none; background: var(--accent-soft); border: 1px solid var(--accent);
     border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
@@ -8360,6 +8370,7 @@ function aplicarTemaApp(nombre) {
   const t = TEMAS_APP[nombre] || TEMAS_APP.verde;
   const r = document.documentElement;
   const oscuro = nombre === 'oscuro';
+  r.style.setProperty('--icon-filter', oscuro ? 'invert(1)' : 'none');
   r.style.setProperty('--warn-soft', oscuro ? '#3A2E15' : '#FDF3E3');
   r.style.setProperty('--warn-text', oscuro ? '#E8B84B' : '#8A5A0F');
   r.style.setProperty('--accent', t.a);

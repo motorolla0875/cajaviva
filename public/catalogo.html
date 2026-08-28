@@ -153,6 +153,16 @@
     background: rgba(255,255,255,.6);
   }
 
+  input, textarea, select {
+    color: var(--text) !important;
+    background: var(--panel) !important;
+    border-color: var(--line) !important;
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted) !important; opacity: 1; }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: var(--icon-filter, none);
+  }
+
   .fila-alq { display: flex; gap: 10px; }
   .fila-alq > div { min-width: 0; }
   .lbl-alq {
@@ -559,6 +569,7 @@ const TEMAS_COMPLETOS = {
 function aplicarTemaCompleto(nombre) {
   const t = TEMAS_COMPLETOS[nombre] || TEMAS_COMPLETOS.verde;
   const r = document.documentElement;
+  r.style.setProperty('--icon-filter', nombre === 'negro' ? 'invert(1)' : 'none');
   r.style.setProperty('--accent', t.a);
   r.style.setProperty('--accent-dark', t.d);
   r.style.setProperty('--accent-soft', t.s);
