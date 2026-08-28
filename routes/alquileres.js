@@ -290,4 +290,150 @@ router.get('/calendario', (req, res) => {
   res.json({ mes: mes, unidades: unidades.length, dias: dias, reservas: reservas });
 });
 
+
+// ── disponibilidad publica ──
+router.get('/publico/:slug/libres', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+
+  const desde = req.query.desde || hoyISO();
+  const hasta = req.query.hasta || desde;
+  if (hasta <= desde) return res.json({ unidades: [], noches: 0 });
+
+  const unidades = db.prepare(`
+    SELECT id, nombre, precio_venta, capacidad, cobro_por, foto_mini, foto_url, notas
+    FROM productos
+    WHERE user_id = ? AND activo = 1 AND es_unidad = 1 AND en_catalogo = 1
+    ORDER BY nombre
+  `).all(n.user_id);
+
+  const ocupadas = db.prepare(`
+    SELECT unidad_id FROM reservas
+    WHERE user_id = ? AND estado IN ('reservada','en_curso')
+      AND desde < ? AND hasta > ?
+  `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
+
+  const libres = unidades.filter(function (u) { return ocupadas.indexOf(u.id) < 0; });
+
+  res.json({
+    desde: desde, hasta: hasta, noches: noches(desde, hasta),
+    unidades: libres, sena: n.sena_monto || 0,
+    alias: n.alias_pago, titular: n.titular_pago
+  });
+});
+
+// ── el cliente reserva (publico) ──
+router.post('/publico/:slug', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+
+  const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
+  if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
+  if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
+  if (hasta <= desde) return res.status(400).json({ error: 'La salida tiene que ser despues de la entrada.' });
+
+  const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
+    .get(unidadId, n.user_id);
+  if (!u) return res.status(400).json({ error: 'Unidad no encontrada.' });
+
+  const choque = db.prepare(`
+    SELECT id FROM reservas
+    WHERE user_id = ? AND unidad_id = ? AND estado IN ('reservada','en_curso')
+      AND desde < ? AND hasta > ?
+  `).get(n.user_id, unidadId, hasta, desde);
+
+  if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon. Proba con otras.' });
+
+  const nn = noches(desde, hasta);
+  const total = (u.precio_venta || 0) * nn;
+  const id = uuidv4();
+
+  db.prepare(`
+    INSERT INTO reservas (id, user_id, unidad_id, cliente_nombre, telefono,
+      desde, hasta, personas, precio_noche, total, estado, nota)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservada', ?)
+  `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
+         desde, hasta, parseInt(personas) || null, u.precio_venta || 0, total,
+         (nota ? nota + ' - ' : '') + 'Pedido por la web');
+
+  res.json({
+    id: id, unidad: u.nombre, desde: desde, hasta: hasta,
+    noches: nn, total: total,
+    sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago
+  });
+});
+
+
+// ── disponibilidad publica ──
+router.get('/publico/:slug/libres', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+
+  const desde = req.query.desde || hoyISO();
+  const hasta = req.query.hasta || desde;
+  if (hasta <= desde) return res.json({ unidades: [], noches: 0 });
+
+  const unidades = db.prepare(`
+    SELECT id, nombre, precio_venta, capacidad, cobro_por, foto_mini, foto_url, notas
+    FROM productos
+    WHERE user_id = ? AND activo = 1 AND es_unidad = 1 AND en_catalogo = 1
+    ORDER BY nombre
+  `).all(n.user_id);
+
+  const ocupadas = db.prepare(`
+    SELECT unidad_id FROM reservas
+    WHERE user_id = ? AND estado IN ('reservada','en_curso')
+      AND desde < ? AND hasta > ?
+  `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
+
+  const libres = unidades.filter(function (u) { return ocupadas.indexOf(u.id) < 0; });
+
+  res.json({
+    desde: desde, hasta: hasta, noches: noches(desde, hasta),
+    unidades: libres, sena: n.sena_monto || 0,
+    alias: n.alias_pago, titular: n.titular_pago
+  });
+});
+
+// ── el cliente reserva (publico) ──
+router.post('/publico/:slug', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+
+  const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
+  if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
+  if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
+  if (hasta <= desde) return res.status(400).json({ error: 'La salida tiene que ser despues de la entrada.' });
+
+  const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
+    .get(unidadId, n.user_id);
+  if (!u) return res.status(400).json({ error: 'Unidad no encontrada.' });
+
+  const choque = db.prepare(`
+    SELECT id FROM reservas
+    WHERE user_id = ? AND unidad_id = ? AND estado IN ('reservada','en_curso')
+      AND desde < ? AND hasta > ?
+  `).get(n.user_id, unidadId, hasta, desde);
+
+  if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon. Proba con otras.' });
+
+  const nn = noches(desde, hasta);
+  const total = (u.precio_venta || 0) * nn;
+  const id = uuidv4();
+
+  db.prepare(`
+    INSERT INTO reservas (id, user_id, unidad_id, cliente_nombre, telefono,
+      desde, hasta, personas, precio_noche, total, estado, nota)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservada', ?)
+  `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
+         desde, hasta, parseInt(personas) || null, u.precio_venta || 0, total,
+         (nota ? nota + ' - ' : '') + 'Pedido por la web');
+
+  res.json({
+    id: id, unidad: u.nombre, desde: desde, hasta: hasta,
+    noches: nn, total: total,
+    sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago
+  });
+});
+
 module.exports = router;

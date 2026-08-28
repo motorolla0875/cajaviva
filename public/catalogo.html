@@ -115,6 +115,27 @@
     .btn-turno { width: 36px; height: 36px; font-size: 16px; }
   }
 
+  .fila-alq { display: flex; gap: 10px; }
+  .lbl-alq {
+    display: block; font-size: 12.5px; color: var(--muted);
+    margin: 0 0 5px; font-weight: 500;
+  }
+  .inp-alq {
+    width: 100%; padding: 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px;
+  }
+  .unid-op {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 12px; margin-bottom: 8px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--panel); text-align: left;
+  }
+  .unid-op.on { border-color: var(--accent); background: var(--accent-soft); }
+  .unid-op img { width: 52px; height: 52px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
+  .unid-op .nu { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 500; }
+  .unid-op .nu small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .unid-op .pu { font-size: 15px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
+
   .hora-btn {
     display: inline-block; padding: 10px 14px; margin: 0 6px 6px 0;
     border: 1px solid var(--line); border-radius: 10px;
@@ -268,6 +289,56 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;">Elegi el talle o color que queres</p>
     <div id="opcionesVarCat"></div>
 
+  </div>
+</div>
+
+<div id="modalAlq" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:58; overflow-y:auto; padding:20px 16px;">
+  <div style="background:var(--panel); border-radius:16px; max-width:420px; margin:0 auto; padding:22px;">
+    <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;" id="tituloAlq"></h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subAlq"></p>
+    <div id="msgAlq"></div>
+
+    <div class="fila-alq">
+      <div style="flex:1;">
+        <label class="lbl-alq">Entrada</label>
+        <input type="date" id="aDesde" class="inp-alq">
+      </div>
+      <div style="flex:1;">
+        <label class="lbl-alq">Salida</label>
+        <input type="date" id="aHasta" class="inp-alq">
+      </div>
+    </div>
+
+    <div id="resultadoAlq" style="margin-top:14px;"></div>
+
+    <div id="datosAlq" style="display:none; margin-top:16px;">
+      <label class="lbl-alq">Tu nombre</label>
+      <input type="text" id="aNombre" class="inp-alq">
+
+      <label class="lbl-alq" style="margin-top:12px;">Tu telefono</label>
+      <input type="text" id="aTelefono" inputmode="tel" class="inp-alq">
+
+      <label class="lbl-alq" style="margin-top:12px;">Cuantas personas</label>
+      <input type="text" id="aPersonas" inputmode="numeric" class="inp-alq">
+
+      <button id="btnReservarAlq" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
+    </div>
+
+    <button onclick="cerrarAlq()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
+  </div>
+</div>
+
+<div id="alqListo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:62; padding:20px 16px;">
+  <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:40px auto 0; padding:26px; text-align:center;">
+    <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
+    <h3 style="margin:14px 0 6px; font-size:20px; font-weight:500;">Reserva enviada</h3>
+    <p style="color:var(--text); font-size:15px; font-weight:500; margin:0 0 10px;" id="detalleAlqListo"></p>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.5;">
+      Nos vamos a comunicar para confirmarla.
+    </p>
+    <div id="senaAlqListo"></div>
+    <div id="wppAlqListo"></div>
+    <button onclick="location.reload()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Listo</button>
   </div>
 </div>
 
@@ -889,21 +960,7 @@ document.getElementById('archSena').onchange = async function (e) {
 };
 
 
-function consultarUnidad(p) {
-  const n = datos.negocio.nombre || '';
-  const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
 
-  const texto = 'Hola! Quiero consultar por ' + p.nombre +
-    ' (' + plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche') + ')' +
-    (p.capacidad ? ', para hasta ' + p.capacidad + ' personas' : '') + '. Que fechas tenes disponibles?';
-
-  if (wpp) {
-    window.open('https://wa.me/54' + wpp + '?text=' + encodeURIComponent(texto), '_blank');
-  } else {
-    alert('Consultanos por ' + p.nombre + '.\n' +
-      plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche') + '.');
-  }
-}
 
 function verFoto(url) {
   const d = document.createElement('div');
@@ -1101,6 +1158,161 @@ document.getElementById('btnReservar').onclick = async function () {
     buscarHoras();
   }
   btn.disabled = false; btn.textContent = 'Reservar el turno';
+};
+
+
+/* ══ Reservar alquiler desde el catalogo ══ */
+
+let unidadElegida = null;
+let datosAlq = null;
+let reservaCreada = null;
+
+function consultarUnidad(p) {
+  unidadElegida = null;
+  document.getElementById('tituloAlq').textContent = p.nombre;
+  document.getElementById('subAlq').textContent =
+    plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche') +
+    (p.capacidad ? ' - hasta ' + p.capacidad + ' personas' : '');
+  document.getElementById('msgAlq').innerHTML = '';
+  document.getElementById('datosAlq').style.display = 'none';
+  document.getElementById('aNombre').value = '';
+  document.getElementById('aTelefono').value = '';
+  document.getElementById('aPersonas').value = '';
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const m = new Date(); m.setDate(m.getDate() + 1);
+  const f1 = document.getElementById('aDesde');
+  const f2 = document.getElementById('aHasta');
+  f1.value = hoy; f1.min = hoy;
+  f2.value = m.toISOString().slice(0, 10); f2.min = hoy;
+
+  unidadPreferida = p.id;
+  document.getElementById('modalAlq').style.display = 'block';
+  buscarDisponibles();
+}
+
+let unidadPreferida = null;
+
+function cerrarAlq() { document.getElementById('modalAlq').style.display = 'none'; }
+
+document.getElementById('aDesde').addEventListener('change', function () {
+  const f2 = document.getElementById('aHasta');
+  if (f2.value <= this.value) {
+    const d = new Date(this.value + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    f2.value = d.toISOString().slice(0, 10);
+  }
+  buscarDisponibles();
+});
+document.getElementById('aHasta').addEventListener('change', buscarDisponibles);
+
+async function buscarDisponibles() {
+  const cont = document.getElementById('resultadoAlq');
+  cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Buscando...</div>';
+  document.getElementById('datosAlq').style.display = 'none';
+  unidadElegida = null;
+
+  try {
+    const r = await fetch('/api/alquileres/publico/' + slug + '/libres?desde=' +
+      document.getElementById('aDesde').value + '&hasta=' + document.getElementById('aHasta').value);
+    const d = await r.json();
+    datosAlq = d;
+
+    if (!d.unidades || d.unidades.length === 0) {
+      cont.innerHTML = '<div style="color:#8A5A0F;font-size:13.5px;background:#FDF3E3;padding:12px;border-radius:10px;">' +
+        'No queda nada libre en esas fechas. Proba con otras.</div>';
+      return;
+    }
+
+    cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">' +
+      d.noches + (d.noches === 1 ? ' noche' : ' noches') + ' - elegi cual queres</div>' +
+      d.unidades.map(function (u) {
+        return '<button class="unid-op" onclick="elegirUnidad(\'' + u.id + '\', this)">' +
+          (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
+          '<span class="nu">' + esc(u.nombre) +
+          (u.capacidad ? '<small>hasta ' + u.capacidad + ' personas</small>' : '') + '</span>' +
+          '<span class="pu">' + plata(u.precio_venta * d.noches) + '</span></button>';
+      }).join('');
+
+    // si venia de tocar una unidad puntual, seleccionarla
+    if (unidadPreferida) {
+      const btns = cont.querySelectorAll('.unid-op');
+      const i = d.unidades.findIndex(function (u) { return u.id === unidadPreferida; });
+      if (i >= 0 && btns[i]) elegirUnidad(unidadPreferida, btns[i]);
+      unidadPreferida = null;
+    }
+  } catch (e) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudo consultar.</div>';
+  }
+}
+
+function elegirUnidad(id, btn) {
+  unidadElegida = id;
+  document.querySelectorAll('.unid-op').forEach(function (b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('datosAlq').style.display = 'block';
+}
+
+document.getElementById('btnReservarAlq').onclick = async function () {
+  const nombre = document.getElementById('aNombre').value.trim();
+  if (!nombre) {
+    document.getElementById('msgAlq').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">Poné tu nombre.</div>';
+    return;
+  }
+  if (!unidadElegida) return;
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Reservando...';
+
+  try {
+    const r = await fetch('/api/alquileres/publico/' + slug, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        unidadId: unidadElegida,
+        nombre: nombre,
+        telefono: document.getElementById('aTelefono').value.trim() || null,
+        desde: document.getElementById('aDesde').value,
+        hasta: document.getElementById('aHasta').value,
+        personas: parseInt(document.getElementById('aPersonas').value) || null
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo reservar');
+
+    reservaCreada = d.id;
+
+    document.getElementById('detalleAlqListo').textContent =
+      d.unidad + ' - ' + d.noches + (d.noches === 1 ? ' noche' : ' noches') + ' - ' + plata(d.total);
+
+    document.getElementById('senaAlqListo').innerHTML = d.sena > 0
+      ? '<div style="background:var(--accent-soft);border-radius:12px;padding:14px;margin-bottom:12px;text-align:left;">' +
+        '<div style="font-size:13.5px;color:var(--accent-dark);font-weight:500;">Seña de ' + plata(d.sena) + '</div>' +
+        (d.alias ? '<div style="font-size:12.5px;color:var(--accent-dark);margin-top:4px;">Transferí a <b>' +
+          esc(d.alias) + '</b>' + (d.titular ? ' (' + esc(d.titular) + ')' : '') + '</div>' : '') +
+        '</div>'
+      : '';
+
+    const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
+    if (wpp) {
+      const texto = 'Hola! Reserve ' + d.unidad + ' del ' + d.desde + ' al ' + d.hasta +
+        '. Soy ' + nombre + '.';
+      document.getElementById('wppAlqListo').innerHTML =
+        '<button onclick="window.open(\'https://wa.me/54' + wpp + '?text=' +
+        encodeURIComponent(texto) + '\', \'_blank\')" ' +
+        'style="width:100%; padding:13px; border:1px solid var(--accent); border-radius:12px; background:var(--panel); color:var(--accent-dark); font-size:14.5px; font-weight:500;">Avisar por WhatsApp</button>';
+    }
+
+    cerrarAlq();
+    document.getElementById('alqListo').style.display = 'block';
+  } catch (e) {
+    document.getElementById('msgAlq').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">' +
+      esc(e.message) + '</div>';
+    buscarDisponibles();
+  }
+  btn.disabled = false; btn.textContent = 'Reservar';
 };
 
 </script>
