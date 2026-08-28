@@ -8615,7 +8615,7 @@ async function pintarTemporadas() {
     html += '<div class="seccion">Fin de semana</div>' +
       '<div class="fila"><div class="datos">' +
       '<div class="n">Recargo viernes y sabado</div>' +
-      '<div class="d">Se suma al de temporada</div></div>' +
+      '<div class="d">Si cae en temporada, se aplica el mayor</div></div>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
       '<input type="text" id="recFinde" inputmode="decimal" value="' + (d.recargoFinde || '') + '" ' +
       'placeholder="0" style="width:60px;text-align:right;padding:8px;">' +

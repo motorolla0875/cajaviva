@@ -49,22 +49,21 @@ db.exec(`
 
 // precio de una noche puntual segun temporada y dia
 function precioNoche(userId, base, dia, negocio) {
-  let p = base;
-
+  // se aplica el recargo mas alto, nunca los dos juntos
   const t = db.prepare(`
     SELECT recargo FROM temporadas
     WHERE user_id = ? AND substr(?, 6) >= substr(desde, 6) AND substr(?, 6) <= substr(hasta, 6)
     ORDER BY recargo DESC LIMIT 1
   `).get(userId, dia, dia);
 
-  if (t) p = p * (1 + t.recargo / 100);
+  const rTemp = t ? t.recargo : 0;
 
   const d = new Date(dia + 'T12:00:00').getDay();
-  if ((d === 5 || d === 6) && negocio && negocio.recargo_finde > 0) {
-    p = p * (1 + negocio.recargo_finde / 100);
-  }
+  const rFinde = ((d === 5 || d === 6) && negocio && negocio.recargo_finde > 0)
+    ? negocio.recargo_finde : 0;
 
-  return Math.round(p);
+  const mayor = Math.max(rTemp, rFinde);
+  return Math.round(base * (1 + mayor / 100));
 }
 
 // total de una estadia, noche por noche

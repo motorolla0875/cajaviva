@@ -109,18 +109,15 @@ router.get('/publico/:slug', (req, res) => {
   } catch (e) {}
 
   function precioDelDia(base, dia) {
-    let precio = base;
     const md = dia.slice(5);
-    let mejor = 0;
+    let rTemp = 0;
     tempsCat.forEach(function (t) {
-      if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && t.recargo > mejor) mejor = t.recargo;
+      if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && t.recargo > rTemp) rTemp = t.recargo;
     });
-    if (mejor > 0) precio = precio * (1 + mejor / 100);
     const dd = new Date(dia + 'T12:00:00').getDay();
-    if ((dd === 5 || dd === 6) && negR && negR.recargo_finde > 0) {
-      precio = precio * (1 + negR.recargo_finde / 100);
-    }
-    return Math.round(precio);
+    const rFinde = ((dd === 5 || dd === 6) && negR && negR.recargo_finde > 0)
+      ? negR.recargo_finde : 0;
+    return Math.round(base * (1 + Math.max(rTemp, rFinde) / 100));
   }
 
   // las unidades llevan su galeria y descripcion larga
