@@ -8802,7 +8802,8 @@ async function cargarReservas() {
                 '<div class="precio" style="color:var(--accent-dark);">' + plata(u.total_real) + '</div>' +
                 '<div style="font-size:10.5px;color:var(--accent-dark);line-height:1.2;max-width:110px;">' +
                 esc((u.motivos || []).join(', ')) + '</div>'
-              : '<div class="precio">' + plata(u.total_real != null ? u.total_real : u.precio_venta * d.noches) + '</div>') +
+              : '<div class="precio">' + plata(u.total_real != null ? u.total_real : u.precio_venta * d.noches) + '</div>' +
+                '<div style="font-size:10.5px;color:var(--muted);line-height:1.2;max-width:110px;">Precio normal</div>') +
             (u.libre ? '<button class="btn-pago" style="margin-top:6px;border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:500;" onclick="reservarUnidad(\'' + u.id + '\')">Reservar ' + d.noches +
               (d.noches === 1 ? ' noche' : ' noches') + '</button>' : '') +
             '</div></div>';
