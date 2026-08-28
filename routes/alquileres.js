@@ -31,6 +31,8 @@ db.exec(`
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_canchas INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN turno_partido INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN hora_desde TEXT NOT NULL DEFAULT '08:00'"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN hora_hasta TEXT NOT NULL DEFAULT '22:00'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN hora_desde2 TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN hora_hasta2 TEXT"); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
