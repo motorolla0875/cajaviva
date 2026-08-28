@@ -972,9 +972,11 @@ router.get('/publico/:slug/horas', (req, res) => {
     rangos.push([aMin(n.hora_desde2), aMin(n.hora_hasta2)]);
   }
 
-  const ahora = new Date();
-  const esHoy = dia === hoyISO();
-  const minAhora = ahora.getHours() * 60 + ahora.getMinutes();
+  // el servidor esta en UTC: Argentina son 3 horas menos
+  const ahora = new Date(Date.now() - 3 * 3600000);
+  const hoyLocal = ahora.toISOString().slice(0, 10);
+  const esHoy = dia === hoyLocal;
+  const minAhora = ahora.getUTCHours() * 60 + ahora.getUTCMinutes();
 
   const libres = [];
   rangos.forEach(function (r) {
