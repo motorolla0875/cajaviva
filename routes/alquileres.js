@@ -132,22 +132,28 @@ router.get('/disponibles', (req, res) => {
     const motivos = [];
     const cursor = new Date(desde + 'T12:00:00');
     const fin = new Date(hasta + 'T12:00:00');
-    let hayFinde = false;
 
     while (cursor < fin) {
       const dia = cursor.toISOString().slice(0, 10);
       const md = dia.slice(5);
+
+      // cual gana esa noche
+      let mejorT = null, rTemp = 0;
       temps.forEach(function (t) {
-        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && motivos.indexOf(t.nombre) < 0) {
-          motivos.push(t.nombre);
+        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && t.recargo > rTemp) {
+          rTemp = t.recargo; mejorT = t.nombre;
         }
       });
+
       const d = cursor.getDay();
-      if ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) hayFinde = true;
+      const rFinde = ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) ? neg.recargo_finde : 0;
+
+      const gana = rTemp >= rFinde ? mejorT : 'fin de semana';
+      if (gana && Math.max(rTemp, rFinde) > 0 && motivos.indexOf(gana) < 0) motivos.push(gana);
+
       cursor.setDate(cursor.getDate() + 1);
     }
 
-    if (hayFinde) motivos.push('fin de semana');
     u.motivos = motivos;
 
     const o = ocupadas.filter(function (r) { return r.unidad_id === u.id; })[0];
@@ -417,21 +423,22 @@ router.get('/publico/:slug/libres', (req, res) => {
     const motivos = [];
     const cursor = new Date(desde + 'T12:00:00');
     const fin = new Date(hasta + 'T12:00:00');
-    let hayFinde = false;
 
     while (cursor < fin) {
       const md = cursor.toISOString().slice(5, 10);
+      let mejorT = null, rTemp = 0;
       temps.forEach(function (t) {
-        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && motivos.indexOf(t.nombre) < 0) {
-          motivos.push(t.nombre);
+        if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && t.recargo > rTemp) {
+          rTemp = t.recargo; mejorT = t.nombre;
         }
       });
       const d = cursor.getDay();
-      if ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) hayFinde = true;
+      const rFinde = ((d === 5 || d === 6) && neg && neg.recargo_finde > 0) ? neg.recargo_finde : 0;
+      const gana = rTemp >= rFinde ? mejorT : 'fin de semana';
+      if (gana && Math.max(rTemp, rFinde) > 0 && motivos.indexOf(gana) < 0) motivos.push(gana);
       cursor.setDate(cursor.getDate() + 1);
     }
 
-    if (hayFinde) motivos.push('fin de semana');
     u.motivos = motivos;
 
     // comparar con el precio de hoy: si sale menos, es un ahorro
