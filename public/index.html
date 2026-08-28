@@ -4043,7 +4043,8 @@ $('pCosto').addEventListener('input', calcularMargen);
 function abrirProd(id) {
   editandoId = id || null;
   const p = id ? productos.filter(function (x) { return x.id === id; })[0] : null;
-  $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  $('tituloProd').textContent = p ? 'Editar producto'
+    : (cap('cap_alquiler') ? 'Nuevo producto para vender' : 'Nuevo producto');
   $('msgProd').innerHTML = '';
   $('pNombre').value = p ? p.nombre : '';
   pintarSelectCategorias();
