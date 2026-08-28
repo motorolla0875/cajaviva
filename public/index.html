@@ -3175,6 +3175,11 @@ function aplicarCapacidades() {
   const trs = document.getElementById('tabReservas');
   if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
 
+  const tp2 = document.getElementById('tabPedidos');
+  if (tp2 && !tp2.querySelector('.contador')) {
+    tp2.textContent = cap('cap_alquiler') ? 'Reservas web' : 'Pedidos';
+  }
+
   const tc = document.querySelector('nav button[data-vista="clientes"]');
   if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
     : cap('cap_turnos') ? 'Clientes' : 'Fiado';
@@ -6792,7 +6797,8 @@ async function cargarPedidos() {
 function pintarContadorPedidos(n) {
   const b = document.getElementById('tabPedidos');
   if (!b) return;
-  b.innerHTML = 'Pedidos' + (n > 0 ? '<span class="contador">' + n + '</span>' : '');
+  const titulo = cap('cap_alquiler') ? 'Reservas web' : 'Pedidos';
+  b.innerHTML = titulo + (n > 0 ? '<span class="contador">' + n + '</span>' : '');
 }
 
 function llamarPedido(tel, id) {
@@ -8876,8 +8882,7 @@ async function cargarReservasWeb() {
 
     if (d.cantidad === 0) { cont.innerHTML = ''; return 0; }
 
-    cont.innerHTML = '<div class="seccion">Reservas por la web (' + d.cantidad + ')</div>' +
-      d.items.map(function (x) {
+    cont.innerHTML = d.items.map(function (x) {
         const foto = x.foto_mini || x.foto_url;
         const n = Math.round((new Date(x.hasta + 'T12:00:00') - new Date(x.desde + 'T12:00:00')) / 86400000);
 
