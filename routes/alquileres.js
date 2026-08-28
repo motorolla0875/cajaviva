@@ -36,6 +36,20 @@ try { db.exec('ALTER TABLE reservas ADD COLUMN sena_fecha TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN recargo_finde REAL NOT NULL DEFAULT 0'); } catch (e) {}
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS reserva_extras (
+    id TEXT PRIMARY KEY,
+    reserva_id TEXT NOT NULL,
+    producto_id TEXT,
+    nombre TEXT NOT NULL,
+    cantidad REAL NOT NULL DEFAULT 1,
+    precio_unitario REAL NOT NULL DEFAULT 0,
+    costo_unitario REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_extras_res ON reserva_extras(reserva_id);
+`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS temporadas (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -312,7 +326,16 @@ router.post('/:id/cobrar', (req, res) => {
     INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
     VALUES (?, ?, ?, ?, 1, ?, 0)
   `).run(uuidv4(), ventaId, r.unidad_id,
-         (u ? u.nombre : 'Alquiler') + ' (' + r.desde + ' al ' + r.hasta + ')', total);
+         (u ? u.nombre : 'Alquiler') + ' (' + r.desde + ' al ' + r.hasta + ')',
+         Math.max(0, total - totalExtras));
+
+  // cada consumo va como linea aparte
+  extras.forEach(function (e) {
+    db.prepare(`
+      INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(uuidv4(), ventaId, e.producto_id, e.nombre, e.cantidad, e.precio_unitario, e.costo_unitario);
+  });
 
   db.prepare("UPDATE reservas SET estado = 'terminada', pagado = ?, venta_id = ? WHERE id = ?")
     .run(total, ventaId, r.id);
@@ -696,6 +719,66 @@ router.get('/encurso', (req, res) => {
   });
 
   res.json({ encurso: filas, porEntrar: entranHoy });
+});
+
+
+// ── consumos de una reserva ──
+router.get('/:id/extras', (req, res) => {
+  const r = db.prepare('SELECT id, total, pagado FROM reservas WHERE id = ? AND user_id = ?')
+    .get(req.params.id, req.userId);
+  if (!r) return res.status(404).json({ error: 'Reserva no encontrada.' });
+
+  const items = db.prepare('SELECT * FROM reserva_extras WHERE reserva_id = ? ORDER BY created_at')
+    .all(r.id);
+
+  const totalExtras = items.reduce(function (s, i) { return s + i.cantidad * i.precio_unitario; }, 0);
+
+  res.json({
+    items: items, totalExtras: totalExtras,
+    totalEstadia: r.total, pagado: r.pagado || 0,
+    totalGeneral: r.total + totalExtras
+  });
+});
+
+router.post('/:id/extras', (req, res) => {
+  const r = db.prepare('SELECT id FROM reservas WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!r) return res.status(404).json({ error: 'Reserva no encontrada.' });
+
+  const { productoId, cantidad } = req.body || {};
+  const c = parseFloat(cantidad) || 1;
+  if (c <= 0) return res.status(400).json({ error: 'Cantidad no valida.' });
+
+  const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(productoId, req.userId);
+  if (!p) return res.status(400).json({ error: 'Producto no encontrado.' });
+
+  const id = uuidv4();
+  db.prepare(`
+    INSERT INTO reserva_extras (id, reserva_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(id, r.id, p.id, p.nombre, c, p.precio_venta || 0, p.precio_costo || 0);
+
+  // descontar del stock
+  if (!p.es_servicio && !p.tiene_receta) {
+    db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(c, p.id);
+  }
+
+  res.json({ id: id });
+});
+
+router.delete('/extras/:id', (req, res) => {
+  const e = db.prepare(`
+    SELECT e.* FROM reserva_extras e
+    JOIN reservas r ON r.id = e.reserva_id
+    WHERE e.id = ? AND r.user_id = ?
+  `).get(req.params.id, req.userId);
+
+  if (!e) return res.status(404).json({ error: 'No encontrado.' });
+
+  if (e.producto_id) {
+    db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(e.cantidad, e.producto_id);
+  }
+  db.prepare('DELETE FROM reserva_extras WHERE id = ?').run(e.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

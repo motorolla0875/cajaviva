@@ -2380,6 +2380,27 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalExtras">
+  <div class="modal">
+    <h3 id="tituloExtras">Consumos</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subExtras"></p>
+    <div id="msgExtras"></div>
+
+    <label>Agregar</label>
+    <div style="display:flex; gap:8px;">
+      <select id="exProducto" style="flex:1; min-width:0;"></select>
+      <input type="text" id="exCantidad" inputmode="decimal" value="1" style="width:62px; text-align:center;">
+      <button type="button" class="btn-mini" id="btnAgregarExtra" style="flex-shrink:0; padding:0 16px;">+</button>
+    </div>
+
+    <div id="listaExtras" style="margin-top:16px;"></div>
+
+    <div class="cierre-linea total"><span>Total con consumos</span><b id="totalConExtras">$0</b></div>
+
+    <button class="btn-sec" id="btnCerrarExtras">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalTemporada">
   <div class="modal">
     <h3>Nueva temporada</h3>
@@ -8603,6 +8624,85 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
 
 /* ══ Temporadas y precios ══ */
 
+/* ══ Consumos de una reserva ══ */
+
+let extrasResId = null;
+
+async function abrirExtras(id, nombre) {
+  extrasResId = id;
+  $('msgExtras').innerHTML = '';
+  $('subExtras').textContent = nombre || '';
+  $('exCantidad').value = '1';
+
+  const vendibles = productos.filter(function (p) {
+    return !p.es_unidad && !p.es_insumo;
+  });
+
+  $('exProducto').innerHTML = vendibles.length === 0
+    ? '<option value="">Carga productos primero</option>'
+    : vendibles.map(function (p) {
+        return '<option value="' + p.id + '">' + esc(p.nombre) + ' - ' + plata(p.precio_venta) + '</option>';
+      }).join('');
+
+  $('modalExtras').classList.add('on');
+  await cargarExtras();
+}
+
+$('btnCerrarExtras').onclick = async function () {
+  $('modalExtras').classList.remove('on');
+  await cargarReservas();
+};
+
+async function cargarExtras() {
+  $('listaExtras').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const d = await api('GET', '/alquileres/' + extrasResId + '/extras');
+
+    $('listaExtras').innerHTML = d.items.length === 0
+      ? '<div class="vacio">Sin consumos todavia</div>'
+      : '<div class="seccion">Consumido</div>' +
+        d.items.map(function (e) {
+          return '<div class="mov"><div class="info">' +
+            '<div class="n">' + esc(e.nombre) + '</div>' +
+            '<div class="d">' + fmtCant(e.cantidad) + ' x ' + plata(e.precio_unitario) + '</div>' +
+            '</div><div class="monto">' + plata(e.cantidad * e.precio_unitario) + '</div>' +
+            '<button class="x" onclick="borrarExtra(\'' + e.id + '\')">&#10005;</button></div>';
+        }).join('') +
+        '<div class="cierre-linea"><span>Estadia</span><b>' + plata(d.totalEstadia) + '</b></div>' +
+        '<div class="cierre-linea"><span>Consumos</span><b>' + plata(d.totalExtras) + '</b></div>';
+
+    $('totalConExtras').textContent = plata(d.totalGeneral);
+  } catch (e) {
+    $('listaExtras').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnAgregarExtra').onclick = async function () {
+  if (!$('exProducto').value) return;
+  const btn = this;
+  btn.disabled = true;
+  try {
+    await api('POST', '/alquileres/' + extrasResId + '/extras', {
+      productoId: $('exProducto').value,
+      cantidad: num($('exCantidad').value) || 1
+    });
+    $('exCantidad').value = '1';
+    await cargarExtras();
+    await cargarProductos();
+  } catch (e) {
+    $('msgExtras').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false;
+};
+
+async function borrarExtra(id) {
+  try {
+    await api('DELETE', '/alquileres/extras/' + id);
+    await cargarExtras();
+    await cargarProductos();
+  } catch (e) { avisar(e.message, true); }
+}
+
 async function pintarEnCurso() {
   const cont = $('listaReservas');
   cont.innerHTML = '<div class="vacio">Cargando...</div>';
@@ -8656,8 +8756,8 @@ async function pintarEnCurso() {
             '</div><div class="m">' + plata(x.total) + '</div></div>' +
             '<div class="acc">' +
             '<button class="ppal" onclick="cobrarReserva(\'' + x.id + '\')">Se va y cobrar</button>' +
+            '<button onclick="abrirExtras(\'' + x.id + '\', \'' + esc(x.cliente_nombre) + '\')">Consumos</button>' +
             (x.telefono ? '<button onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '') +
-            '<button onclick="abrirReserva(\'' + x.id + '\')">Editar</button>' +
             '</div></div>';
         }).join('');
     }
