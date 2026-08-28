@@ -32,6 +32,7 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFA
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN comprobante TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN sena_estado TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE reservas ADD COLUMN sena_fecha TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_salida TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN es_unidad INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN capacidad INTEGER'); } catch (e) {}
@@ -60,7 +61,7 @@ router.get('/disponibles', (req, res) => {
   const ocupadas = db.prepare(`
     SELECT unidad_id, cliente_nombre, desde, hasta FROM reservas
     WHERE user_id = ? AND (estado IN ('reservada','en_curso')
-      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
+      OR (estado = 'pendiente' AND sena_estado = 'enviado' AND sena_fecha > datetime('now', '-1 day')))
       AND desde < ? AND hasta > ?
   `).all(req.userId, hasta, desde);
 
@@ -313,7 +314,7 @@ router.get('/publico/:slug/libres', (req, res) => {
   const ocupadas = db.prepare(`
     SELECT unidad_id FROM reservas
     WHERE user_id = ? AND (estado IN ('reservada','en_curso')
-      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
+      OR (estado = 'pendiente' AND sena_estado = 'enviado' AND sena_fecha > datetime('now', '-1 day')))
       AND desde < ? AND hasta > ?
   `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
 
@@ -343,7 +344,7 @@ router.post('/publico/:slug', (req, res) => {
   const choque = db.prepare(`
     SELECT id FROM reservas
     WHERE user_id = ? AND unidad_id = ? AND (estado IN ('reservada','en_curso')
-      OR (estado = 'pendiente' AND sena_estado = 'enviado'))
+      OR (estado = 'pendiente' AND sena_estado = 'enviado' AND sena_fecha > datetime('now', '-1 day')))
       AND desde < ? AND hasta > ?
   `).get(n.user_id, unidadId, hasta, desde);
 
@@ -459,6 +460,16 @@ router.get('/pendientes', (req, res) => {
     WHERE r.user_id = ? AND r.estado = 'pendiente'
     ORDER BY r.created_at DESC
   `).all(req.userId);
+
+  filas.forEach(function (r) {
+    if (r.sena_estado === 'enviado' && r.sena_fecha) {
+      const vence = new Date(r.sena_fecha + 'Z');
+      vence.setDate(vence.getDate() + 1);
+      const horas = Math.max(0, Math.round((vence - new Date()) / 3600000));
+      r.horas_restantes = horas;
+    }
+  });
+
   res.json({ items: filas, cantidad: filas.length });
 });
 

@@ -149,7 +149,7 @@ router.post('/reserva/:id', subir.single('foto'), (req, res) => {
   const nombre = uuidv4() + '-res.webp';
   guardarArchivo(req.file.buffer, nombre);
 
-  db.prepare("UPDATE reservas SET comprobante = ?, sena_estado = 'enviado' WHERE id = ?")
+  db.prepare("UPDATE reservas SET comprobante = ?, sena_estado = 'enviado', sena_fecha = datetime('now') WHERE id = ?")
     .run('/fotos/' + nombre, r.id);
 
   res.json({ ok: true });
