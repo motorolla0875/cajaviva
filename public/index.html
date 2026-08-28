@@ -9333,9 +9333,11 @@ async function cargarGrillaCanchas() {
             '<span class="gc-rango">' + rango + (pago ? ' - pagado' : '') + '</span>' +
             '</button>';
         } else {
+          const hFin = String((parseInt(h.split(':')[0]) + 1) % 24).padStart(2, '0') + ':' + h.split(':')[1];
+
           html += '<button class="gc-celda libre" ' +
             'onclick="reservarCancha(\'' + c.id + '\', \'' + h + '\', ' + (c.precio_venta || 0) + ')">' +
-            'libre</button>';
+            'libre<span class="gc-rango">' + h + '-' + hFin + '</span></button>';
         }
       });
     });
