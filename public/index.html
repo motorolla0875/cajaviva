@@ -977,8 +977,17 @@
     flex: 1; text-align: center; font-size: 16px; font-weight: 500;
     text-transform: capitalize;
   }
-  #fechaCanchas {
-    max-width: 420px; margin-left: auto; margin-right: auto; display: block;
+  .fecha-oculta {
+    position: absolute; opacity: 0; pointer-events: none;
+    width: 1px; height: 1px; padding: 0; border: 0;
+  }
+  #v-canchas .nav-dia .dia-actual {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; height: 42px; cursor: pointer;
+    color: var(--text);
+  }
+  #v-canchas .nav-dia .dia-actual::after {
+    content: ' \25BE'; font-size: 11px; color: var(--muted);
   }
 
   .grilla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1733,10 +1742,10 @@
     <div class="lista-wrap">
       <div class="nav-dia">
         <button onclick="moverDiaCancha(-1)">&#8249;</button>
-        <div class="dia-actual" id="diaCanchas"></div>
+        <button class="dia-actual" id="diaCanchas" onclick="abrirFechaCancha()"></button>
         <button onclick="moverDiaCancha(1)">&#8250;</button>
       </div>
-      <input type="date" id="fechaCanchas" style="margin-bottom:14px;">
+      <input type="date" id="fechaCanchas" class="fecha-oculta">
       <div class="chips" id="tabsCanchas">
         <button class="on" data-tab="grilla">Del dia</button>
         <button data-tab="cobrados">Ya cobrados</button>
@@ -9078,6 +9087,16 @@ async function pintarCobrados() {
   } catch (e) {
     cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
+}
+
+function abrirFechaCancha() {
+  const f = document.getElementById('fechaCanchas');
+  if (!f) return;
+  if (f.showPicker) { try { f.showPicker(); return; } catch (e) {} }
+  // si no soporta showPicker, se muestra el campo
+  f.classList.remove('fecha-oculta');
+  f.style.cssText = 'max-width:420px; margin:0 auto 12px; display:block;';
+  f.focus();
 }
 
 /* ══ Grilla de canchas por hora ══ */
