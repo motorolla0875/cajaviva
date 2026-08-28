@@ -132,6 +132,18 @@
   .gal-scroll img {
     min-width: 100%; width: 100%; flex-shrink: 0; scroll-snap-align: center;
   }
+  .gal-flecha {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,.92);
+    color: #333; font-size: 22px; line-height: 1;
+    display: none; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 3;
+  }
+  .gal-flecha.izq { left: 12px; }
+  .gal-flecha.der { right: 12px; }
+  @media (min-width: 760px) { .gal-flecha { display: flex; } }
+
   .gal-puntos {
     position: absolute; bottom: 10px; left: 0; right: 0;
     display: flex; gap: 6px; justify-content: center;
@@ -1420,11 +1432,13 @@ function abrirFicha(p) {
     : (p.foto_grande || p.foto ? [p.foto_grande || p.foto] : []);
 
   document.getElementById('fichaGaleria').innerHTML = fotos.length === 0 ? '' :
-    '<div class="gal-scroll">' + fotos.map(function (u) {
-      return '<img src="' + u + '">';
+    '<div class="gal-scroll" id="galScroll">' + fotos.map(function (u) {
+      return '<img src="' + u + '" onclick="verFoto(this.src)">';
     }).join('') + '</div>' +
     (fotos.length > 1
-      ? '<div class="gal-puntos">' + fotos.map(function () { return '<i></i>'; }).join('') + '</div>'
+      ? '<button class="gal-flecha izq" onclick="moverGal(-1)">&#8249;</button>' +
+        '<button class="gal-flecha der" onclick="moverGal(1)">&#8250;</button>' +
+        '<div class="gal-puntos">' + fotos.map(function () { return '<i></i>'; }).join('') + '</div>'
       : '');
 
   document.getElementById('fichaUnidad').style.display = 'block';
@@ -1479,6 +1493,13 @@ document.getElementById('archCompAlq').onchange = async function (e) {
     btn.disabled = false; btn.textContent = 'Subir comprobante';
   }
 };
+
+
+function moverGal(d) {
+  const g = document.getElementById('galScroll');
+  if (!g) return;
+  g.scrollBy({ left: d * g.clientWidth, behavior: 'smooth' });
+}
 
 </script>
 
