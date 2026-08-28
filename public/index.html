@@ -966,7 +966,7 @@
 
   #v-canchas .nav-dia {
     display: flex; align-items: center; gap: 10px;
-    max-width: 420px; margin: 0 auto 10px;
+    max-width: 420px; margin: 0 auto 10px; position: relative;
   }
   #v-canchas .nav-dia button {
     width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
@@ -9089,11 +9089,19 @@ async function pintarCobrados() {
 
 function abrirFechaCancha() {
   const f = document.getElementById('fechaCanchas');
-  if (!f) return;
-  if (f.showPicker) { try { f.showPicker(); return; } catch (e) {} }
-  // si no soporta showPicker, se muestra el campo
+  const btn = document.querySelector('#v-canchas .btn-cal');
+  if (!f || !btn) return;
+
+  // el campo se posiciona sobre el boton para que el calendario salga ahi
   f.classList.remove('fecha-oculta');
-  f.style.cssText = 'max-width:420px; margin:0 auto 12px; display:block;';
+  f.style.cssText = 'position:absolute; opacity:0; width:42px; height:42px; ' +
+    'left:' + btn.offsetLeft + 'px; top:' + btn.offsetTop + 'px; pointer-events:none;';
+
+  if (f.showPicker) {
+    try { f.showPicker(); return; } catch (e) {}
+  }
+  f.style.pointerEvents = 'auto';
+  f.style.opacity = '1';
   f.focus();
 }
 
