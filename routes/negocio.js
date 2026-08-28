@@ -3,6 +3,11 @@ const db = require('../db');
 
 const router = express.Router();
 
+try { db.exec("ALTER TABLE negocio ADD COLUMN pais TEXT NOT NULL DEFAULT 'AR'"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN zona_horaria TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires'"); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN direccion TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN telefono TEXT'); } catch (e) {}
+
 const CAPS = ['cap_mostrador', 'cap_reparto', 'cap_peso', 'cap_vencimientos',
               'cap_variantes', 'cap_recetas', 'cap_turnos', 'cap_alquiler', 'cap_canchas'];
 
@@ -130,6 +135,24 @@ router.put('/nombre', (req, res) => {
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Ponele un nombre al negocio.' });
   db.prepare('UPDATE negocio SET nombre = ? WHERE user_id = ?').run(nombre, req.userId);
+  res.json(db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(req.userId));
+});
+
+
+// ── datos del negocio: pais, zona, contacto ──
+router.put('/datos', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  const b = req.body || {};
+
+  db.prepare(`
+    UPDATE negocio SET
+      pais = COALESCE(?, pais),
+      zona_horaria = COALESCE(?, zona_horaria),
+      direccion = COALESCE(?, direccion),
+      telefono = COALESCE(?, telefono)
+    WHERE user_id = ?
+  `).run(b.pais || null, b.zonaHoraria || null, b.direccion || null, b.telefono || null, req.userId);
+
   res.json(db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(req.userId));
 });
 

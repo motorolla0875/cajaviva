@@ -1557,6 +1557,8 @@
 
     <label>Como se llama tu negocio</label>
     <input type="text" id="bNombre" placeholder="Ej: Kiosco La Esquina">
+      <label style="display:block; text-align:left; font-size:12.5px; color:var(--muted); margin:14px 0 6px; font-weight:500;">En que pais estas</label>
+      <select id="inPais"></select>
 
     <label id="lblRubro">Que tipo de negocio es</label>
     <div class="rubros" id="familias"></div>
@@ -3620,6 +3622,7 @@ $('btnEmpezar').onclick = async function () {
   const btn = $('btnEmpezar');
   btn.disabled = true; btn.textContent = 'Preparando...';
   try {
+    await guardarPaisNegocio();
     negocio = await api('PUT', '/negocio/rubro', {
       rubro: rubroElegido,
       nombre: $('bNombre').value.trim() || 'Mi negocio'
@@ -3748,6 +3751,7 @@ $('btnCuentaNueva').onclick = async function () {
     aplicarUsuario(d);
     pintarRubros();
     mostrar('bienvenida');
+    pintarPaises();
   } catch (e) { $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Empezar con una cuenta nueva';
 };
@@ -10112,6 +10116,65 @@ $('btnGuardarVid').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Guardar';
 };
 
+/* ══ Pais y zona horaria ══ */
+
+const PAISES = [
+  ['AR', 'Argentina', 'America/Argentina/Buenos_Aires'],
+  ['UY', 'Uruguay', 'America/Montevideo'],
+  ['CL', 'Chile', 'America/Santiago'],
+  ['PY', 'Paraguay', 'America/Asuncion'],
+  ['BO', 'Bolivia', 'America/La_Paz'],
+  ['PE', 'Peru', 'America/Lima'],
+  ['EC', 'Ecuador', 'America/Guayaquil'],
+  ['CO', 'Colombia', 'America/Bogota'],
+  ['VE', 'Venezuela', 'America/Caracas'],
+  ['BR', 'Brasil', 'America/Sao_Paulo'],
+  ['MX', 'Mexico', 'America/Mexico_City'],
+  ['GT', 'Guatemala', 'America/Guatemala'],
+  ['CR', 'Costa Rica', 'America/Costa_Rica'],
+  ['PA', 'Panama', 'America/Panama'],
+  ['DO', 'Republica Dominicana', 'America/Santo_Domingo'],
+  ['ES', 'España', 'Europe/Madrid'],
+  ['US', 'Estados Unidos', 'America/New_York']
+];
+
+function zonaDetectada() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; }
+}
+
+function paisDetectado() {
+  const z = zonaDetectada();
+  const p = PAISES.filter(function (x) { return x[2] === z; })[0];
+  if (p) return p[0];
+  // por region
+  if (z.indexOf('Argentina') >= 0) return 'AR';
+  if (z.indexOf('Sao_Paulo') >= 0 || z.indexOf('Brazil') >= 0) return 'BR';
+  if (z.indexOf('Mexico') >= 0) return 'MX';
+  return 'AR';
+}
+
+function pintarPaises() {
+  const sel = document.getElementById('inPais');
+  if (!sel) return;
+  sel.innerHTML = PAISES.map(function (p) {
+    return '<option value="' + p[0] + '">' + p[1] + '</option>';
+  }).join('');
+  sel.value = paisDetectado();
+}
+
+async function guardarPaisNegocio() {
+  const sel = document.getElementById('inPais');
+  const cod = sel ? sel.value : paisDetectado();
+  const p = PAISES.filter(function (x) { return x[0] === cod; })[0];
+
+  try {
+    await api('PUT', '/negocio/datos', {
+      pais: cod,
+      zonaHoraria: (p ? p[2] : zonaDetectada()) || 'America/Argentina/Buenos_Aires'
+    });
+  } catch (e) {}
+}
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
@@ -10477,6 +10540,7 @@ $('btnGuardarGasto').onclick = async function () {
     aplicarUsuario(d);
     pintarRubros();
     mostrar('bienvenida');
+    pintarPaises();
   } catch (e) {
     mostrar('login');
     $('msgLogin').innerHTML = '<div class="msg">No se pudo crear la cuenta automatica. Entra con tu usuario.</div>';
