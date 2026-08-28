@@ -3440,8 +3440,16 @@ function aplicarCapacidades() {
   if (cc) cc.textContent = conRes ? 'Rechazadas' : 'Cancelados';
 
   const tc = document.querySelector('nav button[data-vista="clientes"]');
-  if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
-    : (cap('cap_canchas') || cap('cap_turnos')) ? 'Clientes' : 'Fiado';
+  if (tc) {
+    // solo alojamiento habla de huespedes
+    const rubrosAloj = ['cabanas', 'hotel', 'departamentos', 'hostel', 'camping', 'glamping'];
+    const esAloj = cap('cap_alquiler') && negocio &&
+      rubrosAloj.indexOf(negocio.rubro) >= 0;
+
+    tc.textContent = esAloj ? 'Huespedes'
+      : (cap('cap_alquiler') || cap('cap_canchas') || cap('cap_turnos')) ? 'Clientes'
+      : 'Fiado';
+  }
 
   const tp = document.querySelector('nav button[data-vista="productos"]');
   if (tp) {
