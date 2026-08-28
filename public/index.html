@@ -1650,13 +1650,6 @@
 
   <div class="vista" id="v-reservas">
     <div class="lista-wrap">
-      <label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:500;">Buscar fechas disponibles</label>
-      <div class="rango-fechas on" style="margin-bottom:12px;">
-        <input type="date" id="resDesde">
-        <span>a</span>
-        <input type="date" id="resHasta">
-      </div>
-
       <button class="btn-nuevo solo" id="btnNuevaReserva">+ Nueva reserva</button>
 
       <div class="chips" id="tabsReservas">
@@ -1664,6 +1657,17 @@
         <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
         <button data-tab="historial">Ya estuvieron</button>
+      </div>
+
+      <div id="resumenDisp"></div>
+
+      <div id="buscadorFechas">
+        <h3 style="font-size:19px; font-weight:500; margin:14px 0 10px;">Buscar fechas disponibles</h3>
+        <div class="rango-fechas on" style="margin-bottom:14px;">
+          <input type="date" id="resDesde">
+          <span>a</span>
+          <input type="date" id="resHasta">
+        </div>
       </div>
 
       <div id="listaReservas"></div>
@@ -8377,8 +8381,11 @@ async function cargarReservas() {
   const r = rangoReservas();
   $('listaReservas').innerHTML = '<div class="vacio">Cargando...</div>';
 
-  const rf = document.querySelector('#v-reservas .rango-fechas');
-  if (rf) rf.style.display = (tabReservas === 'todas' || tabReservas === 'historial') ? 'none' : 'flex';
+  const rd = document.getElementById('resumenDisp');
+  if (rd && tabReservas !== 'disponibles') rd.innerHTML = '';
+
+  const bf = document.getElementById('buscadorFechas');
+  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial') ? 'none' : 'block';
 
   try {
     if (tabReservas === 'disponibles') {
@@ -8393,15 +8400,19 @@ async function cargarReservas() {
 
       const libres = d.unidades.filter(function (u) { return u.libre; }).length;
 
-      $('listaReservas').innerHTML =
-        '<div class="rep-resumen"><div class="val">' +
-        (libres === 0 ? 'Todo ocupado'
-          : d.unidades.length === 1 ? 'Disponible'
-          : libres + (libres === 1 ? ' libre' : ' libres')) + '</div>' +
-        '<div class="lbl">' +
-        (d.unidades.length > 1 ? 'de ' + d.unidades.length + ' unidades - ' : '') +
-        d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div></div>' +
-        d.unidades.map(function (u) {
+      const resumen = document.getElementById('resumenDisp');
+      if (resumen) {
+        resumen.innerHTML =
+          '<div class="rep-resumen"><div class="val">' +
+          (libres === 0 ? 'Todo ocupado'
+            : d.unidades.length === 1 ? 'Disponible'
+            : libres + (libres === 1 ? ' libre' : ' libres')) + '</div>' +
+          '<div class="lbl">' +
+          (d.unidades.length > 1 ? 'de ' + d.unidades.length + ' unidades - ' : '') +
+          d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div></div>';
+      }
+
+      $('listaReservas').innerHTML = d.unidades.map(function (u) {
           return '<div class="unidad-card' + (u.libre ? '' : ' ocupada') + '">' +
             (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
             '<div class="datos"><div class="n">' + esc(u.nombre) + '</div>' +
