@@ -25,7 +25,9 @@ router.get('/mas-vendidos', (req, res) => {
            COUNT(DISTINCT v.id) AS veces
     FROM venta_items i
     JOIN ventas v ON v.id = i.venta_id
+    LEFT JOIN productos p ON p.id = i.producto_id
     WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
+      AND COALESCE(p.es_unidad, 0) = 0
     GROUP BY i.nombre
     ORDER BY unidades DESC
     LIMIT 40
@@ -47,6 +49,7 @@ router.get('/sin-movimiento', (req, res) => {
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id
     WHERE p.user_id = ? AND p.activo = 1 AND p.stock > 0
+      AND COALESCE(p.es_unidad, 0) = 0 AND COALESCE(p.es_servicio, 0) = 0
       AND p.id NOT IN (
         SELECT DISTINCT i.producto_id FROM venta_items i
         JOIN ventas v ON v.id = i.venta_id
@@ -82,6 +85,8 @@ router.get('/reponer', (req, res) => {
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id
     WHERE p.user_id = ? AND p.activo = 1
+      AND COALESCE(p.es_unidad, 0) = 0 AND COALESCE(p.es_servicio, 0) = 0
+      AND COALESCE(p.tiene_receta, 0) = 0
       AND (p.stock <= 0 OR (p.stock_minimo > 0 AND p.stock <= p.stock_minimo))
     ORDER BY p.stock ASC, vendidas DESC
   `).all(desde, hasta, req.userId);

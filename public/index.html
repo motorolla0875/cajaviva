@@ -1721,12 +1721,12 @@
       </div>
 
       <div class="chips" id="repTabs">
+        <button data-tab="unidades" id="tabRepUnidades" style="display:none;">Mas alquilado</button>
         <button class="on" data-tab="vendidos">Mas vendidos</button>
         <button data-tab="reponer">Que comprar</button>
         <button data-tab="quietos">No se venden</button>
         <button data-tab="empleados">Por empleado</button>
         <button data-tab="vencen" id="tabVencen">Vencimientos</button>
-        <button data-tab="unidades" id="tabRepUnidades">Unidades</button>
       </div>
 
       <div id="repContenido"></div>
@@ -5587,6 +5587,16 @@ $('btnDeshacerPrecios').onclick = async function () {
 let repDias = 7;
 let repTab = 'vendidos';
 
+function repTabInicial() {
+  if (cap('cap_alquiler') && repTab === 'vendidos') {
+    repTab = 'unidades';
+    const t = document.getElementById('tabsRep') || document.getElementById('repTabs');
+    if (t) Array.prototype.forEach.call(t.children, function (x) {
+      x.classList.toggle('on', x.dataset.tab === 'unidades');
+    });
+  }
+}
+
 function repRango() {
   const d = new Date();
   d.setDate(d.getDate() - (repDias - 1));
@@ -5610,6 +5620,7 @@ $('repTabs').addEventListener('click', function (e) {
 });
 
 async function cargarReportes() {
+  repTabInicial();
   const cont = $('repContenido');
   cont.innerHTML = '<div class="vacio">Cargando...</div>';
   const r = repRango();
@@ -5663,6 +5674,8 @@ async function cargarReportes() {
       cont.innerHTML =
         '<div class="rep-resumen"><div class="lbl">Facturado en alquileres</div>' +
         '<div class="val">' + plata(d.total) + '</div></div>' +
+        (d.items.some(function (u) { return u.reservas === 0; })
+          ? '<div class="seccion">Sin movimiento</div>' : '') +
         d.items.map(function (u, n) {
           return '<div class="rep-item">' +
             '<div class="rep-pos' + (n === 0 && u.facturado > 0 ? ' top' : '') + '">' + (n + 1) + '</div>' +
