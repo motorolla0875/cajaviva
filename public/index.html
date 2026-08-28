@@ -2737,6 +2737,9 @@ let periodo = 'hoy';
 let filtroProd = 'todos';
 
 function filtroInicial() {
+  if (cap('cap_alquiler') && filtroProd === 'todos') {
+    if (productos.some(function (p) { return p.es_unidad; })) { filtroProd = 'unidades'; return; }
+  }
   const hayEspeciales = productos.some(function (p) { return p.es_insumo || p.tiene_receta; });
   if (hayEspeciales && filtroProd === 'todos') filtroProd = 'simples';
 }
@@ -4001,6 +4004,7 @@ function pintarLista() {
       (margen !== null ? '<div class="margen">Ganas ' + plata(p.precio_venta - p.precio_costo) + ' (' + margen + '%)</div>' : '') +
       (p.categoria_nombre ? '<span class="etiqueta">' + esc(p.categoria_nombre) + '</span>' : '') +
       (p.es_insumo ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">insumo</span>' : '') +
+      (p.es_unidad ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">unidad</span>' : '') +
       (p.unidad && p.unidad !== 'unidad'
         ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">por ' + esc(p.unidad) + '</span>' : '') +
       (p.tiene_receta ? '<span class="etiqueta" style="background:#FDF3E3;color:#8A5A0F;">con receta</span>' : '') +
@@ -5333,6 +5337,18 @@ function pintarFiltrosProd() {
       html += '<button class="' + (filtroProd === 'insumos' ? 'on' : '') + '" onclick="filtrarProductos(\'insumos\')">Insumos (' + nInsumos + ')</button>';
     }
     html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
+  } else if (cap('cap_alquiler')) {
+    const nUnid = productos.filter(function (p) { return p.es_unidad; }).length;
+    const nProd = productos.filter(function (p) { return !p.es_unidad; }).length;
+
+    if (nUnid > 0) {
+      html += '<button class="' + (filtroProd === 'unidades' ? 'on' : '') + '" onclick="filtrarProductos(\'unidades\')">Unidades (' + nUnid + ')</button>';
+    }
+    if (nProd > 0) {
+      html += '<button class="' + (filtroProd === 'paraVender' ? 'on' : '') + '" onclick="filtrarProductos(\'paraVender\')">Para vender (' + nProd + ')</button>';
+    }
+    html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
+
   } else {
     const nPeso = productos.filter(function (p) { return p.unidad && p.unidad !== 'unidad'; }).length;
     const nUnidad = productos.filter(function (p) { return !p.unidad || p.unidad === 'unidad'; }).length;
@@ -5371,6 +5387,8 @@ function filtrarProductos(cual) {
 function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
   if (filtroProd === 'insumos') return !!p.es_insumo;
+  if (filtroProd === 'unidades') return !!p.es_unidad;
+  if (filtroProd === 'paraVender') return !p.es_unidad;
   if (filtroProd === 'peso') return !!(p.unidad && p.unidad !== 'unidad');
   if (filtroProd === 'unidad') return !p.unidad || p.unidad === 'unidad';
   if (filtroProd === 'recetas') return !!p.tiene_receta;
