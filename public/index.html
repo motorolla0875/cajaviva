@@ -8609,7 +8609,7 @@ document.getElementById('btnNuevoInsumo').onclick = function () {
   esInsumoActual = true;
   $('swEsInsumo').classList.add('on');
   $('tituloProd').textContent = 'Nuevo insumo';
-  $('pNombre').placeholder = 'Ej: Pan de hamburguesa';
+  $('pNombre').placeholder = 'Nombre del insumo';
   // un insumo no se vende suelto
   $('pVenta').value = '0';
   $('wrapEsInsumo').style.display = 'none';
@@ -8672,7 +8672,7 @@ document.getElementById('btnNuevaReceta').onclick = function () {
 
   abrirProd(null);
   $('tituloProd').textContent = 'Nuevo producto con receta';
-  $('pNombre').placeholder = 'Ej: Hamburguesa completa';
+  $('pNombre').placeholder = 'Nombre del producto';
 
   // el stock lo definen los insumos
   $('wrapStockIni').style.display = 'none';
