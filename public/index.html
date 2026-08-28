@@ -7905,7 +7905,21 @@ async function cargarTurnosWeb() {
       $('catDesde').value = d.horarios.desde || '09:00';
       $('catHasta').value = d.horarios.hasta || '19:00';
     }
-    $('catSena').value = d.sena > 0 ? d.sena : '';
+    if (d.sena > 0) {
+      $('catSena').value = d.sena;
+    } else if (cap('cap_alquiler')) {
+      // sugerir el 30% de la unidad mas barata
+      const unidades = productos.filter(function (p) { return p.es_unidad && p.precio_venta > 0; });
+      if (unidades.length > 0) {
+        const menor = Math.min.apply(null, unidades.map(function (u) { return u.precio_venta; }));
+        const sug = Math.round((menor * 0.3) / 500) * 500;
+        $('catSena').value = sug > 0 ? sug : '';
+        const h = document.querySelector('#bloqueTurnosWeb .hint');
+        if (h) h.textContent = 'Sugerido: 30% de la noche mas barata. Podes cambiarlo o dejarlo en 0.';
+      }
+    } else {
+      $('catSena').value = '';
+    }
     $('swTurnosWeb').classList.toggle('on', turnosWebOn);
     $('wrapHorariosCat').style.display = turnosWebOn ? 'block' : 'none';
     pintarDiasCat();
