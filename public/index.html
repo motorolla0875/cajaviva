@@ -8964,7 +8964,15 @@ async function cargarReservasWeb() {
   try {
     const d = await api('GET', '/alquileres/pendientes?estado=' + estadoPedidos);
 
-    if (d.items.length === 0) { cont.innerHTML = ''; return 0; }
+    if (d.items.length === 0) {
+      cont.innerHTML = cap('cap_alquiler')
+        ? '<div class="vacio">' + (estadoPedidos === 'pendientes'
+            ? 'No hay reservas nuevas por la web.<br>Cuando alguien reserve desde tu catalogo, aparece aca.'
+            : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguna reserva.'
+            : 'No rechazaste ninguna reserva.') + '</div>'
+        : '';
+      return 0;
+    }
 
     cont.innerHTML = d.items.map(function (x) {
       const foto = x.foto_mini || x.foto_url;
@@ -8993,14 +9001,26 @@ async function cargarReservasWeb() {
             '</div></div>'
           : '') +
         '<div class="acc">' +
-          '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
-          (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
-          '<button onclick="confirmarReservaWeb(\'' + x.id + '\', false)">Rechazar</button>' +
+          (x.estado === 'pendiente'
+            ? '<button class="ppal" onclick="confirmarReservaWeb(\'' + x.id + '\', true)">Aceptar</button>' +
+              (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="confirmarReservaWeb(\'' + x.id + '\', false)">Rechazar</button>'
+            : (x.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
+              '<button onclick="borrarReservaWeb(\'' + x.id + '\')">Borrar</button>') +
         '</div></div>';
       }).join('');
 
     return d.cantidad;
   } catch (e) { cont.innerHTML = ''; return 0; }
+}
+
+async function borrarReservaWeb(id) {
+  if (!confirm('Borrar esta reserva del listado?')) return;
+  try {
+    await api('DELETE', '/alquileres/' + id);
+    await cargarPedidos();
+    avisar('Reserva borrada');
+  } catch (e) { avisar(e.message, true); }
 }
 
 async function confirmarReservaWeb(id, aceptar) {
