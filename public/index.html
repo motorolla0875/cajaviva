@@ -981,13 +981,10 @@
     position: absolute; opacity: 0; pointer-events: none;
     width: 1px; height: 1px; padding: 0; border: 0;
   }
-  #v-canchas .nav-dia .dia-actual {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; height: 42px; cursor: pointer;
-    color: var(--text);
-  }
-  #v-canchas .nav-dia .dia-actual::after {
-    content: ' \25BE'; font-size: 11px; color: var(--muted);
+  .btn-cal {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel);
+    font-size: 18px; line-height: 1;
   }
 
   .grilla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1742,7 +1739,8 @@
     <div class="lista-wrap">
       <div class="nav-dia">
         <button onclick="moverDiaCancha(-1)">&#8249;</button>
-        <button class="dia-actual" id="diaCanchas" onclick="abrirFechaCancha()"></button>
+        <div class="dia-actual" id="diaCanchas"></div>
+        <button class="btn-cal" onclick="abrirFechaCancha()" title="Elegir dia">&#128197;</button>
         <button onclick="moverDiaCancha(1)">&#8250;</button>
       </div>
       <input type="date" id="fechaCanchas" class="fecha-oculta">
