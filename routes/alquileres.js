@@ -33,6 +33,58 @@ try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) 
 try { db.exec('ALTER TABLE reservas ADD COLUMN comprobante TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN sena_estado TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN sena_fecha TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN recargo_finde REAL NOT NULL DEFAULT 0'); } catch (e) {}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS temporadas (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    nombre TEXT NOT NULL,
+    desde TEXT NOT NULL,
+    hasta TEXT NOT NULL,
+    recargo REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// precio de una noche puntual segun temporada y dia
+function precioNoche(userId, base, dia, negocio) {
+  let p = base;
+
+  const t = db.prepare(`
+    SELECT recargo FROM temporadas
+    WHERE user_id = ? AND substr(?, 6) >= substr(desde, 6) AND substr(?, 6) <= substr(hasta, 6)
+    ORDER BY recargo DESC LIMIT 1
+  `).get(userId, dia, dia);
+
+  if (t) p = p * (1 + t.recargo / 100);
+
+  const d = new Date(dia + 'T12:00:00').getDay();
+  if ((d === 5 || d === 6) && negocio && negocio.recargo_finde > 0) {
+    p = p * (1 + negocio.recargo_finde / 100);
+  }
+
+  return Math.round(p);
+}
+
+// total de una estadia, noche por noche
+function calcularTotal(userId, base, desde, hasta) {
+  const neg = db.prepare('SELECT recargo_finde FROM negocio WHERE user_id = ?').get(userId);
+  let total = 0;
+  const detalle = [];
+  const cursor = new Date(desde + 'T12:00:00');
+  const fin = new Date(hasta + 'T12:00:00');
+
+  while (cursor < fin) {
+    const dia = cursor.toISOString().slice(0, 10);
+    const p = precioNoche(userId, base, dia, neg);
+    total += p;
+    detalle.push({ dia: dia, precio: p });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return { total: total, detalle: detalle };
+}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_salida TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN es_unidad INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN capacidad INTEGER'); } catch (e) {}
@@ -147,9 +199,10 @@ router.post('/', (req, res) => {
     });
   }
 
-  const pn = parseFloat(precioNoche) || u.precio_venta || 0;
+  const pn = parseFloat(req.body?.precioNoche) || u.precio_venta || 0;
   const n = noches(desde, hasta);
-  const total = pn * n;
+  const calc = calcularTotal(req.userId, pn, desde, hasta);
+  const total = req.body?.precioNoche != null ? pn * n : calc.total;
   const id = uuidv4();
 
   db.prepare(`
@@ -498,6 +551,38 @@ router.post('/:id/confirmar', (req, res) => {
     db.prepare("UPDATE reservas SET estado = 'cancelada' WHERE id = ?").run(r.id);
   }
 
+  res.json({ ok: true });
+});
+
+
+// ── temporadas ──
+router.get('/temporadas/lista', (req, res) => {
+  const t = db.prepare('SELECT * FROM temporadas WHERE user_id = ? ORDER BY desde').all(req.userId);
+  const n = db.prepare('SELECT recargo_finde FROM negocio WHERE user_id = ?').get(req.userId);
+  res.json({ items: t, recargoFinde: n ? n.recargo_finde : 0 });
+});
+
+router.post('/temporadas/nueva', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  const { nombre, desde, hasta, recargo } = req.body || {};
+  if (!nombre || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
+
+  const id = uuidv4();
+  db.prepare('INSERT INTO temporadas (id, user_id, nombre, desde, hasta, recargo) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, req.userId, nombre.trim(), desde, hasta, parseFloat(recargo) || 0);
+  res.json({ id: id });
+});
+
+router.delete('/temporadas/:id', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  db.prepare('DELETE FROM temporadas WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
+  res.json({ ok: true });
+});
+
+router.put('/temporadas/finde', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  db.prepare('UPDATE negocio SET recargo_finde = ? WHERE user_id = ?')
+    .run(parseFloat(req.body?.recargo) || 0, req.userId);
   res.json({ ok: true });
 });
 

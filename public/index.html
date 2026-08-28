@@ -1682,6 +1682,7 @@
         <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
         <button data-tab="historial">Ya estuvieron</button>
+        <button data-tab="temporadas">Precios</button>
       </div>
 
       <div id="resumenDisp"></div>
@@ -2376,6 +2377,32 @@
 
     <button class="btn-ppal" id="btnGuardarVid">Guardar</button>
     <button class="btn-sec" id="btnCerrarVid">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalTemporada">
+  <div class="modal">
+    <h3>Nueva temporada</h3>
+    <div id="msgTemp"></div>
+
+    <label>Nombre</label>
+    <input type="text" id="tNombre" placeholder="Ej: Verano, Semana Santa">
+
+    <div class="fila2">
+      <div><label>Desde</label><input type="date" id="tDesde"></div>
+      <div><label>Hasta</label><input type="date" id="tHasta"></div>
+    </div>
+    <p class="hint">Se repite todos los años en esas fechas.</p>
+
+    <label>Recargo</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="text" id="tRecargo" inputmode="decimal" placeholder="40" style="flex:1;">
+      <span style="font-size:16px; color:var(--muted);">%</span>
+    </div>
+    <p class="hint" id="hintTemp">Si la noche vale $45.000, con 40% queda en $63.000.</p>
+
+    <button class="btn-ppal" id="btnGuardarTemp">Guardar</button>
+    <button class="btn-sec" id="btnCerrarTemp">Cancelar</button>
   </div>
 </div>
 
@@ -8574,6 +8601,100 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   if (lv) lv.textContent = 'Precio por noche';
 };
 
+/* ══ Temporadas y precios ══ */
+
+async function pintarTemporadas() {
+  const cont = $('listaReservas');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
+
+  try {
+    const d = await api('GET', '/alquileres/temporadas/lista');
+
+    let html = '<button class="btn-nuevo solo" onclick="abrirTemporada()">+ Nueva temporada</button>';
+
+    html += '<div class="seccion">Fin de semana</div>' +
+      '<div class="fila"><div class="datos">' +
+      '<div class="n">Recargo viernes y sabado</div>' +
+      '<div class="d">Se suma al de temporada</div></div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+      '<input type="text" id="recFinde" inputmode="decimal" value="' + (d.recargoFinde || '') + '" ' +
+      'placeholder="0" style="width:60px;text-align:right;padding:8px;">' +
+      '<span style="color:var(--muted);">%</span>' +
+      '<button class="btn-mini" onclick="guardarFinde()">OK</button></div></div>';
+
+    html += '<div class="seccion">Temporadas</div>';
+
+    if (d.items.length === 0) {
+      html += '<div class="vacio">Sin temporadas.<br>El precio de cada unidad se usa todo el año.</div>';
+    } else {
+      html += d.items.map(function (t) {
+        return '<div class="fila"><div class="datos">' +
+          '<div class="n">' + esc(t.nombre) + '</div>' +
+          '<div class="d">' + fechaCorta(t.desde) + ' al ' + fechaCorta(t.hasta) + '</div>' +
+          '</div>' +
+          '<div class="stock"><b>' + (t.recargo > 0 ? '+' : '') + fmtCant(t.recargo) + '%</b></div>' +
+          '<div class="acc"><button onclick="borrarTemporada(\'' + t.id + '\')">&#10005;</button></div>' +
+          '</div>';
+      }).join('');
+    }
+
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+function abrirTemporada() {
+  $('msgTemp').innerHTML = '';
+  $('tNombre').value = '';
+  $('tDesde').value = '';
+  $('tHasta').value = '';
+  $('tRecargo').value = '';
+  $('modalTemporada').classList.add('on');
+}
+
+$('btnCerrarTemp').onclick = function () { $('modalTemporada').classList.remove('on'); };
+
+$('btnGuardarTemp').onclick = async function () {
+  const nombre = $('tNombre').value.trim();
+  if (!nombre) { $('msgTemp').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
+  if (!$('tDesde').value || !$('tHasta').value) {
+    $('msgTemp').innerHTML = '<div class="msg">Poné las fechas.</div>'; return;
+  }
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    await api('POST', '/alquileres/temporadas/nueva', {
+      nombre: nombre,
+      desde: $('tDesde').value,
+      hasta: $('tHasta').value,
+      recargo: num($('tRecargo').value)
+    });
+    $('modalTemporada').classList.remove('on');
+    await pintarTemporadas();
+    avisar('Temporada guardada');
+  } catch (e) {
+    $('msgTemp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
+
+async function borrarTemporada(id) {
+  if (!confirm('Borrar esta temporada?')) return;
+  try {
+    await api('DELETE', '/alquileres/temporadas/' + id);
+    await pintarTemporadas();
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function guardarFinde() {
+  try {
+    await api('PUT', '/alquileres/temporadas/finde', { recargo: num($('recFinde').value) });
+    avisar('Guardado');
+  } catch (e) { avisar(e.message, true); }
+}
+
 /* ══ Reservas de alquiler ══ */
 
 let tabReservas = 'disponibles';
@@ -8620,9 +8741,16 @@ async function cargarReservas() {
   if (rd && tabReservas !== 'disponibles') rd.innerHTML = '';
 
   const bf = document.getElementById('buscadorFechas');
-  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial') ? 'none' : 'block';
+  if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial' || tabReservas === 'temporadas') ? 'none' : 'block';
 
   try {
+    if (tabReservas === 'temporadas') {
+      const rd1 = document.getElementById('resumenDisp');
+      if (rd1) rd1.innerHTML = '';
+      await pintarTemporadas();
+      return;
+    }
+
     if (tabReservas === 'disponibles') {
       const d = await api('GET', '/alquileres/disponibles?desde=' + r.desde + '&hasta=' + r.hasta);
       unidadesCache = d.unidades;
