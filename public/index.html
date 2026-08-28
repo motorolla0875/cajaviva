@@ -9401,8 +9401,24 @@ function nochesEntre(a, b) {
 }
 
 function calcularTotalReserva() {
-  const n = nochesEntre($('rDesde').value, $('rHasta').value);
   const p = num($('rPrecio').value);
+  const d1 = $('rDesde').value, d2 = $('rHasta').value;
+
+  if (d1 && d1 === d2) {
+    const he = $('rHoraEnt').value, hs = $('rHoraSal').value;
+    if (he && hs && hs > he) {
+      const a = he.split(':'), b = hs.split(':');
+      const hs2 = ((parseInt(b[0]) * 60 + parseInt(b[1])) - (parseInt(a[0]) * 60 + parseInt(a[1]))) / 60;
+      $('hintNoches').textContent = fmtCant(hs2) + (hs2 === 1 ? ' hora' : ' horas');
+      $('rTotal').textContent = plata(Math.round(hs2 * p));
+      return;
+    }
+    $('hintNoches').textContent = 'Poné los horarios';
+    $('rTotal').textContent = plata(0);
+    return;
+  }
+
+  const n = nochesEntre(d1, d2);
   $('hintNoches').textContent = n > 0 ? n + (n === 1 ? ' noche' : ' noches') : 'Elegi las fechas';
   $('rTotal').textContent = plata(n * p);
 }
@@ -9411,12 +9427,21 @@ $('rUnidad').addEventListener('change', function () { aplicarPrecioUnidad(); cal
 $('rDesde').addEventListener('change', calcularTotalReserva);
 $('rHasta').addEventListener('change', calcularTotalReserva);
 $('rPrecio').addEventListener('input', calcularTotalReserva);
+$('rHoraEnt').addEventListener('change', calcularTotalReserva);
+$('rHoraSal').addEventListener('change', calcularTotalReserva);
 
 $('btnGuardarReserva').onclick = async function () {
   const nombre = $('rNombre').value.trim();
   if (!nombre) { $('msgReserva').innerHTML = '<div class="msg">Poné el nombre.</div>'; return; }
   if (!$('rUnidad').value) { $('msgReserva').innerHTML = '<div class="msg">Elegi que se alquila.</div>'; return; }
-  if (nochesEntre($('rDesde').value, $('rHasta').value) <= 0) {
+  const mismoDia = $('rDesde').value === $('rHasta').value;
+
+  if (mismoDia) {
+    // alquiler por hora: la salida tiene que ser mas tarde
+    if (!$('rHoraEnt').value || !$('rHoraSal').value || $('rHoraSal').value <= $('rHoraEnt').value) {
+      $('msgReserva').innerHTML = '<div class="msg">La hora de salida tiene que ser despues de la entrada.</div>'; return;
+    }
+  } else if (nochesEntre($('rDesde').value, $('rHasta').value) <= 0) {
     $('msgReserva').innerHTML = '<div class="msg">La salida tiene que ser despues de la entrada.</div>'; return;
   }
 
