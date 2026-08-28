@@ -715,7 +715,12 @@ router.get('/encurso', (req, res) => {
     const dias = Math.round((new Date(r.hasta + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000);
     r.dias_restantes = dias;
     r.se_va_hoy = dias <= 0;
-    r.saldo = Math.max(0, r.total - (r.pagado || 0));
+
+    const ex = db.prepare('SELECT cantidad, precio_unitario FROM reserva_extras WHERE reserva_id = ?').all(r.id);
+    r.total_extras = ex.reduce(function (s, i) { return s + i.cantidad * i.precio_unitario; }, 0);
+    r.cant_extras = ex.length;
+    r.total_general = r.total + r.total_extras;
+    r.saldo = Math.max(0, r.total_general - (r.pagado || 0));
   });
 
   res.json({ encurso: filas, porEntrar: entranHoy });

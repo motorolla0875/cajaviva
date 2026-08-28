@@ -8750,10 +8750,14 @@ async function pintarEnCurso() {
               (x.se_va_hoy ? 'Se va hoy' + (x.hora_salida ? ' ' + x.hora_salida : '')
                 : x.dias_restantes === 1 ? 'Se va mañana'
                 : 'Se va en ' + x.dias_restantes + ' dias') + '</span>' +
+            (x.cant_extras > 0
+              ? '<span class="cuando-res">' + x.cant_extras +
+                (x.cant_extras === 1 ? ' consumo' : ' consumos') + ' ' + plata(x.total_extras) + '</span>'
+              : '') +
             (x.saldo > 0
               ? '<span class="cuando-res" style="background:var(--warn-soft,#FDF3E3);color:var(--warn-text,#8A5A0F);">Debe ' + plata(x.saldo) + '</span>'
               : '<span class="cuando-res">Todo pagado</span>') +
-            '</div><div class="m">' + plata(x.total) + '</div></div>' +
+            '</div><div class="m">' + plata(x.total_general != null ? x.total_general : x.total) + '</div></div>' +
             '<div class="acc">' +
             '<button class="ppal" onclick="cobrarReserva(\'' + x.id + '\')">Se va y cobrar</button>' +
             '<button onclick="abrirExtras(\'' + x.id + '\', \'' + esc(x.cliente_nombre) + '\')">Consumos</button>' +
