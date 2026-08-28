@@ -4,7 +4,7 @@ const db = require('../db');
 const router = express.Router();
 
 const CAPS = ['cap_mostrador', 'cap_reparto', 'cap_peso', 'cap_vencimientos',
-              'cap_variantes', 'cap_recetas', 'cap_turnos', 'cap_alquiler'];
+              'cap_variantes', 'cap_recetas', 'cap_turnos', 'cap_alquiler', 'cap_canchas'];
 
 // que capacidades prende cada rubro
 const RUBROS = {
@@ -82,9 +82,13 @@ const RUBROS = {
   'leña':        ['cap_mostrador', 'cap_reparto'],
   mayorista:     ['cap_mostrador', 'cap_reparto'],
   cabanas:       ['cap_alquiler'],
+  padel:         ['cap_canchas'],
+  futbol5:       ['cap_canchas'],
+  tenis:         ['cap_canchas'],
+  salas:         ['cap_canchas'],
   hotel:         ['cap_alquiler'],
   salon:         ['cap_alquiler'],
-  canchas_alq:   ['cap_alquiler'],
+  canchas_alq:   ['cap_canchas'],
   equipos:       ['cap_mostrador', 'cap_alquiler'],
   vehiculos:     ['cap_alquiler'],
   eventos:       ['cap_mostrador', 'cap_alquiler'],

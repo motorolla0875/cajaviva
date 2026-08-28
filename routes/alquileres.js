@@ -29,6 +29,7 @@ db.exec(`
 
 // las unidades son productos marcados como tal
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN cap_canchas INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN comprobante TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE reservas ADD COLUMN sena_estado TEXT'); } catch (e) {}

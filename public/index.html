@@ -2864,7 +2864,8 @@ const FAMILIAS = [
   ['comida', 'Preparo lo que vendo', 'Rotiseria, cafeteria, panaderia...'],
   ['turnos', 'Doy turnos', 'Peluqueria, taller, consultorio...'],
   ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
-  ['alquiler', 'Alquilo por dia u hora', 'Cabañas, salones, equipos...'],
+  ['alquiler', 'Alquilo por dia', 'Cabañas, hoteles, salones...'],
+  ['canchas', 'Alquilo por hora', 'Canchas, salas, espacios...'],
   ['otro', 'Otro', 'Lo configuro a mano']
 ];
 
@@ -2892,7 +2893,8 @@ const RUBROS_POR_FAMILIA = {
            'clases', 'entrenador', 'costurera', 'consultorio'],
   reparto: ['soda', 'gas', 'lacteos', 'panaderia_reparto', 'hielo', 'diarios',
             'leña', 'distribuidora', 'mayorista'],
-  alquiler: ['cabanas', 'hotel', 'salon', 'canchas_alq', 'equipos', 'vehiculos', 'eventos'],
+  alquiler: ['cabanas', 'hotel', 'salon', 'equipos', 'vehiculos', 'eventos'],
+  canchas: ['padel', 'futbol5', 'tenis', 'canchas_alq', 'salas'],
   otro: ['otro']
 };
 
@@ -2970,7 +2972,11 @@ const RUBROS = [
   ['cabanas', 'Cabañas', 'Alquiler por noche'],
   ['hotel', 'Hotel o hostel', 'Alquiler por noche'],
   ['salon', 'Salon de fiestas', 'Alquiler por dia'],
-  ['canchas_alq', 'Canchas', 'Alquiler por hora'],
+  ['canchas_alq', 'Otra cancha', 'Alquiler por hora'],
+  ['padel', 'Padel', 'Canchas por hora'],
+  ['futbol5', 'Futbol 5', 'Canchas por hora'],
+  ['tenis', 'Tenis', 'Canchas por hora'],
+  ['salas', 'Salas de ensayo', 'Por hora'],
   ['equipos', 'Alquiler de equipos', 'Herramientas, sonido'],
   ['vehiculos', 'Vehiculos', 'Autos, motos, bicis'],
   ['eventos', 'Articulos para eventos', 'Mesas, sillas, vajilla'],
@@ -2991,7 +2997,8 @@ const CAPS_INFO = [
   ['cap_variantes', 'Talles y colores', 'Un producto con variantes'],
   ['cap_recetas', 'Recetas', 'Descontar insumos al vender'],
   ['cap_turnos', 'Turnos', 'Agenda de citas'],
-  ['cap_alquiler', 'Alquiler', 'Cabañas, salones, equipos por dia u hora']
+  ['cap_alquiler', 'Alquiler por dia', 'Cabañas, salones, equipos'],
+  ['cap_canchas', 'Alquiler por hora', 'Canchas, salas, espacios por turno']
 ];
 
 // sin ninguna de estas, el negocio no puede cobrar
