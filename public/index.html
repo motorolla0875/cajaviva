@@ -4076,7 +4076,7 @@ function abrirProd(id) {
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   $('wrapCostoProd').style.display = '';
   $('hintMargen').style.display = '';
-  $('wrapCategoria').style.display = (p && p.es_insumo) ? 'none' : 'block';
+  $('wrapCategoria').style.display = (p && (p.es_insumo || p.es_unidad)) ? 'none' : 'block';
   setTimeout(function () { aplicarModoPieza(p); }, 0);
   mostrarFotoProd(p && p.foto_url ? p.foto_url : null);
   $('wrapVence').style.display = cap('cap_vencimientos') ? 'block' : 'none';
@@ -8359,6 +8359,8 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   $('hintMargen').style.display = 'none';
   $('wrapEsInsumo').style.display = 'none';
   $('wrapRecetaProd').style.display = 'none';
+  $('wrapCategoria').style.display = 'none';
+  $('pCategoria').value = '';
 
   const lbl = document.querySelector('#modalProd label');
   const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
