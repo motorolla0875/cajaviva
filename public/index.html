@@ -5587,10 +5587,14 @@ $('btnDeshacerPrecios').onclick = async function () {
 let repDias = 7;
 let repTab = 'vendidos';
 
+let repTabTocado = false;
+
 function repTabInicial() {
-  if (cap('cap_alquiler') && repTab === 'vendidos') {
+  if (repTabTocado) return;
+  repTabTocado = true;
+  if (cap('cap_alquiler')) {
     repTab = 'unidades';
-    const t = document.getElementById('tabsRep') || document.getElementById('repTabs');
+    const t = document.getElementById('repTabs');
     if (t) Array.prototype.forEach.call(t.children, function (x) {
       x.classList.toggle('on', x.dataset.tab === 'unidades');
     });
@@ -5615,6 +5619,7 @@ $('repTabs').addEventListener('click', function (e) {
   const b = e.target.closest('button');
   if (!b) return;
   repTab = b.dataset.tab;
+  repTabTocado = true;
   Array.prototype.forEach.call($('repTabs').children, function (x) { x.classList.toggle('on', x === b); });
   cargarReportes();
 });
