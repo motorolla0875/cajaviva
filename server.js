@@ -41,6 +41,7 @@ app.use('/api/devoluciones', requiereAuth, require('./routes/devoluciones'));
 app.use('/api/cheques', requiereAuth, require('./routes/cheques'));
 app.use('/api/variantes', requiereAuth, require('./routes/variantes'));
 app.use('/api/recetas', requiereAuth, require('./routes/recetas').router);
+app.use('/api/galeria', requiereAuth, require('./routes/galeria'));
 app.use('/api/alquileres', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0) return next();
   return requiereAuth(req, res, next);

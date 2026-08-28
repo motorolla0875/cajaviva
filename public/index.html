@@ -934,6 +934,26 @@
   }
   .dia-titulo small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
 
+  #modalVidriera { z-index: 126; }
+  .galeria-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .gal-item {
+    position: relative; aspect-ratio: 1; border-radius: 10px;
+    overflow: hidden; background: var(--panel-2);
+  }
+  .gal-item img { width: 100%; height: 100%; object-fit: cover; }
+  .gal-item button {
+    position: absolute; top: 4px; right: 4px;
+    width: 24px; height: 24px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 12px;
+  }
+  #modalVidriera textarea {
+    width: 100%; padding: 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--bg); color: var(--text);
+    font-size: 14.5px; font-family: inherit; resize: vertical;
+  }
+
   .unidad-card {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -2027,6 +2047,8 @@
     </div>
 
     <div id="wrapUnidadAlq" style="display:none;">
+      <button type="button" class="btn-talles" id="btnVidriera" style="margin-bottom:12px;">Como se ve en tu catalogo</button>
+
       <div class="fila2">
         <div>
           <label>Se cobra por</label>
@@ -2335,6 +2357,25 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subRecordar"></p>
     <div id="listaRecordar" style="max-height:360px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarRecordar" style="margin-top:14px;">Listo</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalVidriera">
+  <div class="modal">
+    <h3 id="tituloVid">Como se ve en tu catalogo</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Esto solo lo ven tus clientes en el catalogo.</p>
+    <div id="msgVid"></div>
+
+    <label>Fotos (hasta 5)</label>
+    <div id="galeriaVid" class="galeria-grid"></div>
+    <button type="button" class="btn-foto" id="btnAgregarFotoVid" style="margin-top:8px;">Agregar foto</button>
+    <input type="file" id="archFotoVid" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
+
+    <label style="margin-top:16px;">Descripcion completa</label>
+    <textarea id="descLargaVid" rows="6" placeholder="Que incluye, como llegar, reglas de la casa..."></textarea>
+
+    <button class="btn-ppal" id="btnGuardarVid">Guardar</button>
+    <button class="btn-sec" id="btnCerrarVid">Cerrar</button>
   </div>
 </div>
 
@@ -8915,6 +8956,108 @@ async function confirmarReservaWeb(id, aceptar) {
     avisar(aceptar ? 'Reserva aceptada' : 'Reserva rechazada');
   } catch (e) { avisar(e.message, true); }
 }
+
+/* ══ Vidriera del catalogo ══ */
+
+let vidProdId = null;
+
+document.getElementById('btnVidriera').onclick = async function () {
+  if (!editandoId) {
+    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    const b = this;
+    b.disabled = true; b.textContent = 'Guardando...';
+    try { await guardarProductoRapido(); }
+    catch (e) {
+      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+      b.disabled = false; b.textContent = 'Como se ve en tu catalogo';
+      return;
+    }
+    b.disabled = false; b.textContent = 'Como se ve en tu catalogo';
+  }
+
+  vidProdId = editandoId;
+  $('msgVid').innerHTML = '';
+  $('modalVidriera').classList.add('on');
+  cargarVidriera();
+};
+
+$('btnCerrarVid').onclick = function () { $('modalVidriera').classList.remove('on'); };
+
+async function cargarVidriera() {
+  $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">Cargando...</div>';
+  try {
+    const d = await api('GET', '/galeria/' + vidProdId);
+    $('descLargaVid').value = d.descripcion || '';
+
+    $('galeriaVid').innerHTML = d.fotos.length === 0
+      ? '<div class="vacio" style="grid-column:1/-1;">Sin fotos todavia</div>'
+      : d.fotos.map(function (f) {
+          return '<div class="gal-item"><img src="' + f.url + '">' +
+            '<button onclick="borrarFotoVid(\'' + f.id + '\')">&#10005;</button></div>';
+        }).join('');
+
+    $('btnAgregarFotoVid').style.display = d.fotos.length >= 5 ? 'none' : 'block';
+  } catch (e) {
+    $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnAgregarFotoVid').onclick = function () { $('archFotoVid').click(); };
+
+$('archFotoVid').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f || !vidProdId) return;
+
+  const btn = $('btnAgregarFotoVid');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const img = await comprimirImagen(f, 1000, 0.75);
+    const fd = new FormData();
+    fd.append('foto', img, 'g.webp');
+
+    const r = await fetch(API + '/galeria/' + vidProdId, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+
+    await cargarVidriera();
+  } catch (err) {
+    $('msgVid').innerHTML = '<div class="msg">' + esc(err.message) + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Agregar foto';
+  e.target.value = '';
+};
+
+async function borrarFotoVid(id) {
+  if (!confirm('Borrar esta foto?')) return;
+  try {
+    await api('DELETE', '/galeria/foto/' + id);
+    await cargarVidriera();
+  } catch (e) { avisar(e.message, true); }
+}
+
+$('btnGuardarVid').onclick = async function () {
+  const btn = $('btnGuardarVid');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    await api('PUT', '/galeria/' + vidProdId + '/descripcion', {
+      texto: $('descLargaVid').value.trim() || null
+    });
+    $('modalVidriera').classList.remove('on');
+    avisar('Guardado');
+  } catch (e) {
+    $('msgVid').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+};
 
 /* ══ Vuelto ══ */
 
