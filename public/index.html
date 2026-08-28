@@ -8962,7 +8962,7 @@ async function cargarReservasWeb() {
   if (!cont || !cap('cap_alquiler')) { if (cont) cont.innerHTML = ''; return 0; }
 
   try {
-    const d = await api('GET', '/alquileres/pendientes');
+    const d = await api('GET', '/alquileres/pendientes?estado=' + estadoPedidos);
 
     if (d.cantidad === 0) { cont.innerHTML = ''; return 0; }
 
