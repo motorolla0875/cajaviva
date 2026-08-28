@@ -2279,7 +2279,7 @@
     <p class="hint">Ideal 1200 x 400 pixeles. Se comprime sola.</p>
 
     <div id="bloqueTurnosWeb" style="display:none;">
-      <div class="seccion">Turnos por la web</div>
+      <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
 
       <div class="cap-item">
         <div class="txt"><div class="n">Que pidan turno solos</div>
@@ -7876,6 +7876,25 @@ async function cargarTurnosWeb() {
   if (!bloque) return;
   const usaSena = cap('cap_turnos') || cap('cap_alquiler');
   bloque.style.display = usaSena ? 'block' : 'none';
+
+  // en alquiler siempre se puede reservar: sin interruptor ni horarios
+  const esAlq = cap('cap_alquiler') && !cap('cap_turnos');
+  const swT = document.getElementById('swTurnosWeb');
+  if (swT) swT.parentElement.style.display = esAlq ? 'none' : 'flex';
+  const tit = document.getElementById('tituloReservaWeb');
+  if (tit) tit.textContent = esAlq ? 'Reservas por la web' : 'Turnos por la web';
+  if (esAlq) {
+    turnosWebOn = true;
+    const wh = document.getElementById('wrapHorariosCat');
+    if (wh) {
+      wh.style.display = 'block';
+      const dc = document.getElementById('diasCat');
+      const hd = document.getElementById('catDesde');
+      const hh = document.getElementById('catHasta');
+      if (dc) dc.style.display = 'none';
+      if (hd) hd.parentElement.parentElement.style.display = 'none';
+    }
+  }
   if (!usaSena) return;
 
   try {
