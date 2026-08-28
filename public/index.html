@@ -2474,6 +2474,25 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCobroRes">
+  <div class="modal">
+    <h3 id="tituloCobroRes">Cobrar</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subCobroRes"></p>
+    <div id="msgCobroRes"></div>
+
+    <div id="detalleCobroRes"></div>
+
+    <label>Como paga</label>
+    <div class="medios" id="mediosCobroRes">
+      <button data-medio="efectivo" class="on">Efectivo</button>
+      <button data-medio="transferencia">Transfer.</button>
+    </div>
+
+    <button class="btn-ppal" id="btnConfirmarCobroRes">Cobrar</button>
+    <button class="btn-sec" id="btnCerrarCobroRes">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalExtras">
   <div class="modal">
     <h3 id="tituloExtras">Consumos</h3>
@@ -8788,6 +8807,80 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
 
 /* ══ Temporadas y precios ══ */
 
+/* ══ Cobrar una reserva con detalle ══ */
+
+let cobroResId = null;
+let medioCobroRes = 'efectivo';
+
+document.getElementById('mediosCobroRes').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  medioCobroRes = b.dataset.medio;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+});
+
+async function cobrarReserva(id) {
+  cobroResId = id;
+  medioCobroRes = 'efectivo';
+  Array.prototype.forEach.call($('mediosCobroRes').children, function (x, i) {
+    x.classList.toggle('on', i === 0);
+  });
+
+  $('msgCobroRes').innerHTML = '';
+  $('detalleCobroRes').innerHTML = '<div class="vacio">Cargando...</div>';
+  $('modalCobroRes').classList.add('on');
+
+  try {
+    const d = await api('GET', '/alquileres/' + id + '/extras');
+    const falta = Math.max(0, d.totalGeneral - d.pagado);
+
+    $('detalleCobroRes').innerHTML =
+      '<div class="cierre-linea"><span>Estadia</span><b>' + plata(d.totalEstadia) + '</b></div>' +
+      (d.items.length > 0
+        ? d.items.map(function (e) {
+            return '<div class="cierre-linea"><span>' + esc(e.nombre) + ' x' + fmtCant(e.cantidad) +
+              '</span><b>' + plata(e.cantidad * e.precio_unitario) + '</b></div>';
+          }).join('')
+        : '') +
+      (d.totalExtras > 0
+        ? '<div class="cierre-linea"><span>Total consumos</span><b>' + plata(d.totalExtras) + '</b></div>'
+        : '') +
+      (d.pagado > 0
+        ? '<div class="cierre-linea" style="color:var(--accent-dark);"><span>Ya pago (seña)</span><b>-' +
+          plata(d.pagado) + '</b></div>'
+        : '') +
+      '<div class="cierre-linea total"><span>A cobrar ahora</span><b>' + plata(falta) + '</b></div>';
+
+    $('btnConfirmarCobroRes').textContent = falta > 0 ? 'Cobrar ' + plata(falta) : 'Cerrar sin cobrar';
+  } catch (e) {
+    $('detalleCobroRes').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+$('btnCerrarCobroRes').onclick = function () { $('modalCobroRes').classList.remove('on'); };
+
+$('btnConfirmarCobroRes').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Cobrando...';
+  try {
+    const r = await api('POST', '/alquileres/' + cobroResId + '/cobrar', {
+      fecha: hoyISO(), medioPago: medioCobroRes
+    });
+
+    $('modalCobroRes').classList.remove('on');
+
+    const vista = document.querySelector('.vista.on');
+    if (vista && vista.id === 'v-canchas') await cargarGrillaCanchas();
+    else await cargarReservas();
+    await cargarResumen();
+
+    avisar(r.total > 0 ? 'Cobrado ' + plata(r.total) : 'Cerrado, ya estaba pagado');
+  } catch (e) {
+    $('msgCobroRes').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Cobrar';
+};
+
 /* ══ Consumos de una reserva ══ */
 
 let extrasResId = null;
@@ -9297,7 +9390,12 @@ async function verTurnoCancha(id) {
 
 $('btnCerrarCancha').onclick = function () { $('modalCancha').classList.remove('on'); };
 
-$('btnCobrarCancha').onclick = async function () {
+$('btnCobrarCancha').onclick = function () {
+  $('modalCancha').classList.remove('on');
+  cobrarReserva(turnoCanchaId);
+};
+
+async function cobrarCanchaViejo() {
   if (!confirm('Cobrar y cerrar este turno?')) return;
   const btn = this;
   btn.disabled = true; btn.textContent = 'Cobrando...';
@@ -9593,14 +9691,7 @@ async function cambiarReserva(id, estado) {
   } catch (e) { avisar(e.message, true); }
 }
 
-async function cobrarReserva(id) {
-  if (!confirm('Cerrar la reserva y registrar el cobro?')) return;
-  try {
-    const r = await api('POST', '/alquileres/' + id + '/cobrar', { fecha: hoyISO() });
-    await cargarReservas(); await cargarResumen();
-    avisar('Cobrado ' + plata(r.total));
-  } catch (e) { avisar(e.message, true); }
-}
+
 
 function reservarUnidad(unidadId) {
   abrirReserva(null);
