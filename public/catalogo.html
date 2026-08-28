@@ -1428,19 +1428,26 @@ function abrirFicha(p) {
       : '');
 
   document.getElementById('fichaUnidad').style.display = 'block';
-  window.scrollTo(0, 0);
+  document.getElementById('fichaUnidad').scrollTop = 0;
 }
 
 function cerrarFicha() {
   document.getElementById('fichaUnidad').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
-document.getElementById('btnVerDisp').onclick = function () {
+function verDisponibilidadFicha(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
   if (!unidadFicha) return;
+  const u = unidadFicha;
   saltarFicha = true;
   cerrarFicha();
-  consultarUnidad(unidadFicha);
-};
+  setTimeout(function () { consultarUnidad(u); }, 60);
+}
+
+const bvd = document.getElementById('btnVerDisp');
+bvd.addEventListener('click', verDisponibilidadFicha);
+bvd.addEventListener('touchend', verDisponibilidadFicha);
 
 
 document.getElementById('btnSubirCompAlq').onclick = function () {
