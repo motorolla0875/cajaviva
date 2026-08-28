@@ -3425,13 +3425,14 @@ function aplicarCapacidades() {
 
   const tp2 = document.getElementById('tabPedidos');
   if (tp2 && !tp2.querySelector('.contador')) {
-    tp2.textContent = cap('cap_alquiler') ? 'Reservas web' : 'Pedidos';
+    tp2.textContent = (cap('cap_alquiler') || cap('cap_canchas')) ? 'Reservas web' : 'Pedidos';
   }
 
   const cl = document.getElementById('chipListos');
   const cc = document.getElementById('chipCancelados');
-  if (cl) cl.textContent = cap('cap_alquiler') ? 'Aceptadas' : 'Entregados';
-  if (cc) cc.textContent = cap('cap_alquiler') ? 'Rechazadas' : 'Cancelados';
+  const conRes = cap('cap_alquiler') || cap('cap_canchas');
+  if (cl) cl.textContent = conRes ? 'Aceptadas' : 'Entregados';
+  if (cc) cc.textContent = conRes ? 'Rechazadas' : 'Cancelados';
 
   const tc = document.querySelector('nav button[data-vista="clientes"]');
   if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
@@ -7029,7 +7030,7 @@ async function cargarPedidos() {
     pintarContadorPedidos(d.nuevos + nRes);
 
     if (d.items.length === 0) {
-      $('listaPedidos').innerHTML = (nRes > 0 || cap('cap_alquiler')) ? ''
+      $('listaPedidos').innerHTML = (nRes > 0 || cap('cap_alquiler') || cap('cap_canchas')) ? ''
         : '<div class="vacio">' + (cap('cap_alquiler')
             ? (estadoPedidos === 'pendientes' ? 'No hay reservas nuevas.'
               : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguna.'
@@ -7134,7 +7135,7 @@ async function revisarPedidos(avisarSiHay) {
     let total = d.nuevos;
 
     // las reservas web tambien cuentan
-    if (cap('cap_alquiler')) {
+    if (cap('cap_alquiler') || cap('cap_canchas')) {
       try {
         const r = await api('GET', '/alquileres/pendientes?estado=pendientes');
         total += r.cantidad;
@@ -9911,13 +9912,13 @@ $('btnCancelarReserva').onclick = async function () {
 
 async function cargarReservasWeb() {
   const cont = document.getElementById('reservasWeb');
-  if (!cont || !cap('cap_alquiler')) { if (cont) cont.innerHTML = ''; return 0; }
+  if (!cont || (!cap('cap_alquiler') && !cap('cap_canchas'))) { if (cont) cont.innerHTML = ''; return 0; }
 
   try {
     const d = await api('GET', '/alquileres/pendientes?estado=' + estadoPedidos);
 
     if (d.items.length === 0) {
-      cont.innerHTML = cap('cap_alquiler')
+      cont.innerHTML = (cap('cap_alquiler') || cap('cap_canchas'))
         ? '<div class="vacio">' + (estadoPedidos === 'pendientes'
             ? 'No hay reservas nuevas por la web.<br>Cuando alguien reserve desde tu catalogo, aparece aca.'
             : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguna reserva.'
