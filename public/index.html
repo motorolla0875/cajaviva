@@ -2346,7 +2346,11 @@
 
     <div class="fila2">
       <div><label>Entrada</label><input type="date" id="rDesde"></div>
+      <div><label>Hora</label><input type="time" id="rHoraEnt" value="14:00"></div>
+    </div>
+    <div class="fila2">
       <div><label>Salida</label><input type="date" id="rHasta"></div>
+      <div><label>Hora</label><input type="time" id="rHoraSal" value="10:00"></div>
     </div>
     <p class="hint" id="hintNoches"></p>
 
@@ -8527,7 +8531,8 @@ async function cargarReservas() {
           '<div>' +
           '<div class="n">' + esc(x.cliente_nombre) + '</div>' +
           '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
-            fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
+            fechaCorta(x.desde) + (x.hora_entrada ? ' ' + x.hora_entrada : '') +
+            ' al ' + fechaCorta(x.hasta) + (x.hora_salida ? ' ' + x.hora_salida : '') +
             (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
           (x.estado === 'reservada' || x.estado === 'en_curso'
             ? '<div class="cuando-res">' + cuandoLlega(x) + '</div>' : '') +
@@ -8658,6 +8663,8 @@ async function abrirReserva(id) {
       $('rPersonas').value = x.personas || '';
       $('rPrecio').value = x.precio_noche;
       $('rSena').value = x.sena || '';
+      $('rHoraEnt').value = x.hora_entrada || '14:00';
+      $('rHoraSal').value = x.hora_salida || '10:00';
       $('rNota').value = x.nota || '';
     }
   } else {
@@ -8714,7 +8721,9 @@ $('btnGuardarReserva').onclick = async function () {
     personas: parseInt($('rPersonas').value) || null,
     precioNoche: num($('rPrecio').value),
     sena: num($('rSena').value),
-    nota: $('rNota').value.trim() || null
+    nota: $('rNota').value.trim() || null,
+    horaEntrada: $('rHoraEnt').value || null,
+    horaSalida: $('rHoraSal').value || null
   };
 
   const btn = $('btnGuardarReserva');

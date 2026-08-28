@@ -29,6 +29,8 @@ db.exec(`
 
 // las unidades son productos marcados como tal
 try { db.exec('ALTER TABLE negocio ADD COLUMN cap_alquiler INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE reservas ADD COLUMN hora_entrada TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE reservas ADD COLUMN hora_salida TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN es_unidad INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN capacidad INTEGER'); } catch (e) {}
 try { db.exec("ALTER TABLE productos ADD COLUMN cobro_por TEXT NOT NULL DEFAULT 'noche'"); } catch (e) {}
@@ -117,7 +119,7 @@ router.get('/proximas', (req, res) => {
 // ── crear una reserva ──
 router.post('/', (req, res) => {
   const { unidadId, clienteId, clienteNombre, telefono, desde, hasta,
-          personas, precioNoche, sena, nota } = req.body || {};
+          personas, precioNoche, sena, nota, horaEntrada, horaSalida } = req.body || {};
 
   if (!unidadId) return res.status(400).json({ error: 'Elegi que se alquila.' });
   if (!clienteNombre || !clienteNombre.trim()) return res.status(400).json({ error: 'Poné el nombre.' });
@@ -148,10 +150,11 @@ router.post('/', (req, res) => {
 
   db.prepare(`
     INSERT INTO reservas (id, user_id, unidad_id, cliente_id, cliente_nombre, telefono,
-      desde, hasta, personas, precio_noche, total, sena, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      desde, hasta, personas, precio_noche, total, sena, nota, hora_entrada, hora_salida)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, unidadId, clienteId || null, clienteNombre.trim(), telefono || null,
-         desde, hasta, parseInt(personas) || null, pn, total, parseFloat(sena) || 0, nota || null);
+         desde, hasta, parseInt(personas) || null, pn, total, parseFloat(sena) || 0, nota || null,
+         horaEntrada || null, horaSalida || null);
 
   res.json({ id: id, noches: n, total: total });
 });
@@ -171,7 +174,8 @@ router.put('/:id', (req, res) => {
 
   db.prepare(`
     UPDATE reservas SET cliente_nombre = ?, telefono = ?, desde = ?, hasta = ?,
-      personas = ?, precio_noche = ?, total = ?, sena = ?, estado = ?, nota = ?
+      personas = ?, precio_noche = ?, total = ?, sena = ?, estado = ?, nota = ?,
+      hora_entrada = ?, hora_salida = ?
     WHERE id = ?
   `).run(
     (req.body?.clienteNombre || r.cliente_nombre).trim(),
@@ -182,6 +186,8 @@ router.put('/:id', (req, res) => {
     req.body?.sena != null ? parseFloat(req.body.sena) : r.sena,
     estado,
     req.body?.nota !== undefined ? req.body.nota : r.nota,
+    req.body?.horaEntrada !== undefined ? req.body.horaEntrada : r.hora_entrada,
+    req.body?.horaSalida !== undefined ? req.body.horaSalida : r.hora_salida,
     r.id
   );
 
