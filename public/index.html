@@ -9936,11 +9936,15 @@ async function cargarReservasWeb() {
         (foto ? '<img class="foto-res" src="' + foto + '" loading="lazy">' : '') +
         '<div>' +
         '<div class="n">' + esc(x.cliente_nombre) + '</div>' +
-        '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
-          fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
-          (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>' +
+        (x.desde === x.hasta
+          ? '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' + fechaCorta(x.desde) +
+            (x.hora_entrada ? ' de ' + x.hora_entrada + ' a ' + (x.hora_salida || '') : '') + '</div>'
+          : '<div class="d">' + esc(x.unidad_nombre || '') + ' - ' +
+            fechaCorta(x.desde) + ' al ' + fechaCorta(x.hasta) +
+            (x.personas ? ' - ' + x.personas + ' personas' : '') + '</div>') +
         (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
-        '<span class="cuando-res">' + n + (n === 1 ? ' noche' : ' noches') + '</span>' +
+        '<span class="cuando-res">' +
+          (x.desde === x.hasta ? 'Turno' : n + (n === 1 ? ' noche' : ' noches')) + '</span>' +
         (x.comprobante
           ? '<span class="cuando-res">Pago la seña' +
             (x.horas_restantes != null ? ' - quedan ' + x.horas_restantes + 'h' : '') + '</span>'
