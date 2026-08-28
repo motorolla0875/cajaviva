@@ -804,6 +804,17 @@
   #modalProdCatalogo { z-index: 130; }
   #modalNuevoCheque { z-index: 135; }
   #modalHistorial { z-index: 130; }
+  .opciones-dur {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
+  }
+  .opciones-dur button {
+    padding: 13px 6px; border-radius: 10px; font-size: 14px; font-weight: 500;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  }
+  .opciones-dur button.on {
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark);
+  }
+
   .btn-talles {
     width: 100%; padding: 13px; border-radius: 10px;
     border: 1px solid var(--accent); background: var(--accent-soft);
@@ -2006,6 +2017,21 @@
     <div id="msgScan"></div>
     <div id="lectorCam"></div>
     <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalDuracion">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="tituloDur"></h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subDur"></p>
+
+    <label>Cuanto duro</label>
+    <div class="opciones-dur" id="opcionesDur"></div>
+
+    <div class="cierre-linea total"><span>Total</span><b id="totalDur">$0</b></div>
+
+    <button class="btn-ppal" id="btnAgregarDur">Agregar</button>
+    <button class="btn-sec" id="btnCerrarDur">Cancelar</button>
   </div>
 </div>
 
@@ -4079,6 +4105,7 @@ $('buscar').addEventListener('input', pintarGrilla);
 function agregar(id) {
   const p = productos.filter(function (x) { return x.id === id; })[0];
   if (!p) return;
+  if (p.es_servicio && p.cobra_por_hora) { abrirDuracionServicio(id); return; }
   if (cap('cap_variantes') && p.tiene_variantes) { abrirElegirVariante(id); return; }
   if (cap('cap_peso') && p.unidad !== 'unidad') { abrirPeso(id); return; }
   const l = carrito.filter(function (x) { return x.productoId === id; })[0];
@@ -10351,6 +10378,72 @@ let porHoraActual = false;
 document.getElementById('swPorHora').onclick = function () {
   porHoraActual = !porHoraActual;
   this.classList.toggle('on', porHoraActual);
+};
+
+/* ══ Duracion al vender un servicio por hora ══ */
+
+let durProdId = null;
+let durElegida = 60;
+
+function abrirDuracionServicio(id) {
+  const p = productos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+
+  durProdId = id;
+  durElegida = p.duracion || 60;
+
+  $('tituloDur').textContent = p.nombre;
+  $('subDur').textContent = plata(p.precio_venta) + ' por ' +
+    ((p.duracion || 60) >= 60 ? ((p.duracion || 60) / 60) + 'h' : (p.duracion || 60) + ' min');
+
+  const opciones = [30, 45, 60, 90, 120, 180];
+  $('opcionesDur').innerHTML = opciones.map(function (m) {
+    return '<button class="' + (m === durElegida ? 'on' : '') + '" onclick="elegirDur(' + m + ')">' +
+      (m >= 60 ? (m / 60 === Math.floor(m / 60) ? (m / 60) + 'h' : (m / 60).toFixed(1).replace('.5', ':30')) : m + ' min') +
+      '</button>';
+  }).join('');
+
+  calcularTotalDur();
+  $('modalDuracion').classList.add('on');
+}
+
+function elegirDur(m) {
+  durElegida = m;
+  Array.prototype.forEach.call($('opcionesDur').children, function (b) {
+    b.classList.toggle('on', b.textContent.trim() ===
+      (m >= 60 ? (m / 60 === Math.floor(m / 60) ? (m / 60) + 'h' : (m / 60).toFixed(1).replace('.5', ':30')) : m + ' min'));
+  });
+  calcularTotalDur();
+}
+
+function calcularTotalDur() {
+  const p = productos.filter(function (x) { return x.id === durProdId; })[0];
+  if (!p) return;
+  const base = p.duracion || 60;
+  $('totalDur').textContent = plata(Math.round(p.precio_venta * (durElegida / base)));
+}
+
+$('btnCerrarDur').onclick = function () { $('modalDuracion').classList.remove('on'); };
+
+$('btnAgregarDur').onclick = function () {
+  const p = productos.filter(function (x) { return x.id === durProdId; })[0];
+  if (!p) return;
+
+  const base = p.duracion || 60;
+  const precio = Math.round(p.precio_venta * (durElegida / base));
+  const nombre = p.nombre + ' (' +
+    (durElegida >= 60 ? (durElegida / 60) + 'h' : durElegida + ' min') + ')';
+  const clave = p.id + '|' + durElegida;
+
+  const l = carrito.filter(function (x) { return x.clave === clave; })[0];
+  if (l) l.cantidad += 1;
+  else carrito.push({
+    clave: clave, productoId: p.id, nombre: nombre,
+    precio: precio, cantidad: 1, unidad: 'unidad'
+  });
+
+  $('modalDuracion').classList.remove('on');
+  pintarCarrito();
 };
 
 /* ══ Vuelto ══ */
