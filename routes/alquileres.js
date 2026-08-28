@@ -312,7 +312,19 @@ router.post('/:id/cobrar', (req, res) => {
   const u = db.prepare('SELECT nombre FROM productos WHERE id = ?').get(r.unidad_id);
   const ventaId = uuidv4();
   const medio = req.body?.medioPago || 'efectivo';
-  const total = req.body?.total != null ? parseFloat(req.body.total) : r.total;
+
+  // los consumos se suman al total
+  const extras = db.prepare('SELECT * FROM reserva_extras WHERE reserva_id = ?').all(r.id);
+  const totalExtras = extras.reduce(function (a, i) { return a + i.cantidad * i.precio_unitario; }, 0);
+
+  const totalCompleto = (req.body?.total != null ? parseFloat(req.body.total) : r.total) + totalExtras;
+  const yaPagado = r.pagado || 0;
+  const total = Math.max(0, totalCompleto - yaPagado);
+
+  if (total <= 0) {
+    db.prepare("UPDATE reservas SET estado = 'terminada' WHERE id = ?").run(r.id);
+    return res.json({ ventaId: null, total: 0, yaPagado: yaPagado });
+  }
 
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
@@ -338,9 +350,9 @@ router.post('/:id/cobrar', (req, res) => {
   });
 
   db.prepare("UPDATE reservas SET estado = 'terminada', pagado = ?, venta_id = ? WHERE id = ?")
-    .run(total, ventaId, r.id);
+    .run(totalCompleto, ventaId, r.id);
 
-  res.json({ ventaId: ventaId, total: total });
+  res.json({ ventaId: ventaId, total: total, yaPagado: yaPagado });
 });
 
 // ── borrar ──
