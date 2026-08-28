@@ -100,9 +100,34 @@ router.get('/publico/:slug', (req, res) => {
     ORDER BY c.nombre, p.nombre
   `).all(n.user_id);
 
+  // precio del dia con los recargos que correspondan
+  const hoyCat = new Date().toISOString().slice(0, 10);
+  const negR = db.prepare('SELECT recargo_finde FROM negocio WHERE user_id = ?').get(n.user_id);
+  let tempsCat = [];
+  try {
+    tempsCat = db.prepare('SELECT desde, hasta, recargo FROM temporadas WHERE user_id = ?').all(n.user_id);
+  } catch (e) {}
+
+  function precioDelDia(base, dia) {
+    let precio = base;
+    const md = dia.slice(5);
+    let mejor = 0;
+    tempsCat.forEach(function (t) {
+      if (md >= t.desde.slice(5) && md <= t.hasta.slice(5) && t.recargo > mejor) mejor = t.recargo;
+    });
+    if (mejor > 0) precio = precio * (1 + mejor / 100);
+    const dd = new Date(dia + 'T12:00:00').getDay();
+    if ((dd === 5 || dd === 6) && negR && negR.recargo_finde > 0) {
+      precio = precio * (1 + negR.recargo_finde / 100);
+    }
+    return Math.round(precio);
+  }
+
   // las unidades llevan su galeria y descripcion larga
   productos.forEach(function (p) {
     if (!p.es_unidad) return;
+    p.precio_base = p.precio_venta || 0;
+    p.precio_hoy = precioDelDia(p.precio_venta || 0, hoyCat);
     try {
       p.galeria = db.prepare('SELECT url FROM galeria WHERE producto_id = ? ORDER BY orden').all(p.id)
         .map(function (f) { return f.url; });
