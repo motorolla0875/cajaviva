@@ -1680,7 +1680,6 @@
       <div class="chips" id="tabsReservas">
         <button class="on" data-tab="encurso">Ahora</button>
         <button data-tab="disponibles">Disponibilidad</button>
-        <button data-tab="reservas">Reservas</button>
         <button data-tab="todas">Todas mis reservas</button>
         <button data-tab="historial">Ya estuvieron</button>
         <button data-tab="temporadas">Fechas especiales</button>
@@ -8810,6 +8809,8 @@ async function cargarReservas() {
   if (bf) bf.style.display = (tabReservas === 'todas' || tabReservas === 'historial' || tabReservas === 'temporadas' || tabReservas === 'encurso') ? 'none' : 'block';
 
   try {
+    if (tabReservas === 'reservas') tabReservas = 'disponibles';
+
     if (tabReservas === 'encurso') {
       const rd2 = document.getElementById('resumenDisp');
       if (rd2) rd2.innerHTML = '';
