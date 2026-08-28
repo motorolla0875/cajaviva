@@ -122,27 +122,30 @@
     width: 100%; height: 260px; object-fit: cover; display: block;
   }
 
+  .gal-mosaico { display: none; }
+
   /* en pantalla ancha: mosaico estilo booking */
   @media (min-width: 760px) {
+    #fichaGaleria .gal-scroll { display: none !important; }
+    #fichaGaleria .gal-puntos { display: none !important; }
+
     .gal-mosaico {
-      display: grid; gap: 6px; padding: 12px;
+      display: grid !important; gap: 6px; padding: 12px;
       grid-template-columns: 2fr 1fr 1fr;
-      grid-template-rows: 160px 160px;
+      grid-template-rows: 170px 170px;
+      height: 364px; box-sizing: border-box;
     }
     .gal-mosaico img {
       width: 100%; height: 100%; object-fit: cover;
-      border-radius: 8px; cursor: pointer;
+      border-radius: 8px; cursor: pointer; min-height: 0;
     }
     .gal-mosaico img:first-child {
       grid-row: 1 / 3; grid-column: 1;
       border-radius: 12px;
     }
-    .gal-mosaico.una img:first-child { grid-column: 1 / -1; }
-    .gal-scroll { display: none; }
-    .gal-puntos { display: none; }
-  }
-  @media (max-width: 759px) {
-    .gal-mosaico { display: none; }
+    .gal-mosaico.una { grid-template-columns: 1fr; grid-template-rows: 340px; height: 364px; }
+    .gal-mosaico.dos { grid-template-columns: 1fr 1fr; }
+    .gal-mosaico.dos img:first-child { grid-row: 1 / 3; }
   }
   .gal-scroll {
     display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
@@ -1446,7 +1449,7 @@ function abrirFicha(p) {
     (fotos.length > 1
       ? '<div class="gal-puntos">' + fotos.map(function () { return '<i></i>'; }).join('') + '</div>'
       : '') +
-    '<div class="gal-mosaico' + (fotos.length === 1 ? ' una' : '') + '">' +
+    '<div class="gal-mosaico' + (fotos.length === 1 ? ' una' : fotos.length === 2 ? ' dos' : '') + '">' +
       fotos.slice(0, 5).map(function (u) {
         return '<img src="' + u + '" onclick="verFoto(this.src)">';
       }).join('') + '</div>';
