@@ -4088,7 +4088,11 @@ function abrirProd(id) {
   if (mo) {
     mo.style.display = 'none';
     const bmo = document.getElementById('btnMasOpciones');
-    if (bmo) { bmo.classList.remove('abierto'); bmo.textContent = 'Mas opciones'; }
+    if (bmo) {
+      bmo.style.display = '';
+      bmo.classList.remove('abierto');
+      bmo.textContent = 'Mas opciones';
+    }
   }
   $('pNombre').placeholder = 'Ej: Coca Cola 500ml';
   $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
@@ -8422,6 +8426,10 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   $('wrapBarras').style.display = 'none';
   $('wrapMinimo').style.display = 'none';
   $('wrapUnidad').style.display = 'none';
+  const bmoU = document.getElementById('btnMasOpciones');
+  const moU = document.getElementById('masOpciones');
+  if (bmoU) bmoU.style.display = 'none';
+  if (moU) moU.style.display = 'none';
 
   const lbl = document.querySelector('#modalProd label');
   const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
