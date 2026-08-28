@@ -977,9 +977,11 @@
     flex: 1; text-align: left; font-size: 16px; font-weight: 500;
     text-transform: capitalize;
   }
-  .fecha-oculta {
-    position: absolute; opacity: 0; pointer-events: none;
-    width: 1px; height: 1px; padding: 0; border: 0;
+  .wrap-cal { position: relative; flex-shrink: 0; }
+  .wrap-cal input[type="date"] {
+    position: absolute; inset: 0; opacity: 0;
+    width: 100%; height: 100%; padding: 0; border: 0;
+    pointer-events: none;
   }
   .btn-cal {
     width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
@@ -1741,9 +1743,11 @@
         <div class="dia-actual" id="diaCanchas"></div>
         <button onclick="moverDiaCancha(-1)">&#8249;</button>
         <button onclick="moverDiaCancha(1)">&#8250;</button>
-        <button class="btn-cal" onclick="abrirFechaCancha()" title="Elegir dia">&#128197;</button>
+        <div class="wrap-cal">
+          <button class="btn-cal" onclick="abrirFechaCancha()" title="Elegir dia">&#128197;</button>
+          <input type="date" id="fechaCanchas">
+        </div>
       </div>
-      <input type="date" id="fechaCanchas" class="fecha-oculta">
       <div class="chips" id="tabsCanchas">
         <button class="on" data-tab="grilla">Del dia</button>
         <button data-tab="cobrados">Ya cobrados</button>
@@ -9089,20 +9093,14 @@ async function pintarCobrados() {
 
 function abrirFechaCancha() {
   const f = document.getElementById('fechaCanchas');
-  const btn = document.querySelector('#v-canchas .btn-cal');
-  if (!f || !btn) return;
+  if (!f) return;
 
-  // el campo se posiciona sobre el boton para que el calendario salga ahi
-  f.classList.remove('fecha-oculta');
-  f.style.cssText = 'position:absolute; opacity:0; width:42px; height:42px; ' +
-    'left:' + btn.offsetLeft + 'px; top:' + btn.offsetTop + 'px; pointer-events:none;';
-
+  // el campo ya vive dentro del navegador, solo se abre
   if (f.showPicker) {
     try { f.showPicker(); return; } catch (e) {}
   }
-  f.style.pointerEvents = 'auto';
-  f.style.opacity = '1';
   f.focus();
+  f.click();
 }
 
 /* ══ Grilla de canchas por hora ══ */
