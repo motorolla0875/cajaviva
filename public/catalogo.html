@@ -706,7 +706,10 @@ function pintar() {
       grupos[cat].push(p);
     });
     orden.forEach(function (cat) {
-      html += '<div class="cat-titulo">' + esc(cat) + '</div>' +
+      // sin titulo si es el unico grupo o si son unidades sin categoria
+      const sinTitulo = orden.length === 1 ||
+        grupos[cat].every(function (p) { return p.es_unidad; });
+      html += (sinTitulo ? '' : '<div class="cat-titulo">' + esc(cat) + '</div>') +
         '<div class="grilla-prod">' + grupos[cat].map(tarjeta).join('') + '</div>';
     });
   }
