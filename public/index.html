@@ -2182,6 +2182,14 @@
       </div>
     </div>
 
+    <div id="wrapPorHora" style="display:none;">
+      <div class="cap-item">
+        <div class="txt"><div class="n">Se cobra por hora</div>
+          <div class="d">Si dura mas, el precio se multiplica</div></div>
+        <button class="switch" id="swPorHora"></button>
+      </div>
+    </div>
+
     <div id="wrapDuracion" style="display:none;">
       <label>Cuanto dura</label>
       <select id="pDuracion">
@@ -4369,6 +4377,9 @@ function abrirProd(id) {
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
+  porHoraActual = !!(p && p.cobra_por_hora);
+  $('swPorHora').classList.toggle('on', porHoraActual);
+  $('wrapPorHora').style.display = (p && p.es_servicio) ? 'block' : 'none';
   esUnidadActual = !!(p && p.es_unidad);
   if (esUnidadActual) {
     setTimeout(function () {
@@ -4491,6 +4502,7 @@ async function guardarProductoRapido() {
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
     esServicio: cap('cap_turnos') && esServicioActual,
+    cobraPorHora: esServicioActual && porHoraActual,
     duracion: esServicioActual ? parseInt($('pDuracion').value) : null
   };
 
@@ -4531,6 +4543,7 @@ $('btnGuardarProd').onclick = async function () {
     avisoDias: parseInt($('pAvisoDias').value) || 7,
     esInsumo: cap('cap_recetas') && esInsumoActual,
     esServicio: cap('cap_turnos') && esServicioActual,
+    cobraPorHora: esServicioActual && porHoraActual,
     duracion: esServicioActual ? parseInt($('pDuracion').value) : null
   };
 
@@ -7931,7 +7944,7 @@ async function abrirTurno(id) {
     ? '<option value="">Carga servicios en Productos</option>'
     : servicios.map(function (p) {
         return '<option value="' + p.id + '" data-dur="' + (p.duracion || 30) +
-          '" data-precio="' + p.precio_venta + '">' + esc(p.nombre) + '</option>';
+          '" data-precio="' + p.precio_venta + '" data-porhora="' + (p.cobra_por_hora ? '1' : '0') + '">' + esc(p.nombre) + '</option>';
       }).join('');
 
   try {
@@ -7976,9 +7989,26 @@ function aplicarServicio() {
   const op = $('tuServicio').options[$('tuServicio').selectedIndex];
   if (!op || !op.dataset.dur) return;
   $('tuDuracion').value = op.dataset.dur;
-  $('tuPrecio').value = op.dataset.precio;
+  recalcularPrecioTurno();
 }
+
+function recalcularPrecioTurno() {
+  const op = $('tuServicio').options[$('tuServicio').selectedIndex];
+  if (!op || !op.dataset.precio) return;
+
+  const base = parseFloat(op.dataset.precio) || 0;
+  const durBase = parseInt(op.dataset.dur) || 60;
+  const durAhora = parseInt($('tuDuracion').value) || durBase;
+
+  if (op.dataset.porhora === '1' && durBase > 0) {
+    $('tuPrecio').value = Math.round(base * (durAhora / durBase));
+  } else {
+    $('tuPrecio').value = base;
+  }
+}
+
 $('tuServicio').addEventListener('change', aplicarServicio);
+$('tuDuracion').addEventListener('change', recalcularPrecioTurno);
 
 $('btnGuardarTurno').onclick = async function () {
   const nombre = $('tuNombre').value.trim();
@@ -10306,11 +10336,21 @@ document.getElementById('btnNuevoServicio').onclick = function () {
   $('wrapUnidad').style.display = 'none';
   $('wrapEsServicio').style.display = 'none';
   $('wrapDuracion').style.display = 'block';
+  $('wrapPorHora').style.display = 'block';
+  porHoraActual = false;
+  $('swPorHora').classList.remove('on');
 
   const bmo = document.getElementById('btnMasOpciones');
   const mo = document.getElementById('masOpciones');
   if (bmo) bmo.style.display = 'none';
   if (mo) mo.style.display = 'none';
+};
+
+let porHoraActual = false;
+
+document.getElementById('swPorHora').onclick = function () {
+  porHoraActual = !porHoraActual;
+  this.classList.toggle('on', porHoraActual);
 };
 
 /* ══ Vuelto ══ */
