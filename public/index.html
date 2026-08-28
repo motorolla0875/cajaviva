@@ -1725,8 +1725,8 @@
     <div class="lista-wrap">
       <div class="chips" id="tabsPedidos">
         <button class="on" data-estado="pendientes">Pendientes</button>
-        <button data-estado="listos">Entregados</button>
-        <button data-estado="cancelados">Cancelados</button>
+        <button data-estado="listos" id="chipListos">Entregados</button>
+        <button data-estado="cancelados" id="chipCancelados">Cancelados</button>
       </div>
       <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
@@ -3220,6 +3220,11 @@ function aplicarCapacidades() {
   if (tp2 && !tp2.querySelector('.contador')) {
     tp2.textContent = cap('cap_alquiler') ? 'Reservas web' : 'Pedidos';
   }
+
+  const cl = document.getElementById('chipListos');
+  const cc = document.getElementById('chipCancelados');
+  if (cl) cl.textContent = cap('cap_alquiler') ? 'Aceptadas' : 'Entregados';
+  if (cc) cc.textContent = cap('cap_alquiler') ? 'Rechazadas' : 'Cancelados';
 
   const tc = document.querySelector('nav button[data-vista="clientes"]');
   if (tc) tc.textContent = cap('cap_alquiler') ? 'Huespedes'
@@ -6792,7 +6797,11 @@ async function cargarPedidos() {
 
     if (d.items.length === 0) {
       $('listaPedidos').innerHTML = nRes > 0 ? ''
-        : '<div class="vacio">No hay pedidos ' + estadoPedidos + '.</div>';
+        : '<div class="vacio">' + (cap('cap_alquiler')
+            ? (estadoPedidos === 'pendientes' ? 'No hay reservas nuevas.'
+              : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguna.'
+              : 'No rechazaste ninguna.')
+            : 'No hay pedidos ' + estadoPedidos + '.') + '</div>';
       return;
     }
 
