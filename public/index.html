@@ -8452,6 +8452,8 @@ async function cargarReservas() {
           acc = (x.telefono ? '<button class="ppal" onclick="wppReserva(\'' + esc(x.telefono) + '\',\'' + x.id + '\')">WhatsApp</button>' : '');
         }
 
+        acc += '<button onclick="borrarReserva(\'' + x.id + '\')">Borrar</button>';
+
         const estado = x.estado === 'reservada' ? 'Reservada'
           : x.estado === 'en_curso' ? 'En curso'
           : x.estado === 'terminada' ? 'Terminada' : 'Cancelada';
@@ -8478,6 +8480,15 @@ async function cargarReservas() {
   } catch (e) {
     $('listaReservas').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
+}
+
+async function borrarReserva(id) {
+  if (!confirm('Borrar esta reserva? No se puede deshacer.')) return;
+  try {
+    await api('DELETE', '/alquileres/' + id);
+    await cargarReservas();
+    avisar('Reserva borrada');
+  } catch (e) { avisar(e.message, true); }
 }
 
 function wppReserva(tel, id) {
