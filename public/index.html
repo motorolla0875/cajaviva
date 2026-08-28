@@ -8393,9 +8393,13 @@ async function cargarReservas() {
       const libres = d.unidades.filter(function (u) { return u.libre; }).length;
 
       $('listaReservas').innerHTML =
-        '<div class="rep-resumen"><div class="lbl">' + d.noches +
-        (d.noches === 1 ? ' noche' : ' noches') + '</div>' +
-        '<div class="val">' + libres + ' de ' + d.unidades.length + ' libres</div></div>' +
+        '<div class="rep-resumen"><div class="val">' +
+        (libres === 0 ? 'Todo ocupado'
+          : d.unidades.length === 1 ? 'Disponible'
+          : libres + (libres === 1 ? ' libre' : ' libres')) + '</div>' +
+        '<div class="lbl">' +
+        (d.unidades.length > 1 ? 'de ' + d.unidades.length + ' unidades - ' : '') +
+        d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div></div>' +
         d.unidades.map(function (u) {
           return '<div class="unidad-card' + (u.libre ? '' : ' ocupada') + '">' +
             (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
