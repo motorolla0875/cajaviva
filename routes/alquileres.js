@@ -289,7 +289,28 @@ router.post('/', (req, res) => {
          desde, hasta, parseInt(personas) || null, pn, total, parseFloat(sena) || 0, nota || null,
          horaEntrada || null, horaSalida || null);
 
-  res.json({ id: id, noches: noches(desde, hasta), total: total });
+  // la seña entra a la caja cuando se recibe
+  const montoSena = parseFloat(sena) || 0;
+  if (montoSena > 0) {
+    const ventaSena = uuidv4();
+    db.prepare(`
+      INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
+        costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
+      VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, 0, ?, ?, 0, ?, ?)
+    `).run(ventaSena, req.userId, clienteId || null, hoyISO(), montoSena,
+           'efectivo', montoSena,
+           'Seña: ' + u.nombre + ' - ' + clienteNombre.trim(), req.empleadoId || null);
+
+    db.prepare(`
+      INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, ?, 1, ?, 0)
+    `).run(uuidv4(), ventaSena, unidadId,
+           'Seña de reserva (' + desde + ')', montoSena);
+
+    db.prepare('UPDATE reservas SET pagado = ? WHERE id = ?').run(montoSena, id);
+  }
+
+  res.json({ id: id, noches: noches(desde, hasta), total: total, sena: montoSena });
 });
 
 // ── editar o cambiar estado ──
