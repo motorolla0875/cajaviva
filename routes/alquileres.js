@@ -445,6 +445,8 @@ router.post('/publico/:slug', (req, res) => {
 
 // ── reservas pedidas por la web, sin confirmar ──
 router.get('/pendientes', (req, res) => {
+  const filtro = req.query.estado || 'pendientes';
+
   // las que nadie pago se vencen a las 24 horas
   db.prepare(`
     DELETE FROM reservas
@@ -457,8 +459,10 @@ router.get('/pendientes', (req, res) => {
     SELECT r.*, p.nombre AS unidad_nombre, p.foto_mini, p.foto_url
     FROM reservas r
     LEFT JOIN productos p ON p.id = r.unidad_id
-    WHERE r.user_id = ? AND r.estado = 'pendiente'
-    ORDER BY r.created_at DESC
+    WHERE r.user_id = ? AND r.nota LIKE '%Pedido por la web%'
+      AND r.estado IN (${filtro === 'listos' ? "'reservada','en_curso','terminada'"
+        : filtro === 'cancelados' ? "'cancelada'" : "'pendiente'"})
+    ORDER BY r.created_at DESC LIMIT 60
   `).all(req.userId);
 
   filas.forEach(function (r) {
@@ -470,7 +474,7 @@ router.get('/pendientes', (req, res) => {
     }
   });
 
-  res.json({ items: filas, cantidad: filas.length });
+  res.json({ items: filas, cantidad: filtro === 'pendientes' ? filas.length : 0 });
 });
 
 // ── aceptar o rechazar ──
