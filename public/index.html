@@ -8861,6 +8861,8 @@ async function borrarTemporada(id) {
 async function sacarFinde() {
   try {
     await api('PUT', '/alquileres/temporadas/finde', { recargo: 0 });
+    const c = document.getElementById('recFinde');
+    if (c) c.value = '';
     await pintarTemporadas();
     avisar('Recargo de fin de semana quitado');
   } catch (e) { avisar(e.message, true); }
