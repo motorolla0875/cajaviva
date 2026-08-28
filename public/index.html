@@ -964,6 +964,23 @@
     font-size: 14.5px; font-family: inherit; resize: vertical;
   }
 
+  #v-canchas .nav-dia {
+    display: flex; align-items: center; gap: 10px;
+    max-width: 420px; margin: 0 auto 10px;
+  }
+  #v-canchas .nav-dia button {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 20px; line-height: 1;
+  }
+  #v-canchas .nav-dia .dia-actual {
+    flex: 1; text-align: center; font-size: 16px; font-weight: 500;
+    text-transform: capitalize;
+  }
+  #fechaCanchas {
+    max-width: 420px; margin-left: auto; margin-right: auto; display: block;
+  }
+
   .grilla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .grilla-canchas {
     display: grid; gap: 4px; min-width: max-content;
