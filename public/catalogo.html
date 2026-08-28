@@ -360,6 +360,31 @@
   </div>
 </div>
 
+<div id="modalCancha" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:58; overflow-y:auto; padding:20px 16px;">
+  <div style="background:var(--panel); border-radius:16px; max-width:420px; margin:0 auto; padding:22px;">
+    <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;" id="tituloCanchaWeb"></h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;" id="subCanchaWeb"></p>
+    <div id="msgCanchaWeb"></div>
+
+    <label class="lbl-alq">Que dia</label>
+    <input type="date" id="cwDia" class="inp-alq">
+
+    <div id="horasCanchaWeb" style="margin-top:16px;"></div>
+
+    <div id="datosCanchaWeb" style="display:none; margin-top:16px;">
+      <label class="lbl-alq">Tu nombre</label>
+      <input type="text" id="cwNombre" class="inp-alq">
+
+      <label class="lbl-alq" style="margin-top:12px;">Tu telefono</label>
+      <input type="text" id="cwTelefono" inputmode="tel" class="inp-alq">
+
+      <button id="btnReservarCanchaWeb" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
+    </div>
+
+    <button onclick="cerrarCanchaWeb()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
+  </div>
+</div>
+
 <div id="modalAlq" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:58; overflow-y:auto; padding:20px 16px;">
   <div style="background:var(--panel); border-radius:16px; max-width:420px; margin:0 auto; padding:22px;">
     <h3 style="margin:0 0 4px; font-size:19px; font-weight:500;" id="tituloAlq"></h3>
@@ -723,6 +748,7 @@ let prodVarActual = null;
 function cambiar(id, d) {
   const p = datos.productos.filter(function (x) { return x.id === id; })[0];
 
+  if (p && p.es_unidad && (p.cobro_por === 'hora') && d > 0) { pedirCancha(p); return; }
   if (p && p.es_unidad && d > 0) { consultarUnidad(p); return; }
   if (p && p.es_servicio && d > 0) { abrirTurnoWeb(p); return; }
 
@@ -1528,6 +1554,126 @@ function moverGal(d) {
   if (!g) return;
   g.scrollBy({ left: d * g.clientWidth, behavior: 'smooth' });
 }
+
+
+/* ══ Reservar cancha desde el catalogo ══ */
+
+let canchaWeb = null;
+let horaWeb = null;
+let datosCanchaWeb = null;
+
+function pedirCancha(p) {
+  canchaWeb = p;
+  horaWeb = null;
+
+  document.getElementById('tituloCanchaWeb').textContent = p.nombre;
+  document.getElementById('subCanchaWeb').textContent = plata(p.precio_hoy || p.precio_venta) + ' el turno';
+  document.getElementById('msgCanchaWeb').innerHTML = '';
+  document.getElementById('datosCanchaWeb').style.display = 'none';
+  document.getElementById('cwNombre').value = '';
+  document.getElementById('cwTelefono').value = '';
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const f = document.getElementById('cwDia');
+  f.value = hoy; f.min = hoy;
+
+  document.getElementById('modalCancha').style.display = 'block';
+  buscarHorasCancha();
+}
+
+function cerrarCanchaWeb() { document.getElementById('modalCancha').style.display = 'none'; }
+
+document.getElementById('cwDia').addEventListener('change', buscarHorasCancha);
+
+async function buscarHorasCancha() {
+  const cont = document.getElementById('horasCanchaWeb');
+  cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Buscando...</div>';
+  document.getElementById('datosCanchaWeb').style.display = 'none';
+  horaWeb = null;
+
+  try {
+    const r = await fetch('/api/alquileres/publico/' + slug + '/horas?unidad=' +
+      canchaWeb.id + '&dia=' + document.getElementById('cwDia').value);
+    const d = await r.json();
+    datosCanchaWeb = d;
+
+    if (!d.horas || d.horas.length === 0) {
+      cont.innerHTML = '<div style="color:#8A5A0F;font-size:13.5px;background:#FDF3E3;padding:12px;border-radius:10px;">' +
+        'No quedan turnos ese dia. Proba con otro.</div>';
+      return;
+    }
+
+    cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Elegi el horario</div>' +
+      '<div class="horas-grid">' + d.horas.map(function (h) {
+        return '<button class="hora-btn" onclick="elegirHoraCancha(\'' + h + '\', this)">' + h + '</button>';
+      }).join('') + '</div>';
+  } catch (e) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudo consultar.</div>';
+  }
+}
+
+function elegirHoraCancha(h, btn) {
+  horaWeb = h;
+  document.querySelectorAll('#horasCanchaWeb .hora-btn').forEach(function (b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('datosCanchaWeb').style.display = 'block';
+}
+
+document.getElementById('btnReservarCanchaWeb').onclick = async function () {
+  const nombre = document.getElementById('cwNombre').value.trim();
+  if (!nombre) {
+    document.getElementById('msgCanchaWeb').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">Poné tu nombre.</div>';
+    return;
+  }
+  if (!horaWeb) return;
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Reservando...';
+
+  const hFin = String(parseInt(horaWeb.split(':')[0]) + 1).padStart(2, '0') + ':' + horaWeb.split(':')[1];
+
+  try {
+    const r = await fetch('/api/alquileres/publico/' + slug, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        unidadId: canchaWeb.id,
+        nombre: nombre,
+        telefono: document.getElementById('cwTelefono').value.trim() || null,
+        desde: document.getElementById('cwDia').value,
+        hasta: document.getElementById('cwDia').value,
+        horaEntrada: horaWeb,
+        horaSalida: hFin
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo reservar');
+
+    reservaCreada = d.id;
+
+    document.getElementById('detalleAlqListo').textContent =
+      canchaWeb.nombre + ' - ' + document.getElementById('cwDia').value + ' ' + horaWeb + ' a ' + hFin;
+
+    document.getElementById('senaAlqListo').innerHTML = d.sena > 0
+      ? '<div style="background:var(--accent-soft);border-radius:12px;padding:14px;margin-bottom:12px;text-align:left;">' +
+        '<div style="font-size:13.5px;color:var(--accent-dark);font-weight:500;">Seña de ' + plata(d.sena) + '</div>' +
+        (d.alias ? '<div style="font-size:12.5px;color:var(--accent-dark);margin-top:4px;">Transferí a <b>' +
+          esc(d.alias) + '</b></div>' : '') + '</div>'
+      : '';
+
+    document.getElementById('zonaCompAlq').style.display = d.sena > 0 ? 'block' : 'none';
+
+    cerrarCanchaWeb();
+    document.getElementById('alqListo').style.display = 'block';
+  } catch (e) {
+    document.getElementById('msgCanchaWeb').innerHTML =
+      '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">' +
+      esc(e.message) + '</div>';
+    buscarHorasCancha();
+  }
+  btn.disabled = false; btn.textContent = 'Reservar';
+};
 
 </script>
 

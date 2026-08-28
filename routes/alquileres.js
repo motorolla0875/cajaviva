@@ -930,4 +930,65 @@ router.get('/grilla', (req, res) => {
   res.json({ dia: dia, canchas: canchas, franjas: franjas, reservas: reservas });
 });
 
+
+// ── horarios libres de una cancha (publico) ──
+router.get('/publico/:slug/horas', (req, res) => {
+  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+
+  const dia = req.query.dia || hoyISO();
+  const unidadId = req.query.unidad;
+  if (!unidadId) return res.status(400).json({ error: 'Falta la cancha.' });
+
+  const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
+    .get(unidadId, n.user_id);
+  if (!u) return res.status(404).json({ error: 'Cancha no encontrada.' });
+
+  const tomadas = db.prepare(`
+    SELECT hora_entrada, hora_salida FROM reservas
+    WHERE user_id = ? AND unidad_id = ? AND desde = ?
+      AND (estado IN ('reservada','en_curso')
+        OR (estado = 'pendiente' AND sena_estado = 'enviado' AND sena_fecha > datetime('now','-1 day')))
+  `).all(n.user_id, unidadId, dia);
+
+  function aMin(h) {
+    if (!h) return 0;
+    const p = h.split(':');
+    return parseInt(p[0]) * 60 + parseInt(p[1] || 0);
+  }
+  function aHora(m) {
+    return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  }
+
+  const rangos = [[aMin(n.hora_desde || '08:00'), aMin(n.hora_hasta || '22:00')]];
+  if (n.turno_partido && n.hora_desde2 && n.hora_hasta2) {
+    rangos.push([aMin(n.hora_desde2), aMin(n.hora_hasta2)]);
+  }
+
+  const ahora = new Date();
+  const esHoy = dia === hoyISO();
+  const minAhora = ahora.getHours() * 60 + ahora.getMinutes();
+
+  const libres = [];
+  rangos.forEach(function (r) {
+    let ini = r[0];
+    const fin = r[1] > r[0] ? r[1] : r[1] + 1440;
+    while (ini + 60 <= fin) {
+      const h = aHora(ini);
+      const ocupada = tomadas.some(function (t) {
+        const a = aMin(t.hora_entrada), b = aMin(t.hora_salida);
+        return ini < b && (ini + 60) > a;
+      });
+      if (!ocupada && (!esHoy || ini > minAhora)) libres.push(h);
+      ini += 60;
+    }
+  });
+
+  res.json({
+    dia: dia, cancha: u.nombre, precio: u.precio_venta || 0,
+    horas: libres, sena: n.sena_monto || 0,
+    alias: n.alias_pago, titular: n.titular_pago
+  });
+});
+
 module.exports = router;
