@@ -626,8 +626,12 @@ async function cargar() {
 }
 
 function categorias() {
+  // las unidades no llevan categoria
+  const conCat = datos.productos.filter(function (p) { return !p.es_unidad; });
+  if (conCat.length === 0) return [];
+
   const cs = [];
-  datos.productos.forEach(function (p) {
+  conCat.forEach(function (p) {
     const c = p.categoria || 'Otros';
     if (cs.indexOf(c) < 0) cs.push(c);
   });
