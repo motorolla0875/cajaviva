@@ -660,7 +660,8 @@ function pintar() {
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
       (!p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0
         ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
-      '<div class="p">' + plata(variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta) +
+      '<div class="p">' + plata(p.es_unidad && p.precio_hoy ? p.precio_hoy
+        : (variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta)) +
         (p.es_unidad ? ' por ' + (p.cobro_por || 'noche') : (p.unidad !== 'unidad' ? ' /' + p.unidad : '')) + '</div>' +
       (p.es_unidad && p.capacidad ? '<div class="desc-prod">Hasta ' + p.capacidad + ' personas</div>' : '') +
       (p.tiene_variantes ? '<span class="badge-var">' +
@@ -1317,21 +1318,23 @@ async function buscarDisponibles() {
       return;
     }
 
+    const fmtF = function (f) {
+      const x = new Date(f + 'T12:00:00');
+      return x.getDate() + '/' + (x.getMonth() + 1);
+    };
+
     cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">' +
-      d.noches + (d.noches === 1 ? ' noche' : ' noches') +
-      (unidadFija ? ' - disponible' : ' - elegi cual queres') + '</div>' +
+      'Del ' + fmtF(d.desde) + ' al ' + fmtF(d.hasta) + ' - ' +
+      d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div>' +
       lista.map(function (u) {
         return '<button class="unid-op" onclick="elegirUnidad(\'' + u.id + '\', this)">' +
           (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
           '<span class="nu">' + esc(u.nombre) +
           (u.capacidad ? '<small>hasta ' + u.capacidad + ' personas</small>' : '') + '</span>' +
-          '<span class="pu">' +
-          (u.hay_recargo
-            ? '<small style="display:block;font-size:11px;color:var(--muted);text-decoration:line-through;font-weight:400;">' +
-              plata(u.total_base) + '</small>' + plata(u.total_real) +
-              '<small style="display:block;font-size:10px;font-weight:400;">' +
-              esc((u.motivos || []).join(', ')) + '</small>'
-            : plata(u.total_real != null ? u.total_real : u.precio_venta * d.noches)) +
+          '<span class="pu">' + plata(u.total_real != null ? u.total_real : u.precio_venta * d.noches) +
+          (u.ahorro > 0
+            ? '<small style="display:block;font-size:10.5px;font-weight:500;color:var(--accent);">' +
+              u.ahorro + '% menos</small>' : '') +
           '</span></button>';
       }).join('');
 
@@ -1428,7 +1431,7 @@ function abrirFicha(p) {
   unidadFicha = p;
   document.getElementById('fichaNombre').textContent = p.nombre;
   document.getElementById('fichaPrecio').textContent =
-    plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche');
+    plata(p.precio_hoy || p.precio_venta) + ' por ' + (p.cobro_por || 'noche');
   document.getElementById('fichaCap').textContent =
     (p.capacidad ? 'Hasta ' + p.capacidad + ' personas' : '') +
     (p.notas ? (p.capacidad ? ' - ' : '') + p.notas : '');

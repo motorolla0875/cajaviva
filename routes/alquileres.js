@@ -434,6 +434,16 @@ router.get('/publico/:slug/libres', (req, res) => {
 
     if (hayFinde) motivos.push('fin de semana');
     u.motivos = motivos;
+
+    // comparar con el precio de hoy: si sale menos, es un ahorro
+    const hoyCalc = calcularTotal(n.user_id, u.precio_venta || 0,
+      new Date().toISOString().slice(0, 10),
+      new Date(Date.now() + 86400000).toISOString().slice(0, 10));
+    const porNocheHoy = hoyCalc.total;
+    const porNocheAhora = calc.total / nn;
+
+    u.ahorro = porNocheAhora < porNocheHoy
+      ? Math.round((1 - porNocheAhora / porNocheHoy) * 100) : 0;
   });
 
   res.json({
