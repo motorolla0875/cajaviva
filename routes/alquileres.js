@@ -117,6 +117,14 @@ function noches(desde, hasta) {
   return Math.max(1, Math.round((h - d) / 86400000));
 }
 
+// horas entre dos horarios del mismo dia
+function horasEntre(he, hs) {
+  if (!he || !hs) return 1;
+  const a = he.split(':'), b = hs.split(':');
+  const min = (parseInt(b[0]) * 60 + parseInt(b[1] || 0)) - (parseInt(a[0]) * 60 + parseInt(a[1] || 0));
+  return min > 0 ? min / 60 : 1;
+}
+
 // ── unidades disponibles en un rango ──
 router.get('/disponibles', (req, res) => {
   const desde = req.query.desde || hoyISO();
@@ -238,7 +246,10 @@ router.post('/', (req, res) => {
   if (!unidadId) return res.status(400).json({ error: 'Elegi que se alquila.' });
   if (!clienteNombre || !clienteNombre.trim()) return res.status(400).json({ error: 'Poné el nombre.' });
   if (!desde || !hasta) return res.status(400).json({ error: 'Poné las fechas.' });
-  if (hasta <= desde) return res.status(400).json({ error: 'La salida tiene que ser despues de la entrada.' });
+  if (hasta < desde) return res.status(400).json({ error: 'La salida no puede ser antes de la entrada.' });
+  if (hasta === desde && !req.body?.horaEntrada) {
+    return res.status(400).json({ error: 'Para el mismo dia poné los horarios.' });
+  }
 
   const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(unidadId, req.userId);
   if (!u) return res.status(404).json({ error: 'Unidad no encontrada.' });
@@ -258,9 +269,16 @@ router.post('/', (req, res) => {
   }
 
   const pn = parseFloat(req.body?.precioNoche) || u.precio_venta || 0;
-  const n = noches(desde, hasta);
-  const calc = calcularTotal(req.userId, pn, desde, hasta);
-  const total = req.body?.precioNoche != null ? pn * n : calc.total;
+  let total;
+
+  if (hasta === desde) {
+    // alquiler por hora dentro del mismo dia
+    total = Math.round(pn * horasEntre(req.body?.horaEntrada, req.body?.horaSalida));
+  } else {
+    const n = noches(desde, hasta);
+    const calc = calcularTotal(req.userId, pn, desde, hasta);
+    total = req.body?.precioNoche != null ? pn * n : calc.total;
+  }
   const id = uuidv4();
 
   db.prepare(`
@@ -285,7 +303,11 @@ router.put('/:id', (req, res) => {
   const desde = req.body?.desde || r.desde;
   const hasta = req.body?.hasta || r.hasta;
   const pn = req.body?.precioNoche != null ? parseFloat(req.body.precioNoche) : r.precio_noche;
-  const total = pn * noches(desde, hasta);
+  const he = req.body?.horaEntrada !== undefined ? req.body.horaEntrada : r.hora_entrada;
+  const hs = req.body?.horaSalida !== undefined ? req.body.horaSalida : r.hora_salida;
+  const total = hasta === desde
+    ? Math.round(pn * horasEntre(he, hs))
+    : pn * noches(desde, hasta);
 
   db.prepare(`
     UPDATE reservas SET cliente_nombre = ?, telefono = ?, desde = ?, hasta = ?,
@@ -508,7 +530,10 @@ router.post('/publico/:slug', (req, res) => {
   const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
   if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
-  if (hasta <= desde) return res.status(400).json({ error: 'La salida tiene que ser despues de la entrada.' });
+  if (hasta < desde) return res.status(400).json({ error: 'La salida no puede ser antes de la entrada.' });
+  if (hasta === desde && !req.body?.horaEntrada) {
+    return res.status(400).json({ error: 'Para el mismo dia poné los horarios.' });
+  }
 
   const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
     .get(unidadId, n.user_id);
@@ -583,7 +608,10 @@ router.post('/publico/:slug', (req, res) => {
   const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
   if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
-  if (hasta <= desde) return res.status(400).json({ error: 'La salida tiene que ser despues de la entrada.' });
+  if (hasta < desde) return res.status(400).json({ error: 'La salida no puede ser antes de la entrada.' });
+  if (hasta === desde && !req.body?.horaEntrada) {
+    return res.status(400).json({ error: 'Para el mismo dia poné los horarios.' });
+  }
 
   const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
     .get(unidadId, n.user_id);
