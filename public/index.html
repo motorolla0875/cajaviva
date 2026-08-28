@@ -3721,7 +3721,7 @@ async function cargarResumen() {
 
 function pintarGrilla() {
   const t = norm($('buscar').value.trim());
-  let lista = productos.filter(function (p) { return !p.es_insumo; });
+  let lista = productos.filter(function (p) { return !p.es_insumo && !p.es_unidad; });
   if (catFiltro) lista = lista.filter(function (p) { return p.categoria_id === catFiltro; });
   if (t) lista = lista.filter(function (p) {
     return norm(p.nombre).indexOf(t) >= 0 || (p.codigo_barras || '').indexOf(t) >= 0;
