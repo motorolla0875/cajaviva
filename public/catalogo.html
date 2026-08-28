@@ -115,6 +115,24 @@
     .btn-turno { width: 36px; height: 36px; font-size: 16px; }
   }
 
+  #fichaGaleria img {
+    width: 100%; max-height: 300px; object-fit: cover; display: block;
+  }
+  .gal-scroll {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .gal-scroll::-webkit-scrollbar { display: none; }
+  .gal-scroll img { min-width: 100%; scroll-snap-align: center; }
+  .gal-puntos {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    display: flex; gap: 6px; justify-content: center;
+  }
+  .gal-puntos i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,.6);
+  }
+
   .fila-alq { display: flex; gap: 10px; }
   .lbl-alq {
     display: block; font-size: 12.5px; color: var(--muted);
@@ -289,6 +307,18 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px;">Elegi el talle o color que queres</p>
     <div id="opcionesVarCat"></div>
 
+  </div>
+</div>
+
+<div id="fichaUnidad" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:70; overflow-y:auto;">
+  <div id="fichaGaleria" style="position:relative;"></div>
+  <div style="max-width:640px; margin:0 auto; padding:18px;">
+    <h2 id="fichaNombre" style="margin:0 0 4px; font-size:22px; font-weight:500;"></h2>
+    <div id="fichaPrecio" style="font-size:19px; font-weight:500; color:var(--accent); margin-bottom:4px;"></div>
+    <div id="fichaCap" style="font-size:13.5px; color:var(--muted); margin-bottom:16px;"></div>
+    <div id="fichaDesc" style="font-size:14.5px; line-height:1.6; white-space:pre-line; margin-bottom:20px;"></div>
+    <button id="btnVerDisp" style="width:100%; padding:15px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Ver disponibilidad</button>
+    <button onclick="cerrarFicha()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Volver</button>
   </div>
 </div>
 
@@ -1168,6 +1198,11 @@ let datosAlq = null;
 let reservaCreada = null;
 
 function consultarUnidad(p) {
+  // si tiene galeria o descripcion, primero la ficha
+  const tieneFicha = (p.galeria && p.galeria.length > 0) || p.descripcion_larga;
+  if (tieneFicha && !saltarFicha) { abrirFicha(p); return; }
+  saltarFicha = false;
+
   unidadElegida = null;
   document.getElementById('tituloAlq').textContent = p.nombre;
   document.getElementById('subAlq').textContent =
@@ -1328,6 +1363,47 @@ document.getElementById('btnReservarAlq').onclick = async function () {
     buscarDisponibles();
   }
   btn.disabled = false; btn.textContent = 'Reservar';
+};
+
+
+let saltarFicha = false;
+let unidadFicha = null;
+
+function abrirFicha(p) {
+  unidadFicha = p;
+  document.getElementById('fichaNombre').textContent = p.nombre;
+  document.getElementById('fichaPrecio').textContent =
+    plata(p.precio_venta) + ' por ' + (p.cobro_por || 'noche');
+  document.getElementById('fichaCap').textContent =
+    (p.capacidad ? 'Hasta ' + p.capacidad + ' personas' : '') +
+    (p.notas ? (p.capacidad ? ' - ' : '') + p.notas : '');
+  document.getElementById('fichaDesc').textContent = p.descripcion_larga || '';
+
+  const fotos = (p.galeria && p.galeria.length > 0)
+    ? p.galeria
+    : (p.foto_grande || p.foto ? [p.foto_grande || p.foto] : []);
+
+  document.getElementById('fichaGaleria').innerHTML = fotos.length === 0 ? '' :
+    '<div class="gal-scroll">' + fotos.map(function (u) {
+      return '<img src="' + u + '">';
+    }).join('') + '</div>' +
+    (fotos.length > 1
+      ? '<div class="gal-puntos">' + fotos.map(function () { return '<i></i>'; }).join('') + '</div>'
+      : '');
+
+  document.getElementById('fichaUnidad').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function cerrarFicha() {
+  document.getElementById('fichaUnidad').style.display = 'none';
+}
+
+document.getElementById('btnVerDisp').onclick = function () {
+  if (!unidadFicha) return;
+  saltarFicha = true;
+  cerrarFicha();
+  consultarUnidad(unidadFicha);
 };
 
 </script>

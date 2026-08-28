@@ -100,6 +100,17 @@ router.get('/publico/:slug', (req, res) => {
     ORDER BY c.nombre, p.nombre
   `).all(n.user_id);
 
+  // las unidades llevan su galeria y descripcion larga
+  productos.forEach(function (p) {
+    if (!p.es_unidad) return;
+    try {
+      p.galeria = db.prepare('SELECT url FROM galeria WHERE producto_id = ? ORDER BY orden').all(p.id)
+        .map(function (f) { return f.url; });
+    } catch (e) { p.galeria = []; }
+    const d = db.prepare('SELECT descripcion_larga FROM productos WHERE id = ?').get(p.id);
+    p.descripcion_larga = d ? d.descripcion_larga : null;
+  });
+
   // sumarle las combinaciones a los que tienen
   productos.forEach(function (p) {
     if (!p.tiene_variantes) return;
