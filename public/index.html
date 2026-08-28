@@ -4084,6 +4084,37 @@ function abrirProd(id) {
   $('pMinimo').value = p ? p.stock_minimo : '';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   fotoPendiente = null;
+  esUnidadActual = !!(p && p.es_unidad);
+  if (esUnidadActual) {
+    setTimeout(function () {
+      $('wrapUnidadAlq').style.display = 'block';
+      $('pCobroPor').value = p.cobro_por || 'noche';
+      $('pCapacidad').value = p.capacidad || '';
+      $('wrapBarras').style.display = 'none';
+      $('wrapMinimo').style.display = 'none';
+      $('wrapUnidad').style.display = 'none';
+      $('wrapStockIni').style.display = 'none';
+      $('wrapCostoProd').style.display = 'none';
+      $('hintMargen').style.display = 'none';
+      $('wrapCategoria').style.display = 'none';
+      $('wrapEsInsumo').style.display = 'none';
+      $('wrapRecetaProd').style.display = 'none';
+      $('tituloProd').textContent = 'Editar unidad';
+      $('btnBorrarProd').textContent = 'Eliminar unidad';
+
+      const bmo = document.getElementById('btnMasOpciones');
+      const mo = document.getElementById('masOpciones');
+      if (bmo) bmo.style.display = 'none';
+      if (mo) mo.style.display = 'none';
+
+      const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
+        .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+      if (lv) lv.textContent = 'Precio por noche';
+    }, 0);
+  } else {
+    $('wrapUnidadAlq').style.display = 'none';
+    $('btnBorrarProd').textContent = 'Eliminar producto';
+  }
   const mo = document.getElementById('masOpciones');
   if (mo) {
     mo.style.display = 'none';
