@@ -2478,6 +2478,22 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCancha">
+  <div class="modal">
+    <h3 id="tituloCancha"></h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subCancha"></p>
+    <div id="msgCancha"></div>
+
+    <div id="detalleCancha"></div>
+
+    <button class="btn-ppal" id="btnCobrarCancha">Cobrar y cerrar</button>
+    <button class="btn-sec" id="btnConsumosCancha">Agregar consumos</button>
+    <button class="btn-sec" id="btnEditarCancha">Editar</button>
+    <button class="btn-del" id="btnCancelarCancha">Cancelar el turno</button>
+    <button class="btn-sec" id="btnCerrarCancha">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalReserva">
   <div class="modal">
     <h3 id="tituloReserva">Nueva reserva</h3>
@@ -8738,7 +8754,13 @@ async function abrirExtras(id, nombre) {
 
 $('btnCerrarExtras').onclick = async function () {
   $('modalExtras').classList.remove('on');
-  await cargarReservas();
+  const v = document.querySelector('.vista.on');
+  if (v && v.id === 'v-canchas') {
+    await cargarGrillaCanchas();
+    if (turnoCanchaId) verTurnoCancha(turnoCanchaId);
+  } else {
+    await cargarReservas();
+  }
 };
 
 async function cargarExtras() {
@@ -9097,9 +9119,90 @@ function reservarCancha(unidadId, hora, precio) {
   calcularTotalReserva();
 }
 
+
+
+/* ══ Ver y cobrar un turno de cancha ══ */
+
+let turnoCanchaId = null;
+
 async function verTurnoCancha(id) {
-  await abrirReserva(id);
+  turnoCanchaId = id;
+  $('msgCancha').innerHTML = '';
+  $('detalleCancha').innerHTML = '<div class="vacio">Cargando...</div>';
+  $('modalCancha').classList.add('on');
+
+  try {
+    const d = await api('GET', '/alquileres/grilla?dia=' + diaActualCancha());
+    const r = d.reservas.filter(function (x) { return x.id === id; })[0];
+    if (!r) { $('detalleCancha').innerHTML = '<div class="vacio">No se encontro.</div>'; return; }
+
+    const c = d.canchas.filter(function (x) { return x.id === r.unidad_id; })[0];
+
+    $('tituloCancha').textContent = r.cliente_nombre;
+    $('subCancha').textContent = (c ? c.nombre + ' - ' : '') +
+      (r.hora_entrada || '') + ' a ' + (r.hora_salida || '');
+
+    const ex = await api('GET', '/alquileres/' + id + '/extras');
+
+    $('detalleCancha').innerHTML =
+      '<div class="cierre-linea"><span>El turno</span><b>' + plata(ex.totalEstadia) + '</b></div>' +
+      (ex.items.length > 0
+        ? ex.items.map(function (e) {
+            return '<div class="cierre-linea"><span>' + esc(e.nombre) + ' x' + fmtCant(e.cantidad) +
+              '</span><b>' + plata(e.cantidad * e.precio_unitario) + '</b></div>';
+          }).join('')
+        : '') +
+      (ex.pagado > 0
+        ? '<div class="cierre-linea"><span>Ya pago</span><b>-' + plata(ex.pagado) + '</b></div>'
+        : '') +
+      '<div class="cierre-linea total"><span>A cobrar</span><b>' +
+      plata(Math.max(0, ex.totalGeneral - ex.pagado)) + '</b></div>' +
+      (r.telefono ? '<p class="hint">Tel: ' + esc(r.telefono) + '</p>' : '');
+
+    $('btnCobrarCancha').style.display = r.estado === 'terminada' ? 'none' : 'block';
+    $('btnCancelarCancha').style.display = r.estado === 'terminada' ? 'none' : 'block';
+  } catch (e) {
+    $('detalleCancha').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
 }
+
+$('btnCerrarCancha').onclick = function () { $('modalCancha').classList.remove('on'); };
+
+$('btnCobrarCancha').onclick = async function () {
+  if (!confirm('Cobrar y cerrar este turno?')) return;
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Cobrando...';
+  try {
+    const r = await api('POST', '/alquileres/' + turnoCanchaId + '/cobrar', { fecha: hoyISO() });
+    $('modalCancha').classList.remove('on');
+    await cargarGrillaCanchas();
+    await cargarResumen();
+    avisar(r.total > 0 ? 'Cobrado ' + plata(r.total) : 'Ya estaba pagado');
+  } catch (e) {
+    $('msgCancha').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Cobrar y cerrar';
+};
+
+$('btnConsumosCancha').onclick = function () {
+  $('modalCancha').classList.remove('on');
+  abrirExtras(turnoCanchaId, $('tituloCancha').textContent);
+};
+
+$('btnEditarCancha').onclick = function () {
+  $('modalCancha').classList.remove('on');
+  abrirReserva(turnoCanchaId);
+};
+
+$('btnCancelarCancha').onclick = async function () {
+  if (!confirm('Cancelar este turno? La cancha queda libre.')) return;
+  try {
+    await api('PUT', '/alquileres/' + turnoCanchaId, { estado: 'cancelada' });
+    $('modalCancha').classList.remove('on');
+    await cargarGrillaCanchas();
+    avisar('Turno cancelado');
+  } catch (e) { avisar(e.message, true); }
+};
 
 /* ══ Reservas de alquiler ══ */
 
