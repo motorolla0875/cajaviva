@@ -10273,6 +10273,17 @@ function aplicarEjemplos(esUnidad) {
   const d = document.getElementById('pNotas');
   if (!n) return;
 
+  // los rubros de alquiler venden cosas genericas aparte de sus unidades
+  const rubrosAlq = ['cabanas','hotel','salon','vehiculos','equipos','eventos',
+                     'padel','futbol5','tenis','salas','canchas_alq'];
+  const esAlq = negocio && rubrosAlq.indexOf(negocio.rubro) >= 0;
+
+  if (!esUnidad && esAlq) {
+    n.placeholder = 'Ej: Gaseosa 500ml';
+    if (d) d.placeholder = 'Detalles que quieras aclarar';
+    return;
+  }
+
   const nom = ejemploDe('nombre');
   const des = ejemploDe('desc');
 
