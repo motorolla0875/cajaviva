@@ -8789,7 +8789,8 @@ async function pintarTemporadas() {
       '<input type="text" id="recFinde" inputmode="decimal" value="' + (d.recargoFinde || '') + '" ' +
       'placeholder="0" style="width:60px;text-align:right;padding:8px;">' +
       '<span style="color:var(--muted);">%</span>' +
-      '<button class="btn-mini" onclick="guardarFinde()">OK</button></div></div>';
+      '<button class="btn-mini" onclick="guardarFinde()">OK</button>' +
+      '<button class="btn-mini" onclick="sacarFinde()" title="Quitar">&#10005;</button></div></div>';
 
     html += '<div class="seccion">Temporadas</div>';
 
@@ -8854,6 +8855,14 @@ async function borrarTemporada(id) {
   try {
     await api('DELETE', '/alquileres/temporadas/' + id);
     await pintarTemporadas();
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function sacarFinde() {
+  try {
+    await api('PUT', '/alquileres/temporadas/finde', { recargo: 0 });
+    await pintarTemporadas();
+    avisar('Recargo de fin de semana quitado');
   } catch (e) { avisar(e.message, true); }
 }
 
