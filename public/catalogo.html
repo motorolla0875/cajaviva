@@ -607,9 +607,12 @@ function pintar() {
     const c = Object.keys(pedido).reduce(function (a, k) {
       return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
     }, 0);
+    const abre = p.es_unidad ? ' onclick="cambiar(\'' + p.id + '\',1)" style="cursor:pointer;"' : '';
+
     return '<div class="prod">' +
-      (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy" onclick="verFoto(\'' + (p.foto_grande || p.foto) + '\')">' : '') +
-      '<div class="info">' +
+      (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy"' +
+        (p.es_unidad ? abre : ' onclick="verFoto(\'' + (p.foto_grande || p.foto) + '\')"') + '>' : '') +
+      '<div class="info"' + abre + '>' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
       (!p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0
