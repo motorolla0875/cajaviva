@@ -192,6 +192,11 @@
   .unid-op .nu small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
   .unid-op .pu { font-size: 15px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
 
+  .hora-btn.tomada {
+    text-decoration: line-through; opacity: .4;
+    cursor: not-allowed; background: var(--panel-2);
+  }
+
   .hora-btn {
     display: inline-block; padding: 10px 14px; margin: 0 6px 6px 0;
     border: 1px solid var(--line); border-radius: 10px;
@@ -1184,8 +1189,14 @@ async function buscarHoras() {
       return;
     }
 
-    cont.innerHTML = d.horas.map(function (h) {
-      return '<button class="hora-btn" onclick="elegirHora(\'' + h + '\', this)">' + h + '</button>';
+    const lista = d.todas && d.todas.length > 0
+      ? d.todas
+      : (d.horas || []).map(function (h) { return { hora: h, libre: true }; });
+
+    cont.innerHTML = lista.map(function (x) {
+      return x.libre
+        ? '<button class="hora-btn" onclick="elegirHora(\'' + x.hora + '\', this)">' + x.hora + '</button>'
+        : '<button class="hora-btn tomada" disabled>' + x.hora + '</button>';
     }).join('');
 
     senaMonto = d.sena || 0;

@@ -260,18 +260,26 @@ router.get('/publico/:slug/libres', (req, res) => {
   const minAhora = (db.minutosAhoraEn ? db.minutosAhoraEn(n.user_id) : 0) + 30;
 
   const horas = [];
+  const todas = [];
+
   rangos.forEach(function (r) {
     for (let m = r[0]; m + duracion <= r[1]; m += 15) {
       if (esHoy && m < minAhora) continue;
+      const h = aHora(m);
+      if (todas.some(function (x) { return x.hora === h; })) continue;
+
       const choca = ocupados.some(function (o) {
-        const d = minutos(o.hora), h = d + o.duracion;
-        return m < h && (m + duracion) > d;
+        const d = minutos(o.hora), f = d + o.duracion;
+        return m < f && (m + duracion) > d;
       });
-      if (!choca && horas.indexOf(aHora(m)) < 0) horas.push(aHora(m));
+
+      todas.push({ hora: h, libre: !choca });
+      if (!choca) horas.push(h);
     }
   });
 
-  res.json({ activo: true, abierto: true, horas: horas, desde: cfg.desde, hasta: cfg.hasta,
+  res.json({ activo: true, abierto: true, horas: horas, todas: todas,
+             desde: cfg.desde, hasta: cfg.hasta,
              sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });
 });
 
