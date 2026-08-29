@@ -10447,6 +10447,10 @@ document.getElementById('btnNuevoServicio').onclick = function () {
   porHoraActual = false;
   $('swPorHora').classList.remove('on');
 
+  const lvs = [].slice.call(document.querySelectorAll('#modalProd label'))
+    .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+  if (lvs) lvs.textContent = 'Precio del servicio';
+
   const bmo = document.getElementById('btnMasOpciones');
   const mo = document.getElementById('masOpciones');
   if (bmo) bmo.style.display = 'none';
