@@ -191,7 +191,7 @@ router.post('/:id/cobrar', (req, res) => {
   const ventaId = uuidv4();
   const medio = req.body?.medioPago || 'efectivo';
   // si ya pago la seña, se cobra solo el saldo
-  const yaPago = (t.sena_estado === 'enviado' || t.sena_estado === 'confirmado') ? (t.sena || 0) : 0;
+  const yaPago = (t.sena_estado === 'enviado' || t.sena_estado === 'confirmada') ? (t.sena || 0) : 0;
   const totalCompleto = req.body?.total != null ? parseFloat(req.body.total) : t.precio;
   const total = Math.max(0, totalCompleto - yaPago);
 
