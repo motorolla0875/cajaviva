@@ -1595,6 +1595,24 @@
           <input type="time" id="horaHasta" value="19:00">
         </div>
       </div>
+
+      <button type="button" id="btnTurnoPartido"
+        style="width:100%; padding:11px; margin-top:12px; border:1px dashed var(--line); border-radius:10px; background:none; color:var(--accent-dark); font-size:13.5px; font-weight:500;">
+        Cierro al mediodia</button>
+
+      <div id="segundoTurno" style="display:none;">
+        <p style="font-size:12px; color:var(--muted); margin:12px 0 6px; text-align:left;">Segundo turno</p>
+        <div class="fila2">
+          <div>
+            <label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:500;">Desde</label>
+            <input type="time" id="horaDesde2" value="16:00">
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:500;">Hasta</label>
+            <input type="time" id="horaHasta2" value="20:00">
+          </div>
+        </div>
+      </div>
     </div>
 
     <button class="btn-seguir" id="btnEmpezar" disabled>Empezar</button>
@@ -3711,6 +3729,18 @@ $('btnEmpezar').onclick = async function () {
 
     if (RUBROS_TURNOS.indexOf(rubroElegido) >= 0) {
       try {
+        if (turnoPartidoInicio) {
+          try {
+            await api('PUT', '/alquileres/horarios', {
+              desde: $('horaDesde').value,
+              hasta: $('horaHasta').value,
+              partido: true,
+              desde2: $('horaDesde2').value,
+              hasta2: $('horaHasta2').value
+            });
+          } catch (e) {}
+        }
+
         await api('PUT', '/turnos/horarios', {
           horarios: {
             dias: diasAbiertos,
@@ -10646,6 +10676,19 @@ let agendaPropiaActual = false;
 document.getElementById('swAgendaPropia').onclick = function () {
   agendaPropiaActual = !agendaPropiaActual;
   this.classList.toggle('on', agendaPropiaActual);
+};
+
+let turnoPartidoInicio = false;
+
+document.getElementById('btnTurnoPartido').onclick = function () {
+  turnoPartidoInicio = !turnoPartidoInicio;
+  document.getElementById('segundoTurno').style.display = turnoPartidoInicio ? 'block' : 'none';
+  this.textContent = turnoPartidoInicio ? 'Atiendo todo el dia' : 'Cierro al mediodia';
+  if (turnoPartidoInicio) {
+    document.getElementById('horaHasta').value = '13:00';
+  } else {
+    document.getElementById('horaHasta').value = '19:00';
+  }
 };
 
 /* ══ Vuelto ══ */
