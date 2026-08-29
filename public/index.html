@@ -2476,6 +2476,16 @@
           <div><label>Hasta</label><input type="time" id="catHasta" value="19:00"></div>
         </div>
 
+        <button type="button" id="btnPartidoCat" class="mas-op" style="margin-top:4px;">Cierro al mediodia</button>
+
+        <div id="segundoTurnoCat" style="display:none;">
+          <p class="hint" style="margin:4px 0 6px;">Segundo turno</p>
+          <div class="fila2">
+            <div><label>Desde</label><input type="time" id="catDesde2" value="16:00"></div>
+            <div><label>Hasta</label><input type="time" id="catHasta2" value="20:00"></div>
+          </div>
+        </div>
+
         <label>Seña para reservar (opcional)</label>
         <input type="text" id="catSena" inputmode="decimal" placeholder="0">
         <p class="hint">Si ponés un monto, el cliente tiene que transferir y mandarte el comprobante. Evita turnos falsos.</p>
@@ -8373,6 +8383,12 @@ async function cargarTurnosWeb() {
     const d = await api('GET', '/turnos/horarios');
     turnosWebOn = !!d.turnosWeb;
     if (d.horarios) {
+      partidoCat = !!d.horarios.partido;
+      document.getElementById('segundoTurnoCat').style.display = partidoCat ? 'block' : 'none';
+      document.getElementById('btnPartidoCat').textContent = partidoCat ? 'Atiendo todo el dia' : 'Cierro al mediodia';
+      if (d.horarios.desde2) $('catDesde2').value = d.horarios.desde2;
+      if (d.horarios.hasta2) $('catHasta2').value = d.horarios.hasta2;
+
       diasCat = d.horarios.dias || diasCat;
       $('catDesde').value = d.horarios.desde || '09:00';
       $('catHasta').value = d.horarios.hasta || '19:00';
@@ -10680,6 +10696,14 @@ document.getElementById('btnTurnoPartido').onclick = function () {
   } else {
     document.getElementById('horaHasta').value = '19:00';
   }
+};
+
+let partidoCat = false;
+
+document.getElementById('btnPartidoCat').onclick = function () {
+  partidoCat = !partidoCat;
+  document.getElementById('segundoTurnoCat').style.display = partidoCat ? 'block' : 'none';
+  this.textContent = partidoCat ? 'Atiendo todo el dia' : 'Cierro al mediodia';
 };
 
 /* ══ Vuelto ══ */
