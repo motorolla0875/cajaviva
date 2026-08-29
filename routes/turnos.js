@@ -243,12 +243,16 @@ router.get('/publico/:slug/libres', (req, res) => {
     rangos.push([minutos(cfg.desde2), minutos(cfg.hasta2)]);
   }
 
+  // bloquean los que comparten agenda, y ademas los del mismo servicio
+  const servId = req.query.servicio || null;
+
   const ocupados = db.prepare(`
     SELECT t.hora, t.duracion FROM turnos t
     LEFT JOIN productos p ON p.id = t.producto_id
-    WHERE t.user_id = ? AND t.fecha = ? AND (t.estado IN ('reservado','atendido') OR (t.estado = 'pendiente' AND t.created_at > datetime('now','-1 day')))
-      AND COALESCE(p.agenda_propia, 0) = 0
-  `).all(n.user_id, fecha);
+    WHERE t.user_id = ? AND t.fecha = ?
+      AND (t.estado IN ('reservado','atendido') OR (t.estado = 'pendiente' AND t.created_at > datetime('now','-1 day')))
+      AND (COALESCE(p.agenda_propia, 0) = 0 OR t.producto_id = ?)
+  `).all(n.user_id, fecha, servId);
 
   // si es hoy, no ofrecer horas pasadas
   const hoyNeg = db.hoyEn ? db.hoyEn(n.user_id) : new Date().toISOString().slice(0, 10);

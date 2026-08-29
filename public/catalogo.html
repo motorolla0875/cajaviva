@@ -1167,7 +1167,8 @@ async function buscarHoras() {
   try {
     const dur = servicioTurno.duracion || 30;
     const r = await fetch('/api/turnos/publico/' + slug + '/libres?fecha=' +
-      document.getElementById('twFecha').value + '&duracion=' + dur);
+      document.getElementById('twFecha').value + '&duracion=' + dur +
+      '&servicio=' + servicioTurno.id);
     const d = await r.json();
 
     if (!d.activo) {
