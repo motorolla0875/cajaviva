@@ -3037,6 +3037,9 @@ let periodo = 'hoy';
 let filtroProd = 'todos';
 
 function filtroInicial() {
+  if (cap('cap_turnos') && filtroProd === 'todos') {
+    if (productos.some(function (p) { return p.es_servicio; })) { filtroProd = 'servicios'; return; }
+  }
   if ((cap('cap_alquiler') || cap('cap_canchas')) && filtroProd === 'todos') {
     if (productos.some(function (p) { return p.es_unidad; })) { filtroProd = 'unidades'; return; }
   }
@@ -5749,6 +5752,18 @@ function pintarFiltrosProd() {
       html += '<button class="' + (filtroProd === 'insumos' ? 'on' : '') + '" onclick="filtrarProductos(\'insumos\')">Insumos (' + nInsumos + ')</button>';
     }
     html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
+  } else if (cap('cap_turnos')) {
+    const nServ = productos.filter(function (p) { return p.es_servicio; }).length;
+    const nProdT = productos.filter(function (p) { return !p.es_servicio; }).length;
+
+    if (nServ > 0 && nProdT > 0) {
+      html += '<button class="' + (filtroProd === 'servicios' ? 'on' : '') + '" onclick="filtrarProductos(\'servicios\')">Servicios (' + nServ + ')</button>';
+      html += '<button class="' + (filtroProd === 'soloProd' ? 'on' : '') + '" onclick="filtrarProductos(\'soloProd\')">Productos (' + nProdT + ')</button>';
+      html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todo (' + productos.length + ')</button>';
+    } else {
+      html += '<button class="' + (filtroProd === 'todos' ? 'on' : '') + '" onclick="filtrarProductos(\'todos\')">Todos (' + productos.length + ')</button>';
+    }
+
   } else if (cap('cap_alquiler') || cap('cap_canchas')) {
     const nUnid = productos.filter(function (p) { return p.es_unidad; }).length;
     const nProd = productos.filter(function (p) { return !p.es_unidad; }).length;
@@ -5801,6 +5816,8 @@ function pasaFiltroProd(p) {
   if (filtroProd === 'todos') return true;
   if (filtroProd === 'insumos') return !!p.es_insumo;
   if (filtroProd === 'unidades') return !!p.es_unidad;
+  if (filtroProd === 'servicios') return !!p.es_servicio;
+  if (filtroProd === 'soloProd') return !p.es_servicio;
   if (filtroProd === 'paraVender') return !p.es_unidad;
   if (filtroProd === 'peso') return !!(p.unidad && p.unidad !== 'unidad');
   if (filtroProd === 'unidad') return !p.unidad || p.unidad === 'unidad';
