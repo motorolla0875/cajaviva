@@ -3729,21 +3729,12 @@ $('btnEmpezar').onclick = async function () {
 
     if (RUBROS_TURNOS.indexOf(rubroElegido) >= 0) {
       try {
-        if (turnoPartidoInicio) {
-          try {
-            await api('PUT', '/alquileres/horarios', {
-              desde: $('horaDesde').value,
-              hasta: $('horaHasta').value,
-              partido: true,
-              desde2: $('horaDesde2').value,
-              hasta2: $('horaHasta2').value
-            });
-          } catch (e) {}
-        }
-
         await api('PUT', '/turnos/horarios', {
           horarios: {
             dias: diasAbiertos,
+            partido: turnoPartidoInicio,
+            desde2: turnoPartidoInicio ? $('horaDesde2').value : null,
+            hasta2: turnoPartidoInicio ? $('horaHasta2').value : null,
             desde: $('horaDesde').value || '09:00',
             hasta: $('horaHasta').value || '19:00'
           },

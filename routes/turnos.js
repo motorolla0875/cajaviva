@@ -228,7 +228,7 @@ router.get('/publico/:slug/libres', (req, res) => {
   if (!n) return res.status(404).json({ error: 'No encontrado.' });
   if (!n.turnos_web) return res.json({ activo: false, horas: [] });
 
-  const fecha = req.query.fecha || hoyISO(req.userId);
+  const fecha = req.query.fecha || (db.hoyEn ? db.hoyEn(n.user_id) : new Date().toISOString().slice(0, 10));
   const duracion = parseInt(req.query.duracion) || 30;
 
   let cfg = {};
@@ -238,8 +238,10 @@ router.get('/publico/:slug/libres', (req, res) => {
   const diaSemana = String(new Date(fecha + 'T12:00:00').getDay());
   if (!dias[diaSemana]) return res.json({ activo: true, abierto: false, horas: [] });
 
-  const desde = minutos(cfg.desde || '09:00');
-  const hasta = minutos(cfg.hasta || '19:00');
+  const rangos = [[minutos(cfg.desde || '09:00'), minutos(cfg.hasta || '19:00')]];
+  if (cfg.partido && cfg.desde2 && cfg.hasta2) {
+    rangos.push([minutos(cfg.desde2), minutos(cfg.hasta2)]);
+  }
 
   const ocupados = db.prepare(`
     SELECT t.hora, t.duracion FROM turnos t
@@ -249,19 +251,21 @@ router.get('/publico/:slug/libres', (req, res) => {
   `).all(n.user_id, fecha);
 
   // si es hoy, no ofrecer horas pasadas
-  const ahora = new Date();
-  const esHoy = fecha === hoyISO(req.userId);
-  const minAhora = ahora.getHours() * 60 + ahora.getMinutes() + 30;
+  const hoyNeg = db.hoyEn ? db.hoyEn(n.user_id) : new Date().toISOString().slice(0, 10);
+  const esHoy = fecha === hoyNeg;
+  const minAhora = (db.minutosAhoraEn ? db.minutosAhoraEn(n.user_id) : 0) + 30;
 
   const horas = [];
-  for (let m = desde; m + duracion <= hasta; m += 15) {
-    if (esHoy && m < minAhora) continue;
-    const choca = ocupados.some(function (o) {
-      const d = minutos(o.hora), h = d + o.duracion;
-      return m < h && (m + duracion) > d;
-    });
-    if (!choca) horas.push(aHora(m));
-  }
+  rangos.forEach(function (r) {
+    for (let m = r[0]; m + duracion <= r[1]; m += 15) {
+      if (esHoy && m < minAhora) continue;
+      const choca = ocupados.some(function (o) {
+        const d = minutos(o.hora), h = d + o.duracion;
+        return m < h && (m + duracion) > d;
+      });
+      if (!choca && horas.indexOf(aHora(m)) < 0) horas.push(aHora(m));
+    }
+  });
 
   res.json({ activo: true, abierto: true, horas: horas, desde: cfg.desde, hasta: cfg.hasta,
              sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });
