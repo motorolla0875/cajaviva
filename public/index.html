@@ -3487,12 +3487,13 @@ function aplicarCapacidades() {
 
   const tp2 = document.getElementById('tabPedidos');
   if (tp2 && !tp2.querySelector('.contador')) {
-    tp2.textContent = (cap('cap_alquiler') || cap('cap_canchas')) ? 'Reservas web' : 'Pedidos';
+    tp2.textContent = (cap('cap_alquiler') || cap('cap_canchas')) ? 'Reservas web'
+      : cap('cap_turnos') ? 'Turnos web' : 'Pedidos';
   }
 
   const cl = document.getElementById('chipListos');
   const cc = document.getElementById('chipCancelados');
-  const conRes = cap('cap_alquiler') || cap('cap_canchas');
+  const conRes = cap('cap_alquiler') || cap('cap_canchas') || cap('cap_turnos');
   if (cl) cl.textContent = conRes ? 'Aceptadas' : 'Entregados';
   if (cc) cc.textContent = conRes ? 'Rechazadas' : 'Cancelados';
 
@@ -7128,7 +7129,8 @@ async function cargarPedidos() {
     const d = await api('GET', '/pedidos?estado=' + estadoPedidos);
     pedidosCargados = d.items;
 
-    const nRes = await cargarReservasWeb();
+    let nRes = await cargarReservasWeb();
+    if (cap('cap_turnos')) nRes += await cargarTurnosWebPend();
     pintarContadorPedidos(d.nuevos + nRes);
 
     if (d.items.length === 0) {
@@ -10084,6 +10086,72 @@ $('btnCancelarReserva').onclick = async function () {
     avisar('Reserva cancelada');
   } catch (e) { avisar(e.message, true); }
 };
+
+/* ══ Turnos pedidos por la web ══ */
+
+async function cargarTurnosWebPend() {
+  const cont = document.getElementById('reservasWeb');
+  if (!cont || !cap('cap_turnos')) return 0;
+
+  try {
+    const d = await api('GET', '/turnos/pendientes?estado=' + estadoPedidos);
+
+    if (d.items.length === 0) {
+      cont.innerHTML = '<div class="vacio">' + (estadoPedidos === 'pendientes'
+        ? 'No hay turnos nuevos por la web.<br>Cuando alguien pida uno desde tu catalogo, aparece aca.'
+        : estadoPedidos === 'listos' ? 'Todavia no aceptaste ninguno.'
+        : 'No rechazaste ninguno.') + '</div>';
+      return 0;
+    }
+
+    cont.innerHTML = d.items.map(function (x) {
+      const foto = x.foto_mini || x.foto_url;
+      const d0 = new Date(x.fecha + 'T12:00:00');
+      const hoy = new Date(hoyISO() + 'T12:00:00');
+      const dias = Math.round((d0 - hoy) / 86400000);
+
+      return '<div class="reserva' + (x.estado === 'pendiente' ? ' en_curso' : '') + '">' +
+        '<div class="cab">' +
+        (foto ? '<img class="foto-res" src="' + foto + '">' : '') +
+        '<div><div class="n">' + esc(x.cliente_nombre) + '</div>' +
+        '<div class="d">' + esc(x.servicio_nombre || x.servicio || '') + '</div>' +
+        '<div class="d">' + fechaCorta(x.fecha) + ' a las ' + x.hora +
+          (x.duracion ? ' - ' + (x.duracion >= 60 ? (x.duracion / 60) + 'h' : x.duracion + ' min') : '') + '</div>' +
+        (x.telefono ? '<div class="d">' + esc(x.telefono) + '</div>' : '') +
+        '<span class="cuando-res">' +
+          (dias === 0 ? 'Es hoy' : dias === 1 ? 'Es mañana'
+            : dias < 0 ? 'Ya paso' : 'En ' + dias + ' dias') + '</span>' +
+        (x.sena_estado === 'enviado'
+          ? '<span class="cuando-res">Pago la seña</span>'
+          : x.sena_estado === 'pendiente' ? '<span class="cuando-res" style="background:var(--warn-soft,#FDF3E3);color:var(--warn-text,#8A5A0F);">Sin seña</span>' : '') +
+        '</div><div class="m">' + plata(x.precio) + '</div></div>' +
+        (x.comprobante
+          ? '<div class="comp-box ok" style="margin-top:10px;">' +
+            '<img src="' + x.comprobante + '" onclick="verComprobante(this.src)">' +
+            '<div class="comp-txt"><div class="n">Comprobante recibido</div></div></div>'
+          : '') +
+        '<div class="acc">' +
+        (x.estado === 'pendiente'
+          ? '<button class="ppal" onclick="confirmarTurnoWeb(\'' + x.id + '\', true)">Aceptar</button>' +
+            (x.telefono ? '<button onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '') +
+            '<button onclick="confirmarTurnoWeb(\'' + x.id + '\', false)">Rechazar</button>'
+          : (x.telefono ? '<button class="ppal" onclick="llamarPedido(\'' + esc(x.telefono) + '\')">WhatsApp</button>' : '')) +
+        '</div></div>';
+    }).join('');
+
+    return d.cantidad;
+  } catch (e) { cont.innerHTML = ''; return 0; }
+}
+
+async function confirmarTurnoWeb(id, aceptar) {
+  if (!aceptar && !confirm('Rechazar este turno?')) return;
+  try {
+    await api('POST', '/turnos/' + id + '/confirmar', { aceptar: aceptar });
+    await cargarPedidos();
+    if (typeof cargarAgenda === 'function') await cargarAgenda();
+    avisar(aceptar ? 'Turno aceptado' : 'Turno rechazado');
+  } catch (e) { avisar(e.message, true); }
+}
 
 /* ══ Reservas pedidas por la web ══ */
 

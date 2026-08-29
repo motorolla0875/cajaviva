@@ -4,6 +4,8 @@ const db = require('../db');
 
 const router = express.Router();
 
+try { db.exec('ALTER TABLE turnos ADD COLUMN desde_web INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS turnos (
     id TEXT PRIMARY KEY,
@@ -131,7 +133,7 @@ router.post('/', (req, res) => {
   const desde = minutos(hora), hasta = desde + dur;
   const choques = db.prepare(`
     SELECT hora, duracion, cliente_nombre FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
+    WHERE user_id = ? AND fecha = ? AND estado IN ('reservado','atendido')
       AND IFNULL(empleado_id, '') = IFNULL(?, '')
   `).all(req.userId, fecha, empleadoId || null)
     .filter(function (t) {
@@ -241,7 +243,7 @@ router.get('/publico/:slug/libres', (req, res) => {
 
   const ocupados = db.prepare(`
     SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
+    WHERE user_id = ? AND fecha = ? AND estado IN ('reservado','atendido')
   `).all(n.user_id, fecha);
 
   // si es hoy, no ofrecer horas pasadas
@@ -282,7 +284,7 @@ router.post('/publico/:slug', (req, res) => {
 
   const choca = db.prepare(`
     SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado = 'reservado'
+    WHERE user_id = ? AND fecha = ? AND estado IN ('reservado','atendido')
   `).all(n.user_id, fecha).some(function (t) {
     const d = minutos(t.hora), h = d + t.duracion;
     return desde < h && hasta > d;
@@ -295,8 +297,8 @@ router.post('/publico/:slug', (req, res) => {
 
   db.prepare(`
     INSERT INTO turnos (id, user_id, cliente_nombre, telefono, producto_id,
-      servicio, fecha, hora, duracion, precio, estado, nota, sena_estado)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservado', ?, ?)
+      servicio, fecha, hora, duracion, precio, estado, nota, sena_estado, desde_web)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, 1)
   `).run(id, n.user_id, nombre.trim(), telefono || null, p.id,
          p.nombre, fecha, hora, dur, p.precio_venta,
          (nota ? nota + ' - ' : '') + 'Pedido por la web',
@@ -316,6 +318,36 @@ router.put('/:id/sena', (req, res) => {
     ? req.body.estado : 'confirmada';
 
   db.prepare('UPDATE turnos SET sena_estado = ? WHERE id = ?').run(estado, t.id);
+  res.json({ ok: true });
+});
+
+
+// ── turnos pedidos por la web, sin confirmar ──
+router.get('/pendientes', (req, res) => {
+  const estado = req.query.estado || 'pendientes';
+
+  const filas = db.prepare(`
+    SELECT t.*, p.nombre AS servicio_nombre, p.foto_mini, p.foto_url
+    FROM turnos t
+    LEFT JOIN productos p ON p.id = t.producto_id
+    WHERE t.user_id = ? AND t.desde_web = 1
+      AND t.estado IN (${estado === 'listos' ? "'reservado','atendido'"
+        : estado === 'cancelados' ? "'cancelado','no_vino'" : "'pendiente'"})
+    ORDER BY t.created_at DESC LIMIT 60
+  `).all(req.userId);
+
+  res.json({ items: filas, cantidad: estado === 'pendientes' ? filas.length : 0 });
+});
+
+router.post('/:id/confirmar', (req, res) => {
+  const t = db.prepare('SELECT * FROM turnos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!t) return res.status(404).json({ error: 'Turno no encontrado.' });
+
+  if (req.body?.aceptar) {
+    db.prepare("UPDATE turnos SET estado = 'reservado' WHERE id = ?").run(t.id);
+  } else {
+    db.prepare("UPDATE turnos SET estado = 'cancelado' WHERE id = ?").run(t.id);
+  }
   res.json({ ok: true });
 });
 
