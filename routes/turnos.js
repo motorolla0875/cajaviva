@@ -5,6 +5,7 @@ const db = require('../db');
 const router = express.Router();
 
 try { db.exec('ALTER TABLE turnos ADD COLUMN desde_web INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE turnos ADD COLUMN sena REAL NOT NULL DEFAULT 0'); } catch (e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS turnos (
@@ -189,7 +190,10 @@ router.post('/:id/cobrar', (req, res) => {
 
   const ventaId = uuidv4();
   const medio = req.body?.medioPago || 'efectivo';
-  const total = req.body?.total != null ? parseFloat(req.body.total) : t.precio;
+  // si ya pago la seña, se cobra solo el saldo
+  const yaPago = (t.sena_estado === 'enviado' || t.sena_estado === 'confirmado') ? (t.sena || 0) : 0;
+  const totalCompleto = req.body?.total != null ? parseFloat(req.body.total) : t.precio;
+  const total = Math.max(0, totalCompleto - yaPago);
 
   let costo = 0;
   if (t.producto_id) {
@@ -211,7 +215,7 @@ router.post('/:id/cobrar', (req, res) => {
 
   db.prepare("UPDATE turnos SET estado = 'atendido', venta_id = ? WHERE id = ?").run(ventaId, t.id);
 
-  res.json({ ventaId: ventaId, total: total });
+  res.json({ ventaId: ventaId, total: total, yaPago: yaPago });
 });
 
 // ── borrar ──
@@ -317,12 +321,13 @@ router.post('/publico/:slug', (req, res) => {
 
   db.prepare(`
     INSERT INTO turnos (id, user_id, cliente_nombre, telefono, producto_id,
-      servicio, fecha, hora, duracion, precio, estado, nota, sena_estado, desde_web)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, 1)
+      servicio, fecha, hora, duracion, precio, estado, nota, sena_estado, desde_web, sena)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, 1, ?)
   `).run(id, n.user_id, nombre.trim(), telefono || null, p.id,
          p.nombre, fecha, hora, dur, p.precio_venta,
          (nota ? nota + ' - ' : '') + 'Pedido por la web',
-         pideSena ? 'pendiente' : null);
+         pideSena ? 'pendiente' : null,
+         pideSena ? (n.sena_monto || 0) : 0);
 
   res.json({ id: id, servicio: p.nombre, fecha: fecha, hora: hora, precio: p.precio_venta,
              sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });

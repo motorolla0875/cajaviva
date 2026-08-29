@@ -8064,7 +8064,8 @@ function cobrarTurno(id) {
   if (!t) {
     $('detalleCobroTurno').innerHTML = '<div class="vacio">No se encontro el turno.</div>';
   } else {
-    const falta = Math.max(0, t.precio - (t.sena || 0));
+    const pagado = (t.sena_estado === 'enviado' || t.sena_estado === 'confirmado') ? (t.sena || 0) : 0;
+    const falta = Math.max(0, t.precio - pagado);
     $('subCobroTurno').textContent = t.cliente_nombre +
       (t.hora ? ' - ' + t.hora : '');
 
@@ -8073,9 +8074,9 @@ function cobrarTurno(id) {
       '<b>' + plata(t.precio) + '</b></div>' +
       (t.duracion ? '<div class="cierre-linea"><span>Duracion</span><b>' +
         (t.duracion >= 60 ? (t.duracion / 60) + 'h' : t.duracion + ' min') + '</b></div>' : '') +
-      (t.sena > 0
+      (pagado > 0
         ? '<div class="cierre-linea" style="color:var(--accent-dark);"><span>Ya pago (seña)</span><b>-' +
-          plata(t.sena) + '</b></div>' : '') +
+          plata(pagado) + '</b></div>' : '') +
       '<div class="cierre-linea total"><span>A cobrar</span><b>' + plata(falta) + '</b></div>';
 
     $('btnConfirmarCobroTurno').textContent = falta > 0 ? 'Cobrar ' + plata(falta) : 'Cerrar sin cobrar';
