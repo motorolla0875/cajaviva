@@ -7246,14 +7246,24 @@ async function revisarPedidos(avisarSiHay) {
       } catch (e) {}
     }
 
+    // y los turnos pedidos por la web
+    if (cap('cap_turnos')) {
+      try {
+        const t = await api('GET', '/turnos/pendientes?estado=pendientes');
+        total += t.cantidad;
+      } catch (e) {}
+    }
+
     pintarContadorPedidos(total);
 
     if (avisarSiHay && ultimosPedidos !== null && total > ultimosPedidos) {
       const cuantos = total - ultimosPedidos;
       sonidoPedido();
       vibrar([100, 60, 100]);
-      avisar(cap('cap_alquiler')
+      avisar((cap('cap_alquiler') || cap('cap_canchas'))
         ? (cuantos === 1 ? 'Entro una reserva nueva' : 'Entraron ' + cuantos + ' reservas')
+        : cap('cap_turnos')
+        ? (cuantos === 1 ? 'Entro un turno nuevo' : 'Entraron ' + cuantos + ' turnos')
         : (cuantos === 1 ? 'Entro un pedido nuevo' : 'Entraron ' + cuantos + ' pedidos'));
       if (document.querySelector('.vista.on') === document.getElementById('v-pedidos')) {
         cargarPedidos();
