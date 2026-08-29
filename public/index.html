@@ -4426,6 +4426,13 @@ function abrirProd(id) {
   porHoraActual = !!(p && p.cobra_por_hora);
   $('swPorHora').classList.toggle('on', porHoraActual);
   $('wrapPorHora').style.display = (p && p.es_servicio) ? 'block' : 'none';
+  if (p && p.es_servicio) {
+    setTimeout(function () {
+      $('wrapCostoProd').style.display = 'none';
+      $('hintMargen').style.display = 'none';
+      $('tituloProd').textContent = 'Editar servicio';
+    }, 0);
+  }
   esUnidadActual = !!(p && p.es_unidad);
   if (esUnidadActual) {
     setTimeout(function () {
@@ -10435,6 +10442,8 @@ document.getElementById('btnNuevoServicio').onclick = function () {
   $('wrapEsServicio').style.display = 'none';
   $('wrapDuracion').style.display = 'block';
   $('wrapPorHora').style.display = 'block';
+  $('wrapCostoProd').style.display = 'none';
+  $('hintMargen').style.display = 'none';
   porHoraActual = false;
   $('swPorHora').classList.remove('on');
 
