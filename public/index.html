@@ -2227,6 +2227,14 @@
       </div>
     </div>
 
+    <div id="wrapAgendaPropia" style="display:none;">
+      <div class="cap-item">
+        <div class="txt"><div class="n">Otra persona lo atiende</div>
+          <div class="d">No ocupa la agenda de los demas servicios</div></div>
+        <button class="switch" id="swAgendaPropia"></button>
+      </div>
+    </div>
+
     <div id="wrapPorHora" style="display:none;">
       <div class="cap-item">
         <div class="txt"><div class="n">Se cobra por hora</div>
@@ -4430,6 +4438,9 @@ function abrirProd(id) {
   porHoraActual = !!(p && p.cobra_por_hora);
   $('swPorHora').classList.toggle('on', porHoraActual);
   $('wrapPorHora').style.display = (p && p.es_servicio) ? 'block' : 'none';
+  agendaPropiaActual = !!(p && p.agenda_propia);
+  $('swAgendaPropia').classList.toggle('on', agendaPropiaActual);
+  $('wrapAgendaPropia').style.display = (p && p.es_servicio) ? 'block' : 'none';
   if (p && p.es_servicio) {
     setTimeout(function () {
       $('wrapCostoProd').style.display = 'none';
@@ -4560,6 +4571,7 @@ async function guardarProductoRapido() {
     esInsumo: cap('cap_recetas') && esInsumoActual,
     esServicio: cap('cap_turnos') && esServicioActual,
     cobraPorHora: esServicioActual && porHoraActual,
+    agendaPropia: esServicioActual && agendaPropiaActual,
     duracion: esServicioActual ? parseInt($('pDuracion').value) : null
   };
 
@@ -4601,6 +4613,7 @@ $('btnGuardarProd').onclick = async function () {
     esInsumo: cap('cap_recetas') && esInsumoActual,
     esServicio: cap('cap_turnos') && esServicioActual,
     cobraPorHora: esServicioActual && porHoraActual,
+    agendaPropia: esServicioActual && agendaPropiaActual,
     duracion: esServicioActual ? parseInt($('pDuracion').value) : null
   };
 
@@ -10537,6 +10550,9 @@ document.getElementById('btnNuevoServicio').onclick = function () {
   $('wrapEsServicio').style.display = 'none';
   $('wrapDuracion').style.display = 'block';
   $('wrapPorHora').style.display = 'block';
+  $('wrapAgendaPropia').style.display = 'block';
+  agendaPropiaActual = false;
+  $('swAgendaPropia').classList.remove('on');
   $('wrapCostoProd').style.display = 'none';
   $('hintMargen').style.display = 'none';
   porHoraActual = false;
@@ -10623,6 +10639,13 @@ $('btnAgregarDur').onclick = function () {
 
   $('modalDuracion').classList.remove('on');
   pintarCarrito();
+};
+
+let agendaPropiaActual = false;
+
+document.getElementById('swAgendaPropia').onclick = function () {
+  agendaPropiaActual = !agendaPropiaActual;
+  this.classList.toggle('on', agendaPropiaActual);
 };
 
 /* ══ Vuelto ══ */

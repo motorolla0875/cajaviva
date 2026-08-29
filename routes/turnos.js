@@ -242,8 +242,10 @@ router.get('/publico/:slug/libres', (req, res) => {
   const hasta = minutos(cfg.hasta || '19:00');
 
   const ocupados = db.prepare(`
-    SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado IN ('reservado','atendido')
+    SELECT t.hora, t.duracion FROM turnos t
+    LEFT JOIN productos p ON p.id = t.producto_id
+    WHERE t.user_id = ? AND t.fecha = ? AND t.estado IN ('reservado','atendido')
+      AND COALESCE(p.agenda_propia, 0) = 0
   `).all(n.user_id, fecha);
 
   // si es hoy, no ofrecer horas pasadas
@@ -283,8 +285,10 @@ router.post('/publico/:slug', (req, res) => {
   const desde = minutos(hora), hasta = desde + dur;
 
   const choca = db.prepare(`
-    SELECT hora, duracion FROM turnos
-    WHERE user_id = ? AND fecha = ? AND estado IN ('reservado','atendido')
+    SELECT t.hora, t.duracion FROM turnos t
+    LEFT JOIN productos p ON p.id = t.producto_id
+    WHERE t.user_id = ? AND t.fecha = ? AND t.estado IN ('reservado','atendido')
+      AND COALESCE(p.agenda_propia, 0) = 0
   `).all(n.user_id, fecha).some(function (t) {
     const d = minutos(t.hora), h = d + t.duracion;
     return desde < h && hasta > d;
