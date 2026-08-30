@@ -2038,6 +2038,24 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCobroPedido">
+  <div class="modal">
+    <h3>Cobrar el pedido</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;" id="subCobroPed"></p>
+    <div id="msgCobroPed"></div>
+    <div id="detalleCobroPed"></div>
+
+    <label>Como paga</label>
+    <div class="medios" id="mediosCobroPed">
+      <button data-medio="efectivo" class="on">Efectivo</button>
+      <button data-medio="transferencia">Transfer.</button>
+    </div>
+
+    <button class="btn-ppal" id="btnConfirmarCobroPed">Cobrar y entregar</button>
+    <button class="btn-sec" id="btnCerrarCobroPed">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalCobroTurno">
   <div class="modal" style="max-width:380px;">
     <h3>Cobrar el turno</h3>
@@ -7197,7 +7215,7 @@ async function cargarPedidos() {
       const pago = p.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo';
       let acc = '';
       if (p.estado === 'nuevo' || p.estado === 'confirmado') {
-        acc = '<button class="ppal" onclick="convertirPedido(\'' + p.id + '\')">Cobrar y entregar</button>' +
+        acc = '<button class="ppal" onclick="abrirCobroPedido(\'' + p.id + '\')">Cobrar y entregar</button>' +
               (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\',\'' + p.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="cambiarPedido(\'' + p.id + '\',\'cancelado\')">Cancelar</button>';
       } else if (p.estado === 'cancelado') {
@@ -10707,6 +10725,72 @@ document.getElementById('btnPartidoCat').onclick = function () {
   partidoCat = !partidoCat;
   document.getElementById('segundoTurnoCat').style.display = partidoCat ? 'block' : 'none';
   this.textContent = partidoCat ? 'Atiendo todo el dia' : 'Cierro al mediodia';
+};
+
+/* ══ Cobrar un pedido con detalle ══ */
+
+let pedidoCobroId = null;
+let medioCobroPed = 'efectivo';
+
+document.getElementById('mediosCobroPed').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  medioCobroPed = b.dataset.medio;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+});
+
+function abrirCobroPedido(id) {
+  pedidoCobroId = id;
+  medioCobroPed = 'efectivo';
+  Array.prototype.forEach.call($('mediosCobroPed').children, function (x, i) {
+    x.classList.toggle('on', i === 0);
+  });
+
+  const p = (pedidosCargados || []).filter(function (x) { return x.id === id; })[0];
+  $('msgCobroPed').innerHTML = '';
+
+  if (!p) {
+    $('detalleCobroPed').innerHTML = '<div class="vacio">No se encontro el pedido.</div>';
+  } else {
+    $('subCobroPed').textContent = p.cliente_nombre + (p.direccion ? ' - ' + p.direccion : '');
+
+    $('detalleCobroPed').innerHTML =
+      (p.items || []).map(function (i) {
+        return '<div class="cierre-linea"><span>' + fmtCant(i.cantidad) + ' x ' + esc(i.nombre) +
+          '</span><b>' + plata(i.cantidad * i.precio_unitario) + '</b></div>';
+      }).join('') +
+      '<div class="cierre-linea total"><span>Total</span><b>' + plata(p.total) + '</b></div>';
+
+    if (p.forma_pago === 'transferencia') {
+      medioCobroPed = 'transferencia';
+      Array.prototype.forEach.call($('mediosCobroPed').children, function (x, i) {
+        x.classList.toggle('on', i === 1);
+      });
+    }
+
+    $('btnConfirmarCobroPed').textContent = 'Cobrar ' + plata(p.total);
+  }
+
+  $('modalCobroPedido').classList.add('on');
+}
+
+$('btnCerrarCobroPed').onclick = function () { $('modalCobroPedido').classList.remove('on'); };
+
+$('btnConfirmarCobroPed').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Cobrando...';
+  try {
+    const r = await api('POST', '/pedidos/' + pedidoCobroId + '/vender', {
+      fecha: hoyISO(), medioPago: medioCobroPed
+    });
+    $('modalCobroPedido').classList.remove('on');
+    sonidoVenta(); vibrar(60);
+    await cargarProductos(); await cargarResumen(); await cargarPedidos();
+    avisar('Venta de ' + plata(r.total) + ' registrada');
+  } catch (e) {
+    $('msgCobroPed').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Cobrar y entregar';
 };
 
 /* ══ Vuelto ══ */
