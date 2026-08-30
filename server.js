@@ -23,6 +23,19 @@ app.use(function (req, res, next) {
   try {
     const n = db.prepare('SELECT slug FROM negocio WHERE dominio = ? AND catalogo_activo = 1').get(host);
     if (n) return res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
+
+    // el dominio llega aca pero no tiene negocio: avisar
+    return res.status(404).send(
+      '<!doctype html><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<div style="font-family:system-ui,-apple-system,sans-serif;max-width:420px;' +
+      'margin:80px auto;padding:24px;text-align:center;color:#2C2C2A;">' +
+      '<div style="font-size:38px;margin-bottom:12px;">🔌</div>' +
+      '<h1 style="font-size:20px;font-weight:500;margin:0 0 8px;">Este dominio todavia no esta conectado</h1>' +
+      '<p style="color:#6E6D67;font-size:14px;line-height:1.6;margin:0;">' +
+      'Si es tu dominio, entra a tu cuenta de CajaViva y activalo desde ' +
+      '<b>Catalogo para compartir</b>.</p></div>'
+    );
   } catch (e) {}
 
   next();
