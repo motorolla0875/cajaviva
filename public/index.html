@@ -10843,7 +10843,7 @@ function pintarPasosDominio(dom) {
     '<b style="color:var(--text);">4.</b> Guarda y espera. Puede tardar de 10 minutos a 24 horas.' +
     '</div>' +
 
-    '<button type="button" class="btn-foto" style="margin-top:12px;" onclick="probarDominio()">Probar si ya funciona</button>' +
+    '<button type="button" class="btn-foto" style="margin-top:12px;" onclick="probarDominio()">Activar mi dominio</button>' +
     '<div id="resultadoDominio" style="margin-top:10px;"></div>' +
     '</div>';
 }
@@ -10867,19 +10867,22 @@ async function probarDominio() {
   const cont = document.getElementById('resultadoDominio');
   if (!dom || !cont) return;
 
-  cont.innerHTML = '<div style="font-size:12.5px; color:var(--muted);">Probando...</div>';
+  cont.innerHTML = '<div style="font-size:12.5px; color:var(--muted);">Activando, esto puede tardar un minuto...</div>';
 
   try {
-    const r = await fetch('https://' + dom + '/api/catalogo/por-dominio/' + dom, { mode: 'cors' });
-    if (r.ok) {
-      cont.innerHTML = '<div style="background:var(--accent-soft); color:var(--accent-dark); padding:11px; border-radius:9px; font-size:12.5px;">' +
-        'Listo! Tu catalogo ya funciona en ' + esc(dom) + '</div>';
+    const d = await api('POST', '/catalogo/dominio/certificar');
+
+    if (d.ok) {
+      cont.innerHTML = '<div style="background:var(--accent-soft); color:var(--accent-dark); padding:11px; border-radius:9px; font-size:12.5px; line-height:1.5;">' +
+        'Listo! Tu catalogo ya funciona en<br><b>https://' + esc(dom) + '</b></div>';
       return;
     }
-    throw new Error('todavia no');
-  } catch (e) {
+
     cont.innerHTML = '<div style="background:var(--warn-soft,#FDF3E3); color:var(--warn-text,#8A5A0F); padding:11px; border-radius:9px; font-size:12.5px; line-height:1.5;">' +
-      'Todavia no responde. Revisa que los registros DNS esten bien y proba de nuevo en un rato.</div>';
+      esc(d.error || 'Todavia no esta listo.') + '</div>';
+  } catch (e) {
+    cont.innerHTML = '<div style="background:var(--warn-soft,#FDF3E3); color:var(--warn-text,#8A5A0F); padding:11px; border-radius:9px; font-size:12.5px;">' +
+      esc(e.message) + '</div>';
   }
 }
 

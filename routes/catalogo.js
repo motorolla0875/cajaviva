@@ -199,4 +199,36 @@ router.get('/por-dominio/:host', (req, res) => {
   res.json({ slug: n.slug });
 });
 
+
+// ── pedir el certificado del dominio propio ──
+router.post('/dominio/certificar', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const n = db.prepare('SELECT dominio, dominio_ok FROM negocio WHERE user_id = ?').get(req.userId);
+  if (!n || !n.dominio) return res.status(400).json({ error: 'Primero guarda tu dominio.' });
+  if (n.dominio_ok) return res.json({ ok: true, estado: 'listo' });
+
+  // solo letras, numeros, guiones y puntos
+  if (!/^[a-z0-9][a-z0-9-]*(\.[a-z0-9-]+)+$/.test(n.dominio)) {
+    return res.status(400).json({ error: 'Dominio invalido.' });
+  }
+
+  const { execFile } = require('child_process');
+
+  execFile('sudo', ['/usr/local/bin/certificar-dominio', n.dominio],
+    { timeout: 120000 }, function (err, salida, errSalida) {
+      const texto = String(salida || '') + String(errSalida || '');
+
+      if (texto.indexOf('OK:') >= 0) {
+        return res.json({ ok: true, estado: 'listo' });
+      }
+      if (texto.indexOf('PENDIENTE:') >= 0) {
+        return res.json({ ok: false, estado: 'dns',
+          error: 'Tu dominio todavia no apunta a nuestro servidor. Puede tardar hasta 24 horas.' });
+      }
+      return res.json({ ok: false, estado: 'error',
+        error: 'No se pudo activar todavia. Proba de nuevo en un rato.' });
+    });
+});
+
 module.exports = router;
