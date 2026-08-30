@@ -8095,6 +8095,7 @@ $('btnConfirmarCobroTurno').onclick = async function () {
       fecha: hoyISO(), medioPago: medioCobroTurno
     });
     $('modalCobroTurno').classList.remove('on');
+    sonidoVenta(); vibrar(60);
     await cargarAgenda();
     await revisarTurnos();
     await cargarResumen();
@@ -9117,6 +9118,7 @@ $('btnConfirmarCobroRes').onclick = async function () {
     });
 
     $('modalCobroRes').classList.remove('on');
+    if (r.total > 0) { sonidoVenta(); vibrar(60); }
 
     const vista = document.querySelector('.vista.on');
     if (vista && vista.id === 'v-canchas') await cargarGrillaCanchas();
