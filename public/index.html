@@ -2531,6 +2531,13 @@
       <input type="text" id="catTitular" placeholder="Ej: Juan Perez">
     </div>
 
+    <div class="seccion">Tu dominio propio</div>
+    <p class="hint" style="margin:-4px 0 10px;">Si ya tenes un dominio, tu catalogo puede vivir ahi.</p>
+
+    <input type="text" id="catDominio" placeholder="mitienda.com">
+    <button type="button" class="btn-foto" id="btnGuardarDominio" style="margin-top:8px;">Guardar dominio</button>
+    <div id="pasosDominio" style="display:none; margin-top:12px;"></div>
+
     <div id="catLinkBox" style="display:none; margin-top:16px; padding:14px; background:var(--accent-soft); border-radius:10px;">
       <div style="font-size:12px; color:var(--accent-dark); margin-bottom:6px;">Tu link</div>
       <div style="font-size:14px; font-weight:500; color:var(--accent-dark); word-break:break-all;" id="catLink"></div>
@@ -6857,6 +6864,7 @@ $('btnCatalogo').onclick = async function () {
     $('swTransfer').classList.toggle('on', aceptaTransfer);
     $('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
     mostrarLink(c.slug);
+    cargarDominio();
     temaCat = c.tema || 'verde';
     pintarTemas();
     mostrarBanner(c.banner || null);
@@ -10792,6 +10800,88 @@ $('btnConfirmarCobroPed').onclick = async function () {
   }
   btn.disabled = false; btn.textContent = 'Cobrar y entregar';
 };
+
+/* ══ Dominio propio ══ */
+
+const IP_SERVIDOR = '217.142.230.15';
+
+async function cargarDominio() {
+  try {
+    const d = await api('GET', '/catalogo/dominio');
+    $('catDominio').value = d.dominio || '';
+    pintarPasosDominio(d.dominio);
+  } catch (e) {}
+}
+
+function pintarPasosDominio(dom) {
+  const cont = document.getElementById('pasosDominio');
+  if (!cont) return;
+
+  if (!dom) { cont.style.display = 'none'; return; }
+
+  cont.style.display = 'block';
+  cont.innerHTML =
+    '<div style="background:var(--panel-2); border-radius:12px; padding:14px;">' +
+    '<div style="font-size:13.5px; font-weight:500; margin-bottom:10px;">Ahora configura tu dominio</div>' +
+
+    '<div style="font-size:12.5px; color:var(--muted); line-height:1.6;">' +
+    '<b style="color:var(--text);">1.</b> Entra donde compraste ' + esc(dom) +
+    ' (NIC.ar, GoDaddy, Namecheap...)<br><br>' +
+
+    '<b style="color:var(--text);">2.</b> Busca la seccion DNS o "Administrar DNS"<br><br>' +
+
+    '<b style="color:var(--text);">3.</b> Crea estos dos registros:' +
+    '</div>' +
+
+    '<div style="background:var(--panel); border-radius:9px; padding:11px; margin:10px 0; font-size:12px; font-family:monospace;">' +
+    '<div style="color:var(--muted); font-size:10.5px;">TIPO / NOMBRE / VALOR</div>' +
+    '<div style="margin-top:6px;">A &nbsp; @ &nbsp; ' + IP_SERVIDOR + '</div>' +
+    '<div>A &nbsp; www &nbsp; ' + IP_SERVIDOR + '</div>' +
+    '</div>' +
+
+    '<div style="font-size:12.5px; color:var(--muted); line-height:1.6;">' +
+    '<b style="color:var(--text);">4.</b> Guarda y espera. Puede tardar de 10 minutos a 24 horas.' +
+    '</div>' +
+
+    '<button type="button" class="btn-foto" style="margin-top:12px;" onclick="probarDominio()">Probar si ya funciona</button>' +
+    '<div id="resultadoDominio" style="margin-top:10px;"></div>' +
+    '</div>';
+}
+
+$('btnGuardarDominio').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const d = await api('PUT', '/catalogo/dominio', { dominio: $('catDominio').value.trim() });
+    $('catDominio').value = d.dominio || '';
+    pintarPasosDominio(d.dominio);
+    avisar(d.dominio ? 'Dominio guardado' : 'Dominio quitado');
+  } catch (e) {
+    $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Guardar dominio';
+};
+
+async function probarDominio() {
+  const dom = $('catDominio').value.trim();
+  const cont = document.getElementById('resultadoDominio');
+  if (!dom || !cont) return;
+
+  cont.innerHTML = '<div style="font-size:12.5px; color:var(--muted);">Probando...</div>';
+
+  try {
+    const r = await fetch('https://' + dom + '/api/catalogo/por-dominio/' + dom, { mode: 'cors' });
+    if (r.ok) {
+      cont.innerHTML = '<div style="background:var(--accent-soft); color:var(--accent-dark); padding:11px; border-radius:9px; font-size:12.5px;">' +
+        'Listo! Tu catalogo ya funciona en ' + esc(dom) + '</div>';
+      return;
+    }
+    throw new Error('todavia no');
+  } catch (e) {
+    cont.innerHTML = '<div style="background:var(--warn-soft,#FDF3E3); color:var(--warn-text,#8A5A0F); padding:11px; border-radius:9px; font-size:12.5px; line-height:1.5;">' +
+      'Todavia no responde. Revisa que los registros DNS esten bien y proba de nuevo en un rato.</div>';
+  }
+}
 
 /* ══ Vuelto ══ */
 

@@ -8,6 +8,26 @@ const app = express();
 const PORT = process.env.PORT || 5200;
 
 app.use(express.json());
+// si entra por un dominio propio, se sirve el catalogo de ese negocio
+app.use(function (req, res, next) {
+  const host = String(req.hostname || '').toLowerCase().replace(/^www\./, '');
+
+  // los dominios de la app siguen normal
+  if (host === 'cajaviva.app' || host === 'localhost' || host.indexOf('217.142') === 0) {
+    return next();
+  }
+
+  // solo la pagina principal: el resto (api, fotos, archivos) sigue igual
+  if (req.path !== '/' && req.path !== '/index.html') return next();
+
+  try {
+    const n = db.prepare('SELECT slug FROM negocio WHERE dominio = ? AND catalogo_activo = 1').get(host);
+    if (n) return res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
+  } catch (e) {}
+
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // la pagina publica del catalogo
@@ -59,7 +79,7 @@ app.use('/api/pedidos', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/pedidos'));
 app.use('/api/catalogo', function (req, res, next) {
-  if (req.path.indexOf('/publico/') === 0) return next();
+  if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/por-dominio/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/catalogo'));
 

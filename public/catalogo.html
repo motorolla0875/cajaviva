@@ -531,7 +531,20 @@
 </div>
 
 <script>
-const slug = decodeURIComponent(location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '');
+let slug = decodeURIComponent(location.pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '');
+
+// si entra por un dominio propio, el slug se busca por el dominio
+async function resolverSlug() {
+  if (slug) return slug;
+  try {
+    const r = await fetch('/api/catalogo/por-dominio/' + location.hostname);
+    if (r.ok) {
+      const d = await r.json();
+      if (d.slug) { slug = d.slug; return slug; }
+    }
+  } catch (e) {}
+  return slug;
+}
 let datos = null, pedido = {}, filtro = '';
 
 const $ = id => document.getElementById(id);
@@ -624,6 +637,7 @@ function aplicarTema(nombre) {
 }
 
 async function cargar() {
+  await resolverSlug();
   try {
     const r = await fetch('/api/catalogo/publico/' + slug);
     if (!r.ok) throw new Error('no existe');

@@ -14,6 +14,8 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN banner TEXT'); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fuente TEXT NOT NULL DEFAULT 'sistema'"); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN dominio TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN dominio_ok INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 
 function armarSlug(t) {
@@ -159,6 +161,42 @@ router.get('/publico/:slug', (req, res) => {
     },
     productos: productos
   });
+});
+
+
+// ── dominio propio ──
+router.get('/dominio', (req, res) => {
+  const n = db.prepare('SELECT dominio, dominio_ok, slug FROM negocio WHERE user_id = ?').get(req.userId);
+  res.json(n || {});
+});
+
+router.put('/dominio', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  let d = (req.body?.dominio || '').trim().toLowerCase();
+  d = d.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+
+  if (d && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d)) {
+    return res.status(400).json({ error: 'Ese dominio no parece valido. Ej: mitienda.com' });
+  }
+
+  if (d) {
+    const otro = db.prepare('SELECT user_id FROM negocio WHERE dominio = ? AND user_id != ?').get(d, req.userId);
+    if (otro) return res.status(400).json({ error: 'Ese dominio ya lo esta usando otro negocio.' });
+  }
+
+  db.prepare('UPDATE negocio SET dominio = ?, dominio_ok = 0 WHERE user_id = ?')
+    .run(d || null, req.userId);
+
+  res.json({ dominio: d || null });
+});
+
+// ── buscar un negocio por su dominio (interno) ──
+router.get('/por-dominio/:host', (req, res) => {
+  const host = String(req.params.host || '').toLowerCase().replace(/^www\./, '');
+  const n = db.prepare('SELECT slug FROM negocio WHERE dominio = ? AND catalogo_activo = 1').get(host);
+  if (!n) return res.status(404).json({ error: 'No encontrado.' });
+  res.json({ slug: n.slug });
 });
 
 module.exports = router;
