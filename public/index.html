@@ -3882,6 +3882,7 @@ function usarDatosGuardados() {
 
 async function arrancarApp() {
   mostrar('app');
+  try { acomodarBuscadorGlobal(); } catch (e) {}
   aplicarCapacidades();
   pintarCarrito();
   usarDatosGuardados();
