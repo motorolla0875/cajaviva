@@ -326,6 +326,12 @@
   /* la vista arranca pegada al nav */
   #v-vender .izq { padding-top: 0; }
   #v-vender { padding-top: 0; }
+  /* el bloque verde llega hasta los bordes */
+  #v-vender .chips-wrap {
+    margin-left: calc(-1 * var(--pad-lat, 14px));
+    margin-right: calc(-1 * var(--pad-lat, 14px));
+    width: auto;
+  }
   #v-vender .chips button {
     background: rgba(255,255,255,.18);
     border-color: rgba(255,255,255,.3);
