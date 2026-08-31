@@ -780,20 +780,28 @@
     font-size: 13.5px; line-height: 1.6; white-space: pre-wrap;
   }
 
+  .chat-wrap { position: fixed; top: 118px; right: 14px; z-index: 55; }
+  .chat-wrap.oculto { display: none; }
+  .chat-cerrar {
+    position: absolute; top: -6px; right: -6px; z-index: 2;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-size: 9px; line-height: 1; padding: 0;
+  }
   .chat-flotante {
-    position: fixed; top: 118px; right: 14px; z-index: 55;
-    width: 46px; height: 46px; border-radius: 50%;
+    position: relative; z-index: 1;
+    width: 36px; height: 36px; border-radius: 50%;
     border: none; background: var(--accent); color: #fff;
     box-shadow: 0 3px 12px rgba(0,0,0,.22);
     display: flex; align-items: center; justify-content: center;
     padding: 0;
   }
-  .cf-txt { font-size: 21px; font-weight: 600; line-height: 1; }
+  .cf-txt { font-size: 17px; font-weight: 600; line-height: 1; }
   .cf-anillo {
     position: absolute; inset: -3px; border-radius: 50%;
     border: 2px solid var(--accent);
     border-top-color: transparent; border-right-color: transparent;
-    animation: giraAnillo 2.4s linear infinite;
+    animation: giraAnillo 6s linear infinite;
     opacity: .6;
   }
   @keyframes giraAnillo { to { transform: rotate(360deg); } }
@@ -1872,10 +1880,13 @@
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
 
-  <button class="chat-flotante" id="btnChatFlotante" title="Ayuda">
-    <span class="cf-anillo"></span>
-    <span class="cf-txt">?</span>
-  </button>
+  <div class="chat-wrap" id="chatWrap">
+    <button class="chat-cerrar" id="btnOcultarChat" title="Ocultar">&#10005;</button>
+    <button class="chat-flotante" id="btnChatFlotante" title="Ayuda">
+      <span class="cf-anillo"></span>
+      <span class="cf-txt">?</span>
+    </button>
+  </div>
 
   <div class="contador-cola" id="contadorCola"></div>
 
@@ -11589,6 +11600,17 @@ document.getElementById('btnChatFlotante').onclick = function () {
     if (c) c.focus();
   }, 200);
 };
+
+document.getElementById('btnOcultarChat').onclick = function (e) {
+  e.stopPropagation();
+  document.getElementById('chatWrap').classList.add('oculto');
+  try { localStorage.setItem('cajaviva_chat_oculto', '1'); } catch (err) {}
+};
+
+if (localStorage.getItem('cajaviva_chat_oculto') === '1') {
+  const cw = document.getElementById('chatWrap');
+  if (cw) cw.classList.add('oculto');
+}
 
 /* ══ Vuelto ══ */
 
