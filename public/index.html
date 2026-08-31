@@ -763,6 +763,23 @@
   #modalAyuda { z-index: 250; }
   #modalAyuda .modal { max-height: 82vh; overflow-y: auto; }
 
+  .chat-ayuda { display: flex; gap: 7px; }
+  .chat-ayuda input {
+    flex: 1; padding: 11px 14px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 14px;
+  }
+  .chat-ayuda button {
+    flex-shrink: 0; width: 46px; border-radius: 10px;
+    border: none; background: var(--accent); color: #fff; font-size: 15px;
+  }
+  .chat-ayuda button:disabled { opacity: .5; }
+  #respuestaIA:not(:empty) {
+    margin-top: 10px; padding: 13px 15px; border-radius: 11px;
+    background: var(--accent-soft); color: var(--accent-dark);
+    font-size: 13.5px; line-height: 1.6; white-space: pre-wrap;
+  }
+
   .ayuda-item {
     border: 1px solid var(--line); border-radius: 11px;
     margin-bottom: 7px; overflow: hidden; background: var(--panel);
@@ -2248,6 +2265,14 @@
     <h3>Ayuda</h3>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Toca una pregunta para ver la respuesta.</p>
     <div id="listaAyuda"></div>
+
+    <div class="seccion" style="margin-top:18px;">No encontras lo que buscas?</div>
+    <div class="chat-ayuda">
+      <input type="text" id="preguntaIA" placeholder="Escribi tu pregunta..." autocomplete="off">
+      <button type="button" id="btnPreguntarIA">&#10148;</button>
+    </div>
+    <div id="respuestaIA"></div>
+
     <button class="btn-sec" id="btnCerrarAyuda">Cerrar</button>
   </div>
 </div>
@@ -11508,6 +11533,30 @@ function abrirAyuda() {
 document.getElementById('btnCerrarAyuda').onclick = function () {
   document.getElementById('modalAyuda').classList.remove('on');
 };
+
+document.getElementById('btnPreguntarIA').onclick = async function () {
+  const campo = document.getElementById('preguntaIA');
+  const cont = document.getElementById('respuestaIA');
+  const p = campo.value.trim();
+  if (!p) return;
+
+  const btn = this;
+  btn.disabled = true;
+  cont.textContent = 'Pensando...';
+
+  try {
+    const d = await api('POST', '/asistente/preguntar', { pregunta: p });
+    cont.textContent = d.respuesta;
+    campo.value = '';
+  } catch (e) {
+    cont.textContent = e.message;
+  }
+  btn.disabled = false;
+};
+
+document.getElementById('preguntaIA').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') document.getElementById('btnPreguntarIA').click();
+});
 
 /* ══ Vuelto ══ */
 

@@ -99,6 +99,8 @@ app.use('/api/pedidos', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/pedidos'));
+app.use('/api/asistente', requiereAuth, require('./routes/asistente'));
+
 app.use('/api/catalogo', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/por-dominio/') === 0 || req.path === '/directorio' || req.path.indexOf('/admin/') === 0) return next();
   return requiereAuth(req, res, next);
