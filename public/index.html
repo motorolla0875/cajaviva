@@ -11372,6 +11372,8 @@ function actualizarVueltoBox() {
   const esEfectivo = medioPago === 'efectivo' && carrito.length > 0;
   const btn = document.getElementById('btnAbrirVuelto');
 
+  if (btn) btn.style.display = (medioPago === 'efectivo') ? '' : 'none';
+
   if (!esEfectivo) {
     if (btn) btn.classList.remove('on');
     $('vueltoBox').classList.remove('on');
