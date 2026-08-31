@@ -11386,7 +11386,61 @@ const AYUDA = [
     r: 'Al crear la reserva poné cuanto te dieron de seña. Queda registrada como una venta en Caja. Cuando cobres el resto, la app descuenta lo que ya pago.' },
 
   { cap: 'cap_canchas', p: 'Como reservo una cancha',
-    r: 'En Canchas ves la grilla del dia con todas tus canchas y los horarios. Toca un hueco libre y cargas quien viene. Los ocupados se ven en rojo, y en verde los que ya pagaron.' }
+    r: 'En Canchas ves la grilla del dia con todas tus canchas y los horarios. Toca un hueco libre y cargas quien viene. Los ocupados se ven en rojo, y en verde los que ya pagaron.' },
+
+  { cap: null, p: 'Como cambio precios de varios productos juntos',
+    r: 'En Productos toca el boton del signo $. Elegi a que productos, si queres subir un porcentaje o poner un precio fijo, y la app te muestra como quedaria antes de aplicar. Podes destildar los que no queres cambiar, y deshacerlo despues si te arrepentis.' },
+
+  { cap: null, p: 'Como funciona sin internet',
+    r: 'La app sigue funcionando: podes vender igual y las ventas quedan guardadas en el celular. Cuando vuelve la conexion se suben solas. Vas a ver un aviso mientras estas sin señal.' },
+
+  { cap: null, p: 'Como anoto un gasto',
+    r: 'En Caja toca "+ Gasto". Poné cuanto y de que fue. Los gastos se descuentan del balance, asi ves la ganancia real y no solo lo que entro.' },
+
+  { cap: null, p: 'Que hago si me equivoque en una venta',
+    r: 'En Caja toca la venta y despues "Anular". Se devuelve el stock y se descuenta de la caja. Si fue fiada, tambien se saca de la cuenta del cliente.' },
+
+  { cap: null, p: 'Como cargo mis productos desde un Excel',
+    r: 'En Productos toca el boton de la planilla. Subi tu archivo y la app te muestra que encontro antes de importar. Si la lista viene desprolija, la ordena sola: saca filas vacias, totales y titulos repetidos.' },
+
+  { cap: null, p: 'Como pongo categorias',
+    r: 'En Productos toca "Categorias" y crea las que necesites. Despues, al cargar un producto, elegis a cual pertenece. En Vender aparecen arriba para filtrar rapido.' },
+
+  { cap: null, p: 'Como cargo proveedores',
+    r: 'En Productos toca "Proveedores". Cuando repongas stock podes elegir a quien le compraste, y queda registrado cuanto le compras a cada uno.' },
+
+  { cap: 'cap_turnos', p: 'Como cobro un turno',
+    r: 'En Agenda toca el turno y despues "Atendido y cobrar". Vas a ver el detalle con el servicio, la duracion y si dejo seña. Elegis como te paga y listo, queda registrado en Caja.' },
+
+  { cap: 'cap_turnos', p: 'Tengo dos personas atendiendo a la vez',
+    r: 'Al crear el servicio, prende "Otra persona lo atiende". Ese servicio no va a ocupar la agenda de los demas, asi podes tener dos turnos al mismo tiempo.' },
+
+  { cap: 'cap_turnos', p: 'Cobro por hora, no por servicio',
+    r: 'Al crear el servicio prende "Se cobra por hora". Si el turno dura el doble, el precio se duplica solo. Sirve para masajes, clases o cualquier cosa que se cobre por tiempo.' },
+
+  { cap: 'cap_turnos', p: 'Como configuro mis horarios',
+    r: 'En Mi tienda, en la parte de turnos web, elegis que dias abris y de que hora a que hora. Si cerras al mediodia, toca "Cierro al mediodia" y cargas los dos turnos.' },
+
+  { cap: 'cap_variantes', p: 'Como repongo stock de un talle',
+    r: 'En Productos toca el producto y despues "Reponer". Te aparece la lista con todos los talles y ponés cuantos llegaron de cada uno.' },
+
+  { cap: 'cap_alquiler', p: 'Como veo quien esta alojado ahora',
+    r: 'En Reservas, la pestaña "Ahora" te muestra quien esta en cada unidad, cuando se va y si debe algo. Desde ahi cobras cuando se retiran.' },
+
+  { cap: 'cap_alquiler', p: 'Como cobro extras como leña o desayuno',
+    r: 'Carga esos productos normalmente en Productos. Despues, en la reserva del huesped, toca "Consumos" y agregalos. Al cobrar se suman a la estadia.' },
+
+  { cap: 'cap_alquiler', p: 'Como cobro mas caro en temporada',
+    r: 'En Reservas, pestaña "Fechas especiales". Crea la temporada con las fechas y cuanto mas cobras. Tambien podes poner un recargo para viernes y sabados. Si una noche cae en las dos cosas, se aplica el mayor.' },
+
+  { cap: 'cap_alquiler', p: 'Como muestro fotos de lo que alquilo',
+    r: 'Al editar la unidad toca "Como se ve en tu catalogo". Podes subir hasta 12 fotos y escribir una descripcion con lo que incluye, como llegar o las reglas.' },
+
+  { cap: 'cap_canchas', p: 'Como cobro un turno de cancha',
+    r: 'Toca el turno ocupado en la grilla. Vas a ver el detalle con el horario y el total. Desde ahi podes cobrar, agregar consumos como bebidas, o cancelarlo.' },
+
+  { cap: 'cap_canchas', p: 'Donde veo los turnos que ya cobre',
+    r: 'En Canchas, la pestaña "Ya cobrados" te muestra el historial con lo facturado.' }
 ];
 
 function abrirAyuda() {
