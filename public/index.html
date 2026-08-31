@@ -225,14 +225,14 @@
   .buscador-fijo { flex: 1; min-width: 0; max-width: 340px; }
   .buscador-fijo input {
     width: 100%; padding: 9px 14px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.35);
-    background: rgba(255,255,255,.18);
-    color: #fff; font-size: 14px;
+    border: 1px solid #fff !important;
+    background: #fff !important;
+    color: #333 !important; font-size: 14px;
   }
-  .buscador-fijo input::placeholder { color: rgba(255,255,255,.7); }
+  .buscador-fijo input::placeholder { color: #8A8A8A !important; }
   .buscador-fijo input:focus {
-    outline: none; background: rgba(255,255,255,.28);
-    border-color: rgba(255,255,255,.6);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.3);
   }
   header .negocio { color: rgba(255,255,255,.85) !important; }
   header .hoy { color: rgba(255,255,255,.8) !important; }
@@ -1675,7 +1675,7 @@
     <button class="yo" id="btnYo">?</button>
     <div class="negocio" id="nombreNegocio"></div>
     <div class="buscador-fijo">
-      <input type="text" id="buscarGlobal" placeholder="Buscar..." autocomplete="off">
+      <input type="text" id="buscarGlobal" placeholder="Busca en CajaViva" autocomplete="off">
     </div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
@@ -10935,14 +10935,7 @@ function textoBuscadorSegunVista() {
   const v = document.querySelector('.vista.on');
   if (!v) return 'Buscar...';
 
-  const textos = {
-    'v-vender': 'Buscar producto...',
-    'v-productos': 'Buscar producto...',
-    'v-clientes': 'Buscar cliente...',
-    'v-caja': 'Buscar en caja...'
-  };
-
-  return textos[v.id] || 'Buscar...';
+  return 'Busca en CajaViva';
 }
 
 function acomodarBuscadorGlobal() {
