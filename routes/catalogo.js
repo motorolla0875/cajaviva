@@ -268,4 +268,56 @@ router.get('/directorio', (req, res) => {
   res.json({ negocios: conProductos, rubros: rubros });
 });
 
+
+// ── administracion del directorio (solo el dueño de CajaViva) ──
+const crypto = require('crypto');
+const sesionesAdmin = new Set();
+
+function soloAdmin(req, res, next) {
+  const t = (req.headers['x-admin'] || '').trim();
+  if (!t || !sesionesAdmin.has(t)) return res.status(403).json({ error: 'No autorizado.' });
+  next();
+}
+
+router.get('/admin/negocios', soloAdmin, (req, res) => {
+  const filas = db.prepare(`
+    SELECT n.nombre, n.slug, n.rubro, n.pais, n.en_directorio, n.pide_directorio,
+           n.catalogo_activo, n.created_at,
+           (SELECT COUNT(*) FROM productos p
+            WHERE p.user_id = n.user_id AND p.activo = 1 AND p.en_catalogo = 1) AS productos
+    FROM negocio n
+    WHERE n.slug IS NOT NULL AND n.slug != ''
+    ORDER BY n.en_directorio DESC, productos DESC
+  `).all();
+
+  res.json({ negocios: filas });
+});
+
+router.put('/admin/aprobar', soloAdmin, (req, res) => {
+  const { slug, aprobar } = req.body || {};
+  if (!slug) return res.status(400).json({ error: 'Falta el negocio.' });
+
+  db.prepare('UPDATE negocio SET en_directorio = ? WHERE slug = ?')
+    .run(aprobar ? 1 : 0, slug);
+
+  res.json({ ok: true });
+});
+
+
+// ── entrar al panel de administracion ──
+router.post('/admin/entrar', (req, res) => {
+  const { usuario, clave } = req.body || {};
+  const u = process.env.ADMIN_USER;
+  const c = process.env.ADMIN_PASS;
+
+  if (!u || !c) return res.status(500).json({ error: 'Panel no configurado.' });
+  if (usuario !== u || clave !== c) {
+    return res.status(401).json({ error: 'Usuario o clave incorrectos.' });
+  }
+
+  const t = crypto.randomBytes(24).toString('hex');
+  sesionesAdmin.add(t);
+  res.json({ token: t });
+});
+
 module.exports = router;

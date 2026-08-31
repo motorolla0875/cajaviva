@@ -44,6 +44,10 @@ app.use(function (req, res, next) {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // la pagina publica del catalogo
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 app.get('/tiendas', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'tiendas.html'));
 });
@@ -96,7 +100,7 @@ app.use('/api/pedidos', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/pedidos'));
 app.use('/api/catalogo', function (req, res, next) {
-  if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/por-dominio/') === 0 || req.path === '/directorio') return next();
+  if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/por-dominio/') === 0 || req.path === '/directorio' || req.path === '/admin/entrar') return next();
   return requiereAuth(req, res, next);
 }, require('./routes/catalogo'));
 
