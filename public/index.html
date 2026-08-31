@@ -1612,6 +1612,8 @@
     .bf-datos .br-cant, .bf-datos .br-total {
       font-size: 26px; font-weight: 500; color: #fff;
     }
+    .br-izq { display: flex; align-items: center; gap: 10px; }
+    .bf-logo { width: 34px; height: 34px; opacity: .95; }
     /* espacio para que la grilla no quede tapada por la barra */
     .der.chico .barra-resumen {
       height: 52px; padding: 0 18px; margin: 0;
@@ -1830,7 +1832,10 @@
     <div class="barra-fija" id="barraResumen">
       <div class="bf-manija"><span></span></div>
       <div class="bf-datos">
-        <span class="br-cant" id="brCant">0</span>
+        <span class="br-izq">
+          <img src="/logo-barra.png" class="bf-logo" alt="">
+          <span class="br-cant" id="brCant">0</span>
+        </span>
         <span class="br-total" id="brTotal">$0</span>
       </div>
     </div>
