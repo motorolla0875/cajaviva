@@ -222,7 +222,15 @@
   }
   header .marca, header .marca span { color: #fff !important; }
   header .negocio { display: none; }
-  .buscador-fijo { flex: 1; min-width: 0; max-width: 340px; }
+  .buscador-fijo { flex: 1; min-width: 0; max-width: 340px; position: relative; }
+  #btnScanGlobal {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: none; color: #555;
+    font-size: 17px; line-height: 1; display: none;
+  }
+  #btnScanGlobal.on { display: block; }
+  .buscador-fijo input { padding-right: 40px !important; }
   #v-vender .barra-buscar { display: none; }
   #buscar { display: none; }
   .buscador-fijo input {
@@ -1678,6 +1686,7 @@
     <div class="negocio" id="nombreNegocio"></div>
     <div class="buscador-fijo">
       <input type="text" id="buscarGlobal" placeholder="Busca en CajaViva" autocomplete="off">
+      <button id="btnScanGlobal" title="Escanear codigo">&#9974;</button>
     </div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
@@ -10948,6 +10957,12 @@ function acomodarBuscadorGlobal() {
   b.parentElement.style.display = campo ? 'block' : 'none';
   b.placeholder = textoBuscadorSegunVista();
 
+  const sc = document.getElementById('btnScanGlobal');
+  if (sc) {
+    const v = document.querySelector('.vista.on');
+    sc.classList.toggle('on', !!v && (v.id === 'v-vender' || v.id === 'v-productos'));
+  }
+
   // al cambiar de vista, arranca vacio
   if (campo && b.value !== campo.value) {
     b.value = campo.value || '';
@@ -10960,6 +10975,15 @@ document.getElementById('buscarGlobal').addEventListener('input', function () {
   campo.value = this.value;
   campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
+
+document.getElementById('btnScanGlobal').onclick = function () {
+  const v = document.querySelector('.vista.on');
+  if (!v) return;
+  if (v.id === 'v-vender' && typeof abrirEscaner === 'function') abrirEscaner();
+  else if (v.id === 'v-productos' && document.getElementById('btnEscanearProd')) {
+    document.getElementById('btnEscanearProd').click();
+  }
+};
 
 /* ══ Vuelto ══ */
 
