@@ -286,7 +286,15 @@
     color: rgba(255,255,255,.7); font-size: 13.5px; font-weight: 500;
     border-bottom: 2px solid transparent; white-space: nowrap;
   }
-  nav button.on { color: #fff; border-bottom-color: #fff; }
+  nav button {
+    transition: background .15s ease;
+  }
+  nav button.on {
+    color: #fff; border-bottom-color: #fff;
+    background: rgba(255,255,255,.14);
+    box-shadow: inset 0 -6px 12px -6px rgba(0,0,0,.25);
+  }
+  nav button:active { background: rgba(255,255,255,.2); }
   nav button.oculto { display: none; }
 
   .vista { display: none; flex: 1; min-height: 0; }
