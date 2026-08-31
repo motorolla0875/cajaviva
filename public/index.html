@@ -760,6 +760,9 @@
     color: var(--muted); font-size: 14px;
   }
 
+  #modalAyuda { z-index: 250; }
+  #modalAyuda .modal { max-height: 82vh; overflow-y: auto; }
+
   .ayuda-item {
     border: 1px solid var(--line); border-radius: 11px;
     margin-bottom: 7px; overflow: hidden; background: var(--panel);
@@ -11389,6 +11392,10 @@ const AYUDA = [
 function abrirAyuda() {
   const cont = document.getElementById('listaAyuda');
   if (!cont) return;
+
+  // cerrar el menu del usuario
+  const my = document.getElementById('modalCuentaUsuario');
+  if (my) my.classList.remove('on');
 
   const items = AYUDA.filter(function (a) { return !a.cap || cap(a.cap); });
 
