@@ -1488,6 +1488,35 @@
 
   .vacio { text-align: center; color: var(--muted); padding: 34px 20px; font-size: 14px; }
 
+  .ok-cobro {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--accent);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+  }
+  .ok-cobro.ver { display: flex; }
+  .ok-circulo { width: 110px; height: 110px; }
+  .ok-circulo svg { width: 100%; height: 100%; }
+  .ok-c {
+    stroke: rgba(255,255,255,.9); stroke-width: 2.5;
+    stroke-dasharray: 151; stroke-dashoffset: 151;
+    animation: dibujaCirculo .5s cubic-bezier(.65,0,.45,1) forwards;
+  }
+  .ok-t {
+    stroke: #fff; stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 40; stroke-dashoffset: 40;
+    animation: dibujaTilde .3s cubic-bezier(.65,0,.45,1) .45s forwards;
+  }
+  @keyframes dibujaCirculo { to { stroke-dashoffset: 0; } }
+  @keyframes dibujaTilde { to { stroke-dashoffset: 0; } }
+  .ok-txt {
+    color: #fff; font-size: 22px; font-weight: 500;
+    opacity: 0; animation: apareceTxt .3s ease .7s forwards;
+  }
+  @keyframes apareceTxt { to { opacity: 1; } }
+
   .aviso {
     position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
     background: var(--accent); color: #fff; padding: 13px 22px;
@@ -3167,6 +3196,16 @@
     <div id="ccMovimientos" style="max-height:280px; overflow-y:auto;"></div>
     <button class="btn-sec" id="btnCerrarCuenta" style="margin-top:14px;">Cerrar</button>
   </div>
+</div>
+
+<div class="ok-cobro" id="okCobro">
+  <div class="ok-circulo">
+    <svg viewBox="0 0 52 52">
+      <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
+      <path class="ok-t" fill="none" d="M14 27l8 8 16-16"/>
+    </svg>
+  </div>
+  <div class="ok-txt" id="okCobroTxt"></div>
 </div>
 
 <div class="aviso" id="aviso"></div>
@@ -5331,8 +5370,13 @@ function irAVista(nombre) {
 let ultimaVenta = null;
 
 function mostrarHecho(datos) {
+  // animacion de cobro exitoso antes del detalle
+  mostrarOkCobro(plata(datos.total));
+  setTimeout(function () { mostrarHechoDetalle(datos); }, 1400);
+}
+
+function mostrarHechoDetalle(datos) {
   ultimaVenta = datos;
-  sonidoVenta();
   $('btnAnularUltima').style.display = datos.ventaId ? 'block' : 'none';
   $('hechoMonto').textContent = plata(datos.total);
 
@@ -11092,6 +11136,23 @@ filtrarTarjetas('repContenido', 'buscarRep');
 filtrarTarjetas('listaReservas', 'buscarReservas');
 filtrarTarjetas('grillaCanchas', 'buscarCanchas');
 filtrarTarjetas('listaAgenda', 'buscarAgenda');
+
+// pantalla de cobro exitoso
+function mostrarOkCobro(texto) {
+  const o = document.getElementById('okCobro');
+  if (!o) return;
+
+  document.getElementById('okCobroTxt').textContent = texto || 'Listo';
+
+  // reiniciar la animacion
+  const svg = o.querySelector('svg');
+  if (svg) { const c = svg.cloneNode(true); svg.parentNode.replaceChild(c, svg); }
+
+  o.classList.add('ver');
+  sonidoVenta(); vibrar(60);
+
+  setTimeout(function () { o.classList.remove('ver'); }, 1500);
+}
 
 /* ══ Vuelto ══ */
 

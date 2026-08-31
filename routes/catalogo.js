@@ -243,7 +243,7 @@ router.get('/directorio', (req, res) => {
             WHERE p.user_id = n.user_id AND p.activo = 1
               AND p.en_catalogo = 1 AND COALESCE(p.es_insumo,0) = 0) AS productos
     FROM negocio n
-    WHERE n.catalogo_activo = 1 AND n.slug IS NOT NULL AND n.slug != ''
+    WHERE n.catalogo_activo = 1 AND n.en_directorio = 1 AND n.slug IS NOT NULL AND n.slug != ''
   `;
 
   const params = [];
@@ -261,7 +261,7 @@ router.get('/directorio', (req, res) => {
   // rubros disponibles, para los filtros
   const rubros = db.prepare(`
     SELECT rubro, COUNT(*) AS n FROM negocio
-    WHERE catalogo_activo = 1 AND slug IS NOT NULL AND rubro IS NOT NULL
+    WHERE catalogo_activo = 1 AND en_directorio = 1 AND slug IS NOT NULL AND rubro IS NOT NULL
     GROUP BY rubro ORDER BY n DESC
   `).all();
 
