@@ -1576,9 +1576,17 @@
     .btn-limpiar { padding: 7px; margin-top: 4px; }
     .izq, .lista-wrap { padding: 12px; }
     .dos-arriba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .dos-arriba .btn-nuevo { flex: none; width: 100%; padding: 12px 8px; font-size: 14px; }
-    .dos-arriba .btn-nuevo.gris { padding: 9px 8px; font-size: 12.5px; }
-    .dos-arriba .btn-nuevo:first-child { grid-column: 1 / -1; }
+    .dos-arriba {
+      display: flex !important; gap: 8px;
+      overflow-x: auto; scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .dos-arriba::-webkit-scrollbar { display: none; }
+    .dos-arriba .btn-nuevo {
+      flex: 0 0 auto; width: auto; padding: 11px 16px; font-size: 14px;
+    }
+    .dos-arriba .btn-nuevo.gris { padding: 9px 12px; font-size: 12.5px; }
     .grilla { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     header { padding: 12px 14px; }
     nav button { font-size: 13px; padding: 13px 12px; }
