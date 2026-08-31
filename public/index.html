@@ -312,33 +312,9 @@
     display: flex; background: var(--accent);
     flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-  }
-
-  /* las categorias siguen dentro del bloque verde */
-  #v-vender .chips-wrap {
-    background: var(--accent);
     border-radius: 0 0 18px 18px;
     box-shadow: 0 2px 10px rgba(0,0,0,.08);
-    padding: 4px 14px 12px;
-    margin: 0 0 10px;
-    width: 100%;
-  }
-  /* la vista arranca pegada al nav */
-  #v-vender .izq { padding-top: 0; }
-  #v-vender { padding-top: 0; }
-  /* el bloque verde llega hasta los bordes */
-  #v-vender .chips-wrap {
-    margin-left: calc(-1 * var(--pad-lat, 14px));
-    margin-right: calc(-1 * var(--pad-lat, 14px));
-    width: auto;
-  }
-  #v-vender .chips button {
-    background: rgba(255,255,255,.18);
-    border-color: rgba(255,255,255,.3);
-    color: #fff;
-  }
-  #v-vender .chips button.on {
-    background: #fff; color: var(--accent-dark); border-color: #fff;
+    margin-bottom: 4px;
   }
   nav::-webkit-scrollbar { display: none; }
   nav button {
