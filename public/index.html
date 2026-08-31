@@ -10979,9 +10979,13 @@ document.getElementById('buscarGlobal').addEventListener('input', function () {
 document.getElementById('btnScanGlobal').onclick = function () {
   const v = document.querySelector('.vista.on');
   if (!v) return;
-  if (v.id === 'v-vender' && typeof abrirEscaner === 'function') abrirEscaner();
-  else if (v.id === 'v-productos' && document.getElementById('btnEscanearProd')) {
-    document.getElementById('btnEscanearProd').click();
+
+  if (v.id === 'v-vender') {
+    modoScan = 'vender';
+    abrirScan();
+  } else if (v.id === 'v-productos') {
+    const b = document.getElementById('btnEscanearProd');
+    if (b) b.click();
   }
 };
 
