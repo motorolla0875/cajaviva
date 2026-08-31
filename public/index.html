@@ -4825,7 +4825,7 @@ async function guardarProductoRapido() {
   const nombre = $('pNombre').value.trim();
   if (!nombre) throw new Error('Ponele un nombre al producto.');
   const venta = num($('pVenta').value);
-  if (venta <= 0) throw new Error('El precio de venta tiene que ser mayor a 0.');
+  if (venta <= 0 && !esInsumoActual) throw new Error('El precio de venta tiene que ser mayor a 0.');
 
   const cuerpo = {
     nombre: nombre, precioVenta: venta,
@@ -4867,7 +4867,7 @@ $('btnGuardarProd').onclick = async function () {
   const nombre = $('pNombre').value.trim();
   if (!nombre) { $('msgProd').innerHTML = '<div class="msg">Ponele un nombre al producto.</div>'; return; }
   const venta = num($('pVenta').value);
-  if (venta <= 0) { $('msgProd').innerHTML = '<div class="msg">El precio de venta tiene que ser mayor a 0.</div>'; return; }
+  if (venta <= 0 && !esInsumoActual) { $('msgProd').innerHTML = '<div class="msg">El precio de venta tiene que ser mayor a 0.</div>'; return; }
 
   const cuerpo = {
     nombre: nombre, precioVenta: venta,
