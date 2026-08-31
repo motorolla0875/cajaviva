@@ -1088,6 +1088,12 @@
   }
   .gc-celda.pagada { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+  #resumenDisp .rep-resumen {
+    padding: 8px 12px; margin-bottom: 8px;
+  }
+  #resumenDisp .rep-resumen .val { font-size: 15px; }
+  #resumenDisp .rep-resumen .lbl { font-size: 11px; }
+
   .unidad-card {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -1848,6 +1854,7 @@
         <button data-tab="cobrados">Ya cobrados</button>
       </div>
 
+      <input type="text" id="buscarCanchas" style="display:none;">
       <div id="grillaCanchas"></div>
     </div>
   </div>
@@ -1875,6 +1882,7 @@
         </div>
       </div>
 
+      <input type="text" id="buscarReservas" style="display:none;">
       <div id="listaReservas"></div>
     </div>
   </div>
@@ -1897,6 +1905,7 @@
         <button class="btn-nuevo gris" id="btnRecordar" style="display:none;">Recordar</button>
       </div>
       <div id="resumenAgenda"></div>
+      <input type="text" id="buscarAgenda" style="display:none;">
       <div id="listaAgenda"></div>
     </div>
   </div>
@@ -10953,7 +10962,10 @@ function campoDeBusqueda() {
     'v-clientes': 'buscarCli',
     'v-caja': 'buscarCaja',
     'v-pedidos': 'buscarPedidos',
-    'v-reportes': 'buscarRep'
+    'v-reportes': 'buscarRep',
+    'v-reservas': 'buscarReservas',
+    'v-canchas': 'buscarCanchas',
+    'v-agenda': 'buscarAgenda'
   };
 
   const id = mapa[v.id];
@@ -11025,6 +11037,9 @@ function filtrarTarjetas(contenedorId, campoId) {
 filtrarTarjetas('listaPedidos', 'buscarPedidos');
 filtrarTarjetas('reservasWeb', 'buscarPedidos');
 filtrarTarjetas('repContenido', 'buscarRep');
+filtrarTarjetas('listaReservas', 'buscarReservas');
+filtrarTarjetas('grillaCanchas', 'buscarCanchas');
+filtrarTarjetas('listaAgenda', 'buscarAgenda');
 
 /* ══ Vuelto ══ */
 
