@@ -4768,6 +4768,12 @@ function abrirProd(id) {
   }
   aplicarEjemplos(false);
   $('tituloProd').textContent = p ? 'Editar producto' : 'Nuevo producto';
+
+  const wv0 = $('pVenta').closest('div');
+  if (wv0) wv0.style.display = '';
+  const lc0 = [].slice.call(document.querySelectorAll('#modalProd label'))
+    .filter(function (l) { return l.textContent.indexOf('Cuanto te cuesta') === 0; })[0];
+  if (lc0) lc0.textContent = 'Precio de costo';
   $('wrapStockIni').style.display = p ? 'none' : 'block';
   $('wrapCostoProd').style.display = '';
   $('hintMargen').style.display = '';
@@ -9079,8 +9085,15 @@ document.getElementById('btnNuevoInsumo').onclick = function () {
   $('swEsInsumo').classList.add('on');
   $('tituloProd').textContent = 'Nuevo insumo';
   $('pNombre').placeholder = 'Nombre del insumo';
-  // un insumo no se vende suelto
+  // un insumo no se vende suelto: solo interesa cuanto cuesta
   $('pVenta').value = '0';
+  const wv = $('pVenta').closest('div');
+  if (wv) wv.style.display = 'none';
+
+  const lc = [].slice.call(document.querySelectorAll('#modalProd label'))
+    .filter(function (l) { return l.textContent.indexOf('Precio de costo') === 0; })[0];
+  if (lc) lc.textContent = 'Cuanto te cuesta';
+
   $('wrapEsInsumo').style.display = 'none';
   $('wrapCategoria').style.display = 'none';
   $('pCategoria').value = '';
