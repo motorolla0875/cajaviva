@@ -3929,6 +3929,23 @@ let conVencimiento = null;
 function elegirFamilia(f) {
   familiaElegida = f;
 
+  // en reparto, ofrecer MiReparto antes de seguir
+  if (f === 'reparto') {
+    $('lblRubro').textContent = 'Repartis a domicilio?';
+    $('familias').innerHTML =
+      '<div style="background:var(--accent-soft); border-radius:14px; padding:18px; text-align:left; grid-column:1/-1;">' +
+      '<div style="font-size:13px; color:var(--accent-dark); line-height:1.55; margin-bottom:12px;">' +
+      'Tenemos otra app hecha para eso: <b>MiReparto</b>. Te arma el recorrido del dia, ' +
+      'anota que le dejas a cada cliente y quien te debe.</div>' +
+      '<a href="https://mireparto.io" target="_blank" rel="noopener" ' +
+      'style="display:block; text-align:center; padding:12px; border-radius:10px; background:var(--accent); color:#fff; font-size:14px; font-weight:500; text-decoration:none;">' +
+      'Conocer MiReparto</a></div>' +
+      '<button class="rubro-btn" style="grid-column:1/-1;" onclick="seguirConReparto()">Seguir con CajaViva' +
+      '<span class="que">Igual quiero usar esta app</span></button>';
+    $('familias').style.display = 'grid';
+    return;
+  }
+
   // peso tambien pregunta por vencimientos
   if (f === 'peso' && conVencimiento === null) {
     $('lblRubro').textContent = 'Tus productos se vencen?';
@@ -11631,6 +11648,11 @@ function mostrarAvisoReparto() {
   const cont = document.getElementById('avisoRepartoBox');
   if (!cont) return;
   cont.innerHTML = cap('cap_reparto') ? avisoMiReparto() : '';
+}
+
+function seguirConReparto() {
+  familiaElegida = 'reparto';
+  pintarRubrosDeFamilia('reparto');
 }
 
 /* ══ Vuelto ══ */
