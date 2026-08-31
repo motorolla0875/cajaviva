@@ -231,4 +231,41 @@ router.post('/dominio/certificar', (req, res) => {
     });
 });
 
+
+// ── directorio publico de negocios ──
+router.get('/directorio', (req, res) => {
+  const q = (req.query.q || '').trim().toLowerCase();
+  const rubro = req.query.rubro || '';
+
+  let sql = `
+    SELECT n.nombre, n.slug, n.rubro, n.banner, n.tema, n.pais,
+           (SELECT COUNT(*) FROM productos p
+            WHERE p.user_id = n.user_id AND p.activo = 1
+              AND p.en_catalogo = 1 AND COALESCE(p.es_insumo,0) = 0) AS productos
+    FROM negocio n
+    WHERE n.catalogo_activo = 1 AND n.slug IS NOT NULL AND n.slug != ''
+  `;
+
+  const params = [];
+
+  if (rubro) { sql += ' AND n.rubro = ?'; params.push(rubro); }
+  if (q) { sql += ' AND LOWER(n.nombre) LIKE ?'; params.push('%' + q + '%'); }
+
+  sql += ' ORDER BY productos DESC, n.nombre LIMIT 120';
+
+  const filas = db.prepare(sql).all(...params);
+
+  // solo los que tienen algo cargado
+  const conProductos = filas.filter(function (n) { return n.productos > 0; });
+
+  // rubros disponibles, para los filtros
+  const rubros = db.prepare(`
+    SELECT rubro, COUNT(*) AS n FROM negocio
+    WHERE catalogo_activo = 1 AND slug IS NOT NULL AND rubro IS NOT NULL
+    GROUP BY rubro ORDER BY n DESC
+  `).all();
+
+  res.json({ negocios: conProductos, rubros: rubros });
+});
+
 module.exports = router;
