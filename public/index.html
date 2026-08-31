@@ -1536,13 +1536,21 @@
       height: 76px; background: var(--panel);
       border-top: 1px solid var(--line); z-index: 40;
     }
+    /* la manija flota a media altura, sobre el borde izquierdo */
     .bf-manija {
-      display: flex; align-items: center; justify-content: flex-start;
-      height: 26px; padding-left: 18px;
+      position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+      width: 26px; height: 68px; z-index: 45;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--accent);
+      border-radius: 0 14px 14px 0;
+      box-shadow: 2px 0 8px rgba(0,0,0,.15);
     }
     .bf-manija span {
-      width: 52px; height: 5px; border-radius: 3px; background: var(--accent);
+      width: 5px; height: 34px; border-radius: 3px;
+      background: rgba(255,255,255,.9);
     }
+    .barra-fija { height: 52px; }
+    .bf-datos { height: 52px; }
     .bf-datos {
       display: flex; align-items: center; justify-content: space-between;
       height: 50px; padding: 0 18px;
