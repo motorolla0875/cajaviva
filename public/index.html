@@ -524,6 +524,7 @@
   .nota-desc { font-size: 12px; color: var(--accent-dark); margin: -6px 0 12px; }
   .nota-desc.vacia { display: none; }
 
+  .medios .abrir-vuelto.on { }
   .medios .abrir-vuelto {
     flex: 1; padding: 11px 8px; border-radius: 10px;
     border: 1px dashed var(--line); background: var(--panel);
@@ -4557,9 +4558,11 @@ function pintarSelectClientes() {
 
 $('medios').addEventListener('click', function (e) {
   const b = e.target.closest('button');
-  if (!b) return;
+  if (!b || !b.dataset.medio) return;
   medioPago = b.dataset.medio;
-  Array.prototype.forEach.call($('medios').children, function (x) { x.classList.toggle('on', x === b); });
+  Array.prototype.forEach.call($('medios').children, function (x) {
+    if (x.dataset.medio) x.classList.toggle('on', x === b);
+  });
   $('selCliente').classList.toggle('on', medioPago === 'cuenta_corriente');
   actualizarVueltoBox();
 });
@@ -9276,10 +9279,14 @@ document.getElementById('btnMasOpciones').onclick = function () {
 
 let vueltoAbierto = false;
 
-document.getElementById('btnAbrirVuelto').onclick = function () {
-  vueltoAbierto = true;
+document.getElementById('btnAbrirVuelto').onclick = function (e) {
+  e.stopPropagation();
+  vueltoAbierto = !vueltoAbierto;
+  this.classList.toggle('on', vueltoAbierto);
   actualizarVueltoBox();
-  setTimeout(function () { document.getElementById('pagaCon').focus(); }, 100);
+  if (vueltoAbierto) {
+    setTimeout(function () { document.getElementById('pagaCon').focus(); }, 100);
+  }
 };
 
 
