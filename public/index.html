@@ -760,6 +760,22 @@
     color: var(--muted); font-size: 14px;
   }
 
+  .ayuda-item {
+    border: 1px solid var(--line); border-radius: 11px;
+    margin-bottom: 7px; overflow: hidden; background: var(--panel);
+  }
+  .ayuda-p {
+    padding: 12px 14px; font-size: 14px; font-weight: 500;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .ayuda-p span { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+  .ayuda-item.abierto .ayuda-p span { transform: rotate(45deg); }
+  .ayuda-r {
+    display: none; padding: 0 14px 13px;
+    font-size: 13.5px; color: var(--muted); line-height: 1.55;
+  }
+  .ayuda-item.abierto .ayuda-r { display: block; }
+
   .modal-bg {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.4); z-index: 100;
@@ -2134,6 +2150,7 @@
     </div>
     <button class="btn-sec" id="btnConfigNegocio">Configurar mi negocio</button>
     <button class="btn-sec" id="btnEmpleados">Empleados</button>
+    <button class="btn-sec" onclick="abrirAyuda()">Ayuda</button>
     <button class="btn-sec" id="btnCatalogo">Catalogo para compartir</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
     <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
@@ -2220,6 +2237,15 @@
     <div id="msgScan"></div>
     <div id="lectorCam"></div>
     <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalAyuda">
+  <div class="modal">
+    <h3>Ayuda</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Toca una pregunta para ver la respuesta.</p>
+    <div id="listaAyuda"></div>
+    <button class="btn-sec" id="btnCerrarAyuda">Cerrar</button>
   </div>
 </div>
 
@@ -11310,6 +11336,75 @@ function descuentoRapido(paso) {
   actualizarNotaDesc();
   actualizarVueltoBox();
 }
+
+/* ══ Ayuda ══ */
+
+const AYUDA = [
+  { cap: null, p: 'Como cargo mis productos',
+    r: 'Anda a Productos y toca "+ Nuevo producto". Poné el nombre, cuanto lo vendes y cuanto te costo. El stock lo podes cargar ahi mismo. Si tenes muchos productos, podes importarlos desde un Excel con el boton de la planilla.' },
+
+  { cap: null, p: 'Como hago una venta',
+    r: 'En Vender toca los productos que se lleva el cliente. Se van sumando abajo. Cuando termines, desliza la barra verde de abajo, elegi como te paga y toca Cobrar.' },
+
+  { cap: null, p: 'Como cobro si me pagan despues',
+    r: 'Al cobrar, en vez de Efectivo elegi "Fiado" y despues a quien le fias. Esa venta queda anotada en su cuenta. Podes ver quien te debe en la pestaña Fiado, y registrar los pagos cuando te vayan pagando.' },
+
+  { cap: null, p: 'Como cargo stock cuando me llega mercaderia',
+    r: 'En Productos, toca el producto y despues "Reponer". Poné cuantas unidades llegaron. Si elegis un proveedor, queda registrado como una compra.' },
+
+  { cap: null, p: 'Como veo cuanto gane',
+    r: 'En Caja ves todo lo que vendiste, con el periodo que elijas: hoy, la semana o el mes. Arriba aparece lo vendido, la ganancia, los gastos y el balance. En Reportes tenes mas detalle: que se vende mas, que te deja mas ganancia.' },
+
+  { cap: null, p: 'Como comparto mi catalogo',
+    r: 'Anda a Mi tienda y toca "Abrir mi tienda". Elegi que productos mostrar, el color y como te contactan. Despues compartis el link por WhatsApp y tus clientes te hacen pedidos desde ahi.' },
+
+  { cap: null, p: 'Como agrego un empleado',
+    r: 'En el menu de arriba, Empleados. Cada uno entra con su clave y vos elegis que puede hacer. Todas las ventas quedan registradas con el nombre de quien las hizo.' },
+
+  { cap: null, p: 'Como hago un cierre de caja',
+    r: 'En Caja, toca "Cerrar caja". Poné cuanta plata tenes fisicamente y la app te dice si coincide con lo que deberia haber. Queda guardado para revisar despues.' },
+
+  { cap: 'cap_variantes', p: 'Como cargo talles y colores',
+    r: 'Al crear el producto, en vez de poner el stock toca "Cargar talles". Ahi poné cada talle o color con su cantidad. Cuando vendas, la app te va a preguntar cual se lleva.' },
+
+  { cap: 'cap_recetas', p: 'Como funcionan las recetas',
+    r: 'Primero carga los insumos con "+ Insumo": solo el nombre y cuanto te cuesta. Despues crea el producto con "+ Receta" y elegi que lleva y cuanto. Al vender, se descuentan los insumos solos.' },
+
+  { cap: 'cap_peso', p: 'Como vendo por peso',
+    r: 'Al cargar el producto elegi la unidad: kilo, gramo, litro. Cuando lo vendas, la app te pide cuanto pesa y calcula el precio. Si tenes balanza con codigo de barras, el escaner lo lee directo.' },
+
+  { cap: 'cap_turnos', p: 'Como manejo los turnos',
+    r: 'Primero carga tus servicios con "+ Servicio": nombre, precio y cuanto dura. Despues en Agenda das los turnos. Si activas los turnos web, tus clientes los sacan solos desde tu catalogo.' },
+
+  { cap: 'cap_alquiler', p: 'Como cargo lo que alquilo',
+    r: 'En Productos toca "+ Unidad". Poné el nombre, el precio por noche y una foto. Podes agregar mas fotos y una descripcion para que se vea lindo en tu catalogo. Despues gestionas todo desde Reservas.' },
+
+  { cap: 'cap_alquiler', p: 'Como cobro una seña',
+    r: 'Al crear la reserva poné cuanto te dieron de seña. Queda registrada como una venta en Caja. Cuando cobres el resto, la app descuenta lo que ya pago.' },
+
+  { cap: 'cap_canchas', p: 'Como reservo una cancha',
+    r: 'En Canchas ves la grilla del dia con todas tus canchas y los horarios. Toca un hueco libre y cargas quien viene. Los ocupados se ven en rojo, y en verde los que ya pagaron.' }
+];
+
+function abrirAyuda() {
+  const cont = document.getElementById('listaAyuda');
+  if (!cont) return;
+
+  const items = AYUDA.filter(function (a) { return !a.cap || cap(a.cap); });
+
+  cont.innerHTML = items.map(function (a, i) {
+    return '<div class="ayuda-item" onclick="this.classList.toggle(\'abierto\')">' +
+      '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
+      '<div class="ayuda-r">' + esc(a.r) + '</div>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('modalAyuda').classList.add('on');
+}
+
+document.getElementById('btnCerrarAyuda').onclick = function () {
+  document.getElementById('modalAyuda').classList.remove('on');
+};
 
 /* ══ Vuelto ══ */
 
