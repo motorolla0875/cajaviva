@@ -1586,8 +1586,9 @@
 
     .barra-fija {
       display: block; position: fixed; left: 0; right: 0; bottom: 0;
-      height: 76px; background: var(--panel);
-      border-top: 1px solid var(--line); z-index: 40;
+      height: 76px; background: var(--accent);
+      border-top: none; z-index: 40;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.12);
     }
     /* la manija flota a media altura, sobre el borde izquierdo */
     .bf-manija {
@@ -1609,7 +1610,7 @@
       height: 50px; padding: 0 18px;
     }
     .bf-datos .br-cant, .bf-datos .br-total {
-      font-size: 26px; font-weight: 500; color: var(--accent);
+      font-size: 26px; font-weight: 500; color: #fff;
     }
     /* espacio para que la grilla no quede tapada por la barra */
     .der.chico .barra-resumen {
