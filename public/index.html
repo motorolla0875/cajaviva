@@ -221,7 +221,19 @@
     flex-shrink: 0; color: #fff;
   }
   header .marca, header .marca span { color: #fff !important; }
-  header .negocio { visibility: hidden; }
+  header .negocio { display: none; }
+  .buscador-fijo { flex: 1; min-width: 0; max-width: 340px; }
+  .buscador-fijo input {
+    width: 100%; padding: 9px 14px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.18);
+    color: #fff; font-size: 14px;
+  }
+  .buscador-fijo input::placeholder { color: rgba(255,255,255,.7); }
+  .buscador-fijo input:focus {
+    outline: none; background: rgba(255,255,255,.28);
+    border-color: rgba(255,255,255,.6);
+  }
   header .negocio { color: rgba(255,255,255,.85) !important; }
   header .hoy { color: rgba(255,255,255,.8) !important; }
   header .hoy b { color: #fff !important; }
@@ -1662,6 +1674,9 @@
   <header>
     <button class="yo" id="btnYo">?</button>
     <div class="negocio" id="nombreNegocio"></div>
+    <div class="buscador-fijo">
+      <input type="text" id="buscarGlobal" placeholder="Buscar..." autocomplete="off">
+    </div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
 
@@ -4042,6 +4057,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'pedidos') cargarPedidos();
     if (b.dataset.vista === 'agenda') cargarAgenda();
     if (b.dataset.vista === 'reservas') cargarReservas();
+    acomodarBuscadorGlobal();
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
   };
 });
@@ -10896,6 +10912,59 @@ async function probarDominio() {
       esc(e.message) + '</div>';
   }
 }
+
+/* ══ Buscador unico del encabezado ══ */
+
+// a que campo le pasa lo que se escribe, segun la vista abierta
+function campoDeBusqueda() {
+  const v = document.querySelector('.vista.on');
+  if (!v) return null;
+
+  const mapa = {
+    'v-vender': 'buscar',
+    'v-productos': 'buscarProd',
+    'v-clientes': 'buscarCli',
+    'v-caja': 'buscarCaja'
+  };
+
+  const id = mapa[v.id];
+  return id ? document.getElementById(id) : null;
+}
+
+function textoBuscadorSegunVista() {
+  const v = document.querySelector('.vista.on');
+  if (!v) return 'Buscar...';
+
+  const textos = {
+    'v-vender': 'Buscar producto...',
+    'v-productos': 'Buscar producto...',
+    'v-clientes': 'Buscar cliente...',
+    'v-caja': 'Buscar en caja...'
+  };
+
+  return textos[v.id] || 'Buscar...';
+}
+
+function acomodarBuscadorGlobal() {
+  const b = document.getElementById('buscarGlobal');
+  if (!b) return;
+
+  const campo = campoDeBusqueda();
+  b.parentElement.style.display = campo ? 'block' : 'none';
+  b.placeholder = textoBuscadorSegunVista();
+
+  // al cambiar de vista, arranca vacio
+  if (campo && b.value !== campo.value) {
+    b.value = campo.value || '';
+  }
+}
+
+document.getElementById('buscarGlobal').addEventListener('input', function () {
+  const campo = campoDeBusqueda();
+  if (!campo) return;
+  campo.value = this.value;
+  campo.dispatchEvent(new Event('input', { bubbles: true }));
+});
 
 /* ══ Vuelto ══ */
 
