@@ -4254,7 +4254,7 @@ function pintarGrilla() {
     const bajo = !sin && !esServ && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
     const cant = carrito.filter(function (l) { return l.productoId === p.id; })
       .reduce(function (a, l) { return a + l.cantidad; }, 0);
-    return '<button class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
+    return '<button data-id="' + p.id + '" class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
       (cant > 0 ? '<span class="en-carrito">' + fmtCant(cant) + '</span>' : '') +
       (p.foto_mini || p.foto_url ? '<img class="foto-mini" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
       '<div class="info-prod">' +
@@ -4276,6 +4276,26 @@ function pintarGrilla() {
   }).join('');
 }
 $('buscar').addEventListener('input', pintarGrilla);
+
+// evita que las fotos parpadeen al repintar
+function marcarSeleccion() {
+  document.querySelectorAll('.grilla .prod').forEach(function (el) {
+    const id = el.dataset.id;
+    if (!id) return;
+    const l = carrito.filter(function (x) { return x.productoId === id; })[0];
+    el.classList.toggle('en-venta', !!l);
+    const b = el.querySelector('.badge-cant');
+    if (l) {
+      if (b) b.textContent = fmtCant(l.cantidad);
+      else {
+        const s = document.createElement('span');
+        s.className = 'badge-cant';
+        s.textContent = fmtCant(l.cantidad);
+        el.appendChild(s);
+      }
+    } else if (b) { b.remove(); }
+  });
+}
 
 function agregar(id) {
   const p = productos.filter(function (x) { return x.id === id; })[0];
@@ -4374,7 +4394,7 @@ function pintarCarrito() {
   if ($('brCant')) $('brCant').textContent = nItems;
   if ($('brTotal')) $('brTotal').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
-  pintarGrilla();
+  marcarSeleccion();
   actualizarNotaDesc();
   actualizarVueltoBox();
   $('btnCobrar').disabled = carrito.length === 0;
