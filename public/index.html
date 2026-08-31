@@ -512,6 +512,14 @@
     background: var(--bg); color: var(--text); font-size: 15px; font-weight: 500;
   }
   .cobrar-fila input:focus { outline: none; border-color: var(--accent); }
+  .desc-rapido { display: flex; gap: 6px; margin: 8px 0 4px; }
+  .desc-rapido button {
+    flex: 1; padding: 8px 4px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-size: 12.5px; font-weight: 500;
+  }
+  .desc-rapido button:active { background: var(--accent-soft); }
+
   .nota-desc { font-size: 12px; color: var(--accent-dark); margin: -6px 0 12px; }
   .nota-desc.vacia { display: none; }
 
@@ -1870,6 +1878,11 @@
         <div class="cobrar-fila">
           <label>Cobrar</label>
           <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="desc-rapido">
+          <button type="button" onclick="descuentoRapido(-5)">&minus;5%</button>
+          <button type="button" onclick="descuentoRapido(5)">+5%</button>
+          <button type="button" onclick="descuentoRapido(0)">Sin descuento</button>
         </div>
         <div class="nota-desc vacia" id="notaDesc"></div>
         <button type="button" class="abrir-vuelto" id="btnAbrirVuelto">Calcular vuelto</button>
@@ -11269,6 +11282,26 @@ function cargarVistaTienda() {
 function irAConfigTienda() {
   const b = document.getElementById('btnCatalogo');
   if (b) b.click();
+}
+
+// descuento de a 5% con los botones
+function descuentoRapido(paso) {
+  const base = carrito.reduce(function (a, l) { return a + l.precio * l.cantidad; }, 0);
+  if (base <= 0) return;
+
+  if (paso === 0) {
+    $('totalFinal').value = Math.round(base);
+  } else {
+    const actual = num($('totalFinal').value) || base;
+    const pctActual = (1 - actual / base) * 100;
+    let nuevo = Math.round(pctActual - paso);
+    if (nuevo < 0) nuevo = 0;
+    if (nuevo > 90) nuevo = 90;
+    $('totalFinal').value = Math.round(base * (1 - nuevo / 100));
+  }
+
+  actualizarNotaDesc();
+  actualizarVueltoBox();
 }
 
 /* ══ Vuelto ══ */
