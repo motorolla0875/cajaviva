@@ -223,6 +223,16 @@
   header .marca, header .marca span { color: #fff !important; }
   header .negocio { display: none; }
   .buscador-fijo { flex: 1; min-width: 0; max-width: 340px; position: relative; }
+
+  /* en pantalla ancha: buscador al centro, vendido a la derecha */
+  @media (min-width: 760px) {
+    header { position: relative; }
+    .buscador-fijo {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      max-width: 380px; width: 40%;
+    }
+    header .hoy { margin-left: auto; }
+  }
   #btnScanGlobal {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
     width: 32px; height: 32px; border-radius: 50%;
