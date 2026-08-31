@@ -1613,7 +1613,15 @@
       font-size: 26px; font-weight: 500; color: #fff;
     }
     .br-izq { display: flex; align-items: center; gap: 10px; }
-    .bf-logo { width: 34px; height: 34px; opacity: .95; }
+    .bf-logo { width: 34px; height: 34px; opacity: .95; transform-origin: 50% 80%; }
+    .bf-logo.saluda { animation: saludaLogo .5s ease; }
+    @keyframes saludaLogo {
+      0% { transform: rotate(0) scale(1); }
+      25% { transform: rotate(-12deg) scale(1.15); }
+      50% { transform: rotate(10deg) scale(1.15); }
+      75% { transform: rotate(-6deg) scale(1.08); }
+      100% { transform: rotate(0) scale(1); }
+    }
     /* espacio para que la grilla no quede tapada por la barra */
     .der.chico .barra-resumen {
       height: 52px; padding: 0 18px; margin: 0;
@@ -4472,6 +4480,13 @@ function pintarCarrito() {
   if ($('brTotal')) $('brTotal').textContent = plata(t);
   $('totalFinal').value = t > 0 ? Math.round(t) : '';
   marcarSeleccion();
+
+  const bl = document.querySelector('.bf-logo');
+  if (bl) {
+    bl.classList.remove('saluda');
+    void bl.offsetWidth;
+    bl.classList.add('saluda');
+  }
   actualizarNotaDesc();
   actualizarVueltoBox();
   $('btnCobrar').disabled = carrito.length === 0;
