@@ -10969,9 +10969,6 @@ function acomodarBuscadorGlobal() {
   }
 }
 
-// acomodarlo al arrancar
-setTimeout(acomodarBuscadorGlobal, 300);
-
 document.getElementById('buscarGlobal').addEventListener('input', function () {
   const campo = campoDeBusqueda();
   if (!campo) return;
