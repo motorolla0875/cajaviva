@@ -780,6 +780,25 @@
     font-size: 13.5px; line-height: 1.6; white-space: pre-wrap;
   }
 
+  .chat-flotante {
+    position: fixed; top: 118px; right: 14px; z-index: 55;
+    width: 46px; height: 46px; border-radius: 50%;
+    border: none; background: var(--accent); color: #fff;
+    box-shadow: 0 3px 12px rgba(0,0,0,.22);
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+  .cf-txt { font-size: 21px; font-weight: 600; line-height: 1; }
+  .cf-anillo {
+    position: absolute; inset: -3px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    border-top-color: transparent; border-right-color: transparent;
+    animation: giraAnillo 2.4s linear infinite;
+    opacity: .6;
+  }
+  @keyframes giraAnillo { to { transform: rotate(360deg); } }
+  .chat-flotante:active { transform: scale(.94); }
+
   .ayuda-item {
     border: 1px solid var(--line); border-radius: 11px;
     margin-bottom: 7px; overflow: hidden; background: var(--panel);
@@ -1852,6 +1871,11 @@
     </div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
+
+  <button class="chat-flotante" id="btnChatFlotante" title="Ayuda">
+    <span class="cf-anillo"></span>
+    <span class="cf-txt">?</span>
+  </button>
 
   <div class="contador-cola" id="contadorCola"></div>
 
@@ -11557,6 +11581,14 @@ document.getElementById('btnPreguntarIA').onclick = async function () {
 document.getElementById('preguntaIA').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') document.getElementById('btnPreguntarIA').click();
 });
+
+document.getElementById('btnChatFlotante').onclick = function () {
+  abrirAyuda();
+  setTimeout(function () {
+    const c = document.getElementById('preguntaIA');
+    if (c) c.focus();
+  }, 200);
+};
 
 /* ══ Vuelto ══ */
 
