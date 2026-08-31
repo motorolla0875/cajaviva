@@ -1536,8 +1536,13 @@
       height: 76px; background: var(--panel);
       border-top: 1px solid var(--line); z-index: 40;
     }
-    .bf-manija { display: flex; align-items: center; justify-content: center; height: 24px; }
-    .bf-manija span { width: 42px; height: 4px; border-radius: 2px; background: var(--line); }
+    .bf-manija {
+      display: flex; align-items: center; justify-content: flex-start;
+      height: 26px; padding-left: 18px;
+    }
+    .bf-manija span {
+      width: 52px; height: 5px; border-radius: 3px; background: var(--accent);
+    }
     .bf-datos {
       display: flex; align-items: center; justify-content: space-between;
       height: 50px; padding: 0 18px;
