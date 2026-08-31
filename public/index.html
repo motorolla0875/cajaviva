@@ -3930,7 +3930,7 @@ function elegirFamilia(f) {
   familiaElegida = f;
 
   // en reparto, ofrecer MiReparto antes de seguir
-  if (f === 'reparto') {
+  if (f === 'reparto' && !saltearAvisoReparto) {
     $('lblRubro').textContent = 'Repartis a domicilio?';
     $('familias').innerHTML =
       '<div style="background:var(--accent-soft); border-radius:14px; padding:18px; text-align:left; grid-column:1/-1;">' +
@@ -11652,8 +11652,13 @@ function mostrarAvisoReparto() {
 
 function seguirConReparto() {
   familiaElegida = 'reparto';
-  mostrarRubrosDe('reparto');
+  // reusar el flujo normal, salteando el aviso
+  saltearAvisoReparto = true;
+  elegirFamilia('reparto');
+  saltearAvisoReparto = false;
 }
+
+let saltearAvisoReparto = false;
 
 /* ══ Vuelto ══ */
 
