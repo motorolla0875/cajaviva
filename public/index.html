@@ -312,9 +312,23 @@
     display: flex; background: var(--accent);
     flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* las categorias siguen dentro del bloque verde */
+  #v-vender .chips-wrap {
+    background: var(--accent);
     border-radius: 0 0 18px 18px;
     box-shadow: 0 2px 10px rgba(0,0,0,.08);
-    margin-bottom: 4px;
+    padding: 8px 12px 10px;
+    margin: 0 0 8px;
+  }
+  #v-vender .chips button {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.3);
+    color: #fff;
+  }
+  #v-vender .chips button.on {
+    background: #fff; color: var(--accent-dark); border-color: #fff;
   }
   nav::-webkit-scrollbar { display: none; }
   nav button {
