@@ -192,6 +192,22 @@
   .unid-op .nu small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
   .unid-op .pu { font-size: 15px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
 
+  .ok-circulo { width: 70px; height: 70px; margin: 0 auto 10px; }
+  .ok-circulo svg { width: 100%; height: 100%; }
+  .ok-c {
+    stroke: var(--accent); stroke-width: 2.5;
+    stroke-dasharray: 151; stroke-dashoffset: 151;
+    animation: dibujaCirculo .5s cubic-bezier(.65,0,.45,1) forwards;
+  }
+  .ok-t {
+    stroke: var(--accent); stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 40; stroke-dashoffset: 40;
+    animation: dibujaTilde .3s cubic-bezier(.65,0,.45,1) .45s forwards;
+  }
+  @keyframes dibujaCirculo { to { stroke-dashoffset: 0; } }
+  @keyframes dibujaTilde { to { stroke-dashoffset: 0; } }
+
   .hora-btn.tomada {
     text-decoration: line-through; opacity: .4;
     cursor: not-allowed; background: var(--panel-2);
@@ -428,7 +444,12 @@
 
 <div id="alqListo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:62; padding:20px 16px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
   <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:20px auto; padding:26px; text-align:center;">
-    <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
+    <div class="ok-circulo">
+      <svg class="tilde-svg" viewBox="0 0 52 52">
+        <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
+        <path class="ok-t" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+    </div>
     <h3 style="margin:14px 0 6px; font-size:20px; font-weight:500;">Reserva enviada</h3>
     <p style="color:var(--text); font-size:15px; font-weight:500; margin:0 0 10px;" id="detalleAlqListo"></p>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.5;">
@@ -487,7 +508,12 @@
 
 <div id="turnoListo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:62; padding:20px 16px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
   <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:20px auto; padding:26px; text-align:center;">
-    <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
+    <div class="ok-circulo">
+      <svg class="tilde-svg" viewBox="0 0 52 52">
+        <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
+        <path class="ok-t" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+    </div>
     <h3 style="margin:14px 0 6px; font-size:20px; font-weight:500;">Turno reservado</h3>
     <p style="color:var(--text); font-size:15px; font-weight:500; margin:0 0 12px;" id="detalleTurnoListo"></p>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.5;">
@@ -510,7 +536,12 @@
 
 <div id="modalListo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:60; padding:20px 16px;">
   <div style="background:var(--panel); border-radius:16px; max-width:360px; margin:40px auto 0; padding:26px; text-align:center;">
-    <div style="width:62px; height:62px; margin:0 auto; border:3px solid var(--accent); border-radius:50%; color:var(--accent); font-size:32px; line-height:56px;">&#10003;</div>
+    <div class="ok-circulo">
+      <svg class="tilde-svg" viewBox="0 0 52 52">
+        <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
+        <path class="ok-t" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+    </div>
     <h3 style="margin:14px 0 4px; font-size:20px; font-weight:500;">Pedido enviado</h3>
     <p style="color:var(--muted); font-size:14px; margin:0 0 6px;" id="numeroPedido"></p>
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 18px;">Te van a contactar para confirmarlo.</p>
@@ -1001,6 +1032,7 @@ $('btnEnviarPedido').onclick = async function () {
       formaPago === 'transferencia' ? 'block' : 'none';
     $('modalPedido').style.display = 'none';
     $('modalListo').style.display = 'block';
+    animarTilde('modalListo');
 
     const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
     const t = textoPedido() + '\n\nPedido N ' + d.numero + '\nDe: ' + nombre;
@@ -1298,6 +1330,7 @@ document.getElementById('btnReservar').onclick = async function () {
 
     cerrarTurnoWeb();
     document.getElementById('turnoListo').style.display = 'block';
+    animarTilde('turnoListo');
   } catch (e) {
     document.getElementById('msgTurnoWeb').innerHTML =
       '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">' +
@@ -1484,6 +1517,7 @@ document.getElementById('btnReservarAlq').onclick = async function () {
 
     cerrarAlq();
     document.getElementById('alqListo').style.display = 'block';
+    animarTilde('alqListo');
   } catch (e) {
     document.getElementById('msgAlq').innerHTML =
       '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">' +
@@ -1700,6 +1734,40 @@ document.getElementById('btnReservarCanchaWeb').onclick = async function () {
   }
   btn.disabled = false; btn.textContent = 'Reservar';
 };
+
+
+// tilde animado y sonido al confirmar
+let audioCat = null;
+
+function pitidoCat(f, dur, retraso) {
+  try {
+    if (!audioCat) audioCat = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCat.state === 'suspended') audioCat.resume();
+    const o = audioCat.createOscillator();
+    const g = audioCat.createGain();
+    o.connect(g); g.connect(audioCat.destination);
+    o.frequency.value = f; o.type = 'sine';
+    const t = audioCat.currentTime + (retraso || 0);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+
+function sonidoOkCat() {
+  pitidoCat(1320, 0.09, 0);
+  pitidoCat(1760, 0.12, 0.09);
+}
+
+function animarTilde(idModal) {
+  const m = document.getElementById(idModal);
+  if (!m) return;
+  const svg = m.querySelector('svg.tilde-svg');
+  if (svg) { const c = svg.cloneNode(true); svg.parentNode.replaceChild(c, svg); }
+  sonidoOkCat();
+  if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
+}
 
 </script>
 
