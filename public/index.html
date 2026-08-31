@@ -2226,6 +2226,7 @@
     <div id="listaCaps"></div>
 
     <button class="btn-ppal" id="btnGuardarNegocio">Guardar</button>
+    <div id="avisoRepartoBox"></div>
     <button class="btn-sec" id="btnCerrarNegocio">Cerrar</button>
   </div>
 </div>
@@ -4221,6 +4222,7 @@ $('btnConfigNegocio').onclick = function () {
   $('nNombre').value = negocio && negocio.nombre ? negocio.nombre : '';
   pintarTemasApp();
   pintarCaps();
+  mostrarAvisoReparto();
   $('modalNegocio').classList.add('on');
 };
 $('btnCerrarNegocio').onclick = function () { $('modalNegocio').classList.remove('on'); };
@@ -11610,6 +11612,25 @@ document.getElementById('btnOcultarChat').onclick = function (e) {
 if (localStorage.getItem('cajaviva_chat_oculto') === '1') {
   const cw = document.getElementById('chatWrap');
   if (cw) cw.classList.add('oculto');
+}
+
+// aviso de MiReparto para los rubros de reparto
+const LINK_REPARTO = 'https://mireparto.io';
+
+function avisoMiReparto() {
+  return '<div style="background:var(--accent-soft); border-radius:12px; padding:14px; margin-top:14px;">' +
+    '<div style="font-size:13.5px; font-weight:500; color:var(--accent-dark); margin-bottom:4px;">Repartis a domicilio?</div>' +
+    '<div style="font-size:12.5px; color:var(--accent-dark); line-height:1.5; margin-bottom:10px;">' +
+    'Tenemos MiReparto, hecha para eso: el recorrido del dia, que le dejas a cada cliente y quien te debe.</div>' +
+    '<a href="' + LINK_REPARTO + '" target="_blank" rel="noopener" ' +
+    'style="display:block; text-align:center; padding:10px; border-radius:9px; background:var(--accent); color:#fff; font-size:13.5px; font-weight:500; text-decoration:none;">' +
+    'Ver MiReparto</a></div>';
+}
+
+function mostrarAvisoReparto() {
+  const cont = document.getElementById('avisoRepartoBox');
+  if (!cont) return;
+  cont.innerHTML = cap('cap_reparto') ? avisoMiReparto() : '';
 }
 
 /* ══ Vuelto ══ */
