@@ -4374,12 +4374,12 @@ function marcarSeleccion() {
     if (!id) return;
     const l = carrito.filter(function (x) { return x.productoId === id; })[0];
     el.classList.toggle('en-venta', !!l);
-    const b = el.querySelector('.badge-cant');
+    const b = el.querySelector('.en-carrito');
     if (l) {
       if (b) b.textContent = fmtCant(l.cantidad);
       else {
         const s = document.createElement('span');
-        s.className = 'badge-cant';
+        s.className = 'en-carrito';
         s.textContent = fmtCant(l.cantidad);
         el.appendChild(s);
       }
