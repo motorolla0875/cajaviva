@@ -1831,6 +1831,7 @@
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
+    <button data-vista="tienda" id="tabTienda">Mi tienda</button>
   </nav>
 
   <div class="vista on" id="v-vender">
@@ -2018,6 +2019,12 @@
       <input type="text" id="buscarPedidos" style="display:none;">
       <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-tienda">
+    <div class="lista-wrap">
+      <div id="resumenTienda"></div>
     </div>
   </div>
 
@@ -4211,6 +4218,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'reservas') cargarReservas();
     acomodarBuscadorGlobal();
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
+    if (b.dataset.vista === 'tienda') cargarVistaTienda();
   };
 });
 
@@ -11209,6 +11217,46 @@ filtrarTarjetas('listaReservas', 'buscarReservas');
 filtrarTarjetas('grillaCanchas', 'buscarCanchas');
 filtrarTarjetas('listaAgenda', 'buscarAgenda');
 
+
+/* ══ Mi tienda ══ */
+
+function cargarVistaTienda() {
+  const cont = document.getElementById('resumenTienda');
+  if (!cont) return;
+
+  const activo = negocio && negocio.catalogo_activo;
+  const link = (negocio && negocio.slug) ? 'cajaviva.app/c/' + negocio.slug : '';
+
+  let html = '<div class="rep-resumen" style="text-align:left;">' +
+    '<div class="lbl">Tu tienda online</div>' +
+    '<div class="val" style="font-size:17px;">' + (activo ? 'Activa' : 'Todavia sin abrir') + '</div>';
+
+  if (activo && link) {
+    html += '<div style="font-size:12.5px; color:var(--accent-dark); margin-top:6px; word-break:break-all;">' +
+      esc(link) + '</div>';
+  }
+  html += '</div>';
+
+  html += '<button class="btn-nuevo solo" style="margin-top:14px;" onclick="irAConfigTienda()">' +
+    (activo ? 'Configurar mi tienda' : 'Abrir mi tienda') + '</button>';
+
+  if (activo) {
+    html += '<div style="display:flex; gap:8px;">' +
+      '<button class="btn-nuevo gris" style="flex:1;" onclick="compartirCatalogo()">Compartir</button>' +
+      '<button class="btn-nuevo gris" style="flex:1;" onclick="abrirCatalogo()">Ver como queda</button>' +
+      '</div>';
+  } else {
+    html += '<p class="hint" style="margin-top:12px; text-align:center;">' +
+      'Con tu tienda online tus clientes ven tus productos y te hacen pedidos desde el celular.</p>';
+  }
+
+  cont.innerHTML = html;
+}
+
+function irAConfigTienda() {
+  const b = document.getElementById('btnCatalogo');
+  if (b) b.click();
+}
 
 /* ══ Vuelto ══ */
 
