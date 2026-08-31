@@ -1506,17 +1506,16 @@
     }
     /* abierto: el panel se lleva la pantalla, la grilla se achica */
     #v-vender.vista.on .izq { flex: 1 1 auto; min-height: 0; }
-    #v-vender .der {
-      transition: transform .28s cubic-bezier(.22,1,.36,1);
-    }
     #v-vender .der.abierto {
       position: fixed; inset: 0; z-index: 60;
       height: 100dvh !important; max-height: none;
       border-top: none; flex: 1 1 auto;
+    }
+    #v-venta.on {
       animation: entraDesdeIzq .28s cubic-bezier(.22,1,.36,1);
     }
     @keyframes entraDesdeIzq {
-      from { transform: translateX(-100%); opacity: .6; }
+      from { transform: translateX(-100%); opacity: .5; }
       to { transform: translateX(0); opacity: 1; }
     }
 
