@@ -512,11 +512,12 @@
     background: var(--bg); color: var(--text); font-size: 15px; font-weight: 500;
   }
   .cobrar-fila input:focus { outline: none; border-color: var(--accent); }
-  .desc-rapido { display: flex; gap: 6px; margin: 8px 0 4px; }
+  .desc-rapido { display: inline-flex; gap: 5px; flex-shrink: 0; margin-left: 8px; }
   .desc-rapido button {
-    flex: 1; padding: 8px 4px; border-radius: 9px;
+    width: 34px; height: 34px; border-radius: 9px;
     border: 1px solid var(--line); background: var(--panel);
-    color: var(--muted); font-size: 12.5px; font-weight: 500;
+    color: var(--muted); font-size: 15px; font-weight: 500;
+    line-height: 1; padding: 0;
   }
   .desc-rapido button:active { background: var(--accent-soft); }
 
@@ -1878,11 +1879,11 @@
         <div class="cobrar-fila">
           <label>Cobrar</label>
           <input type="text" id="totalFinal" inputmode="decimal" placeholder="0">
-        </div>
-        <div class="desc-rapido">
-          <button type="button" onclick="descuentoRapido(-5)">&minus;5%</button>
-          <button type="button" onclick="descuentoRapido(5)">+5%</button>
-          <button type="button" onclick="descuentoRapido(0)">Sin descuento</button>
+          <span class="desc-rapido">
+            <button type="button" onclick="descuentoRapido(5)" title="Bajar 5%">&minus;</button>
+            <button type="button" onclick="descuentoRapido(-5)" title="Subir 5%">+</button>
+            <button type="button" onclick="descuentoRapido(0)" title="Sin descuento">&#8634;</button>
+          </span>
         </div>
         <div class="nota-desc vacia" id="notaDesc"></div>
         <button type="button" class="abrir-vuelto" id="btnAbrirVuelto">Calcular vuelto</button>
