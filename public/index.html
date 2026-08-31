@@ -11366,11 +11366,11 @@ function actualizarVueltoBox() {
   }
 
   if (vueltoAbierto) {
-    if (btn) btn.classList.remove('on');
+    if (btn) btn.classList.add('on');
     $('vueltoBox').classList.add('on');
     pintarRapidos(); calcularVuelto();
   } else {
-    if (btn) btn.classList.add('on');
+    if (btn) btn.classList.remove('on');
     $('vueltoBox').classList.remove('on');
   }
 }
