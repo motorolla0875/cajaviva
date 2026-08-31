@@ -1490,21 +1490,31 @@
 
   .ok-cobro {
     position: fixed; inset: 0; z-index: 300;
-    background: var(--accent);
-    display: none; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 20px;
+    background: rgba(0,0,0,.35);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
   }
   .ok-cobro.ver { display: flex; }
+  .ok-caja {
+    background: var(--panel); border-radius: 20px;
+    padding: 34px 40px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.2);
+    animation: entraCaja .25s cubic-bezier(.34,1.4,.64,1);
+  }
+  @keyframes entraCaja {
+    from { transform: scale(.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
   .ok-circulo { width: 110px; height: 110px; }
   .ok-circulo svg { width: 100%; height: 100%; }
   .ok-c {
-    stroke: rgba(255,255,255,.9); stroke-width: 2.5;
+    stroke: var(--accent); stroke-width: 2.5;
     stroke-dasharray: 151; stroke-dashoffset: 151;
     animation: dibujaCirculo .5s cubic-bezier(.65,0,.45,1) forwards;
   }
   .ok-t {
-    stroke: #fff; stroke-width: 4;
+    stroke: var(--accent); stroke-width: 4;
     stroke-linecap: round; stroke-linejoin: round;
     stroke-dasharray: 40; stroke-dashoffset: 40;
     animation: dibujaTilde .3s cubic-bezier(.65,0,.45,1) .45s forwards;
@@ -1512,7 +1522,7 @@
   @keyframes dibujaCirculo { to { stroke-dashoffset: 0; } }
   @keyframes dibujaTilde { to { stroke-dashoffset: 0; } }
   .ok-txt {
-    color: #fff; font-size: 22px; font-weight: 500;
+    color: var(--accent-dark); font-size: 24px; font-weight: 500;
     opacity: 0; animation: apareceTxt .3s ease .7s forwards;
   }
   @keyframes apareceTxt { to { opacity: 1; } }
@@ -3199,6 +3209,7 @@
 </div>
 
 <div class="ok-cobro" id="okCobro">
+  <div class="ok-caja">
   <div class="ok-circulo">
     <svg viewBox="0 0 52 52">
       <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
@@ -3206,6 +3217,7 @@
     </svg>
   </div>
   <div class="ok-txt" id="okCobroTxt"></div>
+  </div>
 </div>
 
 <div class="aviso" id="aviso"></div>
