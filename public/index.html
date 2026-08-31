@@ -217,8 +217,17 @@
 
   header {
     display: flex; align-items: center; gap: 12px;
-    padding: 14px 18px; background: var(--panel);
-    border-bottom: 1px solid var(--line); flex-shrink: 0;
+    padding: 14px 18px; background: var(--accent);
+    flex-shrink: 0; color: #fff;
+  }
+  header .marca { color: #fff; }
+  header .marca span { color: rgba(255,255,255,.75); }
+  header .nom-neg { color: rgba(255,255,255,.9); }
+  header .vendido .lbl { color: rgba(255,255,255,.75); }
+  header .vendido .val { color: #fff; }
+  header #btnYo {
+    background: rgba(255,255,255,.22); color: #fff;
+    border: 1px solid rgba(255,255,255,.3);
   }
   .logo-app { height: 48px; width: auto; flex-shrink: 0; }
   .logo-login { height: 96px; width: auto; margin-bottom: 14px; }
@@ -265,17 +274,20 @@
   }
 
   nav {
-    display: flex; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: flex; background: var(--accent);
     flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    margin-bottom: 4px;
   }
   nav::-webkit-scrollbar { display: none; }
   nav button {
     flex: 1 0 auto; padding: 13px 14px; border: none; background: none;
-    color: var(--muted); font-size: 13.5px; font-weight: 500;
+    color: rgba(255,255,255,.7); font-size: 13.5px; font-weight: 500;
     border-bottom: 2px solid transparent; white-space: nowrap;
   }
-  nav button.on { color: var(--accent-dark); border-bottom-color: var(--accent); }
+  nav button.on { color: #fff; border-bottom-color: #fff; }
   nav button.oculto { display: none; }
 
   .vista { display: none; flex: 1; min-height: 0; }
