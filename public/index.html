@@ -1895,6 +1895,7 @@
         <button data-estado="listos" id="chipListos">Entregados</button>
         <button data-estado="cancelados" id="chipCancelados">Cancelados</button>
       </div>
+      <input type="text" id="buscarPedidos" style="display:none;">
       <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
     </div>
@@ -1917,6 +1918,7 @@
         <button data-tab="vencen" id="tabVencen">Vencimientos</button>
       </div>
 
+      <input type="text" id="buscarRep" style="display:none;">
       <div id="repContenido"></div>
     </div>
   </div>
@@ -10935,7 +10937,9 @@ function campoDeBusqueda() {
     'v-vender': 'buscar',
     'v-productos': 'buscarProd',
     'v-clientes': 'buscarCli',
-    'v-caja': 'buscarCaja'
+    'v-caja': 'buscarCaja',
+    'v-pedidos': 'buscarPedidos',
+    'v-reportes': 'buscarRep'
   };
 
   const id = mapa[v.id];
@@ -10988,6 +10992,25 @@ document.getElementById('btnScanGlobal').onclick = function () {
     if (b) b.click();
   }
 };
+
+// filtrar las tarjetas visibles por texto
+function filtrarTarjetas(contenedorId, campoId) {
+  const campo = document.getElementById(campoId);
+  const cont = document.getElementById(contenedorId);
+  if (!campo || !cont) return;
+
+  campo.addEventListener('input', function () {
+    const t = norm(this.value.trim());
+    Array.prototype.forEach.call(cont.children, function (el) {
+      if (!t) { el.style.display = ''; return; }
+      el.style.display = norm(el.textContent).indexOf(t) >= 0 ? '' : 'none';
+    });
+  });
+}
+
+filtrarTarjetas('listaPedidos', 'buscarPedidos');
+filtrarTarjetas('reservasWeb', 'buscarPedidos');
+filtrarTarjetas('repContenido', 'buscarRep');
 
 /* ══ Vuelto ══ */
 
