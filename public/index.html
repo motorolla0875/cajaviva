@@ -2182,6 +2182,19 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalOkCobro">
+  <div class="modal" style="max-width:300px; text-align:center;">
+    <div class="ok-circulo">
+      <svg viewBox="0 0 52 52">
+        <circle class="ok-c" cx="26" cy="26" r="24" fill="none"/>
+        <path class="ok-t" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+    </div>
+    <div style="font-size:26px; font-weight:500; color:var(--accent-dark);" id="okMonto">$0</div>
+    <div style="font-size:13.5px; color:var(--muted); margin-top:4px;" id="okDetalle"></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalCobroPedido">
   <div class="modal">
     <h3>Cobrar el pedido</h3>
@@ -8294,10 +8307,10 @@ $('btnConfirmarCobroTurno').onclick = async function () {
       fecha: hoyISO(), medioPago: medioCobroTurno
     });
     $('modalCobroTurno').classList.remove('on');
+    animarCobro(r.total, 'Turno cobrado');
     await cargarAgenda();
     await revisarTurnos();
     await cargarResumen();
-    avisar('Cobrado ' + plata(r.total));
   } catch (e) {
     $('msgCobroTurno').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
@@ -9317,12 +9330,13 @@ $('btnConfirmarCobroRes').onclick = async function () {
 
     $('modalCobroRes').classList.remove('on');
 
+    if (r.total > 0) animarCobro(r.total, 'Cobrado');
+    else avisar('Cerrado, ya estaba pagado');
+
     const vista = document.querySelector('.vista.on');
     if (vista && vista.id === 'v-canchas') await cargarGrillaCanchas();
     else await cargarReservas();
     await cargarResumen();
-
-    avisar(r.total > 0 ? 'Cobrado ' + plata(r.total) : 'Cerrado, ya estaba pagado');
   } catch (e) {
     $('msgCobroRes').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
@@ -10908,6 +10922,23 @@ document.getElementById('btnPartidoCat').onclick = function () {
   this.textContent = partidoCat ? 'Atiendo todo el dia' : 'Cierro al mediodia';
 };
 
+// pantalla de cobro exitoso, para pedidos, turnos y reservas
+function animarCobro(monto, texto) {
+  const m = document.getElementById('modalOkCobro');
+  if (!m) return;
+
+  document.getElementById('okMonto').textContent = plata(monto);
+  document.getElementById('okDetalle').textContent = texto || '';
+
+  const svg = m.querySelector('svg');
+  if (svg) { const c = svg.cloneNode(true); svg.parentNode.replaceChild(c, svg); }
+
+  m.classList.add('on');
+  sonidoVenta(); vibrar(60);
+
+  setTimeout(function () { m.classList.remove('on'); }, 1800);
+}
+
 /* ══ Cobrar un pedido con detalle ══ */
 
 let pedidoCobroId = null;
@@ -10965,9 +10996,8 @@ $('btnConfirmarCobroPed').onclick = async function () {
       fecha: hoyISO(), medioPago: medioCobroPed
     });
     $('modalCobroPedido').classList.remove('on');
-    sonidoVenta(); vibrar(60);
+    animarCobro(r.total, 'Pedido entregado');
     await cargarProductos(); await cargarResumen(); await cargarPedidos();
-    avisar('Venta de ' + plata(r.total) + ' registrada');
   } catch (e) {
     $('msgCobroPed').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
