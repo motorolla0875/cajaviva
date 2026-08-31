@@ -246,6 +246,11 @@
     font-size: 17px; line-height: 1; display: none;
   }
   #btnScanGlobal.on { display: block; }
+  /* en pantalla ancha no hace falta el escaner */
+  @media (min-width: 900px) {
+    #btnScanGlobal { display: none !important; }
+    .buscador-fijo input { padding-right: 14px !important; }
+  }
   .buscador-fijo input { padding-right: 40px !important; }
   #v-vender .barra-buscar { display: none; }
   /* los buscadores de cada vista se reemplazan por el de arriba */
