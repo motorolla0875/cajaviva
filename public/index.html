@@ -2492,6 +2492,17 @@
       <button data-medio="transferencia">Transfer.</button>
     </div>
 
+    <label>Total a cobrar</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="text" id="totalPedFinal" inputmode="decimal" style="flex:1;">
+      <span class="desc-rapido">
+        <button type="button" onclick="descuentoPedido(5)">&minus;</button>
+        <button type="button" onclick="descuentoPedido(-5)">+</button>
+        <button type="button" onclick="descuentoPedido(0)">&#8634;</button>
+      </span>
+    </div>
+    <div id="notaDescPed" style="font-size:12px; color:var(--muted); margin:4px 0 10px;"></div>
+
     <button class="btn-ppal" id="btnConfirmarCobroPed">Cobrar y entregar</button>
     <button class="btn-sec" id="btnCerrarCobroPed">Cancelar</button>
   </div>
@@ -11327,6 +11338,9 @@ function abrirCobroPedido(id) {
       });
     }
 
+    totalBrutoPed = p.total;
+    $('totalPedFinal').value = Math.round(p.total);
+    document.getElementById('notaDescPed').textContent = '';
     $('btnConfirmarCobroPed').textContent = 'Cobrar ' + plata(p.total);
   }
 
@@ -11340,11 +11354,25 @@ $('btnConfirmarCobroPed').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
     const r = await api('POST', '/pedidos/' + pedidoCobroId + '/vender', {
-      fecha: hoyISO(), medioPago: medioCobroPed
+      fecha: hoyISO(), medioPago: medioCobroPed,
+      total: num($('totalPedFinal').value) || totalBrutoPed
     });
+
+    const ped = (pedidosCargados || []).filter(function (x) { return x.id === pedidoCobroId; })[0];
+    const itemsPed = (ped && ped.items) ? ped.items.map(function (i) {
+      return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_unitario };
+    }) : [];
+
     $('modalCobroPedido').classList.remove('on');
-    animarCobro(r.total, 'Pedido entregado');
     await cargarProductos(); await cargarResumen(); await cargarPedidos();
+
+    mostrarHecho({
+      ventaId: r.ventaId,
+      total: r.total,
+      items: itemsPed,
+      ganancia: r.total - (r.costo || 0),
+      vuelto: 0
+    });
   } catch (e) {
     $('msgCobroPed').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
@@ -11906,6 +11934,33 @@ function notaDescuentoMesa() {
 
   const pct = Math.round((1 - fin / base) * 100);
   cont.textContent = 'Descuento de ' + pct + '% (' + plata(base - fin) + ')';
+}
+
+let totalBrutoPed = 0;
+
+function descuentoPedido(paso) {
+  if (totalBrutoPed <= 0) return;
+
+  if (paso === 0) {
+    $('totalPedFinal').value = Math.round(totalBrutoPed);
+  } else {
+    const actual = num($('totalPedFinal').value) || totalBrutoPed;
+    const pct = (1 - actual / totalBrutoPed) * 100;
+    let nuevo = Math.round(pct - paso);
+    if (nuevo < 0) nuevo = 0;
+    if (nuevo > 90) nuevo = 90;
+    $('totalPedFinal').value = Math.round(totalBrutoPed * (1 - nuevo / 100));
+  }
+  notaDescuentoPed();
+}
+
+function notaDescuentoPed() {
+  const fin = num($('totalPedFinal').value);
+  const cont = document.getElementById('notaDescPed');
+  if (!cont) return;
+  if (!fin || fin >= totalBrutoPed) { cont.textContent = ''; return; }
+  const pct = Math.round((1 - fin / totalBrutoPed) * 100);
+  cont.textContent = 'Descuento de ' + pct + '% (' + plata(totalBrutoPed - fin) + ')';
 }
 
 /* ══ Mi tienda ══ */
