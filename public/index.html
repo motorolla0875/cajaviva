@@ -1303,6 +1303,12 @@
     border-radius: var(--radius); padding: 13px 14px; margin-bottom: 8px;
   }
   .turno.atendido { opacity: .55; }
+  .sep-dia {
+    font-size: 12.5px; font-weight: 500; color: var(--accent-dark);
+    background: var(--accent-soft); border-radius: 8px;
+    padding: 5px 10px; margin: 14px 0 8px;
+  }
+  .sep-dia:first-child { margin-top: 0; }
   .turno.cancelado { opacity: .45; }
   .turno .hora {
     flex-shrink: 0; text-align: center; min-width: 52px;
@@ -8615,16 +8621,53 @@ async function cargarAgenda() {
     tabs[0].textContent = 'Por atender' + (pendientes.length > 0 ? ' (' + pendientes.length + ')' : '');
     tabs[1].textContent = 'Ya pasaron' + (cerrados.length > 0 ? ' (' + cerrados.length + ')' : '');
 
-    const lista = tabAgenda === 'pendientes' ? pendientes : cerrados;
+    let lista = tabAgenda === 'pendientes' ? pendientes : cerrados;
 
-    $('listaAgenda').innerHTML = lista.length === 0
-      ? '<div class="vacio">' + (tabAgenda === 'pendientes'
-          ? 'No hay turnos por atender este dia.'
-          : 'Todavia no hay turnos cerrados.') + '</div>'
-      : lista.map(pintarTurno).join('');
+    // parado en hoy y en "Por atender": se muestran hoy y los que vienen
+    let conSeparadores = false;
+    if (tabAgenda === 'pendientes' && fechaAgenda() === hoyISO()) {
+      try {
+        const prox = await api('GET', '/turnos/proximos');
+        if (prox.length > 0) {
+          prox.forEach(function (t) {
+            if (!t.hora_fin) t.hora_fin = aHoraMin(t.hora, t.duracion);
+          });
+          lista = prox;
+          conSeparadores = true;
+          turnosDelDia = prox;
+          tabs[0].textContent = 'Por atender (' + prox.length + ')';
+        }
+      } catch (e) {}
+    }
+
+    if (lista.length === 0) {
+      $('listaAgenda').innerHTML = '<div class="vacio">' + (tabAgenda === 'pendientes'
+        ? 'No hay turnos por atender este dia.'
+        : 'Todavia no hay turnos cerrados.') + '</div>';
+    } else if (!conSeparadores) {
+      $('listaAgenda').innerHTML = lista.map(pintarTurno).join('');
+    } else {
+      let ultima = '';
+      $('listaAgenda').innerHTML = lista.map(function (t) {
+        let sep = '';
+        if (t.fecha !== ultima) {
+          ultima = t.fecha;
+          const td = textoDelDia(t.fecha);
+          sep = '<div class="sep-dia">' + td.rel + ' - ' + td.fecha + '</div>';
+        }
+        return sep + pintarTurno(t);
+      }).join('');
+    }
   } catch (e) {
     $('listaAgenda').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
+}
+
+function aHoraMin(hora, dur) {
+  const pa = String(hora).split(':');
+  const tot = (parseInt(pa[0], 10) * 60) + parseInt(pa[1] || 0, 10) + (dur || 0);
+  const h = Math.floor(tot / 60) % 24, m = tot % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
 }
 
 function wppTurno(tel, id) {
@@ -12100,9 +12143,15 @@ function descuentoPedido(paso) {
   notaDescuentoPed();
 }
 
+document.getElementById('totalPedFinal').addEventListener('input', notaDescuentoPed);
+
 function notaDescuentoPed() {
   const fin = num($('totalPedFinal').value);
   const cont = document.getElementById('notaDescPed');
+
+  const btn = document.getElementById('btnConfirmarCobroPed');
+  if (btn) btn.textContent = fin > 0 ? 'Cobrar ' + plata(fin) : 'Entregar sin cobrar';
+
   if (!cont) return;
   if (!fin || fin >= totalBrutoPed) { cont.textContent = ''; return; }
   const pct = Math.round((1 - fin / totalBrutoPed) * 100);

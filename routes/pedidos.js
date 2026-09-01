@@ -206,7 +206,7 @@ router.post('/:id/vender', (req, res) => {
   });
 
   db.prepare("UPDATE pedidos_web SET estado = 'entregado', venta_id = ? WHERE id = ?").run(ventaId, p.id);
-  res.json({ ventaId: ventaId, total: p.total });
+  res.json({ ventaId: ventaId, total: totalFinal });
 });
 
 
