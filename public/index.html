@@ -3059,6 +3059,12 @@
     <div class="medios" id="mediosCobroRes">
       <button data-medio="efectivo" class="on">Efectivo</button>
       <button data-medio="transferencia">Transfer.</button>
+      <button data-medio="cuenta_corriente">Fiado</button>
+    </div>
+
+    <div id="selClienteRes" style="display:none;">
+      <label>A quien le fias</label>
+      <select id="clienteRes"></select>
     </div>
 
     <label>Total a cobrar</label>
@@ -9651,6 +9657,18 @@ document.getElementById('mediosCobroRes').addEventListener('click', function (e)
   if (!b) return;
   medioCobroRes = b.dataset.medio;
   Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+
+  const sel = document.getElementById('selClienteRes');
+  if (sel) {
+    sel.style.display = medioCobroRes === 'cuenta_corriente' ? 'block' : 'none';
+    if (medioCobroRes === 'cuenta_corriente') {
+      document.getElementById('clienteRes').innerHTML =
+        '<option value="">Elegi el cliente</option>' +
+        clientes.map(function (c) {
+          return '<option value="' + c.id + '">' + esc(c.nombre) + '</option>';
+        }).join('');
+    }
+  }
 });
 
 async function cobrarReserva(id) {
@@ -9708,7 +9726,9 @@ $('btnConfirmarCobroRes').onclick = async function () {
   try {
     const r = await api('POST', '/alquileres/' + cobroResId + '/cobrar', {
       fecha: hoyISO(), medioPago: medioCobroRes,
-      total: num($('totalResFinal').value) || totalBrutoRes
+      total: num($('totalResFinal').value) || totalBrutoRes,
+      clienteId: medioCobroRes === 'cuenta_corriente'
+        ? document.getElementById('clienteRes').value : null
     });
 
     $('modalCobroRes').classList.remove('on');

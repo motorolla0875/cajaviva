@@ -369,9 +369,18 @@ router.post('/:id/cobrar', (req, res) => {
   const extras = db.prepare('SELECT * FROM reserva_extras WHERE reserva_id = ?').all(r.id);
   const totalExtras = extras.reduce(function (a, i) { return a + i.cantidad * i.precio_unitario; }, 0);
 
-  const totalCompleto = (req.body?.total != null ? parseFloat(req.body.total) : r.total) + totalExtras;
   const yaPagado = r.pagado || 0;
-  const total = Math.max(0, totalCompleto - yaPagado);
+
+  // si el frontend manda un total, ese es el saldo final a cobrar
+  let total, totalCompleto;
+
+  if (req.body?.total != null) {
+    total = Math.max(0, parseFloat(req.body.total));
+    totalCompleto = total + yaPagado;
+  } else {
+    totalCompleto = r.total + totalExtras;
+    total = Math.max(0, totalCompleto - yaPagado);
+  }
 
   if (total <= 0) {
     db.prepare("UPDATE reservas SET estado = 'terminada' WHERE id = ?").run(r.id);
