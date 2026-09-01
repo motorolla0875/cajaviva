@@ -25,7 +25,7 @@ router.get('/ventas', async (req, res) => {
   `).all(req.userId, desde, hasta);
 
   const gastos = db.prepare(`
-    SELECT fecha, monto, motivo, created_at
+    SELECT fecha, monto, descripcion, categoria, created_at
     FROM gastos WHERE user_id = ? AND fecha BETWEEN ? AND ?
     ORDER BY created_at
   `).all(req.userId, desde, hasta);
@@ -77,7 +77,8 @@ router.get('/ventas', async (req, res) => {
   hg.columns = [
     { header: 'Fecha', key: 'fecha', width: 12 },
     { header: 'Hora', key: 'hora', width: 8 },
-    { header: 'Motivo', key: 'motivo', width: 34 },
+    { header: 'En que', key: 'motivo', width: 30 },
+    { header: 'Categoria', key: 'categoria', width: 16 },
     { header: 'Monto', key: 'monto', width: 13 }
   ];
 
@@ -85,7 +86,8 @@ router.get('/ventas', async (req, res) => {
     hg.addRow({
       fecha: g.fecha,
       hora: (g.created_at || '').slice(11, 16),
-      motivo: g.motivo || '',
+      motivo: g.descripcion || '',
+      categoria: g.categoria || '',
       monto: g.monto
     });
   });
@@ -123,7 +125,7 @@ router.get('/ventas', async (req, res) => {
   hr.getRow(9).font = { bold: true };
 
   ['E', 'F', 'G'].forEach(function (c) { hv.getColumn(c).numFmt = '#,##0.00'; });
-  hg.getColumn('D').numFmt = '#,##0.00';
+  hg.getColumn('E').numFmt = '#,##0.00';
   hr.getColumn('B').numFmt = '#,##0.00';
 
   const nombre = 'cajaviva-' + desde + '-al-' + hasta + '.xlsx';
