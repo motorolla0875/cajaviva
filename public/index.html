@@ -224,6 +224,10 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
+    /* el contenido sube pegado al encabezado */
+    #v-vender .izq { transition: padding-top .25s ease; }
+    body.scroll-abajo #v-vender .izq { padding-top: 0; }
+
     /* al bajar se esconden las pestañas tambien */
     nav {
       transition: max-height .25s ease, opacity .2s ease;
