@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const crypto = require('crypto');
+const { mailBienvenida, mailRecuperar } = require('../mail');
 
 const router = express.Router();
 const SECRETO = process.env.JWT_SECRET || 'cajaviva-cambiar-esto-en-produccion';
@@ -69,8 +71,53 @@ router.post('/asegurar', (req, res) => {
   db.prepare('UPDATE users SET username = ?, password_hash = ?, email = ? WHERE id = ?')
     .run(username.trim(), bcrypt.hashSync(password, 10), email || null, userId);
 
+  if (email && email.trim()) {
+    mailBienvenida(email.trim(), username.trim()).catch(function () {});
+  }
+
   const d = datosUsuario(userId);
   res.json({ token: firmar(userId), user: d.user, negocio: d.negocio });
+});
+
+
+// ── pedir recuperar la contrasena ──
+router.post('/olvide', (req, res) => {
+  const dato = (req.body?.dato || '').trim();
+  if (!dato) return res.status(400).json({ error: 'Escribi tu usuario o tu mail.' });
+
+  const u = db.prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(dato, dato);
+
+  if (u && u.email) {
+    const tk = crypto.randomBytes(32).toString('hex');
+    db.prepare("INSERT INTO reset_tokens (token, user_id, vence_at) VALUES (?, ?, datetime('now','+1 hour'))")
+      .run(tk, u.id);
+    const link = (process.env.APP_URL || 'https://cajaviva.app') + '/?recuperar=' + tk;
+    mailRecuperar(u.email, u.username, link).catch(function () {});
+  }
+
+  // respuesta siempre igual, para no revelar si la cuenta existe
+  res.json({ ok: true });
+});
+
+
+// ── poner la contrasena nueva ──
+router.post('/resetear', (req, res) => {
+  const { token, password } = req.body || {};
+  if (!token) return res.status(400).json({ error: 'Falta el codigo.' });
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'La contrasena tiene que tener al menos 6 caracteres.' });
+  }
+
+  const t = db.prepare("SELECT * FROM reset_tokens WHERE token = ? AND usado = 0 AND vence_at > datetime('now')")
+    .get(token);
+  if (!t) return res.status(400).json({ error: 'El link vencio o ya se uso. Pedi uno nuevo.' });
+
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+    .run(bcrypt.hashSync(password, 10), t.user_id);
+  db.prepare('UPDATE reset_tokens SET usado = 1 WHERE token = ?').run(token);
+
+  const d = datosUsuario(t.user_id);
+  res.json({ token: firmar(t.user_id), user: d.user, negocio: d.negocio });
 });
 
 // ── login ──

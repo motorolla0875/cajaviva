@@ -1869,6 +1869,32 @@
     <button class="btn-ppal" id="btnEntrar">Entrar</button>
     <button class="btn-sec" id="btnCuentaNueva">Empezar con una cuenta nueva</button>
     <button class="btn-sec" id="btnEntrarCodigo">Soy empleado nuevo, tengo un codigo</button>
+    <button class="btn-sec" id="btnOlvide">Me olvide la contrasena</button>
+  </div>
+</div>
+
+<div class="pantalla-centro" id="pantallaOlvide" style="display:none;">
+  <div class="logo-grande">Caja<span>Viva</span></div>
+  <div class="logo-sub">Recuperar tu contrasena</div>
+  <div class="caja-login">
+    <div id="msgOlvide"></div>
+    <label>Tu usuario o tu mail</label>
+    <input type="text" id="oDato" autocomplete="username">
+    <button class="btn-ppal" id="btnPedirLink">Mandarme el link</button>
+    <button class="btn-sec" id="btnVolverLogin">Volver</button>
+  </div>
+</div>
+
+<div class="pantalla-centro" id="pantallaNuevaPass" style="display:none;">
+  <div class="logo-grande">Caja<span>Viva</span></div>
+  <div class="logo-sub">Elegi tu contrasena nueva</div>
+  <div class="caja-login">
+    <div id="msgNuevaPass"></div>
+    <label>Contrasena nueva</label>
+    <input type="password" id="npPassword" autocomplete="new-password">
+    <label>Repetila</label>
+    <input type="password" id="npPassword2" autocomplete="new-password">
+    <button class="btn-ppal" id="btnGuardarPass">Guardar y entrar</button>
   </div>
 </div>
 
@@ -4052,6 +4078,9 @@ function aplicarUsuario(d) {
 
 function aplicarCapacidades() {
   if (negocio && negocio.nombre) $('nombreNegocio').textContent = negocio.nombre;
+
+  const tti = document.getElementById('tabTienda');
+  if (tti) tti.style.display = esEmpleado ? 'none' : '';
 
   const tv = document.getElementById('tabVencen');
   if (tv) tv.style.display = cap('cap_vencimientos') ? '' : 'none';
@@ -6346,6 +6375,9 @@ function aplicarModoEmpleado(nombre) {
   $('chipEmpleado').style.display = 'flex';
   $('chipEmpleado').innerHTML = '<span>Estas trabajando como <b>' + esc(nombre) + '</b></span>';
   $('avisoAsegurar').style.display = 'none';
+
+  const tt = document.getElementById('tabTienda');
+  if (tt) tt.style.display = 'none';
 
   // ocultar lo que no le corresponde
   document.body.classList.add('modo-empleado');
@@ -13097,7 +13129,63 @@ $('btnGuardarGasto').onclick = async function () {
 
 /* ══ Arranque ══ */
 
+function verPantallaOlvide(ver) {
+  $('pantallaLogin').style.display = ver ? 'none' : '';
+  $('pantallaOlvide').style.display = ver ? 'flex' : 'none';
+  $('msgOlvide').innerHTML = '';
+}
+
+$('btnOlvide').onclick = function () { verPantallaOlvide(true); };
+$('btnVolverLogin').onclick = function () { verPantallaOlvide(false); };
+
+$('btnPedirLink').onclick = async function () {
+  const dato = $('oDato').value.trim();
+  if (!dato) { $('msgOlvide').innerHTML = '<div class="msg">Escribi tu usuario o tu mail.</div>'; return; }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Mandando...';
+  try {
+    await api('POST', '/auth/olvide', { dato: dato });
+    $('msgOlvide').innerHTML = '<div class="msg" style="background:var(--accent-soft);color:var(--accent-dark);">' +
+      'Si esa cuenta tiene un mail cargado, te mandamos el link. Revisa tu correo, tambien en correo no deseado.</div>';
+  } catch (e) {
+    $('msgOlvide').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Mandarme el link';
+};
+
+let tokenRecuperar = null;
+
+$('btnGuardarPass').onclick = async function () {
+  const p1 = $('npPassword').value, p2 = $('npPassword2').value;
+  if (p1.length < 6) { $('msgNuevaPass').innerHTML = '<div class="msg">La contrasena tiene que tener al menos 6 caracteres.</div>'; return; }
+  if (p1 !== p2) { $('msgNuevaPass').innerHTML = '<div class="msg">Las dos contrasenas no coinciden.</div>'; return; }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const d = await api('POST', '/auth/resetear', { token: tokenRecuperar, password: p1 });
+    token = d.token;
+    localStorage.setItem('cajaviva_token', token);
+    localStorage.setItem('cajaviva_ya_uso', '1');
+    history.replaceState(null, '', '/');
+    $('pantallaNuevaPass').style.display = 'none';
+    aplicarUsuario(d);
+    await arrancarApp();
+  } catch (e) {
+    $('msgNuevaPass').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+    btn.disabled = false; btn.textContent = 'Guardar y entrar';
+  }
+};
+
 (async function iniciar() {
+  const tkUrl = new URLSearchParams(location.search).get('recuperar');
+  if (tkUrl) {
+    tokenRecuperar = tkUrl;
+    mostrar('login');
+    $('pantallaLogin').style.display = 'none';
+    $('pantallaNuevaPass').style.display = 'flex';
+    return;
+  }
+
   await arrancarTour();
 
   if (token) {
