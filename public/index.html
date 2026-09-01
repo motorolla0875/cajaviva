@@ -2384,6 +2384,12 @@
     <div class="medios" id="mediosCobroMesa">
       <button data-medio="efectivo" class="on">Efectivo</button>
       <button data-medio="transferencia">Transfer.</button>
+      <button data-medio="cuenta_corriente">Fiado</button>
+    </div>
+
+    <div id="selClienteMesa" style="display:none;">
+      <label>A quien le fias</label>
+      <select id="clienteMesa"></select>
     </div>
 
     <button class="btn-ppal" id="btnConfirmarCobroMesa">Cobrar</button>
@@ -11754,6 +11760,17 @@ document.getElementById('mediosCobroMesa').addEventListener('click', function (e
   if (!b) return;
   medioCobroMesa = b.dataset.medio;
   Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+
+  const sel = document.getElementById('selClienteMesa');
+  sel.style.display = medioCobroMesa === 'cuenta_corriente' ? 'block' : 'none';
+
+  if (medioCobroMesa === 'cuenta_corriente') {
+    document.getElementById('clienteMesa').innerHTML =
+      '<option value="">Elegi el cliente</option>' +
+      clientes.map(function (c) {
+        return '<option value="' + c.id + '">' + esc(c.nombre) + '</option>';
+      }).join('');
+  }
 });
 
 $('btnCobrarMesa').onclick = function () {
@@ -11768,6 +11785,7 @@ $('btnCobrarMesa').onclick = function () {
   });
 
   $('msgCobroMesa').innerHTML = '';
+  document.getElementById('selClienteMesa').style.display = 'none';
   $('subCobroMesa').textContent = mesaActual.nombre + ' - ' + haceRato(mesaActual.desde);
 
   $('detalleCobroMesa').innerHTML =
@@ -11794,7 +11812,17 @@ $('btnConfirmarCobroMesa').onclick = async function () {
       return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_unitario };
     });
 
-    const r = await api('POST', '/mesas/' + cobroMesaId + '/cobrar', { medioPago: medioCobroMesa });
+    const cli = document.getElementById('clienteMesa').value;
+    if (medioCobroMesa === 'cuenta_corriente' && !cli) {
+      $('msgCobroMesa').innerHTML = '<div class="msg">Elegi a quien le fias.</div>';
+      btn.disabled = false; btn.textContent = 'Cobrar';
+      return;
+    }
+
+    const r = await api('POST', '/mesas/' + cobroMesaId + '/cobrar', {
+      medioPago: medioCobroMesa,
+      clienteId: medioCobroMesa === 'cuenta_corriente' ? cli : null
+    });
     $('modalCobroMesa').classList.remove('on');
 
     await cargarMesas();
