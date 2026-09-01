@@ -2231,6 +2231,7 @@
           <div class="lbl">Vendido</div>
           <div class="val" id="cVendido">$0</div>
           <div class="sub" id="cCantidad">0 ventas</div>
+          <div class="sub" id="cFiado" style="color:var(--warn-text,#8A5A0F);"></div>
         </div>
         <div class="tarjeta destacada">
           <div class="lbl">Ganancia</div>
@@ -3059,6 +3060,17 @@
       <button data-medio="efectivo" class="on">Efectivo</button>
       <button data-medio="transferencia">Transfer.</button>
     </div>
+
+    <label>Total a cobrar</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="text" id="totalResFinal" inputmode="decimal" style="flex:1;">
+      <span class="desc-rapido">
+        <button type="button" onclick="descuentoRes(5)">&minus;</button>
+        <button type="button" onclick="descuentoRes(-5)">+</button>
+        <button type="button" onclick="descuentoRes(0)">&#8634;</button>
+      </span>
+    </div>
+    <div id="notaDescRes" style="font-size:12px; color:var(--muted); margin:4px 0 10px;"></div>
 
     <button class="btn-ppal" id="btnConfirmarCobroRes">Cobrar</button>
     <button class="btn-sec" id="btnCerrarCobroRes">Cancelar</button>
@@ -4004,6 +4016,9 @@ function aplicarCapacidades() {
 
   const trs = document.getElementById('tabReservas');
   if (trs) trs.style.display = cap('cap_alquiler') ? '' : 'none';
+
+  const tms = document.getElementById('tabMesas');
+  if (tms) tms.style.display = cap('cap_mesas') ? '' : 'none';
 
   const tcn = document.getElementById('tabCanchas');
   if (tcn) tcn.style.display = cap('cap_canchas') ? '' : 'none';
@@ -9670,6 +9685,15 @@ async function cobrarReserva(id) {
         : '') +
       '<div class="cierre-linea total"><span>A cobrar ahora</span><b>' + plata(falta) + '</b></div>';
 
+    itemsCobroRes = [{ nombre: 'Estadia', cantidad: 1, precio: d.totalEstadia }].concat(
+      (d.items || []).map(function (i) {
+        return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_unitario };
+      })
+    );
+
+    totalBrutoRes = falta;
+    $('totalResFinal').value = Math.round(falta);
+    document.getElementById('notaDescRes').textContent = '';
     $('btnConfirmarCobroRes').textContent = falta > 0 ? 'Cobrar ' + plata(falta) : 'Cerrar sin cobrar';
   } catch (e) {
     $('detalleCobroRes').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
@@ -9683,18 +9707,28 @@ $('btnConfirmarCobroRes').onclick = async function () {
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
     const r = await api('POST', '/alquileres/' + cobroResId + '/cobrar', {
-      fecha: hoyISO(), medioPago: medioCobroRes
+      fecha: hoyISO(), medioPago: medioCobroRes,
+      total: num($('totalResFinal').value) || totalBrutoRes
     });
 
     $('modalCobroRes').classList.remove('on');
-
-    if (r.total > 0) animarCobro(r.total, 'Cobrado');
-    else avisar('Cerrado, ya estaba pagado');
 
     const vista = document.querySelector('.vista.on');
     if (vista && vista.id === 'v-canchas') await cargarGrillaCanchas();
     else await cargarReservas();
     await cargarResumen();
+
+    if (r.total > 0) {
+      mostrarHecho({
+        ventaId: r.ventaId,
+        total: r.total,
+        items: itemsCobroRes,
+        ganancia: r.total,
+        vuelto: 0
+      });
+    } else {
+      avisar('Cerrado, ya estaba pagado');
+    }
   } catch (e) {
     $('msgCobroRes').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
@@ -11963,6 +11997,34 @@ function notaDescuentoPed() {
   cont.textContent = 'Descuento de ' + pct + '% (' + plata(totalBrutoPed - fin) + ')';
 }
 
+let totalBrutoRes = 0;
+let itemsCobroRes = [];
+
+function descuentoRes(paso) {
+  if (totalBrutoRes <= 0) return;
+
+  if (paso === 0) {
+    $('totalResFinal').value = Math.round(totalBrutoRes);
+  } else {
+    const actual = num($('totalResFinal').value) || totalBrutoRes;
+    const pct = (1 - actual / totalBrutoRes) * 100;
+    let nuevo = Math.round(pct - paso);
+    if (nuevo < 0) nuevo = 0;
+    if (nuevo > 90) nuevo = 90;
+    $('totalResFinal').value = Math.round(totalBrutoRes * (1 - nuevo / 100));
+  }
+  notaDescuentoRes();
+}
+
+function notaDescuentoRes() {
+  const fin = num($('totalResFinal').value);
+  const cont = document.getElementById('notaDescRes');
+  if (!cont) return;
+  if (!fin || fin >= totalBrutoRes) { cont.textContent = ''; return; }
+  const pct = Math.round((1 - fin / totalBrutoRes) * 100);
+  cont.textContent = 'Descuento de ' + pct + '% (' + plata(totalBrutoRes - fin) + ')';
+}
+
 /* ══ Mi tienda ══ */
 
 function cargarVistaTienda() {
@@ -12735,6 +12797,12 @@ async function cargarCaja() {
     const res = await api('GET', '/ventas/resumen' + qs);
     $('cVendido').textContent = plata(res.vendido);
     $('cCantidad').textContent = res.cantidadVentas + (res.cantidadVentas === 1 ? ' venta' : ' ventas');
+
+    const cf = document.getElementById('cFiado');
+    if (cf) {
+      const fiado = res.fiado || 0;
+      cf.textContent = fiado > 0 ? plata(fiado) + ' sin cobrar' : '';
+    }
     $('cGanancia').textContent = plata(res.gananciaBruta);
     $('cGastos').textContent = plata(res.gastos);
     const bal = $('cBalance');

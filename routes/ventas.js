@@ -158,9 +158,16 @@ router.get('/resumen', (req, res) => {
     FROM gastos WHERE user_id = ? AND fecha >= ? AND fecha <= ?
   `).get(req.userId, desde, hasta);
 
+  const f = db.prepare(`
+    SELECT COALESCE(SUM(total),0) AS fiado FROM ventas
+    WHERE user_id = ? AND estado = 'cobrada' AND medio_pago = 'cuenta_corriente'
+      AND fecha >= ? AND fecha <= ?
+  `).get(req.userId, desde, hasta);
+
   const salida = {
     desde, hasta,
     vendido: v.vendido,
+    fiado: f.fiado || 0,
     cantidadVentas: v.cantidad,
     gananciaBruta: v.vendido - v.costo,
     gastos: g.gastos,
