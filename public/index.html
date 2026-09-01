@@ -2216,6 +2216,7 @@
     </div>
     <button class="btn-sec" id="btnConfigNegocio">Configurar mi negocio</button>
     <button class="btn-sec" id="btnEmpleados">Empleados</button>
+    <button class="btn-sec" onclick="abrirPlan()">Mi plan</button>
     <button class="btn-sec" onclick="abrirAyuda()">Ayuda</button>
     <button class="btn-sec" id="btnCatalogo">Catalogo para compartir</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
@@ -2304,6 +2305,14 @@
     <div id="msgScan"></div>
     <div id="lectorCam"></div>
     <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalPlan">
+  <div class="modal">
+    <h3>Mi plan</h3>
+    <div id="cuerpoPlan"></div>
+    <button class="btn-sec" id="btnCerrarPlan">Cerrar</button>
   </div>
 </div>
 
@@ -11429,6 +11438,42 @@ function descuentoRapido(paso) {
   actualizarNotaDesc();
   actualizarVueltoBox();
 }
+
+/* ══ Mi plan ══ */
+
+function abrirPlan() {
+  const my = document.getElementById('modalCuentaUsuario');
+  if (my) my.classList.remove('on');
+
+  const cont = document.getElementById('cuerpoPlan');
+  if (!cont) return;
+
+  const desde = negocio && negocio.created_at ? new Date(negocio.created_at.replace(' ', 'T')) : new Date();
+  const hasta = new Date(desde);
+  hasta.setMonth(hasta.getMonth() + 3);
+  const dias = Math.ceil((hasta - new Date()) / 86400000);
+  const enPrueba = dias > 0;
+
+  cont.innerHTML =
+    '<div class="rep-resumen" style="text-align:left; margin-bottom:14px;">' +
+    '<div class="lbl">Tu plan ahora</div>' +
+    '<div class="val" style="font-size:17px;">' + (enPrueba ? 'Todo desbloqueado' : 'Plan gratis') + '</div>' +
+    (enPrueba ? '<div style="font-size:12.5px; color:var(--accent-dark); margin-top:6px;">Te quedan ' + dias + (dias === 1 ? ' dia' : ' dias') + '</div>' : '') +
+    '</div>' +
+    '<div class="seccion">Siempre gratis</div>' +
+    '<div style="font-size:13.5px; color:var(--muted); line-height:1.8; margin-bottom:16px;">' +
+    'Vender y cobrar<br>Tus productos y el stock<br>La caja del mes<br>El fiado de tus clientes<br>Funcionar sin internet</div>' +
+    '<div class="seccion">Con el plan completo</div>' +
+    '<div style="font-size:13.5px; color:var(--muted); line-height:1.8; margin-bottom:16px;">' +
+    'Tu tienda online con pedidos<br>Empleados con sus permisos<br>Reportes de todos los meses<br>Turnos, alquileres y canchas<br>Tu propio dominio</div>' +
+    '<p class="hint" style="line-height:1.6;">Estamos empezando: hoy tenes todo desbloqueado sin pagar nada. Cuando lancemos el plan pago te vamos a avisar antes, y lo que cargaste no se pierde nunca.</p>';
+
+  document.getElementById('modalPlan').classList.add('on');
+}
+
+document.getElementById('btnCerrarPlan').onclick = function () {
+  document.getElementById('modalPlan').classList.remove('on');
+};
 
 /* ══ Ayuda ══ */
 
