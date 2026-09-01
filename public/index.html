@@ -229,12 +229,12 @@
     body.scroll-abajo #v-vender .chips-wrap { display: none !important; }
 
     /* el contenido sube pegado al encabezado */
-    #v-vender .izq { transition: padding-top .25s ease; }
+    #v-vender .izq { transition: padding-top .38s cubic-bezier(.4,0,.2,1); }
     body.scroll-abajo #v-vender .izq { padding-top: 0; }
 
     /* al bajar se esconden las pestañas tambien */
     nav {
-      transition: max-height .25s ease, opacity .2s ease;
+      transition: max-height .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
       overflow: hidden; max-height: 60px;
     }
     body.scroll-abajo nav {
@@ -245,7 +245,7 @@
 
     /* al bajar se esconden las categorias, el encabezado queda */
     #v-vender .chips-wrap {
-      transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
+      transition: max-height .38s cubic-bezier(.4,0,.2,1), padding .38s ease, opacity .3s ease;
       overflow: hidden;
     }
     body.scroll-abajo #v-vender .chips-wrap {
