@@ -11836,6 +11836,32 @@ setTimeout(function () {
   document.querySelectorAll('.modal-bg').forEach(activarDeslizar);
 }, 800);
 
+// la manija tambien se puede arrastrar para abrir
+(function () {
+  const m = document.querySelector('.bf-manija');
+  if (!m) return;
+
+  let x0 = 0, arrastrando = false;
+
+  m.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    x0 = e.touches[0].clientX;
+    arrastrando = true;
+  }, { passive: true });
+
+  m.addEventListener('touchmove', function (e) {
+    if (!arrastrando) return;
+    const dx = e.touches[0].clientX - x0;
+    if (dx > 40) {
+      arrastrando = false;
+      const b = document.getElementById('barraResumen');
+      if (b) b.click();
+    }
+  }, { passive: true });
+
+  m.addEventListener('touchend', function () { arrastrando = false; }, { passive: true });
+})();
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
