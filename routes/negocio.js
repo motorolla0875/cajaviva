@@ -9,7 +9,7 @@ try { db.exec('ALTER TABLE negocio ADD COLUMN direccion TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN telefono TEXT'); } catch (e) {}
 
 const CAPS = ['cap_mostrador', 'cap_reparto', 'cap_peso', 'cap_vencimientos',
-              'cap_variantes', 'cap_recetas', 'cap_turnos', 'cap_alquiler', 'cap_canchas'];
+              'cap_variantes', 'cap_recetas', 'cap_turnos', 'cap_alquiler', 'cap_canchas', 'cap_mesas'];
 
 // que capacidades prende cada rubro
 const RUBROS = {
@@ -86,6 +86,13 @@ const RUBROS = {
   diarios:       ['cap_mostrador', 'cap_reparto'],
   'leña':        ['cap_mostrador', 'cap_reparto'],
   mayorista:     ['cap_mostrador', 'cap_reparto'],
+  restaurante:      ['cap_mostrador', 'cap_mesas', 'cap_recetas'],
+  bar_salon:        ['cap_mostrador', 'cap_mesas'],
+  pizzeria_salon:   ['cap_mostrador', 'cap_mesas', 'cap_recetas'],
+  parrilla:         ['cap_mostrador', 'cap_mesas', 'cap_recetas'],
+  cafeteria_salon:  ['cap_mostrador', 'cap_mesas'],
+  heladeria_salon:  ['cap_mostrador', 'cap_mesas'],
+  resto_bar:        ['cap_mostrador', 'cap_mesas'],
   cabanas:       ['cap_mostrador', 'cap_alquiler'],
   padel:         ['cap_mostrador', 'cap_canchas'],
   futbol5:       ['cap_mostrador', 'cap_canchas'],

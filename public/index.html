@@ -3462,6 +3462,7 @@ const FAMILIAS = [
   ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
   ['alquiler', 'Alquilo por dia', 'Cabañas, hoteles, salones...'],
   ['canchas', 'Alquilo por hora', 'Canchas, salas, espacios...'],
+  ['salon', 'Atiendo en el local', 'Restaurante, bar, parrilla...'],
   ['otro', 'Otro', 'Lo configuro a mano']
 ];
 
@@ -3491,6 +3492,7 @@ const RUBROS_POR_FAMILIA = {
             'leña', 'distribuidora', 'mayorista'],
   alquiler: ['cabanas', 'hotel', 'salon', 'equipos', 'vehiculos', 'eventos'],
   canchas: ['padel', 'futbol5', 'tenis', 'canchas_alq', 'salas'],
+  salon: ['restaurante', 'bar_salon', 'pizzeria_salon', 'parrilla', 'cafeteria_salon', 'heladeria_salon', 'resto_bar'],
   otro: ['otro']
 };
 
@@ -3573,6 +3575,13 @@ const RUBROS = [
   ['futbol5', 'Futbol 5', 'Canchas por hora'],
   ['tenis', 'Tenis', 'Canchas por hora'],
   ['salas', 'Salas de ensayo', 'Por hora'],
+  ['restaurante', 'Restaurante', 'Con mesas'],
+  ['bar_salon', 'Bar o cerveceria', 'Con mesas'],
+  ['pizzeria_salon', 'Pizzeria con salon', 'Con mesas'],
+  ['parrilla', 'Parrilla', 'Con mesas'],
+  ['cafeteria_salon', 'Cafe o confiteria', 'Con mesas'],
+  ['heladeria_salon', 'Heladeria con salon', 'Con mesas'],
+  ['resto_bar', 'Peña o resto bar', 'Con mesas'],
   ['equipos', 'Alquiler de equipos', 'Herramientas, sonido'],
   ['vehiculos', 'Vehiculos', 'Autos, motos, bicis'],
   ['eventos', 'Articulos para eventos', 'Mesas, sillas, vajilla'],
@@ -3594,7 +3603,8 @@ const CAPS_INFO = [
   ['cap_recetas', 'Recetas', 'Descontar insumos al vender'],
   ['cap_turnos', 'Turnos', 'Agenda de citas'],
   ['cap_alquiler', 'Alquiler por dia', 'Cabañas, salones, equipos'],
-  ['cap_canchas', 'Alquiler por hora', 'Canchas, salas, espacios por turno']
+  ['cap_canchas', 'Alquiler por hora', 'Canchas, salas, espacios por turno'],
+  ['cap_mesas', 'Mesas', 'Atendes en el local y cobras al final']
 ];
 
 // sin ninguna de estas, el negocio no puede cobrar
