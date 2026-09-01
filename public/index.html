@@ -225,9 +225,18 @@
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
     header {
+      transition: margin-top .25s ease, opacity .2s ease;
+      overflow: hidden;
+    }
+    body.scroll-abajo header {
+      margin-top: -100px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* la fila de categorias sube con el encabezado */
+    #v-vender .chips-wrap {
       transition: margin-top .25s ease;
     }
-    body.scroll-abajo header { margin-top: -66px; }
   }
 
   /* en el tema oscuro la barra de arriba va en gris */
