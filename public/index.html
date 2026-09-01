@@ -2540,7 +2540,24 @@
     <div class="medios" id="mediosCobroTurno">
       <button data-medio="efectivo" class="on">Efectivo</button>
       <button data-medio="transferencia">Transfer.</button>
+      <button data-medio="cuenta_corriente">Fiado</button>
     </div>
+
+    <div id="selClienteTurno" style="display:none;">
+      <label>A quien le fias</label>
+      <select id="clienteTurno"></select>
+    </div>
+
+    <label>Total a cobrar</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="text" id="totalTurnoFinal" inputmode="decimal" style="flex:1;">
+      <span class="desc-rapido">
+        <button type="button" onclick="descuentoTurno(5)">&minus;</button>
+        <button type="button" onclick="descuentoTurno(-5)">+</button>
+        <button type="button" onclick="descuentoTurno(0)">&#8634;</button>
+      </span>
+    </div>
+    <div id="notaDescTurno" style="font-size:12px; color:var(--muted); margin:4px 0 10px;"></div>
 
     <button class="btn-ppal" id="btnConfirmarCobroTurno">Cobrar</button>
     <button class="btn-sec" id="btnCerrarCobroTurno">Cancelar</button>
@@ -8656,6 +8673,20 @@ document.getElementById('mediosCobroTurno').addEventListener('click', function (
   const b = e.target.closest('button');
   if (!b) return;
   medioCobroTurno = b.dataset.medio;
+  (function () {
+    const sel = document.getElementById('selClienteTurno');
+    if (!sel) return;
+    sel.style.display = medioCobroTurno === 'cuenta_corriente' ? 'block' : 'none';
+    if (medioCobroTurno === 'cuenta_corriente') {
+      const t = (turnosDelDia || []).filter(function (x) { return x.id === turnoCobroId; })[0];
+      document.getElementById('clienteTurno').innerHTML =
+        '<option value="">Elegi el cliente</option>' +
+        clientes.map(function (c) {
+          return '<option value="' + c.id + '"' +
+            (t && t.cliente_id === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>';
+        }).join('');
+    }
+  })();
   Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
 });
 
@@ -8687,8 +8718,14 @@ function cobrarTurno(id) {
           plata(pagado) + '</b></div>' : '') +
       '<div class="cierre-linea total"><span>A cobrar</span><b>' + plata(falta) + '</b></div>';
 
+    totalBrutoTurno = falta;
+    $('totalTurnoFinal').value = Math.round(falta);
+    $('notaDescTurno').textContent = '';
     $('btnConfirmarCobroTurno').textContent = falta > 0 ? 'Cobrar ' + plata(falta) : 'Cerrar sin cobrar';
   }
+
+  const selT = document.getElementById('selClienteTurno');
+  if (selT) selT.style.display = 'none';
 
   $('modalCobroTurno').classList.add('on');
 }
@@ -8699,14 +8736,22 @@ $('btnConfirmarCobroTurno').onclick = async function () {
   const btn = this;
   btn.disabled = true; btn.textContent = 'Cobrando...';
   try {
+    if (medioCobroTurno === 'cuenta_corriente' &&
+        !document.getElementById('clienteTurno').value) {
+      throw new Error('Elegi a quien le fias');
+    }
     const r = await api('POST', '/turnos/' + turnoCobroId + '/cobrar', {
-      fecha: hoyISO(), medioPago: medioCobroTurno
+      fecha: hoyISO(), medioPago: medioCobroTurno,
+      total: num($('totalTurnoFinal').value),
+      clienteId: medioCobroTurno === 'cuenta_corriente'
+        ? document.getElementById('clienteTurno').value : null
     });
     $('modalCobroTurno').classList.remove('on');
     animarCobro(r.total, 'Turno cobrado');
     await cargarAgenda();
     await revisarTurnos();
     await cargarResumen();
+    if (r.ventaId) await verVenta(r.ventaId);
   } catch (e) {
     $('msgCobroTurno').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
@@ -12066,6 +12111,36 @@ function notaDescuentoPed() {
 
 let totalBrutoRes = 0;
 let itemsCobroRes = [];
+
+let totalBrutoTurno = 0;
+
+function descuentoTurno(paso) {
+  if (totalBrutoTurno <= 0) return;
+  if (paso === 0) {
+    $('totalTurnoFinal').value = Math.round(totalBrutoTurno);
+  } else {
+    const actual = num($('totalTurnoFinal').value) || totalBrutoTurno;
+    const pct = (1 - actual / totalBrutoTurno) * 100;
+    let nuevo = Math.round(pct - paso);
+    if (nuevo < 0) nuevo = 0;
+    if (nuevo > 90) nuevo = 90;
+    $('totalTurnoFinal').value = Math.round(totalBrutoTurno * (1 - nuevo / 100));
+  }
+  notaDescuentoTurno();
+}
+
+document.getElementById('totalTurnoFinal').addEventListener('input', notaDescuentoTurno);
+
+function notaDescuentoTurno() {
+  const fin = num($('totalTurnoFinal').value);
+  const cont = document.getElementById('notaDescTurno');
+  const btn = document.getElementById('btnConfirmarCobroTurno');
+  if (btn) btn.textContent = fin > 0 ? 'Cobrar ' + plata(fin) : 'Cerrar sin cobrar';
+  if (!cont) return;
+  if (!fin || fin >= totalBrutoTurno) { cont.textContent = ''; return; }
+  const pct = Math.round((1 - fin / totalBrutoTurno) * 100);
+  cont.textContent = 'Descuento de ' + pct + '% (' + plata(totalBrutoTurno - fin) + ')';
+}
 
 function descuentoRes(paso) {
   if (totalBrutoRes <= 0) return;

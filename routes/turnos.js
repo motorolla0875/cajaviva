@@ -201,12 +201,24 @@ router.post('/:id/cobrar', (req, res) => {
     if (p && p.precio_costo) costo = p.precio_costo;
   }
 
+  const cliFinal = req.body?.clienteId || t.cliente_id || null;
+
+  if (medio === 'cuenta_corriente' && !cliFinal) {
+    return res.status(400).json({ error: 'Elegi a quien le fias.' });
+  }
+
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, ?, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, t.cliente_id, req.body?.fecha || hoyISO(req.userId), total, costo,
-         medio, total, 'Turno: ' + t.servicio + ' - ' + t.cliente_nombre, t.empleado_id);
+  `).run(ventaId, req.userId, cliFinal, req.body?.fecha || hoyISO(req.userId), total, costo,
+         medio, medio === 'cuenta_corriente' ? 0 : total,
+         'Turno: ' + t.servicio + ' - ' + t.cliente_nombre, t.empleado_id);
+
+  if (medio === 'cuenta_corriente' && cliFinal) {
+    db.prepare('UPDATE clientes SET saldo = COALESCE(saldo,0) + ? WHERE id = ? AND user_id = ?')
+      .run(total, cliFinal, req.userId);
+  }
 
   db.prepare(`
     INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)

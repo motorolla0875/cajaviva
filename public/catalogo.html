@@ -1317,6 +1317,43 @@ document.getElementById('btnReservar').onclick = async function () {
     }
 
     turnoCreado = d.id;
+
+    // si ademas tenia productos en el carrito, van como pedido aparte
+    if (Object.keys(pedido).length > 0) {
+      try {
+        const itemsT = Object.keys(pedido).map(function (clave) {
+          return {
+            productoId: String(clave).split('|')[0],
+            varianteId: variantesElegidas[clave] ? variantesElegidas[clave].id : null,
+            cantidad: pedido[clave]
+          };
+        });
+        const rp = await fetch('/api/pedidos/publico/' + slug, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: nombre,
+            telefono: document.getElementById('twTelefono').value.trim() || null,
+            direccion: null,
+            nota: 'Junto con el turno de ' + d.servicio + ' del ' + d.fecha + ' ' + d.hora,
+            formaPago: 'efectivo',
+            items: itemsT
+          })
+        });
+        const dp = await rp.json();
+        if (rp.ok) {
+          document.getElementById('detalleTurnoListo').textContent +=
+            ' - Ademas pediste ' + itemsT.length +
+            (itemsT.length === 1 ? ' producto' : ' productos') +
+            ' (pedido ' + dp.numero + ')';
+          pedido = {};
+          variantesElegidas = {};
+          const bar = document.getElementById('barra');
+          if (bar) bar.style.display = 'none';
+        }
+      } catch (ep) {}
+    }
+
     const zs = document.getElementById('zonaSena');
     if (d.sena > 0) {
       zs.style.display = 'block';
