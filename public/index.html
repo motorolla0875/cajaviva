@@ -224,6 +224,10 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
+    /* al bajar, nav y categorias desaparecen del todo */
+    body.scroll-abajo nav,
+    body.scroll-abajo #v-vender .chips-wrap { display: none !important; }
+
     /* el contenido sube pegado al encabezado */
     #v-vender .izq { transition: padding-top .25s ease; }
     body.scroll-abajo #v-vender .izq { padding-top: 0; }
