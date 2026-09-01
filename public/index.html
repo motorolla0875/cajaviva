@@ -7332,7 +7332,13 @@ async function compartirCatalogo() {
 }
 
 function abrirCatalogo() {
-  window.open($('catLink').textContent, '_blank');
+  const t = ($('catLink').textContent || '').trim();
+  const link = t || (negocio && negocio.slug
+    ? location.origin + '/c/' + negocio.slug : '');
+
+  if (!link) { avisar('Primero abri tu tienda', true); return; }
+
+  window.open(link.indexOf('http') === 0 ? link : 'https://' + link, '_blank');
 }
 
 /* ══ Elegir productos del catalogo ══ */
