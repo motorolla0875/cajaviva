@@ -2221,6 +2221,7 @@
       <div class="dos-arriba">
         <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
         <button class="btn-nuevo gris" id="btnBajarExcel" title="Bajar a Excel">&#8681;</button>
+        <button class="btn-nuevo gris" id="btnBajarPdf" title="Reporte en PDF">PDF</button>
         <button class="btn-nuevo gris" id="btnCierre">Cerrar caja</button>
       </div>
       <div class="seccion" id="tituloVentasCaja">Ventas</div>
@@ -11917,6 +11918,32 @@ document.getElementById('btnTicketPdf').onclick = async function () {
     URL.revokeObjectURL(url);
   } catch (e) {
     avisar('No se pudo generar el ticket', true);
+  }
+  btn.disabled = false;
+};
+
+document.getElementById('btnBajarPdf').onclick = async function () {
+  const btn = this;
+  btn.disabled = true;
+  try {
+    const rg = rango();
+    const r = await fetch('/api/exportar/reporte?desde=' + rg.desde + '&hasta=' + rg.hasta, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) throw new Error('fallo');
+
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'reporte-' + rg.desde + '-al-' + rg.hasta + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    avisar('Reporte descargado');
+  } catch (e) {
+    avisar('No se pudo generar el reporte', true);
   }
   btn.disabled = false;
 };

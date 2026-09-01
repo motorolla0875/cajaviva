@@ -237,4 +237,121 @@ router.get('/ticket/:id', (req, res) => {
   doc.end();
 });
 
+
+// ── reporte del periodo en PDF ──
+router.get('/reporte', (req, res) => {
+  const desde = req.query.desde || hoyISO(req.userId);
+  const hasta = req.query.hasta || hoyISO(req.userId);
+
+  const ventas = db.prepare(`
+    SELECT v.fecha, v.total, v.costo_total, v.medio_pago, v.estado
+    FROM ventas v
+    WHERE v.user_id = ? AND v.fecha BETWEEN ? AND ?
+  `).all(req.userId, desde, hasta);
+
+  const gastos = db.prepare(
+    'SELECT monto, descripcion, fecha FROM gastos WHERE user_id = ? AND fecha BETWEEN ? AND ? ORDER BY fecha'
+  ).all(req.userId, desde, hasta);
+
+  const top = db.prepare(`
+    SELECT i.nombre, SUM(i.cantidad) AS cant, SUM(i.cantidad * i.precio_unitario) AS total
+    FROM venta_items i
+    JOIN ventas v ON v.id = i.venta_id
+    WHERE v.user_id = ? AND v.fecha BETWEEN ? AND ? AND v.estado != 'anulada'
+    GROUP BY i.nombre ORDER BY total DESC LIMIT 10
+  `).all(req.userId, desde, hasta);
+
+  const neg = db.prepare('SELECT nombre FROM negocio WHERE user_id = ?').get(req.userId);
+
+  function plata(n) { return '$' + Math.round(n || 0).toLocaleString('es-AR'); }
+
+  const validas = ventas.filter(function (v) { return v.estado !== 'anulada'; });
+  const vendido = validas.reduce(function (a, v) { return a + v.total; }, 0);
+  const costo = validas.reduce(function (a, v) { return a + (v.costo_total || 0); }, 0);
+  const gastado = gastos.reduce(function (a, g) { return a + g.monto; }, 0);
+
+  const porMedio = {};
+  validas.forEach(function (v) {
+    const m = v.medio_pago || 'efectivo';
+    porMedio[m] = (porMedio[m] || 0) + v.total;
+  });
+
+  const MEDIOS = {
+    efectivo: 'Efectivo', transferencia: 'Transferencia',
+    cuenta_corriente: 'Fiado', tarjeta: 'Tarjeta'
+  };
+
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition',
+    'attachment; filename="reporte-' + desde + '-al-' + hasta + '.pdf"');
+
+  doc.pipe(res);
+
+  const A = 495;
+
+  doc.fontSize(20).font('Helvetica-Bold').fillColor('#1D9E75')
+     .text(neg && neg.nombre ? neg.nombre : 'Mi negocio');
+  doc.fontSize(11).font('Helvetica').fillColor('#666')
+     .text('Del ' + desde + ' al ' + hasta);
+
+  doc.moveDown(1.2);
+  doc.fillColor('#000');
+
+  function fila(que, cuanto, negrita) {
+    const y = doc.y;
+    doc.fontSize(11).font(negrita ? 'Helvetica-Bold' : 'Helvetica')
+       .text(que, 50, y, { width: 300 });
+    doc.font(negrita ? 'Helvetica-Bold' : 'Helvetica')
+       .text(cuanto, 50, y, { width: A, align: 'right' });
+    doc.moveDown(0.6);
+  }
+
+  doc.fontSize(14).font('Helvetica-Bold').text('Resumen');
+  doc.moveDown(0.5);
+
+  fila('Ventas', String(validas.length));
+  fila('Vendido', plata(vendido));
+  fila('Costo de lo vendido', plata(costo));
+  fila('Ganancia bruta', plata(vendido - costo));
+  fila('Gastos', plata(gastado));
+
+  doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#DDD');
+  doc.moveDown(0.5);
+  fila('Balance', plata(vendido - costo - gastado), true);
+
+  doc.moveDown(1);
+  doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text('Como te pagaron');
+  doc.moveDown(0.5);
+
+  Object.keys(porMedio).forEach(function (m) {
+    fila(MEDIOS[m] || m, plata(porMedio[m]));
+  });
+
+  if (top.length > 0) {
+    doc.moveDown(1);
+    doc.fontSize(14).font('Helvetica-Bold').text('Lo que mas se vendio');
+    doc.moveDown(0.5);
+    top.forEach(function (t) {
+      fila(t.nombre + '  (' + t.cant + ')', plata(t.total));
+    });
+  }
+
+  if (gastos.length > 0) {
+    doc.moveDown(1);
+    doc.fontSize(14).font('Helvetica-Bold').text('Gastos');
+    doc.moveDown(0.5);
+    gastos.slice(0, 20).forEach(function (g) {
+      fila(g.fecha + '  ' + (g.descripcion || ''), plata(g.monto));
+    });
+  }
+
+  doc.moveDown(2);
+  doc.fontSize(9).fillColor('#999')
+     .text('Generado con CajaViva', { align: 'center' });
+
+  doc.end();
+});
+
 module.exports = router;
