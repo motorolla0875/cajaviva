@@ -153,7 +153,7 @@ router.get('/ticket/:id', (req, res) => {
   if (!v) return res.status(404).json({ error: 'Venta no encontrada.' });
 
   const items = db.prepare(
-    'SELECT nombre, cantidad, precio_unitario, variante_nombre FROM venta_items WHERE venta_id = ?'
+    'SELECT nombre, cantidad, precio_unitario FROM venta_items WHERE venta_id = ?'
   ).all(v.id);
 
   const neg = db.prepare(
@@ -196,7 +196,7 @@ router.get('/ticket/:id', (req, res) => {
   doc.moveDown(0.5);
 
   items.forEach(function (i) {
-    const nom = i.nombre + (i.variante_nombre ? ' (' + i.variante_nombre + ')' : '');
+    const nom = i.nombre;
     const sub = i.cantidad * i.precio_unitario;
 
     doc.fontSize(9).font('Helvetica').text(nom, { width: ancho });
