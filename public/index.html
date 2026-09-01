@@ -1210,6 +1210,9 @@
   #resumenDisp .rep-resumen .val { font-size: 15px; }
   #resumenDisp .rep-resumen .lbl { font-size: 11px; }
 
+  #modalSumarMesa { z-index: 260; }
+  #modalMesa { z-index: 240; }
+
   .salon {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     gap: 9px;
@@ -2366,6 +2369,39 @@
     <div id="msgScan"></div>
     <div id="lectorCam"></div>
     <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalSumarMesa">
+  <div class="modal">
+    <h3>Agregar a la mesa</h3>
+    <p style="color:var(--muted); font-size:13px; margin:0 0 12px;" id="subSumar"></p>
+    <div id="msgSumar"></div>
+
+    <input type="text" id="buscarSumar" placeholder="Buscar producto..." autocomplete="off">
+    <div id="grillaSumar" style="max-height:44vh; overflow-y:auto; margin-top:10px;"></div>
+
+    <div class="cierre-linea total"><span>A agregar</span><b id="totalSumar">$0</b></div>
+
+    <button class="btn-ppal" id="btnConfirmarSumar">Agregar a la mesa</button>
+    <button class="btn-sec" id="btnCerrarSumar">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalMesa">
+  <div class="modal">
+    <h3 id="tituloMesa">Mesa</h3>
+    <p style="color:var(--muted); font-size:13px; margin:0 0 12px;" id="subMesa"></p>
+    <div id="msgMesa"></div>
+
+    <div id="consumoMesa"></div>
+
+    <div class="cierre-linea total"><span>Total</span><b id="totalMesa">$0</b></div>
+
+    <button class="btn-nuevo solo" id="btnSumarMesa">+ Agregar consumo</button>
+    <button class="btn-ppal" id="btnCobrarMesa">Cobrar la mesa</button>
+    <button class="btn-sec" id="btnMoverMesa">Pasar a otra mesa</button>
+    <button class="btn-sec" id="btnCerrarMesa">Cerrar</button>
   </div>
 </div>
 
@@ -11540,9 +11576,156 @@ async function agregarMesas() {
   } catch (e) { avisar(e.message, true); }
 }
 
+
+let mesaActual = null;
+
 function abrirMesa(id) {
-  avisar('Mesa abierta');
+  const m = mesas.filter(function (x) { return x.id === id; })[0];
+  if (!m) return;
+
+  mesaActual = m;
+  $('msgMesa').innerHTML = '';
+  $('tituloMesa').textContent = m.nombre;
+  $('subMesa').textContent = m.ocupada ? haceRato(m.desde) : 'Mesa libre';
+
+  pintarConsumoMesa();
+  $('modalMesa').classList.add('on');
 }
+
+function pintarConsumoMesa() {
+  const m = mesaActual;
+  if (!m) return;
+  const cont = $('consumoMesa');
+
+  if (!m.items || m.items.length === 0) {
+    cont.innerHTML = '<div class="vacio">Todavia no pidieron nada.</div>';
+    $('totalMesa').textContent = plata(0);
+    $('btnCobrarMesa').style.display = 'none';
+    $('btnMoverMesa').style.display = 'none';
+    return;
+  }
+
+  cont.innerHTML = m.items.map(function (i) {
+    return '<div class="mov"><div class="info">' +
+      '<div class="n">' + esc(i.nombre) + '</div>' +
+      '<div class="d">' + fmtCant(i.cantidad) + ' x ' + plata(i.precio_unitario) + '</div>' +
+      '</div><div class="monto">' + plata(i.cantidad * i.precio_unitario) + '</div>' +
+      '<button class="x" onclick="sacarDeMesa(\'' + i.id + '\')">&#10005;</button></div>';
+  }).join('');
+
+  $('totalMesa').textContent = plata(m.total);
+  $('btnCobrarMesa').style.display = 'block';
+  $('btnMoverMesa').style.display = 'block';
+}
+
+$('btnCerrarMesa').onclick = function () {
+  $('modalMesa').classList.remove('on');
+};
+
+async function sacarDeMesa(itemId) {
+  try {
+    await api('DELETE', '/mesas/item/' + itemId);
+    await cargarMesas();
+    mesaActual = mesas.filter(function (x) { return x.id === mesaActual.id; })[0];
+    pintarConsumoMesa();
+    await cargarProductos();
+  } catch (e) { avisar(e.message, true); }
+}
+
+
+let carritoMesa = [];
+
+$('btnSumarMesa').onclick = function () {
+  if (!mesaActual) return;
+  carritoMesa = [];
+  $('msgSumar').innerHTML = '';
+  $('buscarSumar').value = '';
+  $('subSumar').textContent = mesaActual.nombre;
+  pintarGrillaSumar();
+  $('modalSumarMesa').classList.add('on');
+};
+
+$('btnCerrarSumar').onclick = function () {
+  $('modalSumarMesa').classList.remove('on');
+};
+
+$('buscarSumar').addEventListener('input', pintarGrillaSumar);
+
+function pintarGrillaSumar() {
+  const t = norm($('buscarSumar').value.trim());
+
+  const lista = productos.filter(function (p) {
+    if (p.es_unidad || p.es_insumo) return false;
+    if (!t) return true;
+    return norm(p.nombre).indexOf(t) >= 0;
+  }).slice(0, 60);
+
+  $('grillaSumar').innerHTML = lista.length === 0
+    ? '<div class="vacio">No hay productos.</div>'
+    : lista.map(function (p) {
+        const l = carritoMesa.filter(function (x) { return x.productoId === p.id; })[0];
+        const cant = l ? l.cantidad : 0;
+
+        return '<div class="mov"><div class="info">' +
+          '<div class="n">' + esc(p.nombre) + '</div>' +
+          '<div class="d">' + plata(p.precio_venta) + '</div>' +
+          '</div>' +
+          '<div class="cant">' +
+          '<button onclick="cambiarEnMesa(\'' + p.id + '\', -1)">&minus;</button>' +
+          '<span>' + fmtCant(cant) + '</span>' +
+          '<button onclick="cambiarEnMesa(\'' + p.id + '\', 1)">+</button>' +
+          '</div></div>';
+      }).join('');
+
+  const total = carritoMesa.reduce(function (a, i) { return a + i.precio * i.cantidad; }, 0);
+  $('totalSumar').textContent = plata(total);
+  $('btnConfirmarSumar').disabled = carritoMesa.length === 0;
+}
+
+function cambiarEnMesa(id, delta) {
+  const p = productos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+
+  const l = carritoMesa.filter(function (x) { return x.productoId === id; })[0];
+
+  if (l) {
+    l.cantidad += delta;
+    if (l.cantidad <= 0) {
+      carritoMesa = carritoMesa.filter(function (x) { return x.productoId !== id; });
+    }
+  } else if (delta > 0) {
+    carritoMesa.push({
+      productoId: p.id, nombre: p.nombre,
+      precio: p.precio_venta, costo: p.precio_costo || 0, cantidad: 1
+    });
+  }
+
+  pintarGrillaSumar();
+}
+
+$('btnConfirmarSumar').onclick = async function () {
+  if (carritoMesa.length === 0) return;
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Agregando...';
+
+  try {
+    await api('POST', '/mesas/' + mesaActual.id + '/agregar', { items: carritoMesa });
+
+    $('modalSumarMesa').classList.remove('on');
+    await cargarMesas();
+    mesaActual = mesas.filter(function (x) { return x.id === mesaActual.id; })[0];
+    $('subMesa').textContent = mesaActual.ocupada ? haceRato(mesaActual.desde) : 'Mesa libre';
+    pintarConsumoMesa();
+    await cargarProductos();
+
+    sonidoOk();
+  } catch (e) {
+    $('msgSumar').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Agregar a la mesa';
+};
 
 /* ══ Mi tienda ══ */
 
