@@ -11777,13 +11777,13 @@ let saltearAvisoReparto = false;
   document.addEventListener('scroll', alScroll, true);
 })();
 
-// cerrar el detalle de venta deslizando el dedo
-(function () {
-  const m = document.getElementById('modalHecho');
-  if (!m) return;
+// cerrar cualquier ventana deslizando el dedo
+function activarDeslizar(m) {
+  if (!m || m.dataset.deslizar) return;
+  m.dataset.deslizar = '1';
 
   let x0 = 0, y0 = 0, moviendo = false;
-  const caja = m.querySelector('.modal');
+  const caja = m.querySelector('.modal') || m.firstElementChild;
   if (!caja) return;
 
   caja.addEventListener('touchstart', function (e) {
@@ -11827,7 +11827,12 @@ let saltearAvisoReparto = false;
       caja.style.opacity = '';
     }
   }, { passive: true });
-})();
+}
+
+// aplicarlo a todas las ventanas
+setTimeout(function () {
+  document.querySelectorAll('.modal-bg').forEach(activarDeslizar);
+}, 800);
 
 /* ══ Vuelto ══ */
 
