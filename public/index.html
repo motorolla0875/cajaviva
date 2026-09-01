@@ -11777,6 +11777,58 @@ let saltearAvisoReparto = false;
   document.addEventListener('scroll', alScroll, true);
 })();
 
+// cerrar el detalle de venta deslizando el dedo
+(function () {
+  const m = document.getElementById('modalHecho');
+  if (!m) return;
+
+  let x0 = 0, y0 = 0, moviendo = false;
+  const caja = m.querySelector('.modal');
+  if (!caja) return;
+
+  caja.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+    moviendo = true;
+    caja.style.transition = 'none';
+  }, { passive: true });
+
+  caja.addEventListener('touchmove', function (e) {
+    if (!moviendo) return;
+    const dx = e.touches[0].clientX - x0;
+    const dy = Math.abs(e.touches[0].clientY - y0);
+
+    // solo si el gesto es horizontal
+    if (dy > Math.abs(dx)) return;
+
+    caja.style.transform = 'translateX(' + dx + 'px)';
+    caja.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / 300);
+  }, { passive: true });
+
+  caja.addEventListener('touchend', function (e) {
+    if (!moviendo) return;
+    moviendo = false;
+
+    const dx = (e.changedTouches[0].clientX - x0);
+    caja.style.transition = 'transform .2s ease, opacity .2s ease';
+
+    if (Math.abs(dx) > 90) {
+      caja.style.transform = 'translateX(' + (dx > 0 ? 500 : -500) + 'px)';
+      caja.style.opacity = '0';
+      setTimeout(function () {
+        m.classList.remove('on');
+        caja.style.transition = 'none';
+        caja.style.transform = '';
+        caja.style.opacity = '';
+      }, 200);
+    } else {
+      caja.style.transform = '';
+      caja.style.opacity = '';
+    }
+  }, { passive: true });
+})();
+
 /* ══ Vuelto ══ */
 
 function totalACobrar() {
