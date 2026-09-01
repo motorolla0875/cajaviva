@@ -1210,6 +1210,25 @@
   #resumenDisp .rep-resumen .val { font-size: 15px; }
   #resumenDisp .rep-resumen .lbl { font-size: 11px; }
 
+  .salon {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 9px;
+  }
+  .mesa {
+    aspect-ratio: 1; border-radius: 13px; padding: 8px 6px;
+    border: 1.5px dashed var(--line); background: var(--panel);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; color: var(--text);
+  }
+  .mesa.ocupada {
+    border-style: solid; border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .mesa .m-nom { font-size: 13px; font-weight: 500; }
+  .mesa .m-total { font-size: 16px; font-weight: 600; color: var(--accent-dark); }
+  .mesa .m-hace { font-size: 10px; color: var(--muted); }
+  .mesa .m-libre { font-size: 11.5px; color: var(--muted); }
+
   .unidad-card {
     display: flex; align-items: center; gap: 12px;
     background: var(--panel); border: 1px solid var(--line);
@@ -4413,6 +4432,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     acomodarBuscadorGlobal();
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
     if (b.dataset.vista === 'tienda') cargarVistaTienda();
+    if (b.dataset.vista === 'mesas') cargarMesas();
   };
 });
 
@@ -11453,6 +11473,76 @@ filtrarTarjetas('listaAgenda', 'buscarAgenda');
 
   obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
 })();
+
+/* Mesas */
+
+let mesas = [];
+
+function haceRato(desde) {
+  if (!desde) return '';
+  const min = Math.round((Date.now() - new Date(desde.replace(' ', 'T') + 'Z')) / 60000);
+  if (min < 1) return 'recien';
+  if (min < 60) return 'hace ' + min + ' min';
+  const h = Math.floor(min / 60);
+  return 'hace ' + h + (h === 1 ? ' hora' : ' horas');
+}
+
+async function cargarMesas() {
+  const cont = document.getElementById('salonMesas');
+  if (!cont) return;
+
+  try {
+    const d = await api('GET', '/mesas');
+    mesas = d.mesas;
+
+    if (mesas.length === 0) {
+      cont.innerHTML = '<div class="vacio">Todavia no cargaste tus mesas.</div>' +
+        '<button class="btn-nuevo solo" onclick="agregarMesas()">Cargar mis mesas</button>';
+      return;
+    }
+
+    const ocup = mesas.filter(function (m) { return m.ocupada; });
+    const enSalon = ocup.reduce(function (a, m) { return a + m.total; }, 0);
+
+    let html = '';
+
+    if (ocup.length > 0) {
+      html += '<div class="rep-resumen" style="margin-bottom:12px;">' +
+        '<div class="lbl">' + ocup.length + (ocup.length === 1 ? ' mesa ocupada' : ' mesas ocupadas') + '</div>' +
+        '<div class="val">' + plata(enSalon) + '</div></div>';
+    }
+
+    html += '<div class="salon">' + mesas.map(function (m) {
+      return '<button class="mesa' + (m.ocupada ? ' ocupada' : '') +
+        '" onclick="abrirMesa(\'' + m.id + '\')">' +
+        '<div class="m-nom">' + esc(m.nombre) + '</div>' +
+        (m.ocupada
+          ? '<div class="m-total">' + plata(m.total) + '</div><div class="m-hace">' + haceRato(m.desde) + '</div>'
+          : '<div class="m-libre">libre</div>') +
+        '</button>';
+    }).join('') + '</div>';
+
+    html += '<button class="btn-nuevo gris solo" style="margin-top:14px;" onclick="agregarMesas()">Agregar mesas</button>';
+
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+async function agregarMesas() {
+  const n = prompt('Cuantas mesas queres agregar?', '8');
+  if (!n) return;
+  try {
+    await api('POST', '/mesas/varias', { cuantas: parseInt(n) });
+    await cargarMesas();
+    avisar('Mesas cargadas');
+  } catch (e) { avisar(e.message, true); }
+}
+
+function abrirMesa(id) {
+  avisar('Mesa abierta');
+}
 
 /* ══ Mi tienda ══ */
 
