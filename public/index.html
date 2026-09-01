@@ -1954,6 +1954,7 @@
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
+    <button data-vista="mesas" id="tabMesas">Mesas</button>
     <button data-vista="tienda" id="tabTienda">Mi tienda</button>
   </nav>
 
@@ -2147,6 +2148,12 @@
       <input type="text" id="buscarPedidos" style="display:none;">
       <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-mesas">
+    <div class="lista-wrap">
+      <div id="salonMesas"></div>
     </div>
   </div>
 
@@ -11429,6 +11436,23 @@ filtrarTarjetas('listaReservas', 'buscarReservas');
 filtrarTarjetas('grillaCanchas', 'buscarCanchas');
 filtrarTarjetas('listaAgenda', 'buscarAgenda');
 
+
+// al cerrar cualquier ventana, el encabezado vuelve
+(function () {
+  function mostrarArriba() {
+    const nav = document.querySelector('nav');
+    const chips = document.querySelector('#v-vender .chips-wrap');
+    if (nav) nav.style.marginTop = '0px';
+    if (chips) { chips.style.maxHeight = ''; chips.style.marginTop = '0px'; }
+  }
+
+  const obs = new MutationObserver(function () {
+    const hayModal = document.querySelector('.modal-bg.on');
+    if (!hayModal) mostrarArriba();
+  });
+
+  obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+})();
 
 /* ══ Mi tienda ══ */
 
