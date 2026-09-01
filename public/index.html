@@ -224,6 +224,15 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
+    /* al bajar se esconden las pestañas tambien */
+    nav {
+      transition: max-height .25s ease, opacity .2s ease;
+      overflow: hidden; max-height: 60px;
+    }
+    body.scroll-abajo nav {
+      max-height: 0; opacity: 0; margin-bottom: 0;
+    }
+
     /* al bajar se esconden las categorias, el encabezado queda */
     #v-vender .chips-wrap {
       transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
