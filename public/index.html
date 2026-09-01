@@ -2220,6 +2220,7 @@
       </div>
       <div class="dos-arriba">
         <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
+        <button class="btn-nuevo gris" id="btnBajarExcel" title="Bajar a Excel">&#8681;</button>
         <button class="btn-nuevo gris" id="btnCierre">Cerrar caja</button>
       </div>
       <div class="seccion" id="tituloVentasCaja">Ventas</div>
@@ -11861,6 +11862,36 @@ setTimeout(function () {
 
   m.addEventListener('touchend', function () { arrastrando = false; }, { passive: true });
 })();
+
+// bajar las ventas del periodo a Excel
+document.getElementById('btnBajarExcel').onclick = async function () {
+  const btn = this;
+  btn.disabled = true;
+
+  try {
+    const rg = rango();
+    const r = await fetch('/api/exportar/ventas?desde=' + rg.desde + '&hasta=' + rg.hasta, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (!r.ok) throw new Error('No se pudo generar');
+
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cajaviva-' + rg.desde + '-al-' + rg.hasta + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    avisar('Planilla descargada');
+  } catch (e) {
+    avisar('No se pudo generar la planilla', true);
+  }
+  btn.disabled = false;
+};
 
 /* ══ Vuelto ══ */
 
