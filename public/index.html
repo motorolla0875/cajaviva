@@ -224,29 +224,19 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
-    header {
-      transition: padding .25s ease;
+    /* al bajar se esconden las categorias, el encabezado queda */
+    #v-vender .chips-wrap {
+      transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
       overflow: hidden;
     }
-    /* al bajar queda solo el buscador */
-    body.scroll-abajo header {
-      padding-top: 7px; padding-bottom: 7px;
-    }
-    body.scroll-abajo header .yo,
-    body.scroll-abajo header .hoy {
-      display: none;
-    }
-    body.scroll-abajo .buscador-fijo {
-      max-width: none; width: 100%;
+    body.scroll-abajo #v-vender .chips-wrap {
+      max-height: 0; padding-top: 0; padding-bottom: 0;
+      opacity: 0; margin-bottom: 0;
     }
     /* espacio para que el ultimo producto no quede tapado */
     #v-vender .izq { padding-bottom: 90px; }
 
-    /* las categorias quedan fijas debajo de las pestañas */
-    #v-vender .chips-wrap {
-      position: sticky; top: 0; z-index: 30;
-      background: var(--bg);
-    }
+
   }
 
   /* en el tema oscuro la barra de arriba va en gris */
