@@ -1970,6 +1970,7 @@
   <nav>
     <button data-vista="vender" class="on">Vender</button>
     <button data-vista="productos">Productos</button>
+    <button data-vista="mesas" id="tabMesas">Mesas</button>
     <button data-vista="reservas" id="tabReservas">Reservas</button>
     <button data-vista="canchas" id="tabCanchas">Canchas</button>
     <button data-vista="clientes">Fiado</button>
@@ -1977,7 +1978,6 @@
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
-    <button data-vista="mesas" id="tabMesas">Mesas</button>
     <button data-vista="tienda" id="tabTienda">Mi tienda</button>
   </nav>
 
@@ -2386,6 +2386,17 @@
       <button data-medio="transferencia">Transfer.</button>
       <button data-medio="cuenta_corriente">Fiado</button>
     </div>
+
+    <label>Total a cobrar</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="text" id="totalMesaFinal" inputmode="decimal" style="flex:1;">
+      <span class="desc-rapido">
+        <button type="button" onclick="descuentoMesa(5)">&minus;</button>
+        <button type="button" onclick="descuentoMesa(-5)">+</button>
+        <button type="button" onclick="descuentoMesa(0)">&#8634;</button>
+      </span>
+    </div>
+    <div id="notaDescMesa" style="font-size:12px; color:var(--muted); margin:4px 0 10px;"></div>
 
     <div id="selClienteMesa" style="display:none;">
       <label>A quien le fias</label>
@@ -11795,6 +11806,8 @@ $('btnCobrarMesa').onclick = function () {
     }).join('') +
     '<div class="cierre-linea total"><span>Total</span><b>' + plata(mesaActual.total) + '</b></div>';
 
+  $('totalMesaFinal').value = Math.round(mesaActual.total);
+  document.getElementById('notaDescMesa').textContent = '';
   $('btnConfirmarCobroMesa').textContent = 'Cobrar ' + plata(mesaActual.total);
   $('modalCobroMesa').classList.add('on');
 };
@@ -11821,7 +11834,8 @@ $('btnConfirmarCobroMesa').onclick = async function () {
 
     const r = await api('POST', '/mesas/' + cobroMesaId + '/cobrar', {
       medioPago: medioCobroMesa,
-      clienteId: medioCobroMesa === 'cuenta_corriente' ? cli : null
+      clienteId: medioCobroMesa === 'cuenta_corriente' ? cli : null,
+      total: num($('totalMesaFinal').value) || mesaActual.total
     });
     $('modalCobroMesa').classList.remove('on');
 
@@ -11862,6 +11876,37 @@ $('btnMoverMesa').onclick = async function () {
     avisar('Pasaron a ' + destino.nombre);
   } catch (e) { avisar(e.message, true); }
 };
+
+function descuentoMesa(paso) {
+  if (!mesaActual) return;
+  const base = mesaActual.total;
+  if (base <= 0) return;
+
+  if (paso === 0) {
+    $('totalMesaFinal').value = Math.round(base);
+  } else {
+    const actual = num($('totalMesaFinal').value) || base;
+    const pct = (1 - actual / base) * 100;
+    let nuevo = Math.round(pct - paso);
+    if (nuevo < 0) nuevo = 0;
+    if (nuevo > 90) nuevo = 90;
+    $('totalMesaFinal').value = Math.round(base * (1 - nuevo / 100));
+  }
+  notaDescuentoMesa();
+}
+
+function notaDescuentoMesa() {
+  if (!mesaActual) return;
+  const base = mesaActual.total;
+  const fin = num($('totalMesaFinal').value);
+  const cont = document.getElementById('notaDescMesa');
+  if (!cont) return;
+
+  if (!fin || fin >= base) { cont.textContent = ''; return; }
+
+  const pct = Math.round((1 - fin / base) * 100);
+  cont.textContent = 'Descuento de ' + pct + '% (' + plata(base - fin) + ')';
+}
 
 /* ══ Mi tienda ══ */
 

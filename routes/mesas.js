@@ -173,7 +173,8 @@ router.post('/:id/cobrar', (req, res) => {
   const items = db.prepare('SELECT * FROM mesa_consumo WHERE mesa_id = ?').all(m.id);
   if (items.length === 0) return res.status(400).json({ error: 'Esa mesa esta vacia.' });
 
-  const total = items.reduce(function (a, i) { return a + i.cantidad * i.precio_unitario; }, 0);
+  const bruto = items.reduce(function (a, i) { return a + i.cantidad * i.precio_unitario; }, 0);
+  const total = req.body?.total != null ? parseFloat(req.body.total) : bruto;
   const costo = items.reduce(function (a, i) { return a + i.cantidad * (i.costo_unitario || 0); }, 0);
 
   const medio = req.body?.medioPago || 'efectivo';
