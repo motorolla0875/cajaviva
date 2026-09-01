@@ -11764,17 +11764,13 @@ let saltearAvisoReparto = false;
     const nav = document.querySelector('nav');
     const chips = document.querySelector('#v-vender .chips-wrap');
 
-    // primero se pliegan las categorias, despues las pestañas
-    const chipsOculto = Math.min(oculto, ALTO_CHIPS);
-    const navOculto = Math.max(0, oculto - ALTO_CHIPS);
+    // los dos suben juntos, como un bloque
+    if (nav) nav.style.marginTop = -oculto + 'px';
 
+    // el hueco se cierra desde abajo
     if (chips) {
-      chips.style.maxHeight = (ALTO_CHIPS - chipsOculto) + 'px';
-      chips.style.marginTop = -chipsOculto + 'px';
-    }
-    if (nav) {
-      nav.style.maxHeight = (ALTO_NAV - navOculto) + 'px';
-      nav.style.marginTop = -navOculto + 'px';
+      const recorte = Math.max(0, oculto - ALTO_NAV);
+      chips.style.maxHeight = Math.max(0, ALTO_CHIPS - recorte) + 'px';
     }
   }
 
