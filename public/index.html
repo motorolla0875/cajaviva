@@ -1210,6 +1210,7 @@
   #resumenDisp .rep-resumen .val { font-size: 15px; }
   #resumenDisp .rep-resumen .lbl { font-size: 11px; }
 
+  #modalCobroMesa { z-index: 265; }
   #modalSumarMesa { z-index: 260; }
   #modalMesa { z-index: 240; }
 
@@ -2369,6 +2370,24 @@
     <div id="msgScan"></div>
     <div id="lectorCam"></div>
     <button class="btn-sec" id="btnCerrarScan" style="margin-top:14px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCobroMesa">
+  <div class="modal">
+    <h3>Cobrar la mesa</h3>
+    <p style="color:var(--muted); font-size:13px; margin:0 0 12px;" id="subCobroMesa"></p>
+    <div id="msgCobroMesa"></div>
+    <div id="detalleCobroMesa"></div>
+
+    <label>Como paga</label>
+    <div class="medios" id="mediosCobroMesa">
+      <button data-medio="efectivo" class="on">Efectivo</button>
+      <button data-medio="transferencia">Transfer.</button>
+    </div>
+
+    <button class="btn-ppal" id="btnConfirmarCobroMesa">Cobrar</button>
+    <button class="btn-sec" id="btnCerrarCobroMesa">Cancelar</button>
   </div>
 </div>
 
@@ -11727,6 +11746,95 @@ $('btnConfirmarSumar').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Agregar a la mesa';
 };
 
+let cobroMesaId = null;
+let medioCobroMesa = 'efectivo';
+
+document.getElementById('mediosCobroMesa').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  medioCobroMesa = b.dataset.medio;
+  Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+});
+
+$('btnCobrarMesa').onclick = function () {
+  if (!mesaActual || !mesaActual.ocupada) return;
+
+  $('modalMesa').classList.remove('on');
+
+  cobroMesaId = mesaActual.id;
+  medioCobroMesa = 'efectivo';
+  Array.prototype.forEach.call($('mediosCobroMesa').children, function (x, i) {
+    x.classList.toggle('on', i === 0);
+  });
+
+  $('msgCobroMesa').innerHTML = '';
+  $('subCobroMesa').textContent = mesaActual.nombre + ' - ' + haceRato(mesaActual.desde);
+
+  $('detalleCobroMesa').innerHTML =
+    mesaActual.items.map(function (i) {
+      return '<div class="cierre-linea"><span>' + fmtCant(i.cantidad) + ' x ' + esc(i.nombre) +
+        '</span><b>' + plata(i.cantidad * i.precio_unitario) + '</b></div>';
+    }).join('') +
+    '<div class="cierre-linea total"><span>Total</span><b>' + plata(mesaActual.total) + '</b></div>';
+
+  $('btnConfirmarCobroMesa').textContent = 'Cobrar ' + plata(mesaActual.total);
+  $('modalCobroMesa').classList.add('on');
+};
+
+$('btnCerrarCobroMesa').onclick = function () {
+  $('modalCobroMesa').classList.remove('on');
+};
+
+$('btnConfirmarCobroMesa').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Cobrando...';
+
+  try {
+    const items = mesaActual.items.map(function (i) {
+      return { nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_unitario };
+    });
+
+    const r = await api('POST', '/mesas/' + cobroMesaId + '/cobrar', { medioPago: medioCobroMesa });
+    $('modalCobroMesa').classList.remove('on');
+
+    await cargarMesas();
+    await cargarResumen();
+    await cargarProductos();
+
+    mostrarHecho({
+      ventaId: r.ventaId,
+      total: r.total,
+      items: items,
+      ganancia: r.total - (r.costo || 0),
+      vuelto: 0
+    });
+  } catch (e) {
+    $('msgCobroMesa').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Cobrar';
+};
+
+$('btnMoverMesa').onclick = async function () {
+  if (!mesaActual) return;
+  const libres = mesas.filter(function (m) { return !m.ocupada && m.id !== mesaActual.id; });
+  if (libres.length === 0) { avisar('No hay mesas libres', true); return; }
+
+  const nombres = libres.map(function (m, i) { return (i + 1) + '. ' + m.nombre; }).join('\n');
+  const n = prompt('A que mesa la paso?\n\n' + nombres, '1');
+  if (!n) return;
+
+  const destino = libres[parseInt(n) - 1];
+  if (!destino) { avisar('No existe esa opcion', true); return; }
+
+  try {
+    await api('POST', '/mesas/' + mesaActual.id + '/mover', { destino: destino.id });
+    $('modalMesa').classList.remove('on');
+    await cargarMesas();
+    avisar('Pasaron a ' + destino.nombre);
+  } catch (e) { avisar(e.message, true); }
+};
+
 /* ══ Mi tienda ══ */
 
 function cargarVistaTienda() {
@@ -12520,7 +12628,8 @@ async function cargarCaja() {
         return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="verVenta(\'' + v.id + '\')">' +
           '<div class="n">' + esc(detalle) + '</div>' +
           '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
-            (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') + '</div></div>' +
+            (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') +
+            (v.notas && v.notas.indexOf('Mesa') === 0 ? ' &middot; ' + esc(v.notas) : '') + '</div></div>' +
           '<div class="monto">' + plata(v.total) + '</div>' +
           '<button class="x" onclick="anularVenta(\'' + v.id + '\')">&#10005;</button></div>';
       }).join('');
