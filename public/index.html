@@ -224,19 +224,12 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
-    /* al bajar, nav y categorias desaparecen del todo */
-    body.scroll-abajo nav,
-    body.scroll-abajo #v-vender .chips-wrap { display: none !important; }
-
     /* el contenido sube pegado al encabezado */
     #v-vender .izq { transition: padding-top .38s cubic-bezier(.4,0,.2,1); }
     body.scroll-abajo #v-vender .izq { padding-top: 0; }
 
     /* al bajar se esconden las pestañas tambien */
-    nav {
-      transition: max-height .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
-      overflow: hidden; max-height: 60px;
-    }
+    nav { overflow: hidden; }
     body.scroll-abajo nav {
       max-height: 0; opacity: 0;
       margin: 0 !important; padding: 0 !important;
@@ -244,10 +237,7 @@
     }
 
     /* al bajar se esconden las categorias, el encabezado queda */
-    #v-vender .chips-wrap {
-      transition: max-height .38s cubic-bezier(.4,0,.2,1), padding .38s ease, opacity .3s ease;
-      overflow: hidden;
-    }
+    #v-vender .chips-wrap { overflow: hidden; }
     body.scroll-abajo #v-vender .chips-wrap {
       max-height: 0; opacity: 0;
       margin: 0 !important; padding: 0 !important;
@@ -11757,16 +11747,33 @@ function seguirConReparto() {
 
 let saltearAvisoReparto = false;
 
-// esconder el encabezado al bajar, mostrarlo al subir
+// las pestañas y categorias se van plegando con el scroll
 (function () {
-  let ultimo = 0;
+  const ALTO_NAV = 46;
+  const ALTO_CHIPS = 42;
+  const TOTAL = ALTO_NAV + ALTO_CHIPS;
 
   function alScroll(e) {
-    const y = e.target.scrollTop || 0;
-    if (y < 40) { document.body.classList.remove('scroll-abajo'); ultimo = y; return; }
-    if (Math.abs(y - ultimo) < 12) return;
-    document.body.classList.toggle('scroll-abajo', y > ultimo);
-    ultimo = y;
+    if (window.innerWidth > 900) return;
+
+    const y = Math.max(0, e.target.scrollTop || 0);
+    const oculto = Math.min(y, TOTAL);
+
+    const nav = document.querySelector('nav');
+    const chips = document.querySelector('#v-vender .chips-wrap');
+
+    // primero se pliegan las categorias, despues las pestañas
+    const chipsOculto = Math.min(oculto, ALTO_CHIPS);
+    const navOculto = Math.max(0, oculto - ALTO_CHIPS);
+
+    if (chips) {
+      chips.style.maxHeight = (ALTO_CHIPS - chipsOculto) + 'px';
+      chips.style.opacity = 1 - (chipsOculto / ALTO_CHIPS);
+    }
+    if (nav) {
+      nav.style.maxHeight = (ALTO_NAV - navOculto) + 'px';
+      nav.style.opacity = 1 - (navOculto / ALTO_NAV);
+    }
   }
 
   document.addEventListener('scroll', alScroll, true);
