@@ -166,12 +166,15 @@ router.post('/:id/vender', (req, res) => {
     costoTotal += (prod && prod.precio_costo ? prod.precio_costo : 0) * i.cantidad;
   });
 
+  const totalFinal = req.body?.total != null ? parseFloat(req.body.total) : p.total;
+  const medioFinal = req.body?.medioPago || p.forma_pago || 'efectivo';
+
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, req.body?.fecha || hoyISO(req.userId), p.total, costoTotal,
-         p.forma_pago || 'efectivo', p.total,
+  `).run(ventaId, req.userId, req.body?.fecha || hoyISO(req.userId), totalFinal, costoTotal,
+         medioFinal, totalFinal,
          'Pedido web de ' + p.nombre, req.empleadoId || null);
 
   items.forEach(function (i) {
