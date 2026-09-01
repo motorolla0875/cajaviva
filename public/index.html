@@ -225,12 +225,19 @@
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
     header {
-      transition: margin-top .25s ease;
+      transition: padding .25s ease;
       overflow: hidden;
     }
+    /* al bajar queda solo el buscador */
     body.scroll-abajo header {
-      margin-top: -68px;
-      pointer-events: none;
+      padding-top: 7px; padding-bottom: 7px;
+    }
+    body.scroll-abajo header .yo,
+    body.scroll-abajo header .hoy {
+      display: none;
+    }
+    body.scroll-abajo .buscador-fijo {
+      max-width: none; width: 100%;
     }
     /* espacio para que el ultimo producto no quede tapado */
     #v-vender .izq { padding-bottom: 90px; }
@@ -257,6 +264,7 @@
       position: absolute; left: 50%; transform: translateX(-50%);
       max-width: 380px; width: 40%;
     }
+    body.scroll-abajo .buscador-fijo { max-width: 380px; width: 40%; }
     header .hoy { margin-left: auto; }
   }
   #btnScanGlobal {
