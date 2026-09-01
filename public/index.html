@@ -224,6 +224,8 @@
 
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
+    header { position: relative; z-index: 45; }
+
     /* el contenido sube pegado al encabezado */
     #v-vender .izq { transition: padding-top .38s cubic-bezier(.4,0,.2,1); }
     body.scroll-abajo #v-vender .izq { padding-top: 0; }
