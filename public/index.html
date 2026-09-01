@@ -225,12 +225,11 @@
   /* el encabezado se esconde al bajar */
   @media (max-width: 900px) {
     header {
-      transition: margin-top .25s ease, opacity .2s ease;
+      transition: margin-top .25s ease;
       overflow: hidden;
     }
     body.scroll-abajo header {
       margin-top: -68px;
-      opacity: 0;
       pointer-events: none;
     }
     /* las categorias quedan fijas debajo de las pestañas */
