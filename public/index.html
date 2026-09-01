@@ -2326,6 +2326,7 @@
     <div class="detalle-hecho" id="hechoDetalle"></div>
     <button class="btn-ppal" id="btnSeguir">Seguir vendiendo</button>
     <button class="btn-sec" id="btnCompartir">Compartir comprobante</button>
+    <button class="btn-sec" id="btnTicketPdf">Bajar ticket en PDF</button>
     <button class="btn-sec" id="btnImprimir">Imprimir ticket</button>
     <button class="btn-del" id="btnAnularUltima">Me equivoque, anular</button>
   </div>
@@ -11889,6 +11890,33 @@ document.getElementById('btnBajarExcel').onclick = async function () {
     avisar('Planilla descargada');
   } catch (e) {
     avisar('No se pudo generar la planilla', true);
+  }
+  btn.disabled = false;
+};
+
+document.getElementById('btnTicketPdf').onclick = async function () {
+  if (!ultimaVenta || !ultimaVenta.ventaId) {
+    avisar('Esta venta todavia no se subio', true);
+    return;
+  }
+  const btn = this;
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/exportar/ticket/' + ultimaVenta.ventaId, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) throw new Error('fallo');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ticket.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    avisar('No se pudo generar el ticket', true);
   }
   btn.disabled = false;
 };

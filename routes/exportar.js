@@ -137,4 +137,104 @@ router.get('/ventas', async (req, res) => {
   res.end();
 });
 
+
+// ── ticket de una venta en PDF ──
+const PDFDocument = require('pdfkit');
+
+router.get('/ticket/:id', (req, res) => {
+  const v = db.prepare(`
+    SELECT v.*, c.nombre AS cliente, e.nombre AS empleado
+    FROM ventas v
+    LEFT JOIN clientes c ON c.id = v.cliente_id
+    LEFT JOIN empleados e ON e.id = v.empleado_id
+    WHERE v.id = ? AND v.user_id = ?
+  `).get(req.params.id, req.userId);
+
+  if (!v) return res.status(404).json({ error: 'Venta no encontrada.' });
+
+  const items = db.prepare(
+    'SELECT nombre, cantidad, precio_unitario, variante_nombre FROM venta_items WHERE venta_id = ?'
+  ).all(v.id);
+
+  const neg = db.prepare(
+    'SELECT nombre, telefono, direccion FROM negocio WHERE user_id = ?'
+  ).get(req.userId);
+
+  function plata(n) {
+    return '$' + Math.round(n || 0).toLocaleString('es-AR');
+  }
+
+  // ticket angosto, como los de impresora termica
+  const doc = new PDFDocument({ size: [226, 800], margin: 14 });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition',
+    'attachment; filename="ticket-' + v.id.slice(0, 8) + '.pdf"');
+
+  doc.pipe(res);
+
+  const ancho = 226 - 28;
+
+  doc.fontSize(13).font('Helvetica-Bold')
+     .text(neg && neg.nombre ? neg.nombre : 'Mi negocio', { align: 'center' });
+
+  if (neg && neg.telefono) {
+    doc.fontSize(8).font('Helvetica').text(neg.telefono, { align: 'center' });
+  }
+  if (neg && neg.direccion) {
+    doc.fontSize(8).font('Helvetica').text(neg.direccion, { align: 'center' });
+  }
+
+  doc.moveDown(0.6);
+  doc.fontSize(8).font('Helvetica')
+     .text(v.fecha + '  ' + (v.created_at || '').slice(11, 16), { align: 'center' });
+
+  if (v.cliente) doc.text('Cliente: ' + v.cliente, { align: 'center' });
+
+  doc.moveDown(0.5);
+  doc.moveTo(14, doc.y).lineTo(212, doc.y).stroke();
+  doc.moveDown(0.5);
+
+  items.forEach(function (i) {
+    const nom = i.nombre + (i.variante_nombre ? ' (' + i.variante_nombre + ')' : '');
+    const sub = i.cantidad * i.precio_unitario;
+
+    doc.fontSize(9).font('Helvetica').text(nom, { width: ancho });
+    doc.fontSize(8).text(
+      '   ' + i.cantidad + ' x ' + plata(i.precio_unitario),
+      { continued: true, width: ancho }
+    );
+    doc.text(plata(sub), { align: 'right' });
+    doc.moveDown(0.3);
+  });
+
+  doc.moveDown(0.3);
+  doc.moveTo(14, doc.y).lineTo(212, doc.y).stroke();
+  doc.moveDown(0.5);
+
+  doc.fontSize(13).font('Helvetica-Bold')
+     .text('TOTAL', { continued: true })
+     .text(plata(v.total), { align: 'right' });
+
+  doc.moveDown(0.5);
+
+  const MEDIOS = {
+    efectivo: 'Efectivo', transferencia: 'Transferencia',
+    cuenta_corriente: 'Fiado', tarjeta: 'Tarjeta'
+  };
+
+  doc.fontSize(9).font('Helvetica')
+     .text(MEDIOS[v.medio_pago] || v.medio_pago || '', { align: 'center' });
+
+  if (v.empleado) {
+    doc.fontSize(8).text('Te atendio: ' + v.empleado, { align: 'center' });
+  }
+
+  doc.moveDown(1);
+  doc.fontSize(8).text('Gracias por tu compra', { align: 'center' });
+  doc.fontSize(7).fillColor('#888').text('CajaViva', { align: 'center' });
+
+  doc.end();
+});
+
 module.exports = router;
