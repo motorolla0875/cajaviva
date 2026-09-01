@@ -11768,11 +11768,11 @@ let saltearAvisoReparto = false;
 
     if (chips) {
       chips.style.maxHeight = (ALTO_CHIPS - chipsOculto) + 'px';
-      chips.style.opacity = 1 - (chipsOculto / ALTO_CHIPS);
+      chips.style.marginTop = -chipsOculto + 'px';
     }
     if (nav) {
       nav.style.maxHeight = (ALTO_NAV - navOculto) + 'px';
-      nav.style.opacity = 1 - (navOculto / ALTO_NAV);
+      nav.style.marginTop = -navOculto + 'px';
     }
   }
 
