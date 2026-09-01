@@ -391,9 +391,15 @@ router.post('/:id/cobrar', (req, res) => {
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
       costo_total, medio_pago, monto_pagado, descuento_pct, notas, empleado_id)
     VALUES (?, ?, ?, 'mostrador', ?, 'cobrada', ?, 0, ?, ?, 0, ?, ?)
-  `).run(ventaId, req.userId, r.cliente_id, req.body?.fecha || hoyISO(req.userId), total,
-         medio, total,
+  `).run(ventaId, req.userId, req.body?.clienteId || r.cliente_id || null,
+         req.body?.fecha || hoyISO(req.userId), total,
+         medio, medio === 'cuenta_corriente' ? 0 : total,
          'Alquiler: ' + (u ? u.nombre : '') + ' - ' + r.cliente_nombre, req.empleadoId || null);
+
+  if (medio === 'cuenta_corriente' && (req.body?.clienteId || r.cliente_id)) {
+    db.prepare('UPDATE clientes SET saldo = COALESCE(saldo,0) + ? WHERE id = ? AND user_id = ?')
+      .run(total, req.body?.clienteId || r.cliente_id, req.userId);
+  }
 
   db.prepare(`
     INSERT INTO venta_items (id, venta_id, producto_id, nombre, cantidad, precio_unitario, costo_unitario)

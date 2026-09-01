@@ -4781,6 +4781,12 @@ function quitarDelCarrito(id) {
   pintarCarrito();
 }
 
+document.getElementById('totalFinal').addEventListener('input', function () {
+  const tf = num(this.value) || totalCarrito();
+  const b = document.getElementById('btnCobrar');
+  if (b && carrito.length > 0) b.textContent = 'Cobrar ' + plata(tf);
+});
+
 function totalCarrito() {
   return carrito.reduce(function (s, l) { return s + l.precio * l.cantidad; }, 0);
 }
@@ -4822,6 +4828,10 @@ function pintarCarrito() {
   actualizarNotaDesc();
   actualizarVueltoBox();
   $('btnCobrar').disabled = carrito.length === 0;
+
+  // el boton muestra el total que se va a cobrar
+  const tf = num($('totalFinal').value) || totalCarrito();
+  $('btnCobrar').textContent = carrito.length === 0 ? 'Cobrar' : 'Cobrar ' + plata(tf);
 }
 
 function actualizarNotaDesc() {
@@ -4892,7 +4902,7 @@ $('btnCobrar').onclick = async function () {
       if (esFiado) await cargarClientes();
       marcarConexion(true);
       mostrarHecho({
-        total: total, items: itemsCopia,
+        total: total, items: (function () { var b = itemsCopia.reduce(function (a, i) { return a + i.precio * i.cantidad; }, 0); return b > total ? itemsCopia.concat([{ nombre: 'Descuento', cantidad: 1, precio: -(b - total) }]) : itemsCopia; })(),
         vuelto: Math.max(0, num($('pagaCon').value) - total),
         ganancia: ganancia,
         fiadoA: esFiado && clienteId ? (clientes.filter(function (c) { return c.id === clienteId; })[0] || {}).nombre : null,
@@ -4911,7 +4921,7 @@ $('btnCobrar').onclick = async function () {
       if (window.cerrarPanelVenta) window.cerrarPanelVenta();
       marcarConexion(false);
       mostrarHecho({
-        total: total, items: itemsCopia,
+        total: total, items: (function () { var b = itemsCopia.reduce(function (a, i) { return a + i.precio * i.cantidad; }, 0); return b > total ? itemsCopia.concat([{ nombre: 'Descuento', cantidad: 1, precio: -(b - total) }]) : itemsCopia; })(),
         vuelto: Math.max(0, num($('pagaCon').value) - total),
         ganancia: ganancia,
         fiadoA: esFiado && clienteId ? (clientes.filter(function (c) { return c.id === clienteId; })[0] || {}).nombre : null,
@@ -9739,10 +9749,22 @@ $('btnConfirmarCobroRes').onclick = async function () {
     await cargarResumen();
 
     if (r.total > 0) {
+      const brutoRes = itemsCobroRes.reduce(function (a, i) {
+        return a + i.cantidad * i.precio;
+      }, 0);
+
+      const itemsFinal = (brutoRes > r.total)
+        ? itemsCobroRes.concat([{
+            nombre: 'Descuento',
+            cantidad: 1,
+            precio: -(brutoRes - r.total)
+          }])
+        : itemsCobroRes;
+
       mostrarHecho({
         ventaId: r.ventaId,
         total: r.total,
-        items: itemsCobroRes,
+        items: itemsFinal,
         ganancia: r.total,
         vuelto: 0
       });
@@ -10177,7 +10199,7 @@ async function cargarGrillaCanchas() {
         })[0];
 
         if (r) {
-          const pago = (r.pagado || 0) >= r.total && r.total > 0;
+          const pago = r.estado === 'terminada' || ((r.pagado || 0) >= r.total && r.total > 0);
           const rango = (r.hora_entrada || '').slice(0, 5) +
             (r.hora_salida ? '-' + r.hora_salida.slice(0, 5) : '');
 
@@ -11977,10 +11999,16 @@ function descuentoMesa(paso) {
   notaDescuentoMesa();
 }
 
+document.getElementById('totalMesaFinal').addEventListener('input', notaDescuentoMesa);
+
 function notaDescuentoMesa() {
   if (!mesaActual) return;
   const base = mesaActual.total;
   const fin = num($('totalMesaFinal').value);
+
+  const btn = document.getElementById('btnConfirmarCobroMesa');
+  if (btn) btn.textContent = 'Cobrar ' + plata(fin || base);
+
   const cont = document.getElementById('notaDescMesa');
   if (!cont) return;
 
@@ -12036,9 +12064,15 @@ function descuentoRes(paso) {
   notaDescuentoRes();
 }
 
+document.getElementById('totalResFinal').addEventListener('input', notaDescuentoRes);
+
 function notaDescuentoRes() {
   const fin = num($('totalResFinal').value);
   const cont = document.getElementById('notaDescRes');
+
+  const btn = document.getElementById('btnConfirmarCobroRes');
+  if (btn) btn.textContent = fin > 0 ? 'Cobrar ' + plata(fin) : 'Cerrar sin cobrar';
+
   if (!cont) return;
   if (!fin || fin >= totalBrutoRes) { cont.textContent = ''; return; }
   const pct = Math.round((1 - fin / totalBrutoRes) * 100);
@@ -12103,6 +12137,10 @@ function descuentoRapido(paso) {
 
   actualizarNotaDesc();
   actualizarVueltoBox();
+
+  const tf = num($('totalFinal').value) || totalCarrito();
+  const b = document.getElementById('btnCobrar');
+  if (b && carrito.length > 0) b.textContent = 'Cobrar ' + plata(tf);
 }
 
 /* ══ Mi plan ══ */
