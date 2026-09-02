@@ -2,7 +2,7 @@
   "name": "CajaViva",
   "short_name": "CajaViva",
   "description": "Tu negocio en orden, todos los dias",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FAFAF7",

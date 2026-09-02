@@ -2517,10 +2517,10 @@
     <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;
                   margin-top:18px; padding:12px; border:1px solid var(--line); border-radius:12px;
                   font-size:13.5px; cursor:pointer;">
-      <span>Asistente IA flotante
+      <span>Boton de ayuda flotante
         <span style="display:block; font-size:12px; color:var(--muted); font-weight:400;">
           Mostrar el circulo con el signo de pregunta en pantalla</span></span>
-      <input type="checkbox" id="swChatFlotante" style="width:20px; height:20px; flex-shrink:0; accent-color:var(--accent);">
+      <input type="checkbox" id="swChatFlotante" style="width:20px; height:20px; flex-shrink:0;">
     </label>
 
     <button class="btn-sec" id="btnCerrarAyuda">Cerrar</button>
@@ -12591,75 +12591,6 @@ if (localStorage.getItem('cajaviva_chat_oculto') === '1') {
   const cw = document.getElementById('chatWrap');
   if (cw) cw.classList.add('oculto');
 }
-
-// mover el boton flotante con el dedo
-(function () {
-  const cw = document.getElementById('chatWrap');
-  if (!cw) return;
-
-  try {
-    const pos = JSON.parse(localStorage.getItem('cajaviva_chat_pos') || 'null');
-    if (pos && pos.top != null) {
-      cw.style.top = pos.top + 'px';
-      cw.style.left = pos.left + 'px';
-      cw.style.bottom = 'auto';
-      cw.style.right = 'auto';
-    }
-  } catch (e) {}
-
-  let arrastrando = false, movio = false, dx = 0, dy = 0;
-
-  function arrancar(x, y) {
-    const r = cw.getBoundingClientRect();
-    dx = x - r.left; dy = y - r.top;
-    arrastrando = true; movio = false;
-  }
-
-  function mover(x, y) {
-    if (!arrastrando) return;
-    const r = cw.getBoundingClientRect();
-    let t = y - dy, l = x - dx;
-    t = Math.max(4, Math.min(window.innerHeight - r.height - 4, t));
-    l = Math.max(4, Math.min(window.innerWidth - r.width - 4, l));
-    cw.style.top = t + 'px'; cw.style.left = l + 'px';
-    cw.style.bottom = 'auto'; cw.style.right = 'auto';
-    movio = true;
-  }
-
-  function soltar() {
-    if (!arrastrando) return;
-    arrastrando = false;
-    if (movio) {
-      try {
-        localStorage.setItem('cajaviva_chat_pos', JSON.stringify({
-          top: parseInt(cw.style.top, 10), left: parseInt(cw.style.left, 10)
-        }));
-      } catch (e) {}
-      setTimeout(function () { movio = false; }, 50);
-    }
-  }
-
-  cw.addEventListener('touchstart', function (e) {
-    arrancar(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: true });
-
-  cw.addEventListener('touchmove', function (e) {
-    if (!arrastrando) return;
-    e.preventDefault();
-    mover(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: false });
-
-  cw.addEventListener('touchend', soltar);
-
-  cw.addEventListener('mousedown', function (e) { arrancar(e.clientX, e.clientY); });
-  document.addEventListener('mousemove', function (e) { mover(e.clientX, e.clientY); });
-  document.addEventListener('mouseup', soltar);
-
-  // si lo arrastro, no abrir el panel
-  cw.addEventListener('click', function (e) {
-    if (movio) { e.stopPropagation(); e.preventDefault(); }
-  }, true);
-})();
 
 function pintarSwChat() {
   const sw = document.getElementById('swChatFlotante');
