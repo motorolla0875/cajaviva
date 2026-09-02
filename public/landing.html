@@ -7,6 +7,8 @@
 <meta name="description" content="App de gestion para negocios chicos: vender, stock, fiado, caja, turnos y tienda online. Funciona sin internet.">
 <meta name="theme-color" content="#1D9E75">
 <link rel="icon" href="/icon-192.png">
+<link rel="preload" as="image" href="/img/ropa.webp">
+<link rel="preload" as="image" href="/img/mesas.webp">
 <script>
   // si ya uso la app, entra directo
   try {
@@ -69,6 +71,23 @@
     border-radius: 26px; padding: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.09);
   }
   .hero .marco { max-width: 260px; margin-left: auto; }
+  .fila .marco, .panel-rubro .marco { max-width: 260px; margin: 0 auto; }
+  .panel-rubro .marco { overflow: hidden; }
+  .panel-rubro .tira { width: 100%; }
+  .panel-rubro .tira > * { min-width: 0; }
+  .panel-rubro .marco .vista { overflow: hidden; border-radius: 18px; }
+  .panel-rubro .tira { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+  .panel-rubro .tira > * { flex: 0 0 100%; }
+  .panel-rubro .tira img { width: 100%; display: block; border-radius: 18px; }
+  .marco.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
+
+  @keyframes desdeDerecha {
+    from { visibility: visible; transform: translateX(90px); }
+    to   { visibility: visible; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel-rubro .marco { animation: none; }
+  }
   .carru { position: relative; }
   .hero .marco {
     animation: caer 1.8s cubic-bezier(.25,.8,.3,1) both;
@@ -114,6 +133,31 @@
   }
   .dolor b { display: block; font-size: 17px; margin-bottom: 7px; }
   .dolor p { color: var(--muted); font-size: 14.5px; }
+
+  .pest { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 30px;
+          scrollbar-width: none; cursor: grab; }
+  .pest::-webkit-scrollbar { display: none; }
+  .pest button {
+    flex: 0 0 auto; padding: 9px 17px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    font-size: 14px; white-space: nowrap; transition: all .2s;
+  }
+  .pest button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .panel-rubro { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+  .panel-rubro h3 { font-size: 25px; font-weight: 600; margin-bottom: 12px; letter-spacing: -.4px; }
+  .panel-rubro p.lista { color: var(--muted); font-size: 15.5px; margin-bottom: 18px; }
+  .panel-rubro ul { list-style: none; }
+  .panel-rubro li { font-size: 15px; padding: 5px 0 5px 27px; position: relative; }
+  .panel-rubro li::before { content: '\2713'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+  .rubros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .rubros > div {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 16px; padding: 22px 24px;
+  }
+  .rubros b { display: block; font-size: 15px; color: var(--accent-dark); margin-bottom: 8px; }
+  .rubros p { color: var(--muted); font-size: 14px; line-height: 1.65; }
+  .cierra-rubros { text-align: center; color: var(--muted); font-size: 15px; margin-top: 30px; }
 
   .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: center; margin-bottom: 88px; }
   .fila:last-child { margin-bottom: 0; }
@@ -174,7 +218,7 @@
     .fila.der .txt { order: 0; }
     .hero h1 { font-size: 33px; letter-spacing: -.7px; }
     .hero p.sub { font-size: 16.5px; }
-    .dolor, .planes { grid-template-columns: 1fr; }
+    .dolor, .planes, .rubros, .panel-rubro { grid-template-columns: 1fr; }
     .tit h2, .sin-net h2, .cierre h2 { font-size: 27px; }
     section { padding: 52px 0; }
     .fila { margin-bottom: 56px; }
@@ -198,7 +242,7 @@
   <div class="cont hero-grid">
     <div>
       <h1>Tu negocio en orden, <em>todos los dias</em></h1>
-      <p class="sub">Vende, controla el stock, anota el fiado y mira como va tu caja. Todo desde el celular, aunque te quedes sin internet.</p>
+      <p class="sub">Vende, controla el stock, anota el fiado y mira como va tu caja. Tu tienda online lista en segundos, con tu propio dominio. Todo desde el celular, aunque te quedes sin internet.</p>
       <div class="hero-acc">
         <button class="btn btn-g" onclick="empezar()">Empezar gratis</button>
         <a href="#funciones" class="btn btn-g btn-linea">Ver que hace</a>
@@ -210,7 +254,11 @@
         <div class="vista">
           <div class="tira" id="tira">
             <img src="/img/hero.webp" alt="CajaViva" width="480" height="926" fetchpriority="high">
-            <img src="/img/hero2.webp" alt="CajaViva" width="480" height="920" loading="lazy">
+            <img src="/img/hero2.webp" alt="CajaViva" width="480" height="920">
+            <img src="/img/hero3.webp" alt="CajaViva" width="480" height="921">
+            <img src="/img/hero4.webp" alt="CajaViva" width="480" height="924">
+            <img src="/img/hero5.webp" alt="CajaViva" width="480" height="916">
+            <img src="/img/hero6.webp" alt="CajaViva" width="480" height="929">
           </div>
         </div>
       </div>
@@ -230,6 +278,18 @@
       <div><b>El fiado se pierde</b><p>Anotaste en un papel, el papel no aparece, y esa plata no vuelve.</p></div>
       <div><b>No sabes si ganas</b><p>Entra plata todos los dias, pero al final del mes no cierra.</p></div>
     </div>
+  </div>
+</section>
+
+<section>
+  <div class="cont">
+    <div class="tit rev">
+      <h2>Sirve para tu negocio</h2>
+      <p>Elegis tu rubro y la app se acomoda sola a como trabajas.</p>
+    </div>
+    <div class="pest" id="pest"></div>
+    <div id="panelRubro"></div>
+    <p class="cierra-rubros">Y si el tuyo no esta en la lista, elegis "Otro" y lo configuras a tu medida.</p>
   </div>
 </section>
 
@@ -460,7 +520,149 @@
     });
 
     pintar();
-    solo = setInterval(function () { ir(actual + 1); }, 4500);
+    solo = setInterval(function () { ir(actual + 1); }, 3000);
+  })();
+
+  const RUBROS = [
+    { t: 'Ropa y calzado', img: '/img/ropa.webp',
+      lista: 'Ropa, calzado, lenceria, indumentaria deportiva, blanqueria, marroquineria, uniformes.',
+      p: ['Un producto con todos sus talles y colores', 'Stock separado por cada variante', 'Tu catalogo online con fotos', 'Sabes que talle se te esta por acabar'] },
+    { t: 'Con mesas', img: '/img/mesas.webp',
+      lista: 'Restaurante, parrilla, bar, cerveceria, pizzeria con salon, cafe, confiteria, resto bar.',
+      p: ['Cada mesa con su consumo abierto', 'Vas sumando pedidos y cobras al final', 'Dividis la cuenta o haces descuento', 'Ves de un vistazo que mesas estan ocupadas'] },
+    { t: 'Turnos', img: '',
+      lista: 'Peluqueria, barberia, manicura, tatuajes, masajes, estetica, consultorios, veterinaria, clases, entrenador personal.',
+      p: ['Tu agenda del dia, ordenada por hora', 'Tus clientes reservan solos desde el catalogo', 'Podes pedir una seña para que no falten', 'Les recordas el turno por WhatsApp'] },
+    { t: 'Alquiler por dia', img: '',
+      lista: 'Cabañas, hoteles, hostels, salones, vehiculos, herramientas, equipos, articulos para eventos.',
+      p: ['Calendario de lo que tenes ocupado', 'Temporadas con precios distintos', 'Señas y saldo pendiente', 'Consumos extra sumados a la cuenta'] },
+    { t: 'Canchas por hora', img: '',
+      lista: 'Padel, futbol 5, tenis, otras canchas, salas de ensayo.',
+      p: ['Grilla del dia con todas tus canchas', 'Reservas por hora desde la web', 'Recargo los fines de semana', 'Sumas consumos a la reserva'] },
+    { t: 'Almacen y kiosco', img: '',
+      lista: 'Kiosco, almacen, minimercado, libreria, bazar, jugueteria, regalos, bijouterie, electronica, pet shop, perfumeria, farmacia, tabaqueria, vinoteca, forrajeria, vivero.',
+      p: ['Cobras rapido con el lector de codigo de barras', 'El stock se descuenta solo en cada venta', 'Aviso cuando algo esta por vencerse', 'El fiado de cada cliente, siempre al dia'] },
+    { t: 'Comida', img: '',
+      lista: 'Rotiseria, pizzeria, heladeria, cafeteria, food truck, casa de comidas, viandas.',
+      p: ['Recetas que descuentan los insumos al vender', 'Pedidos online con aviso y sonido', 'Cobras rapido en el mostrador', 'Sabes cuanto te cuesta cada plato'] },
+    { t: 'Venta por peso', img: '',
+      lista: 'Verduleria, carniceria, fiambreria, pescaderia, polleria, granja, dietetica, panaderia.',
+      p: ['Vendes por kilo, gramo o litro', 'Pones el peso y la app calcula el precio', 'Control de vencimientos', 'Sabes que producto te deja mas ganancia'] },
+    { t: 'Talleres y oficios', img: '',
+      lista: 'Taller mecanico, gomeria, chapa y pintura, lavadero, ferreteria, repuestos, pintureria, corralon.',
+      p: ['Cobras trabajos y repuestos en la misma venta', 'Presupuestos y cuenta corriente', 'Control de stock de repuestos', 'Sabes quien te debe y desde cuando'] }
+  ];
+
+
+  (function () {
+    const pest = document.getElementById('pest');
+    const panel = document.getElementById('panelRubro');
+    if (!pest || !panel) return;
+
+    let detenido = false;
+
+    // se arma una sola vez: los textos y la tira de capturas
+    panel.innerHTML =
+      '<div class="panel-rubro">' +
+        '<div id="txtRubro"></div>' +
+        '<div class="marco"><div class="vista"><div class="tira" id="tiraRubro">' +
+          RUBROS.map(function (r) {
+            return r.img ? '<img src="' + r.img + '" alt="' + r.t + '">'
+                         : '<div class="ph">Captura: ' + r.t + '</div>';
+          }).join('') +
+        '</div></div></div>' +
+      '</div>';
+
+    const txt = document.getElementById('txtRubro');
+    const tiraR = document.getElementById('tiraRubro');
+
+    function pintar(i) {
+      const r = RUBROS[i];
+      txt.innerHTML =
+        '<h3>' + r.t + '</h3>' +
+        '<p class="lista">' + r.lista + '</p>' +
+        '<ul>' + r.p.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+      tiraR.style.transform = 'translateX(-' + (i * 100) + '%)';
+      Array.prototype.forEach.call(pest.children, function (b, j) {
+        b.classList.toggle('on', j === i);
+      });
+    }
+
+    RUBROS.forEach(function (r, i) {
+      const b = document.createElement('button');
+      b.textContent = r.t;
+      b.onclick = function () { detenido = true; parar(); pintar(i); };
+      pest.appendChild(b);
+    });
+
+    pintar(0);
+
+    // la tira entra desde la derecha, una sola vez
+    (function () {
+      const m = panel.querySelector('.marco');
+      if (!m) return;
+      const ob = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting) { m.classList.add('entra'); ob.disconnect(); }
+        });
+      }, { threshold: .25 });
+      ob.observe(panel);
+    })();
+
+    // precargar todas las capturas para que no parpadeen
+    RUBROS.forEach(function (r) {
+      if (r.img) { const im = new Image(); im.src = r.img; }
+    });
+
+    // pasan solas, y se detienen si el usuario elige una
+    let solo = null;
+    function parar() { if (solo) { clearInterval(solo); solo = null; } }
+
+    const obSec = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting && !solo && !detenido) {
+          let i = 0;
+          solo = setInterval(function () {
+            i = (i + 1) % RUBROS.length;
+            pintar(i);
+            pest.children[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }, 5000);
+        } else if (!e.isIntersecting) {
+          parar();
+        }
+      });
+    }, { threshold: .2 });
+    obSec.observe(panel);
+
+    let baja = false, xIni = 0, sIni = 0, movio = false;
+
+    pest.addEventListener('mousedown', function (e) {
+      baja = true; movio = false;
+      xIni = e.pageX; sIni = pest.scrollLeft;
+      pest.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!baja) return;
+      const d = e.pageX - xIni;
+      if (Math.abs(d) > 4) movio = true;
+      pest.scrollLeft = sIni - d;
+    });
+
+    document.addEventListener('mouseup', function () {
+      baja = false; pest.style.cursor = '';
+    });
+
+    pest.addEventListener('click', function (e) {
+      if (movio) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+
+    pest.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        pest.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive: false });
   })();
 
   const obs = new IntersectionObserver(function (es) {
