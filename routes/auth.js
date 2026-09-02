@@ -29,8 +29,39 @@ function crearCuenta() {
   return id;
 }
 
+// ── valida el captcha de Cloudflare Turnstile ──
+async function captchaOk(token, ip) {
+  const secreto = process.env.TURNSTILE_SECRET;
+  if (!secreto) return true;          // sin configurar: no bloquea
+  if (!token) return false;
+
+  try {
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: secreto, response: token, remoteip: ip })
+    });
+    const d = await r.json();
+    return !!d.success;
+  } catch (e) {
+    console.error('turnstile:', e.message);
+    return false;
+  }
+}
+
 // ── cuenta automatica: primera vez que se abre la app ──
-router.post('/nueva', (req, res) => {
+router.post('/nueva', async (req, res) => {
+  // la APK y otros clientes sin captcha mandan origen
+  const desdeWeb = req.body?.captcha !== undefined;
+
+  if (desdeWeb) {
+    const ip = req.headers['cf-connecting-ip'] ||
+               (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+               req.ip;
+    const ok = await captchaOk(req.body.captcha, ip);
+    if (!ok) return res.status(400).json({ error: 'No pudimos verificar que seas una persona. Recarga la pagina.' });
+  }
+
   const id = crearCuenta();
   const d = datosUsuario(id);
   res.json({ token: firmar(id), user: d.user, negocio: d.negocio });

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CajaViva - Tu negocio en orden, todos los dias</title>
+<meta name="description" content="App de gestion para negocios chicos: vender, stock, fiado, caja, turnos y tienda online. Funciona sin internet.">
+<meta name="theme-color" content="#1D9E75">
+<link rel="icon" href="/icon-192.png">
+<script>
+  // si ya uso la app, entra directo
+  try {
+    if (location.search.indexOf('ver') === -1 &&
+        localStorage.getItem('cajaviva_token') || localStorage.getItem('cajaviva_ya_uso') === '1') {
+      location.replace('/app');
+    }
+  } catch (e) {}
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<style>
+  :root {
+    --bg: #FAFAF7; --panel: #FFFFFF; --panel-2: #F3F2EE;
+    --text: #2C2C2A; --muted: #6E6D67;
+    --accent: #1D9E75; --accent-dark: #0F6E56; --accent-soft: #E1F5EE;
+    --line: #E4E2DC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .cont { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(250,250,247,.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  header .cont { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .logo { font-size: 21px; font-weight: 600; letter-spacing: -.3px; }
+  .logo span { color: var(--accent); }
+  .btn {
+    display: inline-block; padding: 11px 20px; border-radius: 11px;
+    background: var(--accent); color: #fff; text-decoration: none;
+    font-size: 14.5px; font-weight: 500; border: none; cursor: pointer;
+    transition: transform .15s, background .15s;
+  }
+  .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-g { padding: 15px 30px; font-size: 16px; border-radius: 13px; }
+  .btn-linea {
+    background: none; color: var(--accent-dark); border: 1px solid var(--line);
+  }
+  .btn-linea:hover { background: var(--panel); }
+
+  .hero { padding: 70px 0 60px; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+  .hero h1 {
+    font-size: 46px; line-height: 1.13; font-weight: 600;
+    letter-spacing: -1.2px; margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p.sub { font-size: 18px; color: var(--muted); margin-bottom: 30px; }
+  .hero-acc { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .nota-hero { font-size: 13px; color: var(--muted); margin-top: 16px; }
+
+  .marco {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 26px; padding: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.09);
+  }
+  .marco img { width: 100%; display: block; border-radius: 18px; }
+  .ph {
+    background: var(--panel-2); border-radius: 18px; aspect-ratio: 9/17;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 20px;
+  }
+
+  section { padding: 74px 0; }
+  .franja { background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .tit { text-align: center; max-width: 620px; margin: 0 auto 48px; }
+  .tit h2 { font-size: 33px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 12px; }
+  .tit p { color: var(--muted); font-size: 16.5px; }
+
+  .dolor { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .dolor div {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 16px; padding: 26px;
+  }
+  .dolor b { display: block; font-size: 17px; margin-bottom: 7px; }
+  .dolor p { color: var(--muted); font-size: 14.5px; }
+
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: center; margin-bottom: 88px; }
+  .fila:last-child { margin-bottom: 0; }
+  .fila.der .txt { order: 2; }
+  .eti {
+    display: inline-block; background: var(--accent-soft); color: var(--accent-dark);
+    padding: 5px 13px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+    letter-spacing: .3px; margin-bottom: 15px;
+  }
+  .fila h3 { font-size: 27px; font-weight: 600; letter-spacing: -.5px; margin-bottom: 13px; }
+  .fila p { color: var(--muted); font-size: 16px; margin-bottom: 18px; }
+  .fila ul { list-style: none; }
+  .fila li { font-size: 15px; padding: 6px 0 6px 27px; position: relative; }
+  .fila li::before {
+    content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: 700;
+  }
+
+  .sin-net {
+    background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+    color: #fff; text-align: center; padding: 76px 0;
+  }
+  .sin-net h2 { font-size: 35px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 16px; }
+  .sin-net p { font-size: 17.5px; opacity: .93; max-width: 560px; margin: 0 auto; }
+
+  .planes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 780px; margin: 0 auto; }
+  .plan {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 18px; padding: 30px;
+  }
+  .plan.destacado { border-color: var(--accent); box-shadow: 0 10px 34px rgba(29,158,117,.14); }
+  .plan h4 { font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+  .plan .precio { font-size: 15px; color: var(--accent-dark); font-weight: 500; margin-bottom: 18px; }
+  .plan ul { list-style: none; }
+  .plan li { font-size: 14.5px; padding: 6px 0 6px 25px; position: relative; color: var(--muted); }
+  .plan li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); }
+  .aviso-plan {
+    max-width: 640px; margin: 32px auto 0; text-align: center;
+    font-size: 14.5px; color: var(--muted); background: var(--accent-soft);
+    padding: 18px 22px; border-radius: 14px;
+  }
+
+  .cierre { text-align: center; padding: 84px 0; }
+  .cierre h2 { font-size: 35px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 14px; }
+  .cierre p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
+
+  footer {
+    border-top: 1px solid var(--line); padding: 32px 0;
+    text-align: center; color: var(--muted); font-size: 13.5px;
+  }
+  footer a { color: var(--accent-dark); text-decoration: none; }
+
+  .rev { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s ease; }
+  .rev.on { opacity: 1; transform: none; }
+
+  @media (max-width: 860px) {
+    .hero { padding: 46px 0 40px; }
+    .hero-grid, .fila { grid-template-columns: 1fr; gap: 34px; }
+    .fila.der .txt { order: 0; }
+    .hero h1 { font-size: 33px; letter-spacing: -.7px; }
+    .hero p.sub { font-size: 16.5px; }
+    .dolor, .planes { grid-template-columns: 1fr; }
+    .tit h2, .sin-net h2, .cierre h2 { font-size: 27px; }
+    section { padding: 52px 0; }
+    .fila { margin-bottom: 56px; }
+    .marco { max-width: 330px; margin: 0 auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rev { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="cont">
+    <div class="logo">Caja<span>Viva</span></div>
+    <a href="/app" class="btn">Entrar</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="cont hero-grid">
+    <div>
+      <h1>Tu negocio en orden, <em>todos los dias</em></h1>
+      <p class="sub">Vende, controla el stock, anota el fiado y mira como va tu caja. Todo desde el celular, aunque te quedes sin internet.</p>
+      <div class="hero-acc">
+        <button class="btn btn-g" onclick="empezar()">Empezar gratis</button>
+        <a href="#funciones" class="btn btn-g btn-linea">Ver que hace</a>
+      </div>
+      <p class="nota-hero">Sin tarjeta. Sin instalar nada. Entras y ya estas usandola.</p>
+    </div>
+    <div class="marco">
+      <div class="ph">Captura: pantalla de Vender</div>
+    </div>
+  </div>
+</div>
+
+<section class="franja">
+  <div class="cont">
+    <div class="tit rev">
+      <h2>El cuaderno ya no alcanza</h2>
+      <p>Manejar un negocio con papelitos y memoria cuesta plata todos los meses.</p>
+    </div>
+    <div class="dolor rev">
+      <div><b>No sabes que te queda</b><p>Te enteras que falta un producto cuando el cliente ya se fue.</p></div>
+      <div><b>El fiado se pierde</b><p>Anotaste en un papel, el papel no aparece, y esa plata no vuelve.</p></div>
+      <div><b>No sabes si ganas</b><p>Entra plata todos los dias, pero al final del mes no cierra.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="funciones">
+  <div class="cont">
+    <div class="tit rev">
+      <h2>Todo lo que necesita tu negocio</h2>
+      <p>Se acomoda a lo que vendes. Prendes solo lo que usas.</p>
+    </div>
+
+    <div class="fila rev">
+      <div class="txt">
+        <span class="eti">VENDER Y COBRAR</span>
+        <h3>Cobrar rapido, sin cuentas de cabeza</h3>
+        <p>Tocas los productos, eliges como te pagan y listo. La venta queda registrada y el stock se descuenta solo.</p>
+        <ul>
+          <li>Efectivo, transferencia o fiado</li>
+          <li>Calculadora de vuelto</li>
+          <li>Descuentos con un toque</li>
+          <li>Lector de codigo de barras</li>
+        </ul>
+      </div>
+      <div class="marco"><div class="ph">Captura: cobrar una venta</div></div>
+    </div>
+
+    <div class="fila der rev">
+      <div class="txt">
+        <span class="eti">FIADO</span>
+        <h3>Sabes quien te debe y cuanto</h3>
+        <p>Cada fiado queda en la cuenta del cliente. Cuando te paga, lo registras y la deuda baja sola.</p>
+        <ul>
+          <li>La cuenta de cada cliente al dia</li>
+          <li>Cuanto te deben en total</li>
+          <li>Recordarles por WhatsApp</li>
+        </ul>
+      </div>
+      <div class="marco"><div class="ph">Captura: pantalla de Fiado</div></div>
+    </div>
+
+    <div class="fila rev">
+      <div class="txt">
+        <span class="eti">TU TIENDA ONLINE</span>
+        <h3>Vende tambien cuando el local esta cerrado</h3>
+        <p>Un catalogo con tus productos y tus precios. Compartis el link por WhatsApp y los pedidos te llegan a la app.</p>
+        <ul>
+          <li>Pedidos con aviso y sonido</li>
+          <li>Fotos, colores y banner a tu gusto</li>
+          <li>Tu propio dominio</li>
+        </ul>
+      </div>
+      <div class="marco"><div class="ph">Captura: catalogo online</div></div>
+    </div>
+
+    <div class="fila der rev">
+      <div class="txt">
+        <span class="eti">TURNOS</span>
+        <h3>Tu agenda del dia, ordenada</h3>
+        <p>Para peluquerias, tatuadores, manicuria y cualquier negocio que trabaja con cita. Tus clientes reservan solos desde el catalogo.</p>
+        <ul>
+          <li>Turnos de hoy y de los dias que vienen</li>
+          <li>Reserva web con seña</li>
+          <li>Recordatorio por WhatsApp</li>
+        </ul>
+      </div>
+      <div class="marco"><div class="ph">Captura: agenda de turnos</div></div>
+    </div>
+
+    <div class="fila rev">
+      <div class="txt">
+        <span class="eti">MAS FUNCIONES</span>
+        <h3>Se adapta a como trabajas</h3>
+        <p>Cada rubro tiene lo suyo. Prendes lo que necesitas y la app se acomoda.</p>
+        <ul>
+          <li>Talles y colores, con stock por variante</li>
+          <li>Mesas para bares y restaurantes</li>
+          <li>Alquiler por dia o por hora</li>
+          <li>Venta por peso y recetas con insumos</li>
+          <li>Empleados con sus permisos</li>
+        </ul>
+      </div>
+      <div class="marco"><div class="ph">Captura: Mi negocio</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="sin-net">
+  <div class="cont rev">
+    <h2>Se corta internet y seguis vendiendo</h2>
+    <p>Segui cobrando como si nada. Cuando vuelve la conexion, todo se sincroniza solo y no perdes ni una venta.</p>
+  </div>
+</div>
+
+<section class="franja">
+  <div class="cont">
+    <div class="tit rev">
+      <h2>Cuanto cuesta</h2>
+      <p>Estamos empezando: hoy tenes todo desbloqueado sin pagar nada.</p>
+    </div>
+    <div class="planes rev">
+      <div class="plan">
+        <h4>Siempre gratis</h4>
+        <div class="precio">Sin vencimiento</div>
+        <ul>
+          <li>Vender y cobrar</li>
+          <li>Tus productos y el stock</li>
+          <li>La caja del mes</li>
+          <li>El fiado de tus clientes</li>
+          <li>Funcionar sin internet</li>
+        </ul>
+      </div>
+      <div class="plan destacado">
+        <h4>Plan completo</h4>
+        <div class="precio">Hoy desbloqueado sin costo</div>
+        <ul>
+          <li>Tu tienda online con pedidos</li>
+          <li>Empleados con sus permisos</li>
+          <li>Reportes de todos los meses</li>
+          <li>Turnos, alquileres y canchas</li>
+          <li>Tu propio dominio</li>
+        </ul>
+      </div>
+    </div>
+    <div class="aviso-plan rev">
+      Cuando lancemos el plan pago te vamos a avisar antes. Lo que cargaste no se pierde nunca.
+    </div>
+  </div>
+</section>
+
+<div class="cierre">
+  <div class="cont rev">
+    <h2>Empeza hoy, te lleva dos minutos</h2>
+    <p>Sin tarjeta, sin instalar nada, sin compromiso.</p>
+    <button class="btn btn-g" onclick="empezar()">Crear mi negocio gratis</button>
+  </div>
+</div>
+
+<footer>
+  <div class="cont">
+    CajaViva &middot; <a href="mailto:hola@cajaviva.app">hola@cajaviva.app</a><br>
+    <span style="font-size:12.5px;">Hecha para los negocios de Latinoamerica</span>
+  </div>
+</footer>
+
+<div id="capaCaptcha" style="display:none; position:fixed; inset:0; z-index:200;
+     background:rgba(0,0,0,.45); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--panel); border-radius:18px; padding:30px; max-width:380px; width:100%; text-align:center;">
+    <div style="font-size:18px; font-weight:600; margin-bottom:8px;">Un segundo...</div>
+    <div style="font-size:14px; color:var(--muted); margin-bottom:20px;">Estamos preparando tu cuenta.</div>
+    <div id="cajaTs" style="display:flex; justify-content:center; min-height:70px;"></div>
+    <div id="msgTs" style="font-size:13.5px; color:#C0392B; margin-top:12px;"></div>
+    <button onclick="document.getElementById('capaCaptcha').style.display='none'"
+            style="margin-top:16px; background:none; border:none; color:var(--muted); font-size:13.5px; cursor:pointer;">Cancelar</button>
+  </div>
+</div>
+
+<script>
+  const SITE_KEY = '0x4AAAAAAEk7-h70wv1ylyfn';
+  let idTs = null;
+
+  function empezar() {
+    const capa = document.getElementById('capaCaptcha');
+    document.getElementById('msgTs').textContent = '';
+    capa.style.display = 'flex';
+
+    if (idTs !== null) { turnstile.reset(idTs); return; }
+
+    idTs = turnstile.render('#cajaTs', {
+      sitekey: SITE_KEY,
+      callback: crearCuenta,
+      'error-callback': function () {
+        document.getElementById('msgTs').textContent = 'No se pudo verificar. Proba de nuevo.';
+      }
+    });
+  }
+
+  async function crearCuenta(tokenTs) {
+    try {
+      const r = await fetch('/api/auth/nueva', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ captcha: tokenTs })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'No se pudo crear la cuenta');
+
+      localStorage.setItem('cajaviva_token', d.token);
+      localStorage.setItem('cajaviva_ya_uso', '1');
+      location.href = '/app';
+    } catch (e) {
+      document.getElementById('msgTs').textContent = e.message;
+      if (idTs !== null) turnstile.reset(idTs);
+    }
+  }
+
+  const obs = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('on'); obs.unobserve(e.target); } });
+  }, { threshold: .12 });
+  document.querySelectorAll('.rev').forEach(function (el) { obs.observe(el); });
+</script>
+
+</body>
+</html>
