@@ -3654,7 +3654,7 @@ const FAMILIAS = [
   ['ropa', 'Vendo ropa o calzado', 'Con talles y colores'],
   ['comida', 'Preparo lo que vendo', 'Rotiseria, cafeteria, panaderia...'],
   ['turnos', 'Doy turnos', 'Peluqueria, taller, consultorio...'],
-  ['reparto', 'Reparto a domicilio', 'Soda, distribuidora, alimentos...'],
+  ['reparto', 'Reparto a domicilio', 'Reparto de alimentos, distribuidora...'],
   ['alquiler', 'Alquilo por dia', 'Cabañas, hoteles, salones...'],
   ['canchas', 'Alquilo por hora', 'Canchas, salas, espacios...'],
   ['salon', 'Atiendo en el local', 'Restaurante, bar, parrilla...'],
@@ -3791,7 +3791,6 @@ const RUBROS = [
 
 const CAPS_INFO = [
   ['cap_mostrador', 'Venta en mostrador', 'Cobrar a alguien que entra y se va'],
-  ['cap_reparto', 'Reparto a domicilio', 'Clientes con dias y recorrido'],
   ['cap_peso', 'Productos por peso', 'Vender por kilo o por litro, con decimales'],
   ['cap_vencimientos', 'Vencimientos', 'Avisar antes de que se venza'],
   ['cap_variantes', 'Talles y colores', 'Un producto con variantes'],
@@ -3803,7 +3802,7 @@ const CAPS_INFO = [
 ];
 
 // sin ninguna de estas, el negocio no puede cobrar
-const CAPS_VENTA = ['cap_mostrador', 'cap_reparto'];
+const CAPS_VENTA = ['cap_mostrador'];
 
 const $ = id => document.getElementById(id);
 const plata = n => '$' + Math.round(n || 0).toLocaleString('es-AR');
@@ -4205,10 +4204,10 @@ function elegirFamilia(f) {
       'anota que le dejas a cada cliente y quien te debe.</div>' +
       '<a href="https://mireparto.io" target="_blank" rel="noopener" ' +
       'style="display:block; text-align:center; padding:12px; border-radius:10px; background:var(--accent); color:#fff; font-size:14px; font-weight:500; text-decoration:none;">' +
-      'Conocer MiReparto</a></div>' +
-      '<button class="rubro-btn" style="grid-column:1/-1;" onclick="seguirConReparto()">Seguir con CajaViva' +
-      '<span class="que">Igual quiero usar esta app</span></button>';
+      'Conocer MiReparto</a></div>';
     $('familias').style.display = 'grid';
+    $('rubros').style.display = 'none';
+    $('btnVolverFamilias').style.display = 'block';
     return;
   }
 
@@ -6325,12 +6324,26 @@ async function entrarComoEmpleado(d) {
 $('btnLoginEmp').onclick = async function () {
   const btn = $('btnLoginEmp');
   btn.disabled = true; btn.textContent = 'Entrando...';
+  const u = $('empUser').value.trim(), pw = $('empPass').value;
   try {
-    const d = await pedir('/empleados/entrar', {
-      username: $('empUser').value.trim(), password: $('empPass').value
-    });
+    const d = await pedir('/empleados/entrar', { username: u, password: pw });
     await entrarComoEmpleado(d);
-  } catch (e) { $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  } catch (e) {
+    // no es empleado: puede ser el dueño entrando desde aca
+    try {
+      const d = await api('POST', '/auth/entrar', { username: u, password: pw });
+      token = d.token;
+      localStorage.setItem('cajaviva_token', token);
+      localStorage.setItem('cajaviva_ya_uso', '1');
+      localStorage.removeItem('cajaviva_empleado');
+      $('modalIngresoEmp').classList.remove('on');
+      aplicarUsuario(d);
+      await arrancarApp();
+      return;
+    } catch (e2) {
+      $('msgIngEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+    }
+  }
   btn.disabled = false; btn.textContent = 'Entrar';
 };
 
