@@ -4067,7 +4067,7 @@ function cerrarSesion() {
   localStorage.removeItem('cajaviva_token');
   localStorage.removeItem('cajaviva_empleado');
   token = null; usuario = null;
-  location.reload();
+  location.replace('/');
 }
 
 function aplicarUsuario(d) {

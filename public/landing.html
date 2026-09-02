@@ -11,7 +11,7 @@
   // si ya uso la app, entra directo
   try {
     if (location.search.indexOf('ver') === -1 &&
-        localStorage.getItem('cajaviva_token') || localStorage.getItem('cajaviva_ya_uso') === '1') {
+        localStorage.getItem('cajaviva_token')) {
       location.replace('/app');
     }
   } catch (e) {}
