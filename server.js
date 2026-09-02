@@ -41,6 +41,11 @@ app.use(function (req, res, next) {
   next();
 });
 
+// la raiz: la pagina de presentacion
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
 // la app: el index de siempre
 app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

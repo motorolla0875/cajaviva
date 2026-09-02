@@ -13323,21 +13323,9 @@ $('btnGuardarPass').onclick = async function () {
     }
   }
 
+  // sin sesion: la cuenta se crea desde la pagina de presentacion
   if (localStorage.getItem('cajaviva_ya_uso') === '1') { mostrar('login'); return; }
-
-  try {
-    const d = await api('POST', '/auth/nueva');
-    token = d.token;
-    localStorage.setItem('cajaviva_token', token);
-    localStorage.setItem('cajaviva_ya_uso', '1');
-    aplicarUsuario(d);
-    pintarRubros();
-    mostrar('bienvenida');
-    pintarPaises();
-  } catch (e) {
-    mostrar('login');
-    $('msgLogin').innerHTML = '<div class="msg">No se pudo crear la cuenta automatica. Entra con tu usuario.</div>';
-  }
+  location.replace('/');
 })();
 </script>
 
