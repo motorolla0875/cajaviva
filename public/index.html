@@ -13303,6 +13303,16 @@ $('btnGuardarPass').onclick = async function () {
     try {
       const d = await api('GET', '/auth/yo');
       aplicarUsuario(d);
+
+      // cuenta recien creada desde la pagina de presentacion
+      if (localStorage.getItem('cajaviva_recien') === '1') {
+        localStorage.removeItem('cajaviva_recien');
+        pintarRubros();
+        mostrar('bienvenida');
+        pintarPaises();
+        return;
+      }
+
       const nomEmp = localStorage.getItem('cajaviva_empleado');
       if (nomEmp) aplicarModoEmpleado(nomEmp);
       await arrancarApp();

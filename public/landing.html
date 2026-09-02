@@ -383,6 +383,7 @@
 
       localStorage.setItem('cajaviva_token', d.token);
       localStorage.setItem('cajaviva_ya_uso', '1');
+      localStorage.setItem('cajaviva_recien', '1');
       location.href = '/app';
     } catch (e) {
       document.getElementById('msgTs').textContent = e.message;
