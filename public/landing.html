@@ -68,7 +68,33 @@
     background: var(--panel); border: 1px solid var(--line);
     border-radius: 26px; padding: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.09);
   }
+  .hero .marco { max-width: 260px; margin-left: auto; }
+  .carru { position: relative; }
+  .hero .marco {
+    animation: caer 1.8s cubic-bezier(.25,.8,.3,1) both;
+  }
+  @keyframes caer {
+    from { opacity: 1; transform: translateY(-40px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .hero .puntos { animation: caer 1.8s cubic-bezier(.25,.8,.3,1) both; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero .marco, .hero .puntos { animation: none; }
+  }
+  .carru .vista { position: relative; overflow: hidden; border-radius: 18px; }
+  .carru .tira { display: flex; transition: transform .45s cubic-bezier(.4,0,.2,1); }
+  .carru .tira img {
+    width: 100%; flex: 0 0 100%; display: block; border-radius: 18px;
+    height: auto; background: var(--panel-2);
+  }
+  .puntos { display: flex; gap: 7px; justify-content: center; margin-top: 14px; }
+  .puntos b {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--line);
+    cursor: pointer; transition: background .25s, width .25s;
+  }
+  .puntos b.on { background: var(--accent); width: 20px; border-radius: 4px; }
   .marco img { width: 100%; display: block; border-radius: 18px; }
+  .marco.ancho { max-width: 560px; }
   .ph {
     background: var(--panel-2); border-radius: 18px; aspect-ratio: 9/17;
     display: flex; align-items: center; justify-content: center;
@@ -179,8 +205,16 @@
       </div>
       <p class="nota-hero">Sin tarjeta. Sin instalar nada. Entras y ya estas usandola.</p>
     </div>
-    <div class="marco">
-      <div class="ph">Captura: pantalla de Vender</div>
+    <div>
+      <div class="marco carru">
+        <div class="vista">
+          <div class="tira" id="tira">
+            <img src="/img/hero.webp" alt="CajaViva" width="480" height="926" fetchpriority="high">
+            <img src="/img/hero2.webp" alt="CajaViva" width="480" height="920" loading="lazy">
+          </div>
+        </div>
+      </div>
+      <div class="puntos" id="puntos"></div>
     </div>
   </div>
 </div>
@@ -218,7 +252,7 @@
           <li>Lector de codigo de barras</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: cobrar una venta</div></div>
+      <div class="marco"><img src="/img/2.webp" alt="CajaViva"></div>
     </div>
 
     <div class="fila der rev">
@@ -232,7 +266,7 @@
           <li>Recordarles por WhatsApp</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: pantalla de Fiado</div></div>
+      <div class="marco"><img src="/img/3.webp" alt="CajaViva"></div>
     </div>
 
     <div class="fila rev">
@@ -246,7 +280,7 @@
           <li>Tu propio dominio</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: catalogo online</div></div>
+      <div class="marco"><img src="/img/4.webp" alt="CajaViva"></div>
     </div>
 
     <div class="fila der rev">
@@ -260,7 +294,7 @@
           <li>Recordatorio por WhatsApp</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: agenda de turnos</div></div>
+      <div class="marco"><img src="/img/5.webp" alt="CajaViva"></div>
     </div>
 
     <div class="fila rev">
@@ -276,7 +310,7 @@
           <li>Empleados con sus permisos</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: Mi negocio</div></div>
+      <div class="marco"><div class="ph">Sin captura todavia</div></div>
     </div>
   </div>
 </section>
@@ -390,6 +424,44 @@
       if (idTs !== null) turnstile.reset(idTs);
     }
   }
+
+  (function () {
+    const tira = document.getElementById('tira');
+    const cont = document.getElementById('puntos');
+    if (!tira || !cont) return;
+
+    const total = tira.children.length;
+    let actual = 0, solo = null;
+
+    for (let i = 0; i < total; i++) {
+      const b = document.createElement('b');
+      b.onclick = function () { ir(i); parar(); };
+      cont.appendChild(b);
+    }
+
+    function pintar() {
+      tira.style.transform = 'translateX(-' + (actual * 100) + '%)';
+      Array.prototype.forEach.call(cont.children, function (b, i) {
+        b.classList.toggle('on', i === actual);
+      });
+    }
+
+    function ir(i) { actual = (i + total) % total; pintar(); }
+    function parar() { if (solo) { clearInterval(solo); solo = null; } }
+
+    // deslizar con el dedo
+    let x0 = null;
+    tira.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    tira.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      const d = e.changedTouches[0].clientX - x0;
+      if (Math.abs(d) > 40) { ir(actual + (d < 0 ? 1 : -1)); parar(); }
+      x0 = null;
+    });
+
+    pintar();
+    solo = setInterval(function () { ir(actual + 1); }, 4500);
+  })();
 
   const obs = new IntersectionObserver(function (es) {
     es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('on'); obs.unobserve(e.target); } });
