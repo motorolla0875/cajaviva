@@ -5,3 +5,5 @@ node_modules/
 *.log
 cajaviva.db-shm
 cajaviva.db-wal
+
+*.bak
