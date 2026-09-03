@@ -9,6 +9,13 @@
 <link rel="icon" href="/icon-192.png">
 <link rel="preload" as="image" href="/img/ropa.webp">
 <link rel="preload" as="image" href="/img/mesas.webp">
+<link rel="preload" as="image" href="/img/turnos.webp">
+<link rel="preload" as="image" href="/img/alquiler.webp">
+<link rel="preload" as="image" href="/img/canchas.webp">
+<link rel="preload" as="image" href="/img/almacen.webp">
+<link rel="preload" as="image" href="/img/comida.webp">
+<link rel="preload" as="image" href="/img/peso.webp">
+<link rel="preload" as="image" href="/img/talleres.webp">
 <script>
   // si ya uso la app, entra directo
   try {
@@ -72,6 +79,20 @@
   }
   .hero .marco { max-width: 260px; margin-left: auto; }
   .fila .marco, .panel-rubro .marco { max-width: 260px; margin: 0 auto; }
+  #marcoTienda { visibility: hidden; }
+  #marcoAdapta { visibility: hidden; }
+  #marcoVender { visibility: hidden; }
+  #marcoFiado { visibility: hidden; }
+  #marcoAgenda { visibility: hidden; }
+  #marcoAgenda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoFiado.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoVender.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoAdapta.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoTienda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  @keyframes desdeIzq {
+    from { visibility: visible; transform: translateX(-90px); }
+    to   { visibility: visible; transform: none; }
+  }
   .panel-rubro .marco { overflow: hidden; }
   .panel-rubro .tira { width: 100%; }
   .panel-rubro .tira > * { min-width: 0; }
@@ -179,6 +200,9 @@
     background: linear-gradient(135deg, var(--accent-dark), var(--accent));
     color: #fff; text-align: center; padding: 76px 0;
   }
+  .sin-net .puntos b { background: rgba(255,255,255,.4); }
+  .sin-net .puntos b.on { background: #fff; }
+
   .sin-net h2 { font-size: 35px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 16px; }
   .sin-net p { font-size: 17.5px; opacity: .93; max-width: 560px; margin: 0 auto; }
 
@@ -204,10 +228,11 @@
   .cierre p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
 
   footer {
-    border-top: 1px solid var(--line); padding: 32px 0;
-    text-align: center; color: var(--muted); font-size: 13.5px;
+    background: #000; padding: 40px 0;
+    text-align: center; color: rgba(255,255,255,.62); font-size: 13.5px;
   }
-  footer a { color: var(--accent-dark); text-decoration: none; }
+  footer a { color: rgba(255,255,255,.9); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 
   .rev { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s ease; }
   .rev.on { opacity: 1; transform: none; }
@@ -219,6 +244,7 @@
     .hero h1 { font-size: 33px; letter-spacing: -.7px; }
     .hero p.sub { font-size: 16.5px; }
     .dolor, .planes, .rubros, .panel-rubro { grid-template-columns: 1fr; }
+    .tres-off { grid-template-columns: 1fr; gap: 32px; max-width: 260px; }
     .tit h2, .sin-net h2, .cierre h2 { font-size: 27px; }
     section { padding: 52px 0; }
     .fila { margin-bottom: 56px; }
@@ -289,7 +315,7 @@
     </div>
     <div class="pest" id="pest"></div>
     <div id="panelRubro"></div>
-    <p class="cierra-rubros">Y si el tuyo no esta en la lista, elegis "Otro" y lo configuras a tu medida.</p>
+    <p class="cierra-rubros">Mas de 90 rubros ya configurados, listos para empezar. Y despues prendes o apagas lo que necesites desde Mi negocio.</p>
   </div>
 </section>
 
@@ -312,7 +338,7 @@
           <li>Lector de codigo de barras</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: cobrar una venta</div></div>
+      <div class="marco" id="marcoVender"><img src="/img/codigo.webp" alt="Cobrar una venta"></div>
     </div>
 
     <div class="fila der rev">
@@ -326,7 +352,7 @@
           <li>Recordarles por WhatsApp</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: pantalla de Fiado</div></div>
+      <div class="marco" id="marcoFiado"><img src="/img/fiado.webp" alt="Fiado"></div>
     </div>
 
     <div class="fila rev">
@@ -340,7 +366,20 @@
           <li>Tu propio dominio</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: catalogo online</div></div>
+      <div>
+        <div class="marco carru" id="marcoTienda">
+          <div class="vista">
+            <div class="tira" id="tiraTienda">
+              <img src="/img/tienda80.webp" alt="Tienda online" width="480" height="918">
+              <img src="/img/tienda81.webp" alt="Tienda online" width="480" height="925">
+              <img src="/img/tienda82.webp" alt="Tienda online" width="480" height="914">
+              <img src="/img/tienda83.webp" alt="Tienda online" width="480" height="923">
+              <img src="/img/tienda84.webp" alt="Tienda online" width="480" height="914">
+            </div>
+          </div>
+        </div>
+        <div class="puntos" id="puntosTienda"></div>
+      </div>
     </div>
 
     <div class="fila der rev">
@@ -354,7 +393,7 @@
           <li>Recordatorio por WhatsApp</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Captura: agenda de turnos</div></div>
+      <div class="marco" id="marcoAgenda"><img src="/img/agenda.webp" alt="Agenda de turnos"></div>
     </div>
 
     <div class="fila rev">
@@ -370,7 +409,18 @@
           <li>Empleados con sus permisos</li>
         </ul>
       </div>
-      <div class="marco"><div class="ph">Sin captura todavia</div></div>
+      <div>
+        <div class="marco carru" id="marcoAdapta">
+          <div class="vista">
+            <div class="tira" id="tiraAdapta">
+              <img src="/img/adapta100.webp" alt="Se adapta" width="480" height="918">
+              <img src="/img/adapta101.webp" alt="Se adapta" width="480" height="916">
+              <img src="/img/adapta102.webp" alt="Se adapta" width="480" height="923">
+            </div>
+          </div>
+        </div>
+        <div class="puntos" id="puntosAdapta"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -379,6 +429,19 @@
   <div class="cont rev">
     <h2>Se corta internet y seguis vendiendo</h2>
     <p>Segui cobrando como si nada. Cuando vuelve la conexion, todo se sincroniza solo y no perdes ni una venta.</p>
+
+    <div style="max-width:260px; margin:46px auto 0;">
+      <div class="marco carru" style="background:rgba(255,255,255,.14); border-color:transparent;">
+        <div class="vista">
+          <div class="tira" id="tiraOff">
+            <img src="/img/offline1.webp" alt="Sin internet" width="480" height="920">
+            <img src="/img/offline2.webp" alt="Ventas guardadas" width="480" height="913">
+            <img src="/img/offline3.webp" alt="Todo sincronizado" width="480" height="918">
+          </div>
+        </div>
+      </div>
+      <div class="puntos" id="puntosOff"></div>
+    </div>
   </div>
 </div>
 
@@ -530,25 +593,25 @@
     { t: 'Con mesas', img: '/img/mesas.webp',
       lista: 'Restaurante, parrilla, bar, cerveceria, pizzeria con salon, cafe, confiteria, resto bar.',
       p: ['Cada mesa con su consumo abierto', 'Vas sumando pedidos y cobras al final', 'Dividis la cuenta o haces descuento', 'Ves de un vistazo que mesas estan ocupadas'] },
-    { t: 'Turnos', img: '',
+    { t: 'Turnos', img: '/img/turnos.webp',
       lista: 'Peluqueria, barberia, manicura, tatuajes, masajes, estetica, consultorios, veterinaria, clases, entrenador personal.',
       p: ['Tu agenda del dia, ordenada por hora', 'Tus clientes reservan solos desde el catalogo', 'Podes pedir una seña para que no falten', 'Les recordas el turno por WhatsApp'] },
-    { t: 'Alquiler por dia', img: '',
+    { t: 'Alquiler por dia', img: '/img/alquiler.webp',
       lista: 'Cabañas, hoteles, hostels, salones, vehiculos, herramientas, equipos, articulos para eventos.',
       p: ['Calendario de lo que tenes ocupado', 'Temporadas con precios distintos', 'Señas y saldo pendiente', 'Consumos extra sumados a la cuenta'] },
-    { t: 'Canchas por hora', img: '',
+    { t: 'Canchas por hora', img: '/img/canchas.webp',
       lista: 'Padel, futbol 5, tenis, otras canchas, salas de ensayo.',
       p: ['Grilla del dia con todas tus canchas', 'Reservas por hora desde la web', 'Recargo los fines de semana', 'Sumas consumos a la reserva'] },
-    { t: 'Almacen y kiosco', img: '',
+    { t: 'Almacen y kiosco', img: '/img/almacen.webp',
       lista: 'Kiosco, almacen, minimercado, libreria, bazar, jugueteria, regalos, bijouterie, electronica, pet shop, perfumeria, farmacia, tabaqueria, vinoteca, forrajeria, vivero.',
       p: ['Cobras rapido con el lector de codigo de barras', 'El stock se descuenta solo en cada venta', 'Aviso cuando algo esta por vencerse', 'El fiado de cada cliente, siempre al dia'] },
-    { t: 'Comida', img: '',
+    { t: 'Comida', img: '/img/comida.webp',
       lista: 'Rotiseria, pizzeria, heladeria, cafeteria, food truck, casa de comidas, viandas.',
       p: ['Recetas que descuentan los insumos al vender', 'Pedidos online con aviso y sonido', 'Cobras rapido en el mostrador', 'Sabes cuanto te cuesta cada plato'] },
-    { t: 'Venta por peso', img: '',
+    { t: 'Venta por peso', img: '/img/peso.webp',
       lista: 'Verduleria, carniceria, fiambreria, pescaderia, polleria, granja, dietetica, panaderia.',
       p: ['Vendes por kilo, gramo o litro', 'Pones el peso y la app calcula el precio', 'Control de vencimientos', 'Sabes que producto te deja mas ganancia'] },
-    { t: 'Talleres y oficios', img: '',
+    { t: 'Talleres y oficios', img: '/img/talleres.webp',
       lista: 'Taller mecanico, gomeria, chapa y pintura, lavadero, ferreteria, repuestos, pintureria, corralon.',
       p: ['Cobras trabajos y repuestos en la misma venta', 'Presupuestos y cuenta corriente', 'Control de stock de repuestos', 'Sabes quien te debe y desde cuando'] }
   ];
@@ -663,6 +726,170 @@
         e.preventDefault();
       }
     }, { passive: false });
+  })();
+
+  (function () {
+    const tira = document.getElementById('tiraOff');
+    const cont = document.getElementById('puntosOff');
+    if (!tira || !cont) return;
+
+    const total = tira.children.length;
+    let actual = 0, solo = null;
+
+    for (let i = 0; i < total; i++) {
+      const b = document.createElement('b');
+      b.onclick = function () { ir(i); parar(); };
+      cont.appendChild(b);
+    }
+
+    function pintar() {
+      tira.style.transform = 'translateX(-' + (actual * 100) + '%)';
+      Array.prototype.forEach.call(cont.children, function (b, i) {
+        b.classList.toggle('on', i === actual);
+      });
+    }
+
+    function ir(i) { actual = (i + total) % total; pintar(); }
+    function parar() { if (solo) { clearInterval(solo); solo = null; } }
+
+    let x0 = null;
+    tira.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    tira.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      const d = e.changedTouches[0].clientX - x0;
+      if (Math.abs(d) > 40) { ir(actual + (d < 0 ? 1 : -1)); parar(); }
+      x0 = null;
+    });
+
+    pintar();
+    solo = setInterval(function () { ir(actual + 1); }, 3000);
+  })();
+
+  (function () {
+    const tira = document.getElementById('tiraTienda');
+    const cont = document.getElementById('puntosTienda');
+    const marco = document.getElementById('marcoTienda');
+    if (!tira || !cont) return;
+
+    const total = tira.children.length;
+    let actual = 0, solo = null;
+
+    for (let i = 0; i < total; i++) {
+      const b = document.createElement('b');
+      b.onclick = function () { ir(i); parar(); };
+      cont.appendChild(b);
+    }
+
+    function pintar() {
+      tira.style.transform = 'translateX(-' + (actual * 100) + '%)';
+      Array.prototype.forEach.call(cont.children, function (b, i) {
+        b.classList.toggle('on', i === actual);
+      });
+    }
+
+    function ir(i) { actual = (i + total) % total; pintar(); }
+    function parar() { if (solo) { clearInterval(solo); solo = null; } }
+
+    let x0 = null;
+    tira.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    tira.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      const d = e.changedTouches[0].clientX - x0;
+      if (Math.abs(d) > 40) { ir(actual + (d < 0 ? 1 : -1)); parar(); }
+      x0 = null;
+    });
+
+    pintar();
+
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { marco.classList.remove('entra'); void marco.offsetWidth; marco.classList.add('entra'); }
+        else { marco.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(marco);
+
+    solo = setInterval(function () { ir(actual + 1); }, 3000);
+  })();
+
+  (function () {
+    const tira = document.getElementById('tiraAdapta');
+    const cont = document.getElementById('puntosAdapta');
+    const marco = document.getElementById('marcoAdapta');
+    if (!tira || !cont) return;
+
+    const total = tira.children.length;
+    let actual = 0, solo = null;
+
+    for (let i = 0; i < total; i++) {
+      const b = document.createElement('b');
+      b.onclick = function () { ir(i); parar(); };
+      cont.appendChild(b);
+    }
+
+    function pintar() {
+      tira.style.transform = 'translateX(-' + (actual * 100) + '%)';
+      Array.prototype.forEach.call(cont.children, function (b, i) {
+        b.classList.toggle('on', i === actual);
+      });
+    }
+
+    function ir(i) { actual = (i + total) % total; pintar(); }
+    function parar() { if (solo) { clearInterval(solo); solo = null; } }
+
+    let x0 = null;
+    tira.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    tira.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      const d = e.changedTouches[0].clientX - x0;
+      if (Math.abs(d) > 40) { ir(actual + (d < 0 ? 1 : -1)); parar(); }
+      x0 = null;
+    });
+
+    pintar();
+
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { marco.classList.remove('entra'); void marco.offsetWidth; marco.classList.add('entra'); }
+        else { marco.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(marco);
+
+    solo = setInterval(function () { ir(actual + 1); }, 3000);
+  })();
+
+  (function () {
+    const m = document.getElementById('marcoVender');
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
+        else { m.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(m);
+  })();
+
+  (function () {
+    const m = document.getElementById('marcoFiado');
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
+        else { m.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(m);
+  })();
+
+  (function () {
+    const m = document.getElementById('marcoAgenda');
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
+        else { m.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(m);
   })();
 
   const obs = new IntersectionObserver(function (es) {
