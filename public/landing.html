@@ -296,15 +296,43 @@
   .dolor b { display: block; font-size: 17px; margin-bottom: 7px; }
   .dolor p { color: var(--muted); font-size: 14.5px; }
 
-  .pest { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 30px;
-          scrollbar-width: none; cursor: grab; }
-  .pest::-webkit-scrollbar { display: none; }
-  .pest button {
-    flex: 0 0 auto; padding: 9px 17px; border-radius: 20px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
-    font-size: 14px; white-space: nowrap; transition: all .2s;
+  .pest {
+    display: flex; gap: 14px; overflow-x: auto; padding: 4px 4px 14px; margin-bottom: 30px;
+    scrollbar-width: none; cursor: grab;
+    scroll-snap-type: x mandatory;
   }
-  .pest button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pest::-webkit-scrollbar { display: none; }
+  .pest-wrap { position: relative; }
+  .pest-flecha {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); font-size: 22px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12); z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pest-flecha:hover { background: var(--panel-2); }
+  .pest-flecha.izq { left: -22px; }
+  .pest-flecha.der { right: -22px; }
+  @media (max-width: 860px) { .pest-flecha { display: none; } }
+  .pest button {
+    flex: 0 0 100%; position: relative; aspect-ratio: 4/3; max-height: 340px;
+    border-radius: 18px; cursor: pointer; overflow: hidden;
+    border: 3px solid transparent; padding: 0; background: var(--panel-2);
+    transition: border-color .2s;
+    scroll-snap-align: center;
+  }
+
+  .pest button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pest button .ph-cat {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 12px; text-align: center; padding: 8px;
+  }
+  .pest button span.nombre {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.78));
+    color: #fff; font-size: 19px; font-weight: 600; text-align: center;
+    padding: 60px 12px 16px; line-height: 1.2;
+  }
   .panel-rubro { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
   .panel-rubro h3 { font-size: 25px; font-weight: 600; margin-bottom: 12px; letter-spacing: -.4px; }
   .panel-rubro p.lista { color: var(--muted); font-size: 15.5px; margin-bottom: 18px; }
@@ -444,6 +472,10 @@
   .rev.on { opacity: 1; transform: none; }
 
   @media (max-width: 860px) {
+    .pest { margin-left: -20px; margin-right: -20px; padding: 0; }
+    .pest button { border-radius: 0; }
+
+    .pest button span.nombre { font-size: 10.5px; padding: 16px 4px 6px; }
     .hero { padding: 34px 0 40px; }
     .banner-top { height: 180px; }
     .hero-grid, .fila { grid-template-columns: 1fr; gap: 34px; }
@@ -550,7 +582,11 @@
       <h2>Sirve para tu negocio</h2>
       <p>Elegis tu rubro y la app se acomoda sola a como trabajas.</p>
     </div>
-    <div class="pest" id="pest"></div>
+    <div class="pest-wrap">
+      <button class="pest-flecha izq" id="pestIzq">&#8249;</button>
+      <div class="pest" id="pest"></div>
+      <button class="pest-flecha der" id="pestDer">&#8250;</button>
+    </div>
     <div id="panelRubro"></div>
     <p class="cierra-rubros">Mas de 90 rubros ya configurados, listos para empezar. Y despues prendes o apagas lo que necesites desde Mi negocio.</p>
   </div>
@@ -862,31 +898,31 @@
   })();
 
   const RUBROS = [
-    { t: 'Ropa y calzado', img: '/img/ropa.webp',
+    { t: 'Ropa y calzado', img: '/img/ropa-v2.webp', imgMarco: '/img/ropa-marco.webp',
       lista: 'Ropa, calzado, lenceria, indumentaria deportiva, blanqueria, marroquineria, uniformes.',
       p: ['Un producto con todos sus talles y colores', 'Stock separado por cada variante', 'Tu catalogo online con fotos', 'Sabes que talle se te esta por acabar'] },
-    { t: 'Con mesas', img: '/img/mesas.webp',
+    { t: 'Con mesas', img: '/img/mesas-cat2.webp', imgMarco: '/img/mesas.webp',
       lista: 'Restaurante, parrilla, bar, cerveceria, pizzeria con salon, cafe, confiteria, resto bar.',
       p: ['Cada mesa con su consumo abierto', 'Vas sumando pedidos y cobras al final', 'Dividis la cuenta o haces descuento', 'Ves de un vistazo que mesas estan ocupadas'] },
-    { t: 'Turnos', img: '/img/turnos.webp',
+    { t: 'Turnos', img: '/img/turnos-cat.webp', imgMarco: '/img/turnos.webp',
       lista: 'Peluqueria, barberia, manicura, tatuajes, masajes, estetica, consultorios, veterinaria, clases, entrenador personal.',
       p: ['Tu agenda del dia, ordenada por hora', 'Tus clientes reservan solos desde el catalogo', 'Podes pedir una seña para que no falten', 'Les recordas el turno por WhatsApp'] },
-    { t: 'Alquiler por dia', img: '/img/alquiler.webp',
+    { t: 'Alquiler por dia', img: '/img/alquiler-cat.webp', imgMarco: '/img/alquiler.webp',
       lista: 'Cabañas, hoteles, hostels, salones, vehiculos, herramientas, equipos, articulos para eventos.',
       p: ['Calendario de lo que tenes ocupado', 'Temporadas con precios distintos', 'Señas y saldo pendiente', 'Consumos extra sumados a la cuenta'] },
-    { t: 'Canchas por hora', img: '/img/canchas.webp',
+    { t: 'Canchas por hora', img: '/img/canchas-cat.webp', imgMarco: '/img/canchas.webp',
       lista: 'Padel, futbol 5, tenis, otras canchas, salas de ensayo.',
       p: ['Grilla del dia con todas tus canchas', 'Reservas por hora desde la web', 'Recargo los fines de semana', 'Sumas consumos a la reserva'] },
-    { t: 'Almacen y kiosco', img: '/img/almacen.webp',
+    { t: 'Almacen y kiosco', img: '/img/almacen-cat.webp', imgMarco: '/img/almacen.webp',
       lista: 'Kiosco, almacen, minimercado, libreria, bazar, jugueteria, regalos, bijouterie, electronica, pet shop, perfumeria, farmacia, tabaqueria, vinoteca, forrajeria, vivero.',
       p: ['Cobras rapido con el lector de codigo de barras', 'El stock se descuenta solo en cada venta', 'Aviso cuando algo esta por vencerse', 'El fiado de cada cliente, siempre al dia'] },
-    { t: 'Comida', img: '/img/comida.webp',
+    { t: 'Comida', img: '/img/comida-cat.webp', imgMarco: '/img/comida.webp',
       lista: 'Rotiseria, pizzeria, heladeria, cafeteria, food truck, casa de comidas, viandas.',
       p: ['Recetas que descuentan los insumos al vender', 'Pedidos online con aviso y sonido', 'Cobras rapido en el mostrador', 'Sabes cuanto te cuesta cada plato'] },
-    { t: 'Venta por peso', img: '/img/peso.webp',
+    { t: 'Venta por peso', img: '/img/peso-cat.webp', imgMarco: '/img/peso.webp',
       lista: 'Verduleria, carniceria, fiambreria, pescaderia, polleria, granja, dietetica, panaderia.',
       p: ['Vendes por kilo, gramo o litro', 'Pones el peso y la app calcula el precio', 'Control de vencimientos', 'Sabes que producto te deja mas ganancia'] },
-    { t: 'Talleres y oficios', img: '/img/talleres.webp',
+    { t: 'Talleres y oficios', img: '/img/talleres-cat.webp', imgMarco: '/img/talleres.webp',
       lista: 'Taller mecanico, gomeria, chapa y pintura, lavadero, ferreteria, repuestos, pintureria, corralon.',
       p: ['Cobras trabajos y repuestos en la misma venta', 'Presupuestos y cuenta corriente', 'Control de stock de repuestos', 'Sabes quien te debe y desde cuando'] }
   ];
@@ -899,13 +935,26 @@
 
     let detenido = false;
 
+    const flIzq = document.getElementById('pestIzq');
+    const flDer = document.getElementById('pestDer');
+    if (flIzq && flDer) {
+      flIzq.onclick = function () {
+        detenido = true; parar();
+        pest.scrollBy({ left: -pest.clientWidth, behavior: 'smooth' });
+      };
+      flDer.onclick = function () {
+        detenido = true; parar();
+        pest.scrollBy({ left: pest.clientWidth, behavior: 'smooth' });
+      };
+    }
+
     // se arma una sola vez: los textos y la tira de capturas
     panel.innerHTML =
       '<div class="panel-rubro">' +
         '<div id="txtRubro"></div>' +
         '<div class="marco"><div class="vista"><div class="tira" id="tiraRubro">' +
           RUBROS.map(function (r) {
-            return r.img ? '<img src="' + r.img + '" alt="' + r.t + '">'
+            return (r.imgMarco || r.img) ? '<img src="' + (r.imgMarco || r.img) + '" alt="' + r.t + '">'
                          : '<div class="ph">Captura: ' + r.t + '</div>';
           }).join('') +
         '</div></div></div>' +
@@ -928,7 +977,9 @@
 
     RUBROS.forEach(function (r, i) {
       const b = document.createElement('button');
-      b.textContent = r.t;
+      b.innerHTML = (r.img ? '<img src="' + r.img + '" alt="' + r.t + '">'
+                           : '<div class="ph-cat">' + r.t + '</div>') +
+                    '<span class="nombre">' + r.t + '</span>';
       b.onclick = function () { detenido = true; parar(); pintar(i); };
       pest.appendChild(b);
     });
