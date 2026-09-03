@@ -85,15 +85,19 @@
   #marcoFiado { visibility: hidden; }
   #marcoAgenda { visibility: hidden; }
   #marcoOff { visibility: hidden; }
-  #marcoOff.entra { animation: desdeAbajo 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoOff.entra { animation: subiendo 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  @keyframes subiendo {
+    from { visibility: visible; transform: translateY(90px); }
+    to   { visibility: visible; transform: none; }
+  }
   @keyframes desdeAbajo {
     from { visibility: visible; transform: translateY(-90px); }
     to   { visibility: visible; transform: none; }
   }
-  #marcoAgenda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoAgenda.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
   #marcoFiado.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
   #marcoVender.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
-  #marcoAdapta.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  #marcoAdapta.entra { animation: desdeAbajo 1.4s cubic-bezier(.25,.8,.3,1) both; }
   #marcoTienda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
   @keyframes desdeIzq {
     from { visibility: visible; transform: translateX(-90px); }
@@ -212,6 +216,25 @@
   .sin-net h2 { font-size: 35px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 16px; }
   .sin-net p { font-size: 17.5px; opacity: .93; max-width: 560px; margin: 0 auto; }
 
+  .todo-inc {
+    max-width: 780px; margin: 0 auto 40px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 18px; padding: 30px 32px;
+  }
+  .todo-inc h4 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .todo-inc .sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+  .todo-inc ul { list-style: none; columns: 2; column-gap: 34px; }
+  .todo-inc li {
+    font-size: 14.5px; padding: 7px 0 7px 26px; position: relative;
+    break-inside: avoid;
+  }
+  .todo-inc li::before { content: '\2713'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .todo-inc li.plus { color: var(--accent-dark); font-weight: 500; }
+  .nota-comp {
+    max-width: 780px; margin: 0 auto 40px; text-align: center;
+    font-size: 15px; color: var(--muted);
+  }
+
   .planes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 780px; margin: 0 auto; }
   .plan {
     background: var(--panel); border: 1px solid var(--line);
@@ -234,11 +257,11 @@
   .cierre p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
 
   footer {
-    background: #000; padding: 40px 0;
-    text-align: center; color: rgba(255,255,255,.62); font-size: 13.5px;
+    border-top: 1px solid var(--line); padding: 32px 0;
+    text-align: center; color: var(--muted); font-size: 13.5px;
   }
-  footer a { color: rgba(255,255,255,.9); text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
+  footer a { color: var(--accent-dark); text-decoration: none; }
+
 
   .rev { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s ease; }
   .rev.on { opacity: 1; transform: none; }
@@ -250,6 +273,7 @@
     .hero h1 { font-size: 33px; letter-spacing: -.7px; }
     .hero p.sub { font-size: 16.5px; }
     .dolor, .planes, .rubros, .panel-rubro { grid-template-columns: 1fr; }
+    .todo-inc ul { columns: 1; }
     .tres-off { grid-template-columns: 1fr; gap: 32px; max-width: 260px; }
     .tit h2, .sin-net h2, .cierre h2 { font-size: 27px; }
     section { padding: 52px 0; }
@@ -437,7 +461,7 @@
     <p>Segui cobrando como si nada. Cuando vuelve la conexion, todo se sincroniza solo y no perdes ni una venta.</p>
 
     <div style="max-width:260px; margin:46px auto 0;">
-      <div class="marco carru" id="marcoOff" style="background:transparent; border-color:transparent; box-shadow:none;">
+      <div class="marco carru" id="marcoOff" style="background:#1E8A66; border-color:#1E8A66;">
         <div class="vista">
           <div class="tira" id="tiraOff">
             <img src="/img/offline1.webp" alt="Sin internet" width="480" height="920">
@@ -455,34 +479,72 @@
   <div class="cont">
     <div class="tit rev">
       <h2>Cuanto cuesta</h2>
-      <p>Estamos empezando: hoy tenes todo desbloqueado sin pagar nada.</p>
+      <p>Probala 2 meses gratis, con todo desbloqueado. Tus datos no se pierden nunca.</p>
     </div>
+    <div class="todo-inc rev">
+      <h4>Un solo plan, con todo adentro</h4>
+      <p class="sub">Sin funciones recortadas ni sorpresas: lo que ves es lo que tenes.</p>
+      <ul>
+        <li>Vender y cobrar</li>
+        <li>Productos y stock</li>
+        <li>Fiado y cuenta corriente</li>
+        <li>Caja y cierre del dia</li>
+        <li>Gastos y proveedores</li>
+        <li>Reportes de todos los meses</li>
+        <li>Talles y colores</li>
+        <li>Venta por peso</li>
+        <li>Recetas con insumos</li>
+        <li>Vencimientos</li>
+        <li>Codigo de barras</li>
+        <li>Empleados con permisos</li>
+        <li>Importar productos y clientes desde Excel</li>
+        <li>Exportar a Excel y PDF</li>
+        <li>Desde el celular y la compu</li>
+        <li class="plus">Tienda online con pedidos</li>
+        <li class="plus">Conecta tu propio dominio</li>
+        <li class="plus">Turnos con agenda</li>
+        <li class="plus">Reservas web con seña</li>
+        <li class="plus">Mesas para el salon</li>
+        <li class="plus">Alquiler por dia y por hora</li>
+        <li class="plus">Funciona sin internet</li>
+        <li class="plus">Ayuda con chat de IA</li>
+      </ul>
+    </div>
+
+    <p class="nota-comp rev">Todo eso entra en el mismo precio. No hay un plan basico al que le falten cosas.</p>
+
     <div class="planes rev">
       <div class="plan">
-        <h4>Siempre gratis</h4>
-        <div class="precio">Sin vencimiento</div>
+        <h4>Mensual</h4>
+        <div class="precio" style="font-size:30px; color:var(--text); font-weight:600;">
+          US$ 9,99<span style="font-size:14px; color:var(--muted); font-weight:400;"> / mes</span>
+        </div>
         <ul>
-          <li>Vender y cobrar</li>
-          <li>Tus productos y el stock</li>
-          <li>La caja del mes</li>
-          <li>El fiado de tus clientes</li>
-          <li>Funcionar sin internet</li>
+          <li>Todas las funciones</li>
+          <li>Tu tienda online con tu dominio</li>
+          <li>Empleados con sus permisos</li>
+          <li>Reportes de todos los meses</li>
+          <li>Cancelas cuando quieras</li>
         </ul>
       </div>
       <div class="plan destacado">
-        <h4>Plan completo</h4>
-        <div class="precio">Hoy desbloqueado sin costo</div>
+        <h4>Anual</h4>
+        <div class="precio" style="font-size:30px; color:var(--text); font-weight:600;">
+          US$ 7,99<span style="font-size:14px; color:var(--muted); font-weight:400;"> / mes</span>
+        </div>
+        <div style="display:inline-block; background:var(--accent-soft); color:var(--accent-dark);
+                    padding:4px 12px; border-radius:20px; font-size:12.5px; font-weight:600; margin-bottom:14px;">
+          Ahorras 2 meses al año
+        </div>
         <ul>
-          <li>Tu tienda online con pedidos</li>
-          <li>Empleados con sus permisos</li>
-          <li>Reportes de todos los meses</li>
-          <li>Turnos, alquileres y canchas</li>
-          <li>Tu propio dominio</li>
+          <li>Todo lo del plan mensual</li>
+          <li>Pagas una vez al año</li>
+          <li>El precio no te sube durante el año</li>
         </ul>
       </div>
     </div>
     <div class="aviso-plan rev">
-      Cuando lancemos el plan pago te vamos a avisar antes. Lo que cargaste no se pierde nunca.
+      Empezas con 2 meses gratis, sin tarjeta. Te avisamos antes de que se termine, y lo que cargaste no se pierde nunca.
     </div>
   </div>
 </section>
