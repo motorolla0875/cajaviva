@@ -61,6 +61,21 @@
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <style>
+  #preloader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #FAFAF7; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; transition: opacity .4s ease;
+  }
+  #preloader.oculto { opacity: 0; pointer-events: none; }
+  .pl-logo { font-size: 26px; font-weight: 600; letter-spacing: -.3px; color: #2C2C2A; }
+  .pl-logo span { color: #1D9E75; }
+  .pl-spin {
+    width: 34px; height: 34px; border: 3px solid #E4E2DC; border-top-color: #1D9E75;
+    border-radius: 50%; animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  body.cargando { overflow: hidden; }
+
   :root {
     --bg: #FAFAF7; --panel: #FFFFFF; --panel-2: #F3F2EE;
     --text: #2C2C2A; --muted: #6E6D67;
@@ -96,8 +111,12 @@
   }
   .btn-linea:hover { background: var(--panel); }
 
-  .hero { padding: 70px 0 60px; }
-  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+  .banner-top {
+    width: 100%; height: 520px;
+    background: url('/img/fondo.webp') top center/cover no-repeat;
+  }
+  .hero { padding: 54px 0 60px; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 50px; align-items: center; }
   .hero h1 {
     font-size: 46px; line-height: 1.13; font-weight: 600;
     letter-spacing: -1.2px; margin-bottom: 20px;
@@ -112,6 +131,22 @@
     border-radius: 26px; padding: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.09);
   }
   .hero .marco { max-width: 260px; margin-left: auto; }
+  .mockup-hero { width: 100%; max-width: 580px; display: block; margin: 0 auto; }
+  .hero-texto { opacity: 0; }
+  body:not(.cargando) .hero-texto { animation: entraIzq 1s cubic-bezier(.25,.8,.3,1) both; }
+
+  @keyframes entraIzq {
+    from { opacity: 0; transform: translateX(-60px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes entraDer {
+    from { opacity: 0; transform: translateX(60px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-texto, .hero-img { animation: none; }
+  }
+  @media (min-width: 861px) { .mockup-hero { max-width: 780px; } }
   .fila .marco, .panel-rubro .marco { max-width: 260px; margin: 0 auto; }
   #marcoTienda { visibility: hidden; }
   #marcoAdapta { visibility: hidden; }
@@ -144,7 +179,7 @@
   .panel-rubro .tira { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
   .panel-rubro .tira > * { flex: 0 0 100%; }
   .panel-rubro .tira img { width: 100%; display: block; border-radius: 18px; }
-  .marco.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  .marco.entra { animation: subiendo 1.4s cubic-bezier(.25,.8,.3,1) both; }
 
   @keyframes desdeDerecha {
     from { visibility: visible; transform: translateX(90px); }
@@ -347,7 +382,8 @@
   .rev.on { opacity: 1; transform: none; }
 
   @media (max-width: 860px) {
-    .hero { padding: 46px 0 40px; }
+    .hero { padding: 34px 0 40px; }
+    .banner-top { height: 180px; }
     .hero-grid, .fila { grid-template-columns: 1fr; gap: 34px; }
     .fila.der .txt { order: 0; }
     .hero h1 { font-size: 33px; letter-spacing: -.7px; }
@@ -365,7 +401,12 @@
   }
 </style>
 </head>
-<body>
+<body class="cargando">
+
+<div id="preloader">
+  <div class="pl-logo">Caja<span>Viva</span></div>
+  <div class="pl-spin"></div>
+</div>
 
 <header>
   <div class="cont">
@@ -374,10 +415,12 @@
   </div>
 </header>
 
+<div class="banner-top"></div>
+
 <div class="hero">
   <div class="cont hero-grid">
-    <div>
-      <h1>Controla tus ventas, tu stock y el fiado <em>desde el celular</em></h1>
+    <div class="hero-texto">
+      <h1>Tu negocio en orden, <em>todos los dias</em></h1>
       <p class="sub">Vende, controla el stock, anota el fiado y mira como va tu caja. Tu tienda online lista en segundos, con tu propio dominio. Todo desde el celular, aunque te quedes sin internet.</p>
       <div class="hero-acc">
         <button class="btn btn-g" onclick="empezar()">Empezar gratis</button>
@@ -386,19 +429,9 @@
       <p class="nota-hero">Sin tarjeta. Sin instalar nada. Entras y ya estas usandola.</p>
     </div>
     <div>
-      <div class="marco carru">
-        <div class="vista">
-          <div class="tira" id="tira">
-            <img src="/img/hero.webp" alt="CajaViva" width="480" height="926" fetchpriority="high">
-            <img src="/img/hero2.webp" alt="CajaViva" width="480" height="920">
-            <img src="/img/hero3.webp" alt="CajaViva" width="480" height="921">
-            <img src="/img/hero4.webp" alt="CajaViva" width="480" height="924">
-            <img src="/img/hero5.webp" alt="CajaViva" width="480" height="916">
-            <img src="/img/hero6.webp" alt="CajaViva" width="480" height="929">
-          </div>
-        </div>
+      <div class="marco mockup-hero hero-img">
+        <img src="/img/mockup.webp" alt="CajaViva">
       </div>
-      <div class="puntos" id="puntos"></div>
     </div>
   </div>
 </div>
@@ -1049,6 +1082,40 @@
       });
     }, { threshold: .25 });
     ob.observe(m);
+  })();
+
+  (function () {
+    const imgs = Array.prototype.slice.call(document.querySelectorAll('img'));
+    let restantes = imgs.length;
+
+    function listo() {
+      const pl = document.getElementById('preloader');
+      document.body.classList.remove('cargando');
+      if (pl) {
+        pl.classList.add('oculto');
+        setTimeout(function () { pl.remove(); }, 450);
+      }
+    }
+
+    if (restantes === 0) { listo(); return; }
+
+    const limite = setTimeout(listo, 8000);
+
+    imgs.forEach(function (img) {
+      if (img.complete) {
+        restantes--;
+      } else {
+        img.addEventListener('load', chequear);
+        img.addEventListener('error', chequear);
+      }
+    });
+
+    function chequear() {
+      restantes--;
+      if (restantes <= 0) { clearTimeout(limite); listo(); }
+    }
+
+    if (restantes <= 0) { clearTimeout(limite); listo(); }
   })();
 
   const obs = new IntersectionObserver(function (es) {
