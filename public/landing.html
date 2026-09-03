@@ -980,6 +980,23 @@
 
     pintar(0);
 
+    // al deslizar y soltar, la tarjeta que quedo centrada define la descripcion
+    let scrollTimer = null;
+    pest.addEventListener('scroll', function () {
+      detenido = true; parar();
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () {
+        const centro = pest.scrollLeft + pest.clientWidth / 2;
+        let masCerca = 0, mejorDist = Infinity;
+        Array.prototype.forEach.call(pest.children, function (btn, i) {
+          const mid = btn.offsetLeft + btn.offsetWidth / 2;
+          const dist = Math.abs(mid - centro);
+          if (dist < mejorDist) { mejorDist = dist; masCerca = i; }
+        });
+        pintar(masCerca);
+      }, 120);
+    }, { passive: true });
+
     // anima el texto la primera vez que la seccion aparece en pantalla
     // precargar todas las capturas para que no parpadeen
     RUBROS.forEach(function (r) {
