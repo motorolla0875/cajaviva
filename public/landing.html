@@ -192,6 +192,8 @@
   .mockup-hero { width: 100%; max-width: 580px; display: block; margin: 0 auto; }
   .txt-entra { opacity: 0; }
   .txt-entra.entra { animation: entraIzq 1s cubic-bezier(.25,.8,.3,1) both; }
+  .txt-entra2 { opacity: 0; }
+  .txt-entra2.entra { animation: entraDer 1s cubic-bezier(.25,.8,.3,1) both; }
   .hero-texto { opacity: 0; }
   body:not(.cargando) .hero-texto { animation: entraIzq 1s cubic-bezier(.25,.8,.3,1) both; }
 
@@ -577,7 +579,7 @@
     </div>
 
     <div id="fn-fiado" class="fila der rev">
-      <div class="txt">
+      <div class="txt txt-entra2">
         <span class="eti">FIADO</span>
         <h3>Sabes quien te debe y cuanto</h3>
         <p>Cada fiado queda en la cuenta del cliente. Cuando te paga, lo registras y la deuda baja sola.</p>
@@ -591,7 +593,7 @@
     </div>
 
     <div id="fn-tienda" class="fila rev">
-      <div class="txt">
+      <div class="txt txt-entra">
         <span class="eti">TU TIENDA ONLINE</span>
         <h3>Vende tambien cuando el local esta cerrado</h3>
         <p>Un catalogo con tus productos y tus precios. Compartis el link por WhatsApp y los pedidos te llegan a la app.</p>
@@ -618,7 +620,7 @@
     </div>
 
     <div id="fn-turnos" class="fila der rev">
-      <div class="txt">
+      <div class="txt txt-entra2">
         <span class="eti">TURNOS</span>
         <h3>Tu agenda del dia, ordenada</h3>
         <p>Para peluquerias, tatuadores, manicuria y cualquier negocio que trabaja con cita. Tus clientes reservan solos desde el catalogo.</p>
@@ -632,7 +634,7 @@
     </div>
 
     <div class="fila rev">
-      <div class="txt">
+      <div class="txt txt-entra">
         <span class="eti">MAS FUNCIONES</span>
         <h3>Se adapta a como trabajas</h3>
         <p>Cada rubro tiene lo suyo. Prendes lo que necesitas y la app se acomoda.</p>
@@ -1215,19 +1217,37 @@
   })();
 
   (function () {
-    const el = document.querySelector('.txt-entra');
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) {
-          el.classList.remove('entra');
-          void el.offsetWidth;
-          el.classList.add('entra');
-        } else {
-          el.classList.remove('entra');
-        }
-      });
-    }, { threshold: .25 });
-    ob.observe(el);
+    document.querySelectorAll('.txt-entra').forEach(function (el) {
+      const ob = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting) {
+            el.classList.remove('entra');
+            void el.offsetWidth;
+            el.classList.add('entra');
+          } else {
+            el.classList.remove('entra');
+          }
+        });
+      }, { threshold: .25 });
+      ob.observe(el);
+    });
+  })();
+
+  (function () {
+    document.querySelectorAll('.txt-entra2').forEach(function (el) {
+      const ob = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting) {
+            el.classList.remove('entra');
+            void el.offsetWidth;
+            el.classList.add('entra');
+          } else {
+            el.classList.remove('entra');
+          }
+        });
+      }, { threshold: .25 });
+      ob.observe(el);
+    });
   })();
 
   const obs = new IntersectionObserver(function (es) {
