@@ -173,6 +173,12 @@
     width: 100%; height: 520px;
     background: url('/img/fondo.webp') top center/cover no-repeat;
   }
+  .banner-top2 {
+    background: url('/img/fondo2.webp') top center/cover no-repeat;
+  }
+  .banner-top2 {
+    background: url('/img/fondo2.webp') top center/cover no-repeat;
+  }
   .hero { padding: 54px 0 60px; }
   .hero-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 50px; align-items: center; }
   .hero h1 {
@@ -473,6 +479,8 @@
 
     .hero { padding: 34px 0 40px; }
     .banner-top { height: 180px; }
+    .banner-top2 { height: 180px; }
+    .banner-top2 { height: 180px; }
     .hero-grid, .fila { grid-template-columns: 1fr; gap: 34px; }
     .fila.der .txt { order: 0; }
     .hero h1 { font-size: 33px; letter-spacing: -.7px; }
@@ -663,7 +671,22 @@
       </div>
       <div class="marco" id="marcoAgenda"><img src="/img/agenda.webp" alt="Agenda de turnos"></div>
     </div>
+  </div>
+</section>
 
+<section class="franja" style="padding-bottom:20px;">
+  <div class="cont">
+    <div class="tit rev">
+      <h2>Celular o compu, es lo mismo</h2>
+      <p>Un solo lugar donde se guarda todo. Entra desde donde quieras y ves la misma informacion, actualizada al segundo.</p>
+    </div>
+  </div>
+</section>
+
+<div class="banner-top banner-top2"></div>
+
+<section id="funciones2">
+  <div class="cont">
     <div class="fila rev">
       <div class="txt txt-entra">
         <span class="eti">MAS FUNCIONES</span>
@@ -717,7 +740,7 @@
   <div class="cont">
     <div class="tit rev">
       <h2>Cuanto cuesta</h2>
-      <p>Probala 2 meses gratis, con todo desbloqueado. Tus datos no se pierden nunca.</p>
+      <p>Por el lanzamiento, todo el plan completo esta gratis, sin fecha de vencimiento. Tus datos no se pierden nunca.</p>
     </div>
     <div class="todo-inc rev">
       <h4>Un solo plan, con todo adentro</h4>
@@ -754,8 +777,9 @@
     <div class="planes rev">
       <div class="plan">
         <h4>Mensual</h4>
-        <div class="precio" style="font-size:30px; color:var(--text); font-weight:600;">
-          US$ 9,99<span style="font-size:14px; color:var(--muted); font-weight:400;"> / mes</span>
+        <div class="precio">
+          <span style="font-size:17px; color:var(--muted); text-decoration:line-through;">US$ 9,99 / mes</span><br>
+          <span style="font-size:26px; color:var(--accent-dark); font-weight:700;">Gratis</span>
         </div>
         <ul>
           <li>Todas las funciones</li>
@@ -767,8 +791,9 @@
       </div>
       <div class="plan destacado">
         <h4>Anual</h4>
-        <div class="precio" style="font-size:30px; color:var(--text); font-weight:600;">
-          US$ 7,99<span style="font-size:14px; color:var(--muted); font-weight:400;"> / mes</span>
+        <div class="precio">
+          <span style="font-size:17px; color:var(--muted); text-decoration:line-through;">US$ 7,99 / mes</span><br>
+          <span style="font-size:26px; color:var(--accent-dark); font-weight:700;">Gratis</span>
         </div>
         <div style="display:inline-block; background:var(--accent-soft); color:var(--accent-dark);
                     padding:4px 12px; border-radius:20px; font-size:12.5px; font-weight:600; margin-bottom:14px;">
@@ -782,7 +807,9 @@
       </div>
     </div>
     <div class="aviso-plan rev">
-      Empezas con 2 meses gratis, sin tarjeta. Te avisamos antes de que se termine, y lo que cargaste no se pierde nunca.
+      <b>Promo de bienvenida:</b> estamos lanzando la app y por eso, hoy, todo el plan completo es gratis y sin fecha de vencimiento.
+      Cuando decidamos activar el cobro te vamos a avisar con anticipacion, y desde ese aviso vas a tener un mes mas totalmente gratis antes de que se te empiece a cobrar.
+      Lo que cargaste nunca se pierde.
     </div>
   </div>
 </section>
