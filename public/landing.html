@@ -190,6 +190,8 @@
   }
   .hero .marco { max-width: 260px; margin-left: auto; }
   .mockup-hero { width: 100%; max-width: 580px; display: block; margin: 0 auto; }
+  .txt-entra { opacity: 0; }
+  .txt-entra.entra { animation: entraIzq 1s cubic-bezier(.25,.8,.3,1) both; }
   .hero-texto { opacity: 0; }
   body:not(.cargando) .hero-texto { animation: entraIzq 1s cubic-bezier(.25,.8,.3,1) both; }
 
@@ -206,13 +208,13 @@
   }
   @media (min-width: 861px) { .mockup-hero { max-width: 780px; } }
   .fila .marco, .panel-rubro .marco { max-width: 260px; margin: 0 auto; }
-  #marcoTienda { visibility: hidden; }
-  #marcoAdapta { visibility: hidden; }
-  #marcoVender { visibility: hidden; }
-  #marcoFiado { visibility: hidden; }
-  #marcoAgenda { visibility: hidden; }
-  #marcoOff { visibility: hidden; }
-  #marcoOff.entra { animation: subiendo 1.4s cubic-bezier(.25,.8,.3,1) both; }
+
+
+
+
+
+
+
   @keyframes subiendo {
     from { visibility: visible; transform: translateY(90px); }
     to   { visibility: visible; transform: none; }
@@ -221,11 +223,11 @@
     from { visibility: visible; transform: translateY(-90px); }
     to   { visibility: visible; transform: none; }
   }
-  #marcoAgenda.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
-  #marcoFiado.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
-  #marcoVender.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
-  #marcoAdapta.entra { animation: desdeAbajo 1.4s cubic-bezier(.25,.8,.3,1) both; }
-  #marcoTienda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
+
+
+
+
+
   @keyframes desdeIzq {
     from { visibility: visible; transform: translateX(-90px); }
     to   { visibility: visible; transform: none; }
@@ -471,7 +473,7 @@
     <div class="logo">Caja<span>Viva</span></div>
     <nav class="nav-header">
       <div class="nav-item">
-        <button class="nav-btn">Categorias <span class="car">&#9662;</span></button>
+        <button class="nav-btn">Categorias de negocios <span class="car">&#9662;</span></button>
         <div class="nav-menu" id="menuCategorias"></div>
       </div>
       <div class="nav-item">
@@ -491,7 +493,7 @@
 
 <div class="panel-movil" id="panelMovil">
   <div class="pm-fila">
-    <b>Categorias</b>
+    <b>Categorias de negocios</b>
     <div class="pm-lista" id="menuCategoriasMovil"></div>
   </div>
   <div class="pm-fila">
@@ -560,7 +562,7 @@
     </div>
 
     <div id="fn-vender" class="fila rev">
-      <div class="txt">
+      <div class="txt txt-entra">
         <span class="eti">VENDER Y COBRAR</span>
         <h3>Cobrar rapido, sin cuentas de cabeza</h3>
         <p>Tocas los productos, eliges como te pagan y listo. La venta queda registrada y el stock se descuenta solo.</p>
@@ -913,9 +915,9 @@
     function pintar(i) {
       const r = RUBROS[i];
       txt.innerHTML =
-        '<h3>' + r.t + '</h3>' +
+        '<div class="rubro-texto"><h3>' + r.t + '</h3>' +
         '<p class="lista">' + r.lista + '</p>' +
-        '<ul>' + r.p.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+        '<ul>' + r.p.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>';
       tiraR.style.transform = 'translateX(-' + (i * 100) + '%)';
       Array.prototype.forEach.call(pest.children, function (b, j) {
         b.classList.toggle('on', j === i);
@@ -931,18 +933,7 @@
 
     pintar(0);
 
-    // la tira entra desde la derecha, una sola vez
-    (function () {
-      const m = panel.querySelector('.marco');
-      if (!m) return;
-      const ob = new IntersectionObserver(function (es) {
-        es.forEach(function (e) {
-          if (e.isIntersecting) { m.classList.add('entra'); ob.disconnect(); }
-        });
-      }, { threshold: .25 });
-      ob.observe(panel);
-    })();
-
+    // anima el texto la primera vez que la seccion aparece en pantalla
     // precargar todas las capturas para que no parpadeen
     RUBROS.forEach(function (r) {
       if (r.img) { const im = new Image(); im.src = r.img; }
@@ -1072,14 +1063,6 @@
 
     pintar();
 
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { marco.classList.remove('entra'); void marco.offsetWidth; marco.classList.add('entra'); }
-        else { marco.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(marco);
-
     solo = setInterval(function () { ir(actual + 1); }, 3000);
   })();
 
@@ -1119,60 +1102,9 @@
 
     pintar();
 
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { marco.classList.remove('entra'); void marco.offsetWidth; marco.classList.add('entra'); }
-        else { marco.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(marco);
-
     solo = setInterval(function () { ir(actual + 1); }, 3000);
   })();
 
-  (function () {
-    const m = document.getElementById('marcoVender');
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
-        else { m.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(m);
-  })();
-
-  (function () {
-    const m = document.getElementById('marcoFiado');
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
-        else { m.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(m);
-  })();
-
-  (function () {
-    const m = document.getElementById('marcoAgenda');
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
-        else { m.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(m);
-  })();
-
-  (function () {
-    const m = document.getElementById('marcoOff');
-    const ob = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
-        else { m.classList.remove('entra'); }
-      });
-    }, { threshold: .25 });
-    ob.observe(m);
-  })();
 
   (function () {
     const imgs = Array.prototype.slice.call(document.querySelectorAll('img'));
@@ -1280,6 +1212,22 @@
       };
       cont.appendChild(b);
     });
+  })();
+
+  (function () {
+    const el = document.querySelector('.txt-entra');
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) {
+          el.classList.remove('entra');
+          void el.offsetWidth;
+          el.classList.add('entra');
+        } else {
+          el.classList.remove('entra');
+        }
+      });
+    }, { threshold: .25 });
+    ob.observe(el);
   })();
 
   const obs = new IntersectionObserver(function (es) {
