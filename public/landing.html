@@ -61,6 +61,64 @@
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <style>
+  .cont-header { display: flex; align-items: center; gap: 32px; }
+  .cont-header .logo { flex-shrink: 0; }
+  .cont-header .btn { margin-left: auto; }
+  .nav-header { display: flex; gap: 6px; }
+  .nav-item { position: relative; }
+  .nav-btn {
+    background: none; border: none; font-size: 14.5px; color: var(--text);
+    padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .nav-btn:hover, .nav-item.on .nav-btn { background: var(--panel-2); }
+  .nav-btn .car { font-size: 10px; transition: transform .2s; }
+  .nav-item.on .nav-btn .car { transform: rotate(180deg); }
+  .nav-menu {
+    position: absolute; top: calc(100% + 8px); left: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.12); padding: 8px;
+    display: none; flex-direction: column; gap: 2px;
+    max-height: 340px; overflow-y: auto;
+    min-width: 200px; z-index: 90;
+  }
+  .nav-item.on .nav-menu { display: flex; }
+  .nav-menu a, .nav-menu button {
+    text-align: left; background: none; border: none; font-size: 14px; color: var(--text);
+    padding: 8px 10px; border-radius: 8px; cursor: pointer; text-decoration: none;
+  }
+  .nav-menu a:hover, .nav-menu button:hover { background: var(--panel-2); color: var(--accent-dark); }
+  .btn-hamb {
+    display: none; background: none; border: 1px solid var(--line);
+    border-radius: 10px; font-size: 20px; width: 42px; height: 42px; cursor: pointer;
+    color: var(--text);
+  }
+  .panel-movil {
+    display: none; background: var(--panel); border-bottom: 1px solid var(--line);
+    padding: 16px 20px 20px;
+    position: fixed; top: 62px; left: 0; right: 0; z-index: 60;
+    max-height: calc(100vh - 62px); overflow-y: auto;
+    box-shadow: 0 12px 24px rgba(0,0,0,.12);
+  }
+  .panel-movil.on { display: block; }
+  .pm-fila { margin-bottom: 16px; }
+  .pm-fila b { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 8px;
+               text-transform: uppercase; letter-spacing: .3px; }
+  .pm-lista { display: flex; flex-direction: column; }
+  .pm-lista a, .pm-lista button {
+    text-align: left; background: none; border: none; font-size: 15px; color: var(--text);
+    padding: 9px 4px; cursor: pointer; text-decoration: none; border-bottom: 1px solid var(--panel-2);
+  }
+
+  @media (max-width: 900px) {
+    .nav-header { display: none; }
+    .btn-hamb { display: block; }
+    .btn-desktop { display: none; }
+  }
+  @media (min-width: 901px) {
+    .panel-movil { display: none !important; }
+  }
+
   #preloader {
     position: fixed; inset: 0; z-index: 9999;
     background: #FAFAF7; display: flex; align-items: center; justify-content: center;
@@ -409,11 +467,43 @@
 </div>
 
 <header>
-  <div class="cont">
+  <div class="cont cont-header">
     <div class="logo">Caja<span>Viva</span></div>
-    <a href="/app" class="btn">Entrar</a>
+    <nav class="nav-header">
+      <div class="nav-item">
+        <button class="nav-btn">Categorias <span class="car">&#9662;</span></button>
+        <div class="nav-menu" id="menuCategorias"></div>
+      </div>
+      <div class="nav-item">
+        <button class="nav-btn">Funciones <span class="car">&#9662;</span></button>
+        <div class="nav-menu">
+          <a href="#fn-vender">Vender y cobrar</a>
+          <a href="#fn-fiado">Fiado</a>
+          <a href="#fn-tienda">Tienda online</a>
+          <a href="#fn-turnos">Turnos</a>
+        </div>
+      </div>
+    </nav>
+    <a href="/app" class="btn btn-desktop">Entrar</a>
+    <button class="btn-hamb" id="btnHamb">&#9776;</button>
   </div>
 </header>
+
+<div class="panel-movil" id="panelMovil">
+  <div class="pm-fila">
+    <b>Categorias</b>
+    <div class="pm-lista" id="menuCategoriasMovil"></div>
+  </div>
+  <div class="pm-fila">
+    <b>Funciones</b>
+    <div class="pm-lista">
+      <button onclick="irAFuncion('fn-vender')">Vender y cobrar</button>
+      <button onclick="irAFuncion('fn-fiado')">Fiado</button>
+      <button onclick="irAFuncion('fn-tienda')">Tienda online</button>
+      <button onclick="irAFuncion('fn-turnos')">Turnos</button>
+    </div>
+  </div>
+  </div>
 
 <div class="banner-top"></div>
 
@@ -450,7 +540,7 @@
   </div>
 </section>
 
-<section>
+<section id="rubros">
   <div class="cont">
     <div class="tit rev">
       <h2>Sirve para tu negocio</h2>
@@ -469,7 +559,7 @@
       <p>Se acomoda a lo que vendes. Prendes solo lo que usas.</p>
     </div>
 
-    <div class="fila rev">
+    <div id="fn-vender" class="fila rev">
       <div class="txt">
         <span class="eti">VENDER Y COBRAR</span>
         <h3>Cobrar rapido, sin cuentas de cabeza</h3>
@@ -484,7 +574,7 @@
       <div class="marco" id="marcoVender"><img src="/img/codigo.webp" alt="Cobrar una venta"></div>
     </div>
 
-    <div class="fila der rev">
+    <div id="fn-fiado" class="fila der rev">
       <div class="txt">
         <span class="eti">FIADO</span>
         <h3>Sabes quien te debe y cuanto</h3>
@@ -498,7 +588,7 @@
       <div class="marco" id="marcoFiado"><img src="/img/fiado.webp" alt="Fiado"></div>
     </div>
 
-    <div class="fila rev">
+    <div id="fn-tienda" class="fila rev">
       <div class="txt">
         <span class="eti">TU TIENDA ONLINE</span>
         <h3>Vende tambien cuando el local esta cerrado</h3>
@@ -525,7 +615,7 @@
       </div>
     </div>
 
-    <div class="fila der rev">
+    <div id="fn-turnos" class="fila der rev">
       <div class="txt">
         <span class="eti">TURNOS</span>
         <h3>Tu agenda del dia, ordenada</h3>
@@ -1116,6 +1206,80 @@
     }
 
     if (restantes <= 0) { clearTimeout(limite); listo(); }
+  })();
+
+  function irAFuncion(id) {
+    const panel = document.getElementById('panelMovil');
+    if (panel) panel.classList.remove('on');
+    const sec = document.getElementById(id);
+    if (sec) setTimeout(function () { sec.scrollIntoView({ behavior: 'smooth' }); }, 50);
+  }
+
+  (function () {
+    const btnH = document.getElementById('btnHamb');
+    const panel = document.getElementById('panelMovil');
+    if (btnH && panel) {
+      btnH.onclick = function (e) {
+        e.stopPropagation();
+        panel.classList.toggle('on');
+        if (abrir) window.scrollTo(0, 0);
+      };
+    }
+  })();
+
+  (function () {
+    const cont = document.getElementById('menuCategoriasMovil');
+    if (!cont || typeof RUBROS === 'undefined') return;
+    RUBROS.forEach(function (r, i) {
+      const b = document.createElement('button');
+      b.textContent = r.t;
+      b.onclick = function () {
+        const panel = document.getElementById('panelMovil');
+        if (panel) panel.classList.remove('on');
+        const sec = document.getElementById('rubros');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(function () {
+          const pestBtn = document.querySelectorAll('#pest button')[i];
+          if (pestBtn) pestBtn.click();
+        }, 400);
+      };
+      cont.appendChild(b);
+    });
+  })();
+
+  (function () {
+    const items = document.querySelectorAll('.nav-item');
+    items.forEach(function (it) {
+      const btn = it.querySelector('.nav-btn');
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        const yaAbierto = it.classList.contains('on');
+        items.forEach(function (x) { x.classList.remove('on'); });
+        if (!yaAbierto) it.classList.add('on');
+      };
+    });
+    document.addEventListener('click', function () {
+      items.forEach(function (x) { x.classList.remove('on'); });
+    });
+  })();
+
+  (function () {
+    const cont = document.getElementById('menuCategorias');
+    if (!cont || typeof RUBROS === 'undefined') return;
+    RUBROS.forEach(function (r, i) {
+      const b = document.createElement('button');
+      b.textContent = r.t;
+      b.onclick = function () {
+        document.querySelectorAll('.nav-item').forEach(function (x) { x.classList.remove('on'); });
+        const sec = document.getElementById('rubros');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(function () {
+          const pestBtn = document.querySelectorAll('#pest button')[i];
+          if (pestBtn) pestBtn.click();
+        }, 400);
+      };
+      cont.appendChild(b);
+    });
   })();
 
   const obs = new IntersectionObserver(function (es) {
