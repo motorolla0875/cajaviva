@@ -73,4 +73,107 @@ router.post('/preguntar', async (req, res) => {
   }
 });
 
+// ── contexto para quien todavia no es usuario ──
+const CONTEXTO_WEB = `Sos el asistente de CajaViva, una app de gestion para negocios chicos de Latinoamerica.
+
+Le hablas a alguien que esta mirando la pagina y todavia no tiene cuenta. Tu trabajo es responder sus dudas y ayudarlo a decidir si le sirve.
+
+QUE ES: una app para manejar tu negocio desde el celular o la compu. Funciona en el navegador, no hay que instalar nada.
+
+QUE HACE:
+- Vender y cobrar, con lector de codigo de barras
+- Productos y control de stock
+- Fiado: quien te debe y cuanto
+- Caja del dia, gastos y cierre
+- Reportes de todos los meses
+- Talles y colores para ropa, venta por peso, recetas con insumos
+- Turnos con agenda y reservas web
+- Mesas para restaurantes y bares
+- Alquiler por dia (cabañas, salones) y por hora (canchas)
+- Tienda online con pedidos, y podes conectar tu propio dominio
+- Empleados con permisos
+- Importar y exportar con Excel
+- Funciona sin internet y sincroniza despues
+
+RUBROS: mas de 90 configurados. Almacen, kiosco, verduleria, carniceria, ropa, calzado, peluqueria, barberia, tatuajes, restaurante, bar, pizzeria, ferreteria, taller, veterinaria, canchas de padel y futbol, cabañas, hoteles y muchos mas.
+
+PRECIO: 2 meses de prueba con todo desbloqueado, sin tarjeta. Despues 9,99 dolares por mes, o 7,99 por mes si paga el año. Es un solo plan con todo adentro, no hay funciones recortadas. Lo que carga no se pierde nunca.
+
+COMO EMPEZAR: toca "Empezar gratis" en la pagina, elige su rubro y ya esta usandola.
+
+REGLAS:
+- Respondes SOLO sobre CajaViva. Si preguntan otra cosa, decis amablemente que solo podes ayudar con eso.
+- Si preguntan por un rubro que no esta en la lista, decis que igual sirve, que elija el mas parecido y despues acomoda las funciones desde Mi negocio.
+- No inventes funciones que no estan en esta lista.
+- Español simple y claro, como si le explicaras a un kiosquero. Maximo 4 o 5 lineas.
+- Sos util, no insistente. No presiones para que se registre.`;
+
+// limite simple por IP: 12 preguntas por hora
+const usos = new Map();
+
+function dentroDelLimite(ip) {
+  const ahora = Date.now();
+  const hora = 3600000;
+  const previo = usos.get(ip) || [];
+  const recientes = previo.filter(function (t) { return ahora - t < hora; });
+  if (recientes.length >= 12) return false;
+  recientes.push(ahora);
+  usos.set(ip, recientes);
+  return true;
+}
+
+// limpieza cada media hora, para que el mapa no crezca
+setInterval(function () {
+  const ahora = Date.now();
+  usos.forEach(function (ts, ip) {
+    const vivos = ts.filter(function (t) { return ahora - t < 3600000; });
+    if (vivos.length === 0) usos.delete(ip); else usos.set(ip, vivos);
+  });
+}, 1800000);
+
+router.post('/publico', async (req, res) => {
+  const ip = req.headers['cf-connecting-ip'] ||
+             (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+             req.ip;
+
+  if (!dentroDelLimite(ip)) {
+    return res.status(429).json({ error: 'Hiciste muchas preguntas seguidas. Proba en un rato.' });
+  }
+
+  const pregunta = (req.body?.pregunta || '').trim();
+  if (!pregunta) return res.status(400).json({ error: 'Escribi tu pregunta.' });
+  if (pregunta.length > 300) return res.status(400).json({ error: 'La pregunta es muy larga.' });
+
+  const clave = process.env.GROQ_API_KEY;
+  if (!clave) return res.status(500).json({ error: 'El asistente no esta disponible.' });
+
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clave },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: CONTEXTO_WEB },
+          { role: 'user', content: pregunta }
+        ],
+        temperature: 0.3,
+        max_tokens: 350
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) {
+      console.error('Groq web:', d);
+      return res.status(500).json({ error: 'No se pudo responder ahora. Proba de nuevo.' });
+    }
+
+    const texto = d.choices?.[0]?.message?.content || 'No pude responder eso.';
+    res.json({ respuesta: texto.trim() });
+  } catch (e) {
+    console.error('asistente web:', e.message);
+    res.status(500).json({ error: 'No se pudo responder ahora.' });
+  }
+});
+
 module.exports = router;

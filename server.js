@@ -109,7 +109,11 @@ app.use('/api/pedidos', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/pedidos'));
-app.use('/api/asistente', requiereAuth, require('./routes/asistente'));
+// el asistente: /publico es abierto, el resto pide sesion
+app.use('/api/asistente', function (req, res, next) {
+  if (req.path === '/publico') return next();
+  return requiereAuth(req, res, next);
+}, require('./routes/asistente'));
 app.use('/api/exportar', requiereAuth, require('./routes/exportar'));
 app.use('/api/mesas', requiereAuth, require('./routes/mesas'));
 
