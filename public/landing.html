@@ -84,6 +84,12 @@
   #marcoVender { visibility: hidden; }
   #marcoFiado { visibility: hidden; }
   #marcoAgenda { visibility: hidden; }
+  #marcoOff { visibility: hidden; }
+  #marcoOff.entra { animation: desdeAbajo 1.4s cubic-bezier(.25,.8,.3,1) both; }
+  @keyframes desdeAbajo {
+    from { visibility: visible; transform: translateY(-90px); }
+    to   { visibility: visible; transform: none; }
+  }
   #marcoAgenda.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
   #marcoFiado.entra { animation: desdeDerecha 1.4s cubic-bezier(.25,.8,.3,1) both; }
   #marcoVender.entra { animation: desdeIzq 1.4s cubic-bezier(.25,.8,.3,1) both; }
@@ -431,7 +437,7 @@
     <p>Segui cobrando como si nada. Cuando vuelve la conexion, todo se sincroniza solo y no perdes ni una venta.</p>
 
     <div style="max-width:260px; margin:46px auto 0;">
-      <div class="marco carru" style="background:rgba(255,255,255,.14); border-color:transparent;">
+      <div class="marco carru" id="marcoOff" style="background:transparent; border-color:transparent; box-shadow:none;">
         <div class="vista">
           <div class="tira" id="tiraOff">
             <img src="/img/offline1.webp" alt="Sin internet" width="480" height="920">
@@ -883,6 +889,17 @@
 
   (function () {
     const m = document.getElementById('marcoAgenda');
+    const ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
+        else { m.classList.remove('entra'); }
+      });
+    }, { threshold: .25 });
+    ob.observe(m);
+  })();
+
+  (function () {
+    const m = document.getElementById('marcoOff');
     const ob = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (e.isIntersecting) { m.classList.remove('entra'); void m.offsetWidth; m.classList.add('entra'); }
