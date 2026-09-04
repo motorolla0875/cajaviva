@@ -51,6 +51,12 @@
 <link rel="preload" as="image" href="/img/peso.webp">
 <link rel="preload" as="image" href="/img/talleres.webp">
 <script>
+  // si viene a recuperar la contrasena, eso se resuelve en la app
+  (function () {
+    const tk = new URLSearchParams(location.search).get('recuperar');
+    if (tk) { location.replace('/app?recuperar=' + tk); }
+  })();
+
   // si ya uso la app, entra directo
   try {
     if (location.search.indexOf('ver') === -1 &&
