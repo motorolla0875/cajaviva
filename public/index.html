@@ -2729,7 +2729,7 @@
       </div>
     </div>
     <div class="fila2">
-      <div><label>Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
+      <div><label id="lblPrecioVenta">Precio de venta</label><input type="text" id="pVenta" inputmode="decimal" placeholder="0"></div>
       <div id="wrapCostoProd"><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
     </div>
     <div class="hint" id="hintMargen"></div>
@@ -5096,6 +5096,8 @@ $('pCosto').addEventListener('input', calcularMargen);
 function abrirProd(id) {
   editandoId = id || null;
   const p = id ? productos.filter(function (x) { return x.id === id; })[0] : null;
+  const lblReset = document.getElementById('lblPrecioVenta');
+  if (lblReset) lblReset.textContent = 'Precio de venta';
   $('tituloProd').textContent = p ? 'Editar producto'
     : (cap('cap_alquiler') ? 'Nuevo producto para vender' : 'Nuevo producto');
   $('msgProd').innerHTML = '';
@@ -5157,8 +5159,7 @@ function abrirProd(id) {
       if (bmo) bmo.style.display = 'none';
       if (mo) mo.style.display = 'none';
 
-      const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
-        .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+      const lv = document.getElementById('lblPrecioVenta');
       if (lv) lv.textContent = esC ? 'Precio por turno' : 'Precio por noche';
     }, 0);
   } else {
@@ -9810,9 +9811,7 @@ document.getElementById('btnNuevaUnidad').onclick = function () {
   if (bmoU) bmoU.style.display = 'none';
   if (moU) moU.style.display = 'none';
 
-  const lbl = document.querySelector('#modalProd label');
-  const lv = [].slice.call(document.querySelectorAll('#modalProd label'))
-    .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+  const lv = document.getElementById('lblPrecioVenta');
   if (lv) lv.textContent = esCancha ? 'Precio por turno' : 'Precio por noche';
 };
 
@@ -11406,8 +11405,7 @@ document.getElementById('btnNuevoServicio').onclick = function () {
   porHoraActual = false;
   $('swPorHora').classList.remove('on');
 
-  const lvs = [].slice.call(document.querySelectorAll('#modalProd label'))
-    .filter(function (l) { return l.textContent.indexOf('Precio de venta') === 0; })[0];
+  const lvs = document.getElementById('lblPrecioVenta');
   if (lvs) lvs.textContent = 'Precio del servicio';
 
   const bmo = document.getElementById('btnMasOpciones');
