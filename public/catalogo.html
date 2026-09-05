@@ -893,7 +893,12 @@ async function cargar() {
 
     document.title = datos.negocio.nombre;
     $('nombreNeg').textContent = datos.negocio.nombre;
-    $('mensajeNeg').textContent = datos.negocio.mensaje || 'Mira nuestros precios y hace tu pedido';
+    if (datos.negocio.mensaje) {
+      $('mensajeNeg').textContent = datos.negocio.mensaje;
+      $('mensajeNeg').style.display = 'block';
+    } else {
+      $('mensajeNeg').style.display = 'none';
+    }
 
     pintarChips();
     pintar();
