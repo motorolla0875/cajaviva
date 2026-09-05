@@ -381,8 +381,9 @@
   <div id="listaCatMovil"></div>
 </div>
 
-<footer id="footerNeg" style="display:none; text-align:center; padding:24px 20px 90px; color:var(--muted); font-size:12.5px;">
-  <div id="redesNeg" style="display:flex; justify-content:center; gap:14px; margin-bottom:8px;"></div>
+<footer id="footerNeg" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 20px 90px; color:var(--muted); font-size:12.5px;">
+  <a href="https://cajaviva.app" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none; font-size:11.5px; white-space:nowrap;">Hecho con <b style="color:var(--accent-dark);">CajaViva</b></a>
+  <div id="redesNeg" style="display:flex; gap:14px;"></div>
 </footer>
 
 <div class="barra" id="barra" style="display:none;">
@@ -849,7 +850,6 @@ async function cargar() {
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 2h-3v13.6a3 3 0 1 1-2.2-2.9v-3.1a6.1 6.1 0 1 0 5.2 6V9.3a7.4 7.4 0 0 0 4.3 1.4V7.6a4.4 4.4 0 0 1-4.3-4.4z"/></svg></a>');
       }
       document.getElementById('redesNeg').innerHTML = redes.join('');
-      document.getElementById('footerNeg').style.display = 'block';
     }
 
     if (datos.negocio.banner) {
