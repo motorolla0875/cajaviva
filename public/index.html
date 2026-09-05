@@ -728,6 +728,7 @@
     color: var(--muted); font-size: 13.5px; font-weight: 500;
   }
   .periodos button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .periodos button#btnBajarExcelRep { flex: 0 0 44px; font-size: 17px; }
 
   .rango-fechas {
     display: none; gap: 8px; align-items: center; margin-bottom: 14px;
@@ -2239,14 +2240,11 @@
 
   <div class="vista" id="v-reportes">
     <div class="lista-wrap">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div class="periodos" id="repPeriodos" style="flex:1;">
-          <button data-dias="7" class="on">7 dias</button>
-          <button data-dias="30">30 dias</button>
-          <button data-dias="90">90 dias</button>
-        </div>
-        <button class="btn-nuevo gris" id="btnBajarExcelRep" title="Bajar a Excel"
-          style="display:flex; align-items:center; justify-content:center; flex-shrink:0; width:44px; height:44px; padding:0;">&#8681;</button>
+      <div class="periodos" id="repPeriodos">
+        <button data-dias="7" class="on">7 dias</button>
+        <button data-dias="30">30 dias</button>
+        <button data-dias="90">90 dias</button>
+        <button id="btnBajarExcelRep" title="Bajar a Excel">&#8681;</button>
       </div>
 
       <div class="chips" id="repTabs">
@@ -6784,9 +6782,11 @@ function repRango() {
 
 $('repPeriodos').addEventListener('click', function (e) {
   const b = e.target.closest('button');
-  if (!b) return;
+  if (!b || b.dataset.dias === undefined) return;
   repDias = parseInt(b.dataset.dias);
-  Array.prototype.forEach.call($('repPeriodos').children, function (x) { x.classList.toggle('on', x === b); });
+  Array.prototype.forEach.call($('repPeriodos').children, function (x) {
+    if (x.dataset.dias !== undefined) x.classList.toggle('on', x === b);
+  });
   cargarReportes();
 });
 
