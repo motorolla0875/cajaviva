@@ -6828,6 +6828,16 @@ $('repTabs').addEventListener('click', function (e) {
   cargarReportes();
 });
 
+function verDetalleDiaTendencia(i) {
+  const filas = window._porDiaTendencia || [];
+  const d = filas[i];
+  if (!d) return;
+  const NOMBRES_DIA_LARGO = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+  const dia = new Date(d.fecha + 'T12:00:00').getDay();
+  avisar(NOMBRES_DIA_LARGO[dia] + ' ' + fechaCorta(d.fecha) + ': vendiste ' + plata(d.facturado) +
+    (d.ventas ? ' en ' + d.ventas + (d.ventas === 1 ? ' venta' : ' ventas') : ''));
+}
+
 async function cargarReportes() {
   repTabInicial();
   const cont = $('repContenido');
@@ -6848,18 +6858,19 @@ async function cargarReportes() {
         return '<span style="color:var(--muted);">Igual</span>';
       }
 
-      // grafico de barras simple, sin librerias, con eje de valores a la izquierda
+      // grafico de barras simple, sin librerias, con eje de valores fijo y barras deslizables
       let svgBarras = '';
       let ejeValores = '';
       let etiquetasDias = '';
       let leyendaPeriodo = '';
       const NOMBRES_DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+      window._porDiaTendencia = porDia;
       const altoChart = 110;
 
       if (porDia.length > 0) {
         const max = Math.max.apply(null, porDia.map(function (d) { return d.facturado; })) || 1;
-        const anchoBarra = Math.max(6, Math.min(28, Math.floor(320 / porDia.length) - 3));
-        const gap = 3;
+        const anchoBarra = 22;
+        const gap = 8;
         const anchoTotal = porDia.length * (anchoBarra + gap);
         const alto = 90;
 
@@ -6867,10 +6878,13 @@ async function cargarReportes() {
           const h = Math.max(2, Math.round((d.facturado / max) * alto));
           const x = i * (anchoBarra + gap);
           const esHoy = d.fecha === hoyISO();
-          return '<rect x="' + x + '" y="' + (alto - h) + '" width="' + anchoBarra + '" height="' + h +
-            '" rx="2" fill="' + (esHoy ? 'var(--accent-dark)' : 'var(--accent)') +
+          return '<g style="cursor:pointer;" onclick="verDetalleDiaTendencia(' + i + ')">' +
+            '<rect x="' + x + '" y="0" width="' + anchoBarra + '" height="' + alto + '" fill="transparent"></rect>' +
+            '<rect x="' + x + '" y="' + (alto - h) + '" width="' + anchoBarra + '" height="' + h +
+            '" rx="3" fill="' + (esHoy ? 'var(--accent-dark)' : 'var(--accent)') +
             '" opacity="' + (d.facturado > 0 ? '1' : '.18') + '">' +
-            '<title>' + fechaCorta(d.fecha) + ': ' + plata(d.facturado) + '</title></rect>';
+            '<title>' + fechaCorta(d.fecha) + ': ' + plata(d.facturado) + '</title></rect>' +
+            '</g>';
         }).join('');
 
         // lineas de referencia punteadas: arriba (maximo), a la mitad
@@ -6878,10 +6892,10 @@ async function cargarReportes() {
           '<line x1="0" y1="1" x2="' + anchoTotal + '" y2="1" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>' +
           '<line x1="0" y1="' + (alto / 2) + '" x2="' + anchoTotal + '" y2="' + (alto / 2) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>';
 
-        svgBarras = '<svg viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="width:100%; height:' + altoChart + 'px; display:block;" preserveAspectRatio="none">' +
+        svgBarras = '<svg width="' + anchoTotal + '" height="' + altoChart + '" viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="display:block;" preserveAspectRatio="none">' +
           lineas + barras + '</svg>';
 
-        // el eje con los montos, a la misma altura que sus lineas de referencia
+        // el eje con los montos, a la misma altura que sus lineas de referencia (no se desliza)
         ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
           '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max) + '</div>' +
           '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max / 2) + '</div>' +
@@ -6889,11 +6903,11 @@ async function cargarReportes() {
         '</div>';
 
         if (porDia.length <= 10) {
-          // pocos dias: el nombre de cada dia debajo de su barra
-          etiquetasDias = '<div style="display:flex; margin-top:4px;">' +
+          // pocos dias: el nombre de cada dia debajo de su barra (se desliza junto con las barras)
+          etiquetasDias = '<div style="display:flex; margin-top:4px; width:' + anchoTotal + 'px;">' +
             porDia.map(function (d) {
               const dia = new Date(d.fecha + 'T12:00:00').getDay();
-              return '<div style="flex:1; text-align:center; font-size:10.5px; color:var(--muted);">' +
+              return '<div style="width:' + (anchoBarra + gap) + 'px; text-align:center; font-size:10.5px; color:var(--muted);">' +
                 NOMBRES_DIA_CORTO[dia] + '</div>';
             }).join('') + '</div>';
         } else {
@@ -6910,9 +6924,13 @@ async function cargarReportes() {
           '<div style="font-size:12.5px; margin-top:4px;">' + flechaVar(t.variacion.facturado) + ' que el periodo anterior</div>' +
         '</div>' +
 
-        '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 14px 8px; margin-bottom:14px;">' +
-          '<div style="display:flex; align-items:stretch;">' + ejeValores + '<div style="flex:1; min-width:0;">' + svgBarras + '</div></div>' +
-          etiquetasDias + leyendaPeriodo +
+        '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 10px 8px 14px; margin-bottom:14px;">' +
+          '<div style="display:flex; align-items:stretch;">' + ejeValores +
+            '<div style="flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch;">' +
+              svgBarras + etiquetasDias +
+            '</div>' +
+          '</div>' +
+          leyendaPeriodo +
         '</div>' +
 
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">' +
