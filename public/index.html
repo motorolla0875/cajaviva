@@ -880,12 +880,13 @@
     margin: 12px 0 5px; font-weight: 500;
   }
   .modal label:first-of-type { margin-top: 0; }
-  .modal input, .modal select {
+  .modal input, .modal select, .modal textarea {
     width: 100%; padding: 12px;
     border: 1px solid var(--line); border-radius: 10px;
     background: var(--bg); color: var(--text); font-size: 15px;
   }
-  .modal input:focus, .modal select:focus { outline: none; border-color: var(--accent); }
+  .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal textarea { resize: vertical; }
   .fila2 { display: flex; gap: 10px; }
   .fila2 > div { flex: 1; }
 
