@@ -3022,10 +3022,14 @@
     <div class="fondos" id="temasCat"></div>
 
     <label style="margin-top:10px;">O elegi tu propio color</label>
-    <div style="display:flex; align-items:center; gap:10px;">
+    <div class="cap-item">
+      <div class="txt"><div class="n">Usar color propio</div>
+        <div class="d">Se usa en vez del estilo de arriba</div></div>
+      <button class="switch" id="swColorPer"></button>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
       <input type="color" id="catColorPersonalizado" value="#1D9E75" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
-      <span style="font-size:13px; color:var(--muted); flex:1;">Si elegis un color aca, se usa en vez del estilo de arriba</span>
-      <button type="button" class="btn-foto borrar" id="btnQuitarColorPer" style="flex:0 0 auto; padding:8px 12px; display:none;">Quitar</button>
+      <span style="font-size:13px; color:var(--muted); flex:1;">Tu color principal</span>
     </div>
 
     <div id="wrapFondoPer" style="display:none; margin-top:10px;">
@@ -3034,10 +3038,15 @@
         <button type="button" class="btn-fondo-op" id="btnFondoClaro" style="flex:1;">Claro</button>
         <button type="button" class="btn-fondo-op" id="btnFondoOscuro" style="flex:1;">Oscuro</button>
       </div>
-      <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+
+      <div class="cap-item" style="margin-top:12px;">
+        <div class="txt"><div class="n">Color de fondo exacto</div>
+          <div class="d">Ej: amarillo, en vez de Claro/Oscuro</div></div>
+        <button class="switch" id="swColorFondo"></button>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
         <input type="color" id="catColorFondo" value="#FAFAF7" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
-        <span style="font-size:13px; color:var(--muted); flex:1;">O elegi el color de fondo exacto (ej: amarillo)</span>
-        <button type="button" class="btn-foto borrar" id="btnQuitarColorFondo" style="flex:0 0 auto; padding:8px 12px; display:none;">Quitar</button>
+        <span style="font-size:13px; color:var(--muted); flex:1;">Tu color de fondo</span>
       </div>
     </div>
 
@@ -7896,12 +7905,14 @@ async function abrirConfigCatalogo() {
     mostrarBanner(c.banner || null);
     mostrarLogo(c.logo || null);
     $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
-    $('btnQuitarColorPer').style.display = c.color_personalizado ? 'block' : 'none';
+    colorPerActivo = !!c.color_personalizado;
+    $('swColorPer').classList.toggle('on', colorPerActivo);
     fondoPerCat = c.fondo === 'oscuro' ? 'oscuro' : 'claro';
     pintarFondoPer();
     $('catColorFondo').value = c.color_fondo || '#FAFAF7';
-    $('btnQuitarColorFondo').style.display = c.color_fondo ? 'block' : 'none';
-    $('wrapFondoPer').style.display = c.color_personalizado ? 'block' : 'none';
+    colorFondoActivo = !!c.color_fondo;
+    $('swColorFondo').classList.toggle('on', colorFondoActivo);
+    $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
     $('catTwitter').value = c.twitter || '';
@@ -7943,29 +7954,18 @@ function pintarFondoPer() {
 $('btnFondoClaro').onclick = function () { fondoPerCat = 'claro'; pintarFondoPer(); };
 $('btnFondoOscuro').onclick = function () { fondoPerCat = 'oscuro'; pintarFondoPer(); };
 
-let colorFondoQuitado = false;
-$('btnQuitarColorFondo').onclick = function () {
-  $('catColorFondo').value = '#FAFAF7';
-  $('btnQuitarColorFondo').style.display = 'none';
-  colorFondoQuitado = true;
+let colorFondoActivo = false;
+$('swColorFondo').onclick = function () {
+  colorFondoActivo = !colorFondoActivo;
+  this.classList.toggle('on', colorFondoActivo);
 };
-$('catColorFondo').addEventListener('input', function () {
-  $('btnQuitarColorFondo').style.display = 'block';
-  colorFondoQuitado = false;
-});
 
-$('btnQuitarColorPer').onclick = function () {
-  $('catColorPersonalizado').value = '#1D9E75';
-  $('btnQuitarColorPer').style.display = 'none';
-  $('wrapFondoPer').style.display = 'none';
-  colorPerQuitado = true;
+let colorPerActivo = false;
+$('swColorPer').onclick = function () {
+  colorPerActivo = !colorPerActivo;
+  this.classList.toggle('on', colorPerActivo);
+  $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
 };
-$('catColorPersonalizado').addEventListener('input', function () {
-  $('btnQuitarColorPer').style.display = 'block';
-  $('wrapFondoPer').style.display = 'block';
-  colorPerQuitado = false;
-});
-let colorPerQuitado = false;
 
 function mostrarLogo(url) {
   const p = document.getElementById('logoPrev');
@@ -8037,8 +8037,8 @@ $('btnGuardarCatalogo').onclick = async function () {
       transferencia: aceptaTransfer,
       tema: temaCat,
       fondo: fondoPerCat,
-      colorPersonalizado: colorPerQuitado ? '' : $('catColorPersonalizado').value,
-      colorFondo: colorFondoQuitado ? '' : $('catColorFondo').value,
+      colorPersonalizado: colorPerActivo ? $('catColorPersonalizado').value : '',
+      colorFondo: colorFondoActivo ? $('catColorFondo').value : '',
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
@@ -8049,11 +8049,11 @@ $('btnGuardarCatalogo').onclick = async function () {
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
-    $('btnQuitarColorPer').style.display = d.color_personalizado ? 'block' : 'none';
-    $('wrapFondoPer').style.display = d.color_personalizado ? 'block' : 'none';
-    $('btnQuitarColorFondo').style.display = d.color_fondo ? 'block' : 'none';
-    colorFondoQuitado = false;
-    colorPerQuitado = false;
+    colorPerActivo = !!d.color_personalizado;
+    $('swColorPer').classList.toggle('on', colorPerActivo);
+    $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
+    colorFondoActivo = !!d.color_fondo;
+    $('swColorFondo').classList.toggle('on', colorFondoActivo);
     mpConectado = d.mp_conectado;
     pintarMp();
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
