@@ -89,7 +89,9 @@
     width: 46px; height: 46px; border-radius: 50%; border: none;
     background: var(--panel); color: var(--text); font-size: 19px; cursor: pointer;
     box-shadow: 0 4px 16px rgba(0,0,0,.22);
+    transition: transform .25s ease, opacity .25s ease;
   }
+  .cat-fab.oculto { transform: translateY(-80px); opacity: 0; pointer-events: none; }
 
   .panel-cat-full {
     display: flex; position: fixed; inset: 0; z-index: 70;
@@ -990,6 +992,21 @@ document.getElementById('btnCatHamb').onclick = function () {
 document.getElementById('btnCerrarCatMovil').onclick = function () {
   $('panelCatMovil').classList.remove('on');
 };
+
+// el circulo de categorias se esconde al bajar, y vuelve a aparecer al subir
+(function () {
+  let ultimoScroll = window.scrollY;
+  window.addEventListener('scroll', function () {
+    const actual = window.scrollY;
+    const fab = document.getElementById('btnCatHamb');
+    if (actual > ultimoScroll && actual > 80) {
+      fab.classList.add('oculto');
+    } else {
+      fab.classList.remove('oculto');
+    }
+    ultimoScroll = actual;
+  }, { passive: true });
+})();
 
 function pintar() {
   const t = norm($('buscar').value.trim());
