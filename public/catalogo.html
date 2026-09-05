@@ -942,7 +942,7 @@ function esperarImagenesYQuitarPreload() {
   let restantes = imgs.length;
   if (restantes === 0) { quitar(); return; }
 
-  const limite = setTimeout(quitar, 6000);
+  const limite = setTimeout(quitar, 12000);
   function chequear() {
     restantes--;
     if (restantes <= 0) { clearTimeout(limite); quitar(); }
