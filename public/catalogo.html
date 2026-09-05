@@ -1053,6 +1053,44 @@ document.getElementById('btnCerrarCatMovil').onclick = function () {
   }, { passive: true });
 })();
 
+// arma el html de los controles (+/-) y el cartel de talles, reutilizado tanto al pintar
+// la grilla entera como al actualizar una sola tarjeta despues de sumar/restar
+function ctrlYBadge(p) {
+  const c = Object.keys(pedido).reduce(function (a, k) {
+    return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
+  }, 0);
+  const sinStock = !p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0;
+
+  const badge = p.tiene_variantes ? '<span class="badge-var">' +
+    (c > 0 ? c + ' en el pedido' : 'elegi talle') + '</span>' : '';
+
+  const ctrl = (c > 0
+    ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
+    : (p.es_unidad
+        ? ''
+        : p.es_servicio
+        ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
+        : (sinStock
+            ? '<button class="btn-sumar" style="width:auto; padding:0 12px; font-size:12px;" onclick="consultarSinStock(\'' + esc(p.nombre).replace(/'/g, '&#39;') + '\')">Consultar</button>'
+            : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>')));
+
+  return { c: c, badge: badge, ctrl: ctrl };
+}
+
+// actualiza solo los controles de una tarjeta puntual, sin tocar la foto ni redibujar el resto
+function actualizarUnaTarjeta(id) {
+  const p = datos.productos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+  const el = document.getElementById('prod-' + id);
+  if (!el) return;
+
+  const r = ctrlYBadge(p);
+  const ctrlEl = el.querySelector('.ctrl');
+  if (ctrlEl) ctrlEl.innerHTML = r.ctrl;
+  const badgeEl = el.querySelector('.badge-var');
+  if (badgeEl) badgeEl.outerHTML = r.badge;
+}
+
 function pintar() {
   const t = norm($('buscar').value.trim());
   let lista = datos.productos;
@@ -1065,15 +1103,13 @@ function pintar() {
   }
 
   function tarjeta(p) {
-    const c = Object.keys(pedido).reduce(function (a, k) {
-      return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
-    }, 0);
     const abre = p.es_unidad ? ' onclick="cambiar(\'' + p.id + '\',1)" style="cursor:pointer;"' : '';
     const enOferta = !p.es_unidad &&
       p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
     const sinStock = !p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0;
+    const r = ctrlYBadge(p);
 
-    return '<div class="prod">' +
+    return '<div class="prod" id="prod-' + p.id + '">' +
       (p.foto ? '<div class="foto-wrap">' +
         '<img class="foto-cat" src="' + p.foto + '" loading="lazy"' +
         ' data-fotos=\'' + JSON.stringify([p.foto_grande || p.foto].concat(p.galeria || [])) + '\'' +
@@ -1095,26 +1131,16 @@ function pintar() {
             : (variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta))) +
         (p.es_unidad ? ' por ' + (p.cobro_por || 'noche') : (p.unidad !== 'unidad' ? ' /' + p.unidad : '')) + '</div>' +
       (p.es_unidad && p.capacidad ? '<div class="desc-prod">Hasta ' + p.capacidad + ' personas</div>' : '') +
-      (p.tiene_variantes ? '<span class="badge-var">' +
-        (c > 0 ? c + ' en el pedido' : 'elegi talle') + '</span>' : '') +
+      r.badge +
       '</div>' +
-      '<div class="ctrl">' +
-      (c > 0
-        ? '<button onclick="cambiar(\'' + p.id + '\',-1)">-</button><span class="n">' + c + '</span><button onclick="cambiar(\'' + p.id + '\',1)">+</button>'
-        : (p.es_unidad
-            ? ''
-            : p.es_servicio
-            ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
-            : (sinStock
-                ? '<button class="btn-sumar" style="width:auto; padding:0 12px; font-size:12px;" onclick="consultarSinStock(\'' + esc(p.nombre).replace(/'/g, '&#39;') + '\')">Consultar</button>'
-                : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>'))) +
-      '</div></div>';
+      '<div class="ctrl">' + r.ctrl + '</div></div>';
   }
 
   let html = '<div class="grilla-prod">' + lista.map(tarjeta).join('') + '</div>';
 
   $('lista').innerHTML = html;
 }
+
 
 let variantesElegidas = {};
 let prodVarActual = null;
@@ -1142,14 +1168,14 @@ function cambiar(id, d) {
 
   pedido[id] = (pedido[id] || 0) + d;
   if (pedido[id] <= 0) delete pedido[id];
-  pintar();
+  actualizarUnaTarjeta(id);
   actualizarBarra();
 }
 
 function cambiarVar(clave, d) {
   pedido[clave] = (pedido[clave] || 0) + d;
   if (pedido[clave] <= 0) { delete pedido[clave]; delete variantesElegidas[clave]; }
-  pintar();
+  actualizarUnaTarjeta(String(clave).split('|')[0]);
   actualizarBarra();
 }
 
@@ -1213,7 +1239,7 @@ function sumarVar(varId, nombreVar, precio, d) {
   if (pedido[clave] <= 0) { delete pedido[clave]; delete variantesElegidas[clave]; }
 
   pintarOpcionesVar();
-  pintar();
+  actualizarUnaTarjeta(prodVarActual.id);
   actualizarBarra();
 }
 
@@ -1225,7 +1251,7 @@ function elegirVarCat(varId, nombreVar, precio) {
   variantesElegidas[clave] = { id: varId, nombre: nombreVar, precio: precio };
   pedido[clave] = (pedido[clave] || 0) + 1;
   cerrarVarCat();
-  pintar();
+  actualizarUnaTarjeta(prodVarActual.id);
   actualizarBarra();
 }
 
