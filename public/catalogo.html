@@ -902,6 +902,8 @@ async function cargar() {
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
       document.getElementById('bannerNeg').style.display = 'block';
+      // con banner, el nombre no hace falta
+      document.getElementById('nombreNeg').style.display = 'none';
     }
 
     document.title = datos.negocio.nombre;
