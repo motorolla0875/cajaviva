@@ -70,7 +70,10 @@ router.post('/publico/:slug', (req, res) => {
     }
     // si tiene variantes pero no vino ninguna, se acepta igual (el comerciante pregunta)
 
-    const precio = variante && variante.precio_venta ? variante.precio_venta : p.precio_venta;
+    // si el producto tiene oferta valida y no se eligio variante, se cobra el precio de oferta
+    const enOferta = !variante && p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
+    const precio = variante && variante.precio_venta ? variante.precio_venta
+      : (enOferta ? p.precio_oferta : p.precio_venta);
     lineas.push({ p: p, cantidad: c, variante: variante, precio: precio });
     total += precio * c;
   }

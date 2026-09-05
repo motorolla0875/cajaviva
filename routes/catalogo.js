@@ -108,7 +108,7 @@ router.get('/publico/:slug', (req, res) => {
   if (!n) return res.status(404).json({ error: 'Catalogo no encontrado.' });
 
   const productos = db.prepare(`
-    SELECT p.id, p.nombre, p.precio_venta, p.unidad, p.stock, p.tiene_variantes, p.notas, p.duracion, p.es_servicio,
+    SELECT p.id, p.nombre, p.precio_venta, p.precio_oferta, p.unidad, p.stock, p.tiene_variantes, p.notas, p.duracion, p.es_servicio,
            p.es_unidad, p.capacidad, p.cobro_por,
            p.foto_mini AS foto, p.foto_url AS foto_grande, c.nombre AS categoria
     FROM productos p

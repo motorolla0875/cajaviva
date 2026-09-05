@@ -13,6 +13,7 @@ try { db.exec('ALTER TABLE productos ADD COLUMN precio_pieza REAL'); } catch (e)
 
 try { db.exec('ALTER TABLE productos ADD COLUMN vence TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE productos ADD COLUMN aviso_dias INTEGER NOT NULL DEFAULT 7'); } catch (e) {}
+try { db.exec('ALTER TABLE productos ADD COLUMN precio_oferta REAL'); } catch (e) {}
 
 function hoyISO(userId) {
   if (userId && db.hoyEn) return db.hoyEn(userId);
@@ -39,7 +40,7 @@ router.get('/', (req, res) => {
 // ── crear producto ──
 router.post('/', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
-  const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
+  const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto, precioOferta,
           unidad, stockInicial, stockMinimo, notas, vence, avisoDias, esInsumo,
           esServicio, duracion, proveedorId,
           vendePieza, pesoPieza, precioPieza,
@@ -51,17 +52,20 @@ router.post('/', (req, res) => {
   if (isNaN(pv) || pv < 0) return res.status(400).json({ error: 'El precio de venta no es válido.' });
 
   const pc = precioCosto === '' || precioCosto == null ? null : parseFloat(precioCosto);
+  // la oferta solo cuenta si es un numero valido y menor al precio de venta
+  let po = precioOferta === '' || precioOferta == null ? null : parseFloat(precioOferta);
+  if (po != null && (isNaN(po) || po <= 0 || po >= pv)) po = null;
   const stock = parseFloat(stockInicial) || 0;
   const id = uuidv4();
 
   db.prepare(`
     INSERT INTO productos (id, user_id, categoria_id, nombre, codigo_barras,
-      precio_venta, precio_costo, unidad, stock, stock_minimo, notas, vence, aviso_dias, es_insumo,
+      precio_venta, precio_costo, precio_oferta, unidad, stock, stock_minimo, notas, vence, aviso_dias, es_insumo,
       es_servicio, duracion, proveedor_id, vende_pieza, peso_pieza, precio_pieza,
       es_unidad, cobro_por, capacidad, cobra_por_hora, agenda_propia)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.userId, categoriaId || null, nombre.trim(), codigoBarras || null,
-         pv, pc, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
+         pv, pc, po, unidad || 'unidad', stock, parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
          parseInt(avisoDias) || 7, esInsumo ? 1 : 0,
          esServicio ? 1 : 0, parseInt(duracion) || null, proveedorId || null,
@@ -84,7 +88,7 @@ router.post('/', (req, res) => {
 // ── editar producto ──
 router.put('/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
-  const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto,
+  const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto, precioOferta,
           unidad, stockMinimo, notas, vence, avisoDias, esServicio, duracion, proveedorId,
           vendePieza, pesoPieza, precioPieza,
           esUnidad, cobroPor, capacidad, cobraPorHora, agendaPropia } = req.body || {};
@@ -96,6 +100,10 @@ router.put('/:id', (req, res) => {
   const previo = db.prepare('SELECT precio_venta, precio_costo FROM productos WHERE id = ?').get(req.params.id);
   const nuevaVenta = parseFloat(precioVenta) || 0;
   const nuevoCosto = precioCosto === '' || precioCosto == null ? null : parseFloat(precioCosto);
+
+  // la oferta solo cuenta si es un numero valido y menor al precio de venta
+  let nuevaOferta = precioOferta === '' || precioOferta == null ? null : parseFloat(precioOferta);
+  if (nuevaOferta != null && (isNaN(nuevaOferta) || nuevaOferta <= 0 || nuevaOferta >= nuevaVenta)) nuevaOferta = null;
 
   if (previo && (previo.precio_venta !== nuevaVenta ||
       (nuevoCosto != null && previo.precio_costo !== nuevoCosto))) {
@@ -111,7 +119,7 @@ router.put('/:id', (req, res) => {
 
   db.prepare(`
     UPDATE productos SET nombre = ?, categoria_id = ?, codigo_barras = ?,
-      precio_venta = ?, precio_costo = ?, unidad = ?, stock_minimo = ?,
+      precio_venta = ?, precio_costo = ?, precio_oferta = ?, unidad = ?, stock_minimo = ?,
       notas = ?, vence = ?, aviso_dias = ?, es_servicio = ?, duracion = ?,
       proveedor_id = ?, vende_pieza = ?, peso_pieza = ?, precio_pieza = ?,
       es_unidad = ?, cobro_por = ?, capacidad = ?, cobra_por_hora = ?, agenda_propia = ?,
@@ -120,6 +128,7 @@ router.put('/:id', (req, res) => {
   `).run(nombre.trim(), categoriaId || null, codigoBarras || null,
          parseFloat(precioVenta) || 0,
          precioCosto === '' || precioCosto == null ? null : parseFloat(precioCosto),
+         nuevaOferta,
          unidad || 'unidad', parseFloat(stockMinimo) || 0, notas || null,
          /^\d{4}-\d{2}-\d{2}$/.test(vence || '') ? vence : null,
          parseInt(avisoDias) || 7, esServicio ? 1 : 0, parseInt(duracion) || null,

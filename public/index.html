@@ -890,6 +890,7 @@
   .fila2 > div { flex: 1; }
 
   .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .hint.danger { color: var(--danger); }
   .hint.ok { color: var(--accent-dark); }
 
   .modal .btn-ppal {
@@ -2741,6 +2742,18 @@
       <div id="wrapCostoProd"><label>Precio de costo</label><input type="text" id="pCosto" inputmode="decimal" placeholder="0"></div>
     </div>
     <div class="hint" id="hintMargen"></div>
+
+    <div class="cap-item" id="wrapSwOferta">
+      <div class="txt"><div class="n">Producto en oferta</div>
+        <div class="d">Se muestra tachado con el precio nuevo, en Vender y en tu catalogo</div></div>
+      <button class="switch" id="swOferta"></button>
+    </div>
+    <div id="wrapOferta" style="display:none;">
+      <label>Precio de oferta</label>
+      <input type="text" id="pOferta" inputmode="decimal" placeholder="0">
+      <p class="hint" id="hintOferta"></p>
+    </div>
+
     <div class="fila2">
       <div id="wrapUnidad">
         <label>Unidad</label>
@@ -4793,6 +4806,11 @@ async function cargarResumen() {
   } catch (e) {}
 }
 
+function precioEfectivo(p) {
+  if (p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta) return p.precio_oferta;
+  return p.precio_venta;
+}
+
 function pintarGrilla() {
   const t = norm($('buscar').value.trim());
   let lista = productos.filter(function (p) { return !p.es_insumo && !p.es_unidad; });
@@ -4832,7 +4850,10 @@ function pintarGrilla() {
         : '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
           (sin ? 'Sin stock' : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>') +
       '</div>' +
-      '<div class="p">' + plata(p.precio_venta) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
+      '<div class="p">' + (precioEfectivo(p) !== p.precio_venta
+        ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
+          '<span style="color:var(--danger);">' + plata(precioEfectivo(p)) + '</span>'
+        : plata(p.precio_venta)) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin && !esServ ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
   }).join('');
@@ -4869,7 +4890,7 @@ function agregar(id) {
   const paso = 1;
   const nuevaCant = (l ? l.cantidad : 0) + paso;
   if (l) l.cantidad += paso;
-  else carrito.push({ productoId: id, nombre: p.nombre, precio: p.precio_venta, cantidad: paso, unidad: p.unidad });
+  else carrito.push({ productoId: id, nombre: p.nombre, precio: precioEfectivo(p), cantidad: paso, unidad: p.unidad });
   if (p.tiene_receta) {
     const posibles = alcanzaPara(p.id);
     if (posibles !== null && nuevaCant > posibles) {
@@ -5171,6 +5192,12 @@ function abrirProd(id) {
   pintarSelectCategorias();
   $('pCategoria').value = p && p.categoria_id ? p.categoria_id : '';
   $('pVenta').value = p ? p.precio_venta : '';
+  ofertaActual = !!(p && p.precio_oferta);
+  $('swOferta').classList.toggle('on', ofertaActual);
+  $('pOferta').value = p && p.precio_oferta != null ? p.precio_oferta : '';
+  $('wrapOferta').style.display = ofertaActual ? 'block' : 'none';
+  $('wrapSwOferta').style.display = 'block';
+  actualizarHintOferta();
   $('pCosto').value = p && p.precio_costo != null ? p.precio_costo : '';
   $('pUnidad').value = p ? p.unidad : 'unidad';
   $('pStock').value = '';
@@ -5210,6 +5237,8 @@ function abrirProd(id) {
       $('wrapCategoria').style.display = 'none';
       $('wrapEsInsumo').style.display = 'none';
       $('wrapRecetaProd').style.display = 'none';
+      $('wrapSwOferta').style.display = 'none';
+      $('wrapOferta').style.display = 'none';
       const esC = cap('cap_canchas') && !cap('cap_alquiler');
       $('tituloProd').textContent = esC ? 'Editar cancha' : 'Editar unidad';
       $('btnBorrarProd').textContent = esC ? 'Eliminar cancha' : 'Eliminar unidad';
@@ -5307,6 +5336,7 @@ async function guardarProductoRapido() {
     nombre: nombre, precioVenta: venta,
     categoriaId: $('pCategoria').value || null,
     precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
+    precioOferta: (ofertaActual && $('pOferta').value.trim() !== '') ? num($('pOferta').value) : null,
     unidad: cap('cap_peso') ? $('pUnidad').value : 'unidad',
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
@@ -5349,6 +5379,7 @@ $('btnGuardarProd').onclick = async function () {
     nombre: nombre, precioVenta: venta,
     categoriaId: $('pCategoria').value || null,
     precioCosto: $('pCosto').value.trim() === '' ? null : num($('pCosto').value),
+    precioOferta: (ofertaActual && $('pOferta').value.trim() !== '') ? num($('pOferta').value) : null,
     unidad: cap('cap_peso') ? $('pUnidad').value : 'unidad',
     codigoBarras: $('pBarras').value.trim() || null,
     stockMinimo: num($('pMinimo').value),
@@ -11787,6 +11818,34 @@ document.getElementById('swPorHora').onclick = function () {
   porHoraActual = !porHoraActual;
   this.classList.toggle('on', porHoraActual);
 };
+
+let ofertaActual = false;
+
+function actualizarHintOferta() {
+  const venta = num($('pVenta').value);
+  const oferta = num($('pOferta').value);
+  const h = $('hintOferta');
+  if (venta > 0 && oferta > 0 && oferta < venta) {
+    const pct = Math.round((1 - oferta / venta) * 100);
+    h.textContent = pct + '% de descuento sobre ' + plata(venta);
+    h.classList.remove('danger');
+  } else if (oferta > 0) {
+    h.textContent = 'Tiene que ser menor al precio de venta';
+    h.classList.add('danger');
+  } else {
+    h.textContent = '';
+    h.classList.remove('danger');
+  }
+}
+
+$('swOferta').onclick = function () {
+  ofertaActual = !ofertaActual;
+  this.classList.toggle('on', ofertaActual);
+  $('wrapOferta').style.display = ofertaActual ? 'block' : 'none';
+  if (ofertaActual) actualizarHintOferta();
+};
+$('pOferta').addEventListener('input', actualizarHintOferta);
+$('pVenta').addEventListener('input', actualizarHintOferta);
 
 /* ══ Duracion al vender un servicio por hora ══ */
 

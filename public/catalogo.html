@@ -844,6 +844,8 @@ function pintar() {
       return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
     }, 0);
     const abre = p.es_unidad ? ' onclick="cambiar(\'' + p.id + '\',1)" style="cursor:pointer;"' : '';
+    const enOferta = !p.es_unidad && !p.tiene_variantes &&
+      p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
 
     return '<div class="prod">' +
       (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy"' +
@@ -853,8 +855,11 @@ function pintar() {
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
       (!p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0
         ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
-      '<div class="p">' + plata(p.es_unidad && p.precio_hoy ? p.precio_hoy
-        : (variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta)) +
+      '<div class="p">' + (enOferta
+        ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
+          '<span style="color:var(--accent-dark); font-weight:600;">' + plata(p.precio_oferta) + '</span>'
+        : plata(p.es_unidad && p.precio_hoy ? p.precio_hoy
+            : (variantesElegidas[p.id] ? variantesElegidas[p.id].precio : p.precio_venta))) +
         (p.es_unidad ? ' por ' + (p.cobro_por || 'noche') : (p.unidad !== 'unidad' ? ' /' + p.unidad : '')) + '</div>' +
       (p.es_unidad && p.capacidad ? '<div class="desc-prod">Hasta ' + p.capacidad + ' personas</div>' : '') +
       (p.tiene_variantes ? '<span class="badge-var">' +
@@ -924,11 +929,17 @@ function cambiarVar(clave, d) {
   actualizarBarra();
 }
 
+// devuelve el precio de venta real de un producto, respetando la oferta si tiene una valida
+function precioEfectivoCat(p) {
+  if (p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta) return p.precio_oferta;
+  return p.precio_venta;
+}
+
 function datosDeClave(clave) {
   const partes = String(clave).split('|');
   const prod = datos.productos.filter(function (x) { return x.id === partes[0]; })[0];
   const v = variantesElegidas[clave];
-  return { prod: prod, variante: v, precio: v ? v.precio : (prod ? prod.precio_venta : 0) };
+  return { prod: prod, variante: v, precio: v ? v.precio : (prod ? precioEfectivoCat(prod) : 0) };
 }
 
 function abrirVarCat(p) {
@@ -1032,7 +1043,7 @@ $('btnPedir').onclick = function () {
   Object.keys(pedido).forEach(function (id) {
     const p = datos.productos.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
-    total += p.precio_venta * pedido[id];
+    total += precioEfectivoCat(p) * pedido[id];
     cant += pedido[id];
   });
 
