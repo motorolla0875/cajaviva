@@ -321,10 +321,16 @@
     padding: 14px 4px 6px; line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .tag-mas-fotos {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 600;
+    padding: 3px 7px; border-radius: 20px; line-height: 1.3;
+  }
   @media (max-width: 420px) {
     .foto-cat { width: 92px; height: 92px; }
     .foto-wrap { width: 92px; height: 92px; }
     .tag-cat-foto { font-size: 9px; padding: 12px 3px 5px; }
+    .tag-mas-fotos { font-size: 9px; padding: 2px 6px; top: 4px; right: 4px; }
   }
   .prod .info .n { font-weight: 500; font-size: 15px; }
   .desc-prod { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
@@ -1072,6 +1078,8 @@ function pintar() {
         ' data-fotos=\'' + JSON.stringify([p.foto_grande || p.foto].concat(p.galeria || [])) + '\'' +
         (p.es_unidad ? abre : ' onclick="verFoto(JSON.parse(this.dataset.fotos))"') + '>' +
         (p.categoria && !p.es_unidad ? '<span class="tag-cat-foto">' + esc(p.categoria) + '</span>' : '') +
+        (!p.es_unidad && p.galeria && p.galeria.length > 0
+          ? '<span class="tag-mas-fotos">&#128247; +' + p.galeria.length + '</span>' : '') +
         '</div>' : '') +
       '<div class="info"' + abre + '>' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
@@ -1538,36 +1546,43 @@ function verFoto(urls) {
   let i = 0;
 
   const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:100;display:flex;flex-direction:column;';
+
+  d.innerHTML =
+    '<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; flex-shrink:0;">' +
+      '<span id="galContador" style="color:#fff; font-size:13px; font-weight:500; opacity:.85;"></span>' +
+      '<button id="galCerrar" style="width:34px; height:34px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:15px; cursor:pointer;">&#10005;</button>' +
+    '</div>' +
+    '<div id="galTira" style="flex:1; display:flex; transition:transform .3s ease;">' +
+      lista.map(function (u) {
+        return '<div style="min-width:100%; display:flex; align-items:center; justify-content:center; padding:0 20px 24px; box-sizing:border-box;">' +
+          '<img src="' + u + '" style="max-width:100%; max-height:100%; border-radius:12px; object-fit:contain;">' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+  const tira = d.querySelector('#galTira');
+  const contador = d.querySelector('#galContador');
 
   function pintar() {
-    d.innerHTML =
-      '<img src="' + lista[i] + '" style="max-width:100%;max-height:80%;border-radius:12px;">' +
-      (lista.length > 1
-        ? '<div style="display:flex; gap:6px; margin-top:14px;">' +
-            lista.map(function (u, idx) {
-              return '<span style="width:7px; height:7px; border-radius:50%; background:' +
-                (idx === i ? '#fff' : 'rgba(255,255,255,.4)') + ';"></span>';
-            }).join('') +
-          '</div>'
-        : '');
+    tira.style.transform = 'translateX(-' + (i * 100) + '%)';
+    contador.textContent = lista.length > 1 ? (i + 1) + ' / ' + lista.length : '';
   }
   pintar();
 
+  d.querySelector('#galCerrar').onclick = function () { d.remove(); };
+
   let x0 = null;
-  d.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
-  d.addEventListener('touchend', function (e) {
+  tira.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  tira.addEventListener('touchend', function (e) {
     if (x0 === null) return;
     const dx = e.changedTouches[0].clientX - x0;
     if (Math.abs(dx) > 40 && lista.length > 1) {
-      i = (i + (dx < 0 ? 1 : -1) + lista.length) % lista.length;
+      i = Math.max(0, Math.min(lista.length - 1, i + (dx < 0 ? 1 : -1)));
       pintar();
-    } else if (Math.abs(dx) < 10) {
-      d.remove();
     }
     x0 = null;
   }, { passive: true });
-  d.onclick = function (e) { if (e.target === d) d.remove(); };
 
   document.body.appendChild(d);
 }
