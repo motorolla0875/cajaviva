@@ -2556,11 +2556,14 @@
     <div id="msgCobroPed"></div>
     <div id="detalleCobroPed"></div>
 
-    <label>Como paga</label>
-    <div class="medios" id="mediosCobroPed">
-      <button data-medio="efectivo" class="on">Efectivo</button>
-      <button data-medio="transferencia">Transfer.</button>
+    <div id="wrapMedioCobroPed">
+      <label>Como paga</label>
+      <div class="medios" id="mediosCobroPed">
+        <button data-medio="efectivo" class="on">Efectivo</button>
+        <button data-medio="transferencia">Transfer.</button>
+      </div>
     </div>
+    <p class="hint ok" id="avisoMpPed" style="display:none; margin-top:0;">Ya pago con Mercado Pago. Solo falta confirmar la entrega.</p>
 
     <label>Total a cobrar</label>
     <div style="display:flex; align-items:center; gap:8px;">
@@ -8354,10 +8357,14 @@ async function cargarPedidos() {
           (i.falta ? ' - solo hay ' + fmtCant(i.disponible) + '</span>' : '');
       }).join('<br>');
 
-      const pago = p.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo';
+      const pago = p.forma_pago === 'transferencia' ? 'Transferencia'
+        : p.forma_pago === 'mercadopago' ? 'Mercado Pago'
+        : 'Efectivo';
+      const yaPagado = p.forma_pago === 'mercadopago' && p.pago_estado === 'verificado';
       let acc = '';
       if (p.estado === 'nuevo' || p.estado === 'confirmado') {
-        acc = '<button class="ppal" onclick="abrirCobroPedido(\'' + p.id + '\')">Cobrar y entregar</button>' +
+        acc = '<button class="ppal" onclick="abrirCobroPedido(\'' + p.id + '\')">' +
+              (yaPagado ? 'Confirmar entrega' : 'Cobrar y entregar') + '</button>' +
               (p.telefono ? '<button onclick="llamarPedido(\'' + esc(p.telefono) + '\',\'' + p.id + '\')">WhatsApp</button>' : '') +
               '<button onclick="cambiarPedido(\'' + p.id + '\',\'cancelado\')">Cancelar</button>';
       } else if (p.estado === 'cancelado') {
@@ -8369,7 +8376,8 @@ async function cargarPedidos() {
 
       return '<div class="pedido' + (p.estado === 'nuevo' ? ' nuevo' : '') + '">' +
         '<div class="cab"><div><div class="n">' + esc(p.nombre) +
-          (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') + '</div>' +
+          (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') +
+          (yaPagado ? '<span class="badge-nuevo" style="background:var(--accent-dark);">PAGADO</span>' : '') + '</div>' +
         '<div class="d">' + fechaCorta(p.created_at) + ' ' + horaDe(p.created_at) + ' - ' + pago +
           (p.telefono ? ' - ' + esc(p.telefono) : '') + '</div>' +
         (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
@@ -12082,17 +12090,24 @@ function abrirCobroPedido(id) {
       }).join('') +
       '<div class="cierre-linea total"><span>Total</span><b>' + plata(p.total) + '</b></div>';
 
+    const yaPagado = p.forma_pago === 'mercadopago' && p.pago_estado === 'verificado';
+
     if (p.forma_pago === 'transferencia') {
       medioCobroPed = 'transferencia';
       Array.prototype.forEach.call($('mediosCobroPed').children, function (x, i) {
         x.classList.toggle('on', i === 1);
       });
+    } else if (yaPagado) {
+      medioCobroPed = 'mercadopago';
     }
+
+    $('wrapMedioCobroPed').style.display = yaPagado ? 'none' : 'block';
+    $('avisoMpPed').style.display = yaPagado ? 'block' : 'none';
 
     totalBrutoPed = p.total;
     $('totalPedFinal').value = Math.round(p.total);
     document.getElementById('notaDescPed').textContent = '';
-    $('btnConfirmarCobroPed').textContent = 'Cobrar ' + plata(p.total);
+    $('btnConfirmarCobroPed').textContent = yaPagado ? 'Confirmar entrega' : 'Cobrar ' + plata(p.total);
   }
 
   $('modalCobroPedido').classList.add('on');
