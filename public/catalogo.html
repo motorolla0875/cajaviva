@@ -882,6 +882,7 @@ function pintar() {
     const abre = p.es_unidad ? ' onclick="cambiar(\'' + p.id + '\',1)" style="cursor:pointer;"' : '';
     const enOferta = !p.es_unidad &&
       p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
+    const sinStock = !p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0;
 
     return '<div class="prod">' +
       (p.foto ? '<img class="foto-cat" src="' + p.foto + '" loading="lazy"' +
@@ -889,7 +890,7 @@ function pintar() {
       '<div class="info"' + abre + '>' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
-      (!p.es_servicio && !p.es_unidad && !p.tiene_variantes && p.stock <= 0
+      (sinStock
         ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
       '<div class="p">' + (enOferta
         ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
@@ -909,7 +910,9 @@ function pintar() {
             ? ''
             : p.es_servicio
             ? '<button class="btn-turno" onclick="cambiar(\'' + p.id + '\',1)">&#128197;</button>'
-            : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>')) +
+            : (sinStock
+                ? '<button class="btn-sumar" style="width:auto; padding:0 12px; font-size:12px;" onclick="consultarSinStock(\'' + esc(p.nombre).replace(/'/g, '&#39;') + '\')">Consultar</button>'
+                : '<button class="btn-sumar" onclick="cambiar(\'' + p.id + '\',1)">+</button>'))) +
       '</div></div>';
   }
 
@@ -939,6 +942,14 @@ function pintar() {
 
 let variantesElegidas = {};
 let prodVarActual = null;
+
+// para productos sin stock: en vez de agregarlo al pedido, se consulta directo por WhatsApp
+function consultarSinStock(nombreProd) {
+  const wpp = (datos.negocio.whatsapp || '').replace(/\D/g, '');
+  if (!wpp) { alert('Este negocio todavia no cargo un WhatsApp para consultas.'); return; }
+  const t = 'Hola! Te consulto por "' + nombreProd + '", vi que esta sin stock.';
+  window.open('https://wa.me/54' + wpp + '?text=' + encodeURIComponent(t), '_blank');
+}
 
 function cambiar(id, d) {
   const p = datos.productos.filter(function (x) { return x.id === id; })[0];
