@@ -3038,6 +3038,13 @@
       <input type="color" id="catColorPersonalizado" value="#1D9E75" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
       <span style="font-size:13px; color:var(--muted); flex:1;">Colores de texto y links</span>
     </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+      <input type="checkbox" id="chkDegradadoPer" style="width:18px; height:18px;">
+      <label for="chkDegradadoPer" style="font-size:13px; color:var(--muted); margin:0;">Usar degradado</label>
+    </div>
+    <div id="wrapDegradadoPer" style="display:none; margin-top:6px;">
+      <input type="color" id="catColorPersonalizado2" value="#0F6E56" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
+    </div>
 
     <div id="wrapFondoPer" style="display:none; margin-top:10px;">
 
@@ -3049,6 +3056,13 @@
       <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
         <input type="color" id="catColorFondo" value="#FAFAF7" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
         <span style="font-size:13px; color:var(--muted); flex:1;">Tu color de fondo</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+        <input type="checkbox" id="chkDegradadoFondo" style="width:18px; height:18px;">
+        <label for="chkDegradadoFondo" style="font-size:13px; color:var(--muted); margin:0;">Usar degradado</label>
+      </div>
+      <div id="wrapDegradadoFondo" style="display:none; margin-top:6px;">
+        <input type="color" id="catColorFondo2" value="#FFFFFF" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
       </div>
     </div>
 
@@ -7914,9 +7928,15 @@ async function abrirConfigCatalogo() {
     colorPerActivo = !!c.color_personalizado;
     $('swColorPer').classList.toggle('on', colorPerActivo);
     actualizarEstiloVsColorPer();
+    $('catColorPersonalizado2').value = c.color_personalizado_2 || '#0F6E56';
+    $('chkDegradadoPer').checked = !!c.color_personalizado_2;
+    $('wrapDegradadoPer').style.display = c.color_personalizado_2 ? 'block' : 'none';
     $('catColorFondo').value = c.color_fondo || '#FAFAF7';
     colorFondoActivo = !!c.color_fondo;
     $('swColorFondo').classList.toggle('on', colorFondoActivo);
+    $('catColorFondo2').value = c.color_fondo_2 || '#FFFFFF';
+    $('chkDegradadoFondo').checked = !!c.color_fondo_2;
+    $('wrapDegradadoFondo').style.display = c.color_fondo_2 ? 'block' : 'none';
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -7954,6 +7974,13 @@ $('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remo
 const fondoPerCat = 'claro';
 
 let colorFondoActivo = false;
+
+$('chkDegradadoPer').onclick = function () {
+  $('wrapDegradadoPer').style.display = this.checked ? 'block' : 'none';
+};
+$('chkDegradadoFondo').onclick = function () {
+  $('wrapDegradadoFondo').style.display = this.checked ? 'block' : 'none';
+};
 $('swColorFondo').onclick = function () {
   colorFondoActivo = !colorFondoActivo;
   this.classList.toggle('on', colorFondoActivo);
@@ -8048,7 +8075,9 @@ $('btnGuardarCatalogo').onclick = async function () {
       tema: temaCat,
       fondo: fondoPerCat,
       colorPersonalizado: colorPerActivo ? $('catColorPersonalizado').value : '',
+      colorPersonalizado2: (colorPerActivo && $('chkDegradadoPer').checked) ? $('catColorPersonalizado2').value : '',
       colorFondo: colorFondoActivo ? $('catColorFondo').value : '',
+      colorFondo2: (colorFondoActivo && $('chkDegradadoFondo').checked) ? $('catColorFondo2').value : '',
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,

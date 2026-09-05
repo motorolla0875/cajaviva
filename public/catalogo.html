@@ -7,16 +7,16 @@
 <meta name="theme-color" content="#1D9E75">
 <style>
   :root {
-    --bg: #FAFAF7; --panel: #FFFFFF; --panel-2: #F3F2EE;
+    --bg: #FAFAF7; --bg-css: var(--bg); --panel: #FFFFFF; --panel-2: #F3F2EE;
     --line: #E4E2DA; --text: #2C2C2A; --muted: #6E6D67;
-    --accent: #1D9E75; --accent-dark: #0F6E56; --accent-soft: #E1F5EE;
+    --accent: #1D9E75; --accent-bg: var(--accent); --accent-dark: #0F6E56; --accent-soft: #E1F5EE;
     --danger: #C0392B;
     --radius: 12px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
+    background: var(--bg-css); color: var(--text); font-size: 15px; line-height: 1.5;
     padding-bottom: 0;
   }
   body.con-carrito { padding-bottom: 90px; }
@@ -274,7 +274,7 @@
     border: 1px solid var(--line); border-radius: 10px;
     background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
   }
-  .hora-btn.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .hora-btn.on { border-color: var(--accent); background: var(--accent-bg); color: #fff; }
 
   .opt-v {
     display: flex; align-items: center; gap: 12px; width: 100%;
@@ -371,7 +371,7 @@
   .barra .fila b { font-size: 22px; font-weight: 500; }
   .barra button {
     width: 100%; padding: 15px; border: none; border-radius: var(--radius);
-    background: var(--accent); color: #fff; font-size: 15px; font-weight: 500;
+    background: var(--accent-bg); color: #fff; font-size: 15px; font-weight: 500;
   }
   .barra button:disabled { background: var(--line); color: var(--muted); }
 
@@ -464,7 +464,7 @@
     <label style="display:block; font-size:12.5px; color:var(--muted); margin:12px 0 5px; font-weight:500;">Aclaraciones (opcional)</label>
     <input type="text" id="pdNota" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
 
-    <button id="btnEnviarPedido" style="width:100%; padding:15px; margin-top:18px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Enviar el pedido</button>
+    <button id="btnEnviarPedido" style="width:100%; padding:15px; margin-top:18px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Enviar el pedido</button>
     <button onclick="cerrarPedido()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Volver</button>
   </div>
 </div>
@@ -485,7 +485,7 @@
     <div id="fichaPrecio" style="font-size:19px; font-weight:500; color:var(--accent); margin-bottom:4px;"></div>
     <div id="fichaCap" style="font-size:13.5px; color:var(--muted); margin-bottom:16px;"></div>
     <div id="fichaDesc" style="font-size:14.5px; line-height:1.6; white-space:pre-line; margin-bottom:20px;"></div>
-    <button id="btnVerDisp" style="width:100%; padding:15px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Ver disponibilidad</button>
+    <button id="btnVerDisp" style="width:100%; padding:15px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Ver disponibilidad</button>
     <button onclick="cerrarFicha()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Volver</button>
   </div>
 </div>
@@ -508,7 +508,7 @@
       <label class="lbl-alq" style="margin-top:12px;">Tu telefono</label>
       <input type="text" id="cwTelefono" inputmode="tel" class="inp-alq">
 
-      <button id="btnReservarCanchaWeb" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
+      <button id="btnReservarCanchaWeb" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
     </div>
 
     <button onclick="cerrarCanchaWeb()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
@@ -544,7 +544,7 @@
       <label class="lbl-alq" style="margin-top:12px;">Cuantas personas</label>
       <input type="text" id="aPersonas" inputmode="numeric" class="inp-alq">
 
-      <button id="btnReservarAlq" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
+      <button id="btnReservarAlq" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
     </div>
 
     <button onclick="cerrarAlq()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
@@ -608,7 +608,7 @@
       <label style="display:block; font-size:12.5px; color:var(--muted); margin:12px 0 5px; font-weight:500;">Tu telefono</label>
       <input type="text" id="twTelefono" inputmode="tel" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px;">
 
-      <button id="btnReservar" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Reservar el turno</button>
+      <button id="btnReservar" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Reservar el turno</button>
     </div>
 
     <button onclick="cerrarTurnoWeb()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
@@ -639,7 +639,7 @@
     </div>
 
     <div id="wppTurnoListo"></div>
-    <button onclick="location.reload()" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>
+    <button onclick="location.reload()" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Listo</button>
   </div>
 </div>
 
@@ -665,7 +665,7 @@
       <input type="file" id="archComp" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
     </div>
 
-    <button id="btnAvisarWpp" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Avisar por WhatsApp</button>
+    <button id="btnAvisarWpp" style="width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Avisar por WhatsApp</button>
     <button onclick="location.reload()" style="width:100%; padding:12px; margin-top:8px; border:none; background:none; color:var(--muted); font-size:14px;">Hacer otro pedido</button>
   </div>
 </div>
@@ -749,7 +749,7 @@ const TEMAS_COMPLETOS = {
   }
 };
 
-function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo) {
+function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo, colorPersonalizado2, colorFondo2) {
   let t;
   if (colorPersonalizado && colorFondo) {
     t = paletaDesdeColorYFondo(colorPersonalizado, colorFondo);
@@ -762,9 +762,13 @@ function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, col
   const usaOscuro = (colorPersonalizado && colorFondo) ? luminancia(colorFondo) < 0.5 : (colorPersonalizado && fondoPersonalizado === 'oscuro');
   r.style.setProperty('--icon-filter', (!colorPersonalizado && !colorFondo && nombre === 'negro') || usaOscuro ? 'invert(1)' : 'none');
   r.style.setProperty('--accent', t.a);
+  r.style.setProperty('--accent-bg', (colorPersonalizado && colorPersonalizado2)
+    ? 'linear-gradient(135deg, ' + t.a + ', ' + colorPersonalizado2 + ')' : t.a);
   r.style.setProperty('--accent-dark', t.d);
   r.style.setProperty('--accent-soft', t.s);
   r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--bg-css', (colorFondo && colorFondo2)
+    ? 'linear-gradient(160deg, ' + t.bg + ', ' + colorFondo2 + ')' : t.bg);
   r.style.setProperty('--panel', t.panel);
   r.style.setProperty('--panel-2', t.panel2);
   r.style.setProperty('--line', t.line);
@@ -860,7 +864,7 @@ async function cargar() {
     datos = await r.json();
 
     $('plNombre').textContent = datos.negocio.nombre;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2);
 
     if (datos.negocio.logo) {
       const lg = document.getElementById('logoNeg');
@@ -1254,7 +1258,7 @@ function pintarOpcionesVar() {
         (sinStock ? '' : '<button onclick="sumarVar(\'' + v.id + '\',\'' + esc(v.nombre).replace(/'/g, '') + '\',' + precio + ',1)">+</button>') +
       '</div></div>';
   }).join('') +
-  '<button onclick="cerrarVarCat()" style="width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:500;">Listo</button>';
+  '<button onclick="cerrarVarCat()" style="width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Listo</button>';
 }
 
 function sumarVar(varId, nombreVar, precio, d) {
@@ -1678,7 +1682,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {

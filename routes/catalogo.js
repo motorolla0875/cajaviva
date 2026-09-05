@@ -16,6 +16,8 @@ try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro
 try { db.exec("ALTER TABLE negocio ADD COLUMN fuente TEXT NOT NULL DEFAULT 'sistema'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_personalizado TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN color_personalizado_2 TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo_2 TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN logo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN instagram TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN facebook TEXT"); } catch (e) {}
@@ -40,7 +42,7 @@ router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
-    color_personalizado, color_fondo, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
+    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
 
@@ -72,8 +74,14 @@ router.put('/config', (req, res) => {
   let colorPer = (req.body?.colorPersonalizado || '').trim();
   if (colorPer && !/^#[0-9a-fA-F]{6}$/.test(colorPer)) colorPer = '';
 
+  let colorPer2 = (req.body?.colorPersonalizado2 || '').trim();
+  if (colorPer2 && !/^#[0-9a-fA-F]{6}$/.test(colorPer2)) colorPer2 = '';
+
   let colorFondo = (req.body?.colorFondo || '').trim();
   if (colorFondo && !/^#[0-9a-fA-F]{6}$/.test(colorFondo)) colorFondo = '';
+
+  let colorFondo2 = (req.body?.colorFondo2 || '').trim();
+  if (colorFondo2 && !/^#[0-9a-fA-F]{6}$/.test(colorFondo2)) colorFondo2 = '';
 
   // el token de Mercado Pago solo se pisa si mandaron uno nuevo (nunca se lo devolvemos al frontend)
   const mpToken = (req.body?.mpAccessToken || '').trim();
@@ -81,7 +89,8 @@ router.put('/config', (req, res) => {
   db.prepare(`
     UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
       alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?,
-      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_fondo = ?, instagram = ?, facebook = ?,
+      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_personalizado_2 = ?,
+      color_fondo = ?, color_fondo_2 = ?, instagram = ?, facebook = ?,
       twitter = ?, tiktok = ?, descripcion = ?,
       acepta_mercadopago = ?, mp_access_token = COALESCE(?, mp_access_token)
     WHERE user_id = ?
@@ -89,7 +98,8 @@ router.put('/config', (req, res) => {
          req.body?.mensaje || null, req.body?.alias || null, req.body?.titular || null,
          req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0,
          req.body?.tema || 'verde', req.body?.fondo || 'claro',
-         req.body?.fuente || 'sistema', colorPer || null, colorFondo || null,
+         req.body?.fuente || 'sistema', colorPer || null, colorPer2 || null,
+         colorFondo || null, colorFondo2 || null,
          req.body?.instagram || null, req.body?.facebook || null,
          req.body?.twitter || null, req.body?.tiktok || null,
          req.body?.descripcion || null,
@@ -97,7 +107,7 @@ router.put('/config', (req, res) => {
 
   const actualizado = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner,
-    color_personalizado, color_fondo, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
+    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
     FROM negocio WHERE user_id = ?`).get(req.userId);
 
   actualizado.mp_conectado = !!actualizado.mp_access_token;
@@ -211,7 +221,9 @@ router.get('/publico/:slug', (req, res) => {
       fuente: n.fuente || 'sistema',
       banner: n.banner,
       color_personalizado: n.color_personalizado || null,
+      color_personalizado_2: n.color_personalizado_2 || null,
       color_fondo: n.color_fondo || null,
+      color_fondo_2: n.color_fondo_2 || null,
       logo: n.logo || null,
       instagram: n.instagram || null,
       facebook: n.facebook || null,
