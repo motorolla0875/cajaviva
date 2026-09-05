@@ -1147,9 +1147,11 @@ function pintar() {
   const idsNuevos = {};
   lista.forEach(function (p) { idsNuevos[p.id] = true; });
 
+  // las que no van en este filtro se ocultan nomas (no se destruyen), asi si se vuelve
+  // a esa categoria despues no hay que recrear la foto de cero (eso era lo que parpadeaba)
   Array.prototype.slice.call(grilla.children).forEach(function (el) {
     const id = el.id.replace('prod-', '');
-    if (!idsNuevos[id]) el.remove();
+    if (!idsNuevos[id]) el.style.display = 'none';
   });
 
   lista.forEach(function (p) {
@@ -1158,6 +1160,8 @@ function pintar() {
       const tmp = document.createElement('div');
       tmp.innerHTML = tarjeta(p);
       el = tmp.firstElementChild;
+    } else {
+      el.style.display = '';
     }
     grilla.appendChild(el);
   });
