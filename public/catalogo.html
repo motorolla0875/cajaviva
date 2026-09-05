@@ -77,10 +77,6 @@
     #filaBuscadorHeader { max-width: 1000px; margin: 0 auto; justify-content: center; position: relative; }
     #cajaBuscadorHeader { flex: 0 1 380px; }
     #ladoDerechoHeader { position: absolute; right: 0; }
-    .cat-fab {
-      display: flex !important; position: static; align-items: center; justify-content: center;
-      box-shadow: none; width: 40px; height: 40px;
-    }
     .chips { display: none; }
     .grilla-prod {
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px;
@@ -118,6 +114,12 @@
     transition: transform .25s ease, opacity .25s ease;
   }
   .cat-fab.oculto { transform: translateY(-80px); opacity: 0; pointer-events: none; }
+  @media (min-width: 820px) {
+    .cat-fab {
+      display: flex; position: static; align-items: center; justify-content: center;
+      box-shadow: none; width: 40px; height: 40px;
+    }
+  }
 
   .panel-cat-full {
     display: flex; position: fixed; inset: 0; z-index: 70;
