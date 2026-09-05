@@ -719,15 +719,15 @@ const TEMAS_COMPLETOS = {
 
 function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo) {
   let t;
-  if (colorFondo) {
-    t = paletaDesdeColorYFondo(colorPersonalizado || '#1D9E75', colorFondo);
+  if (colorPersonalizado && colorFondo) {
+    t = paletaDesdeColorYFondo(colorPersonalizado, colorFondo);
   } else if (colorPersonalizado) {
     t = paletaDesdeColor(colorPersonalizado, fondoPersonalizado);
   } else {
     t = TEMAS_COMPLETOS[nombre] || TEMAS_COMPLETOS.verde;
   }
   const r = document.documentElement;
-  const usaOscuro = colorFondo ? luminancia(colorFondo) < 0.5 : (colorPersonalizado && fondoPersonalizado === 'oscuro');
+  const usaOscuro = (colorPersonalizado && colorFondo) ? luminancia(colorFondo) < 0.5 : (colorPersonalizado && fondoPersonalizado === 'oscuro');
   r.style.setProperty('--icon-filter', (!colorPersonalizado && !colorFondo && nombre === 'negro') || usaOscuro ? 'invert(1)' : 'none');
   r.style.setProperty('--accent', t.a);
   r.style.setProperty('--accent-dark', t.d);

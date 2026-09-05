@@ -7973,6 +7973,10 @@ $('swColorPer').onclick = function () {
   this.classList.toggle('on', colorPerActivo);
   $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
   actualizarEstiloVsColorPer();
+  if (!colorPerActivo) {
+    colorFondoActivo = false;
+    $('swColorFondo').classList.remove('on');
+  }
 };
 
 function mostrarLogo(url) {
