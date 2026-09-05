@@ -1111,7 +1111,7 @@ function pintar() {
 
     return '<div class="prod" id="prod-' + p.id + '">' +
       (p.foto ? '<div class="foto-wrap">' +
-        '<img class="foto-cat" src="' + p.foto + '" loading="lazy"' +
+        '<img class="foto-cat" src="' + p.foto + '"' +
         ' data-fotos=\'' + JSON.stringify([p.foto_grande || p.foto].concat(p.galeria || [])) + '\'' +
         (p.es_unidad ? abre : ' onclick="verFoto(JSON.parse(this.dataset.fotos))"') + '>' +
         (p.categoria && !p.es_unidad ? '<span class="tag-cat-foto">' + esc(p.categoria) + '</span>' : '') +
