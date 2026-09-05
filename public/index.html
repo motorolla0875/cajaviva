@@ -7907,6 +7907,7 @@ async function abrirConfigCatalogo() {
     $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
     colorPerActivo = !!c.color_personalizado;
     $('swColorPer').classList.toggle('on', colorPerActivo);
+    actualizarEstiloVsColorPer();
     fondoPerCat = c.fondo === 'oscuro' ? 'oscuro' : 'claro';
     pintarFondoPer();
     $('catColorFondo').value = c.color_fondo || '#FAFAF7';
@@ -7961,10 +7962,17 @@ $('swColorFondo').onclick = function () {
 };
 
 let colorPerActivo = false;
+
+function actualizarEstiloVsColorPer() {
+  $('temasCat').style.opacity = colorPerActivo ? '.4' : '1';
+  $('temasCat').style.pointerEvents = colorPerActivo ? 'none' : 'auto';
+}
+
 $('swColorPer').onclick = function () {
   colorPerActivo = !colorPerActivo;
   this.classList.toggle('on', colorPerActivo);
   $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
+  actualizarEstiloVsColorPer();
 };
 
 function mostrarLogo(url) {
@@ -8052,6 +8060,7 @@ $('btnGuardarCatalogo').onclick = async function () {
     colorPerActivo = !!d.color_personalizado;
     $('swColorPer').classList.toggle('on', colorPerActivo);
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
+    actualizarEstiloVsColorPer();
     colorFondoActivo = !!d.color_fondo;
     $('swColorFondo').classList.toggle('on', colorFondoActivo);
     mpConectado = d.mp_conectado;
