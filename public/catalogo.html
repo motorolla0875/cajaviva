@@ -72,6 +72,7 @@
 
   @media (min-width: 820px) {
     .cont { max-width: 1000px; }
+    #filaBuscadorHeader { max-width: 1000px; margin: 0 auto; }
     .grilla-prod {
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px;
     }
@@ -79,6 +80,7 @@
   }
   @media (min-width: 1280px) {
     .cont { max-width: 1240px; }
+    #filaBuscadorHeader { max-width: 1240px; }
     .grilla-prod { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
@@ -401,7 +403,7 @@
 <header>
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
-  <div style="display:flex; align-items:center; gap:10px;">
+  <div id="filaBuscadorHeader" style="display:flex; align-items:center; gap:10px;">
     <div class="buscador" style="margin-bottom:0; flex:1; min-width:0;">
       <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
     </div>
