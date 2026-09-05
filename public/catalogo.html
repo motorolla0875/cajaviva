@@ -363,16 +363,15 @@
 <header>
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
-  <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
-    <p id="mensajeNeg" style="margin:0 auto 0 0;"></p>
-    <div id="redesNeg" style="display:none; gap:12px;"></div>
+  <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+    <div class="buscador" style="margin-bottom:0; flex:1; min-width:0;">
+      <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
+    </div>
+    <div id="redesNeg" style="display:none; gap:12px; flex-shrink:0;"></div>
   </div>
 </header>
 
 <div class="cont">
-  <div class="buscador">
-    <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
-  </div>
   <div class="chips" id="chips"></div>
   <div id="lista"><div class="vacio">Cargando productos...</div></div>
 </div>
@@ -879,28 +878,17 @@ async function cargar() {
       document.getElementById('redesNeg').style.display = 'flex';
     }
 
-    const tieneRedes = !!(datos.negocio.instagram || datos.negocio.facebook || datos.negocio.twitter || datos.negocio.tiktok);
-
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
       document.getElementById('bannerNeg').style.display = 'block';
       // con banner, el nombre no se repite
       document.getElementById('nombreNeg').style.display = 'none';
-      if (!datos.negocio.mensaje && !tieneRedes) {
-        document.querySelector('header').style.display = 'none';
-      } else {
-        document.querySelector('header').style.padding = '12px 18px';
-      }
+      document.querySelector('header').style.padding = '12px 18px';
     }
 
     document.title = datos.negocio.nombre;
     $('nombreNeg').textContent = datos.negocio.nombre;
-    if (datos.negocio.mensaje) {
-      $('mensajeNeg').textContent = datos.negocio.mensaje;
-      $('mensajeNeg').style.display = 'block';
-    } else {
-      $('mensajeNeg').style.display = 'none';
-    }
+    $('buscar').placeholder = datos.negocio.mensaje || 'Buscar producto...';
 
     pintarChips();
     pintar();
