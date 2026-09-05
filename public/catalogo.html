@@ -1004,26 +1004,7 @@ function pintar() {
       '</div></div>';
   }
 
-  let html = '';
-
-  if (filtro) {
-    html = '<div class="grilla-prod">' + lista.map(tarjeta).join('') + '</div>';
-  } else {
-    const grupos = {};
-    const orden = [];
-    lista.forEach(function (p) {
-      const cat = p.categoria || 'Otros';
-      if (!grupos[cat]) { grupos[cat] = []; orden.push(cat); }
-      grupos[cat].push(p);
-    });
-    orden.forEach(function (cat) {
-      // sin titulo si es el unico grupo o si son unidades sin categoria
-      const sinTitulo = orden.length === 1 ||
-        grupos[cat].every(function (p) { return p.es_unidad; });
-      html += (sinTitulo ? '' : '<div class="cat-titulo">' + esc(cat) + '</div>') +
-        '<div class="grilla-prod">' + grupos[cat].map(tarjeta).join('') + '</div>';
-    });
-  }
+  let html = '<div class="grilla-prod">' + lista.map(tarjeta).join('') + '</div>';
 
   $('lista').innerHTML = html;
 }
