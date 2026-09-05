@@ -721,15 +721,14 @@
   .banner-deuda .lbl { font-size: 12.5px; color: var(--muted); }
   .banner-deuda .val { font-size: 24px; font-weight: 500; color: var(--danger); }
 
-  .periodos { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  .periodos::-webkit-scrollbar { display: none; }
+  .periodos { display: flex; gap: 6px; margin-bottom: 16px; }
   .periodos button {
-    flex: 1 1 0; min-width: 60px; padding: 10px; border: 1px solid var(--line);
-    border-radius: 10px; background: var(--panel); white-space: nowrap;
+    flex: 1; padding: 10px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel);
     color: var(--muted); font-size: 13.5px; font-weight: 500;
   }
   .periodos button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
-  .periodos button#btnBajarExcelRep, .periodos button#btnBajarExcel { flex: 0 0 44px; min-width: 44px; font-size: 17px; }
+  .periodos button#btnBajarExcelRep { flex: 0 0 44px; font-size: 17px; }
 
   .rango-fechas {
     display: none; gap: 8px; align-items: center; margin-bottom: 14px;
@@ -2270,9 +2269,6 @@
         <button data-periodo="semana">Semana</button>
         <button data-periodo="mes">Mes</button>
         <button data-periodo="rango">Elegir</button>
-        <button id="btnBajarExcel" title="Bajar a Excel">&#8681;</button>
-        <button id="btnBajarPdf" title="Reporte en PDF">PDF</button>
-        <button id="btnCierre">Cerrar caja</button>
       </div>
 
       <div class="rango-fechas" id="rangoFechas">
@@ -2308,7 +2304,10 @@
         </div>
       </div>
       <div class="dos-arriba">
-        <button class="btn-nuevo" id="btnGasto" style="flex:1 1 100%; width:100%;">+ Anotar un gasto</button>
+        <button class="btn-nuevo" id="btnGasto">+ Anotar un gasto</button>
+        <button class="btn-nuevo gris" id="btnBajarExcel" title="Bajar a Excel">&#8681;</button>
+        <button class="btn-nuevo gris" id="btnBajarPdf" title="Reporte en PDF">PDF</button>
+        <button class="btn-nuevo gris" id="btnCierre">Cerrar caja</button>
       </div>
       <div class="seccion" id="tituloVentasCaja">Ventas</div>
       <div id="listaVentas"></div>
@@ -13306,11 +13305,9 @@ $('btnCerrarCuenta').onclick = function () { $('modalCuenta').classList.remove('
 
 $('periodos').addEventListener('click', function (e) {
   const b = e.target.closest('button');
-  if (!b || b.dataset.periodo === undefined) return;
+  if (!b) return;
   periodo = b.dataset.periodo;
-  Array.prototype.forEach.call($('periodos').children, function (x) {
-    if (x.dataset.periodo !== undefined) x.classList.toggle('on', x === b);
-  });
+  Array.prototype.forEach.call($('periodos').children, function (x) { x.classList.toggle('on', x === b); });
   $('rangoFechas').classList.toggle('on', periodo === 'rango');
   if (periodo === 'rango') {
     if (!$('fDesde').value) $('fDesde').value = menosDias(29);
