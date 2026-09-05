@@ -2227,7 +2227,7 @@
         <button data-estado="listos" id="chipListos">Entregados</button>
         <button data-estado="cancelados" id="chipCancelados">Cancelados</button>
       </div>
-      <input type="text" id="buscarPedidos" style="display:none;">
+      <input type="text" id="buscarPedidos" placeholder="Buscar por numero de pedido o cliente..." style="width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel); color:var(--text); font-size:14px; margin-bottom:10px;">
       <div id="reservasWeb"></div>
       <div id="listaPedidos"></div>
     </div>
@@ -8418,7 +8418,7 @@ async function cargarPedidos() {
         '<div class="cab"><div><div class="n">' + esc(p.nombre) +
           (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') +
           (yaPagado ? '<span class="badge-nuevo" style="background:var(--accent-dark);">PAGADO</span>' : '') + '</div>' +
-        '<div class="d">' + fechaCorta(p.created_at) + ' ' + horaDe(p.created_at) + ' - ' + pago +
+        '<div class="d">Pedido ' + p.id.slice(0, 6).toUpperCase() + ' - ' + fechaCorta(p.created_at) + ' ' + horaDe(p.created_at) + ' - ' + pago +
           (p.telefono ? ' - ' + esc(p.telefono) : '') + '</div>' +
         (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
         (p.nota ? '<div class="d">Nota: ' + esc(p.nota) + '</div>' : '') +
