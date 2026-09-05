@@ -361,6 +361,7 @@
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
   <p id="mensajeNeg"></p>
+  <a href="#quienesSomos" id="linkQuienesSomos" style="display:none; font-size:12.5px; color:var(--accent-dark); text-decoration:underline;">Quienes somos</a>
 </header>
 
 <div class="cont">
@@ -379,6 +380,13 @@
     <button id="btnCerrarCatMovil">&#10005;</button>
   </div>
   <div id="listaCatMovil"></div>
+</div>
+
+<div id="quienesSomos" style="display:none; max-width:640px; margin:0 auto; padding:0 20px;">
+  <div style="border-top:1px solid var(--line); padding-top:22px; margin-top:10px;">
+    <h3 style="font-size:16px; font-weight:600; margin:0 0 8px;">Quienes somos</h3>
+    <p id="textoQuienesSomos" style="color:var(--muted); font-size:14px; line-height:1.6; white-space:pre-wrap; margin:0;"></p>
+  </div>
 </div>
 
 <footer id="footerNeg" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 20px 90px; color:var(--muted); font-size:12.5px;">
@@ -825,6 +833,16 @@ async function cargar() {
       const lg = document.getElementById('logoNeg');
       lg.src = datos.negocio.logo;
       lg.style.display = 'block';
+    }
+
+    if (datos.negocio.descripcion) {
+      $('textoQuienesSomos').textContent = datos.negocio.descripcion;
+      $('quienesSomos').style.display = 'block';
+      $('linkQuienesSomos').style.display = 'inline-block';
+      $('linkQuienesSomos').onclick = function (e) {
+        e.preventDefault();
+        $('quienesSomos').scrollIntoView({ behavior: 'smooth' });
+      };
     }
 
     if (datos.negocio.instagram || datos.negocio.facebook || datos.negocio.twitter || datos.negocio.tiktok) {

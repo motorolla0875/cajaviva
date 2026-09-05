@@ -3071,6 +3071,10 @@
     <label>TikTok (opcional)</label>
     <input type="text" id="catTiktok" placeholder="Ej: mi.negocio">
 
+    <label>Quienes somos (opcional)</label>
+    <textarea id="catDescripcion" rows="4" placeholder="Contales a tus clientes que vendes, hace cuanto estas, que te distingue..."></textarea>
+    <p class="hint">Se muestra al final de tu catalogo, cuando el cliente toca "Quienes somos".</p>
+
     <div id="bloqueTurnosWeb" style="display:none;">
       <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
 
@@ -7902,6 +7906,7 @@ async function abrirConfigCatalogo() {
     $('catFacebook').value = c.facebook || '';
     $('catTwitter').value = c.twitter || '';
     $('catTiktok').value = c.tiktok || '';
+    $('catDescripcion').value = c.descripcion || '';
     aceptaMp = !!c.acepta_mercadopago;
     mpConectado = !!c.mp_conectado;
     $('mpToken').value = '';
@@ -8038,6 +8043,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
       tiktok: $('catTiktok').value.trim() || null,
+      descripcion: $('catDescripcion').value.trim() || null,
       aceptaMercadopago: aceptaMp,
       mpAccessToken: $('mpToken').value.trim()
     });
