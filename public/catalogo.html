@@ -844,7 +844,7 @@ function pintar() {
       return k === p.id || k.indexOf(p.id + '|') === 0 ? a + pedido[k] : a;
     }, 0);
     const abre = p.es_unidad ? ' onclick="cambiar(\'' + p.id + '\',1)" style="cursor:pointer;"' : '';
-    const enOferta = !p.es_unidad && !p.tiene_variantes &&
+    const enOferta = !p.es_unidad &&
       p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
 
     return '<div class="prod">' +
@@ -959,14 +959,18 @@ function pintarOpcionesVar() {
   if (!p) return;
 
   document.getElementById('opcionesVarCat').innerHTML = (p.variantes || []).map(function (v) {
-    const precio = v.precio_venta || p.precio_venta;
+    const precio = v.precio_venta || precioEfectivoCat(p);
+    const enOfertaVar = !v.precio_venta && p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
     const clave = p.id + '|' + v.id;
     const c = pedido[clave] || 0;
     const sinStock = v.stock <= 0;
     return '<div class="opt-v">' +
       '<span class="nv">' + esc(v.nombre) +
         '<small style="display:block;color:' + (sinStock ? '#8A5A0F' : 'var(--muted)') + ';font-weight:400;">' +
-        plata(precio) + ' - ' + (sinStock ? 'sin stock, consultanos' : v.stock + ' disp.') + '</small></span>' +
+        (enOfertaVar
+          ? '<span style="text-decoration:line-through;">' + plata(p.precio_venta) + '</span> ' + plata(precio)
+          : plata(precio)) +
+        ' - ' + (sinStock ? 'sin stock, consultanos' : v.stock + ' disp.') + '</small></span>' +
       '<div class="ctrl-v">' +
         (c > 0
           ? '<button onclick="sumarVar(\'' + v.id + '\',\'' + esc(v.nombre).replace(/'/g, '') + '\',' + precio + ',-1)">-</button>' +
