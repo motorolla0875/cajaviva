@@ -106,7 +106,7 @@ app.use('/api/fotos', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/fotos'));
 app.use('/api/pedidos', function (req, res, next) {
-  if (req.path.indexOf('/publico/') === 0) return next();
+  if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/mp-webhook/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/pedidos'));
 // el asistente: /publico es abierto, el resto pide sesion

@@ -798,10 +798,45 @@ async function cargar() {
 
     pintarChips();
     pintar();
+    mostrarVueltaDeMp();
   } catch (e) {
     $('lista').innerHTML = '<div class="vacio">Este catalogo no esta disponible.</div>';
     $('nombreNeg').textContent = 'Catalogo';
   }
+}
+
+// si el cliente vuelve de pagar en Mercado Pago, le mostramos el resultado
+function mostrarVueltaDeMp() {
+  const qs = new URLSearchParams(location.search);
+  const pago = qs.get('pago');
+  const pedidoId = qs.get('pedido');
+  if (!pago || !pedidoId) return;
+
+  const titulo = document.querySelector('#modalListo h3');
+  const sub = document.getElementById('numeroPedido');
+  const detalle = document.querySelector('#modalListo p:nth-of-type(2)');
+
+  if (pago === 'aprobado') {
+    if (titulo) titulo.textContent = 'Pago aprobado';
+    if (sub) sub.textContent = 'Numero ' + pedidoId.slice(0, 6).toUpperCase();
+    if (detalle) detalle.textContent = 'Tu pedido ya fue confirmado.';
+  } else if (pago === 'pendiente') {
+    if (titulo) titulo.textContent = 'Pago pendiente';
+    if (sub) sub.textContent = 'Numero ' + pedidoId.slice(0, 6).toUpperCase();
+    if (detalle) detalle.textContent = 'Te vamos a avisar apenas se confirme.';
+  } else {
+    if (titulo) titulo.textContent = 'El pago no se pudo completar';
+    if (sub) sub.textContent = '';
+    if (detalle) detalle.textContent = 'Podes volver a intentarlo cuando quieras.';
+  }
+
+  document.getElementById('zonaComprobante').style.display = 'none';
+  document.getElementById('btnAvisarWpp').style.display = 'none';
+  $('modalListo').style.display = 'block';
+  animarTilde('modalListo');
+
+  // se limpia la url para que un refresco no vuelva a mostrar el cartel
+  history.replaceState(null, '', location.pathname);
 }
 
 function categorias() {
@@ -1077,6 +1112,7 @@ $('btnPedir').onclick = function () {
   const f = [];
   if (datos.negocio.acepta_efectivo !== 0) f.push(['efectivo', 'Efectivo']);
   if (datos.negocio.acepta_transferencia && datos.negocio.alias_pago) f.push(['transferencia', 'Transferencia']);
+  if (datos.negocio.acepta_mercadopago) f.push(['mercadopago', 'Mercado Pago']);
   if (f.length === 0) f.push(['efectivo', 'Efectivo']);
 
   formaPago = f[0][0];
@@ -1145,6 +1181,12 @@ $('btnEnviarPedido').onclick = async function () {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'No se pudo enviar');
+
+    // si eligio Mercado Pago, se lo manda a pagar antes de mostrar la confirmacion
+    if (d.initPoint) {
+      window.location.href = d.initPoint;
+      return;
+    }
 
     pedidoCreado = d.id;
     $('numeroPedido').textContent = 'Numero ' + d.numero;

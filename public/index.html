@@ -3117,6 +3117,29 @@
       <input type="text" id="catTitular" placeholder="Ej: Juan Perez">
     </div>
 
+    <div class="cap-item">
+      <div class="txt"><div class="n">Mercado Pago</div>
+        <div class="d">El cliente paga online y el dinero te llega directo a tu cuenta</div></div>
+      <button class="switch" id="swMercadopago"></button>
+    </div>
+
+    <div id="wrapMercadopago" style="display:none;">
+      <div id="mpNoConectado">
+        <p class="hint" style="margin-top:0;">
+          Para recibir los pagos necesitas conectar tu cuenta de Mercado Pago.
+          Entra a tu cuenta de Mercado Pago, anda a Tu negocio &gt; Configuracion &gt; Tus integraciones,
+          crea una aplicacion, entra a Credenciales de produccion, y copia el Access Token.
+        </p>
+        <label>Access Token</label>
+        <input type="text" id="mpToken" placeholder="APP_USR-...">
+        <button type="button" class="btn-foto" id="btnConectarMp" style="margin-top:8px;">Conectar</button>
+      </div>
+      <div id="mpConectado" style="display:none;">
+        <p class="hint ok" style="margin-top:0;">Mercado Pago conectado. Los pagos te llegan directo a tu cuenta.</p>
+        <button type="button" class="btn-foto borrar" id="btnDesconectarMp">Desconectar</button>
+      </div>
+    </div>
+
     <div class="seccion">Tu dominio propio</div>
     <p class="hint" style="margin:-4px 0 10px;">Si ya tenes un dominio, tu catalogo puede vivir ahi.</p>
 
@@ -7796,6 +7819,41 @@ document.getElementById('swTransfer').onclick = function () {
   document.getElementById('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
 };
 
+let aceptaMp = false;
+let mpConectado = false;
+
+function pintarMp() {
+  $('swMercadopago').classList.toggle('on', aceptaMp);
+  $('wrapMercadopago').style.display = aceptaMp ? 'block' : 'none';
+  $('mpNoConectado').style.display = mpConectado ? 'none' : 'block';
+  $('mpConectado').style.display = mpConectado ? 'block' : 'none';
+}
+
+$('swMercadopago').onclick = function () {
+  aceptaMp = !aceptaMp;
+  pintarMp();
+};
+
+$('btnConectarMp').onclick = function () {
+  if (!$('mpToken').value.trim()) {
+    $('msgCat2').innerHTML = '<div class="msg">Pega tu Access Token de Mercado Pago.</div>';
+    return;
+  }
+  $('btnGuardarCatalogo').click();
+};
+
+$('btnDesconectarMp').onclick = async function () {
+  if (!confirm('Desconectar Mercado Pago? Tus clientes ya no van a poder pagar online con esto.')) return;
+  try {
+    await api('DELETE', '/catalogo/mercadopago');
+    mpConectado = false;
+    aceptaMp = false;
+    $('mpToken').value = '';
+    pintarMp();
+    avisar('Mercado Pago desconectado');
+  } catch (e) { avisar(e.message, true); }
+};
+
 // abre la configuracion del catalogo, sin depender de ningun otro botton
 async function abrirConfigCatalogo() {
   $('modalCuentaUsuario').classList.remove('on');
@@ -7833,6 +7891,10 @@ async function abrirConfigCatalogo() {
     $('wrapFondoPer').style.display = c.color_personalizado ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
+    aceptaMp = !!c.acepta_mercadopago;
+    mpConectado = !!c.mp_conectado;
+    $('mpToken').value = '';
+    pintarMp();
     await cargarTurnosWeb();
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -7962,7 +8024,9 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorPersonalizado: colorPerQuitado ? '' : $('catColorPersonalizado').value,
       colorFondo: colorFondoQuitado ? '' : $('catColorFondo').value,
       instagram: $('catInstagram').value.trim() || null,
-      facebook: $('catFacebook').value.trim() || null
+      facebook: $('catFacebook').value.trim() || null,
+      aceptaMercadopago: aceptaMp,
+      mpAccessToken: $('mpToken').value.trim()
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
@@ -7971,6 +8035,8 @@ $('btnGuardarCatalogo').onclick = async function () {
     $('btnQuitarColorFondo').style.display = d.color_fondo ? 'block' : 'none';
     colorFondoQuitado = false;
     colorPerQuitado = false;
+    mpConectado = d.mp_conectado;
+    pintarMp();
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';

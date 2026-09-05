@@ -19,6 +19,8 @@ try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN logo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN instagram TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN facebook TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN mp_access_token TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN acepta_mercadopago INTEGER NOT NULL DEFAULT 0"); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN dominio TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN dominio_ok INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
@@ -35,9 +37,16 @@ router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
-    color_personalizado, color_fondo, logo, instagram, facebook
+    color_personalizado, color_fondo, logo, instagram, facebook, mp_access_token, acepta_mercadopago
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
+
+  // el token nunca se manda de vuelta al frontend, solo si esta conectado o no
+  if (n) {
+    n.mp_conectado = !!n.mp_access_token;
+    delete n.mp_access_token;
+  }
+
   res.json({ config: n || null, productos: cuantos.n });
 });
 
@@ -63,22 +72,39 @@ router.put('/config', (req, res) => {
   let colorFondo = (req.body?.colorFondo || '').trim();
   if (colorFondo && !/^#[0-9a-fA-F]{6}$/.test(colorFondo)) colorFondo = '';
 
+  // el token de Mercado Pago solo se pisa si mandaron uno nuevo (nunca se lo devolvemos al frontend)
+  const mpToken = (req.body?.mpAccessToken || '').trim();
+
   db.prepare(`
     UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
       alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?,
-      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_fondo = ?, instagram = ?, facebook = ?
+      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_fondo = ?, instagram = ?, facebook = ?,
+      acepta_mercadopago = ?, mp_access_token = COALESCE(?, mp_access_token)
     WHERE user_id = ?
   `).run(slug, req.body?.activo ? 1 : 0, req.body?.whatsapp || null,
          req.body?.mensaje || null, req.body?.alias || null, req.body?.titular || null,
          req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0,
          req.body?.tema || 'verde', req.body?.fondo || 'claro',
          req.body?.fuente || 'sistema', colorPer || null, colorFondo || null,
-         req.body?.instagram || null, req.body?.facebook || null, req.userId);
+         req.body?.instagram || null, req.body?.facebook || null,
+         req.body?.aceptaMercadopago ? 1 : 0, mpToken || null, req.userId);
 
-  res.json(db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
+  const actualizado = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner,
-    color_personalizado, color_fondo, logo, instagram, facebook
-    FROM negocio WHERE user_id = ?`).get(req.userId));
+    color_personalizado, color_fondo, logo, instagram, facebook, mp_access_token, acepta_mercadopago
+    FROM negocio WHERE user_id = ?`).get(req.userId);
+
+  actualizado.mp_conectado = !!actualizado.mp_access_token;
+  delete actualizado.mp_access_token;
+
+  res.json(actualizado);
+});
+
+// ── desconectar Mercado Pago ──
+router.delete('/mercadopago', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  db.prepare('UPDATE negocio SET mp_access_token = NULL, acepta_mercadopago = 0 WHERE user_id = ?').run(req.userId);
+  res.json({ ok: true });
 });
 
 // ── mostrar u ocultar un producto del catalogo ──
@@ -168,6 +194,7 @@ router.get('/publico/:slug', (req, res) => {
       alias_pago: n.alias_pago,
       titular_pago: n.titular_pago,
       acepta_transferencia: n.acepta_transferencia,
+      acepta_mercadopago: !!(n.acepta_mercadopago && n.mp_access_token),
       acepta_efectivo: n.acepta_efectivo,
       tema: n.tema || 'verde',
       fondo: n.fondo || 'claro',

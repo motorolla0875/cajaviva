@@ -44,7 +44,7 @@ function hoyISO(userId) {
 }
 
 // ── el cliente manda el pedido (publico) ──
-router.post('/publico/:slug', (req, res) => {
+router.post('/publico/:slug', async (req, res) => {
   const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
   if (!n) return res.status(404).json({ error: 'Catalogo no encontrado.' });
 
@@ -81,6 +81,8 @@ router.post('/publico/:slug', (req, res) => {
 
   if (lineas.length === 0) return res.status(400).json({ error: 'No hay productos validos.' });
 
+  const pagaConMp = formaPago === 'mercadopago' && n.acepta_mercadopago && n.mp_access_token;
+
   db.prepare(`
     INSERT INTO pedidos_web (id, user_id, nombre, telefono, direccion, nota, total, forma_pago)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -96,7 +98,71 @@ router.post('/publico/:slug', (req, res) => {
            l.cantidad, l.precio);
   });
 
+  // si eligio pagar con Mercado Pago, se genera el link de pago con la cuenta del propio comerciante
+  if (pagaConMp) {
+    try {
+      const appUrl = process.env.APP_URL || 'https://cajaviva.app';
+      const volverA = appUrl + '/c/' + req.params.slug + '?pedido=' + id;
+
+      const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + n.mp_access_token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: lineas.map(function (l) {
+            return {
+              title: l.variante ? l.p.nombre + ' (' + l.variante.nombre + ')' : l.p.nombre,
+              quantity: l.cantidad,
+              currency_id: n.moneda || 'ARS',
+              unit_price: l.precio
+            };
+          }),
+          external_reference: id,
+          notification_url: appUrl + '/api/pedidos/mp-webhook/' + id,
+          back_urls: { success: volverA + '&pago=aprobado', pending: volverA + '&pago=pendiente', failure: volverA + '&pago=rechazado' },
+          auto_return: 'approved'
+        })
+      });
+      const pref = await r.json();
+      if (r.ok && pref.init_point) {
+        return res.json({ id: id, total: total, numero: id.slice(0, 6).toUpperCase(), initPoint: pref.init_point });
+      }
+      // si mercado pago rechazo la preferencia (token invalido, etc), el pedido igual quedo guardado
+    } catch (e) {}
+  }
+
   res.json({ id: id, total: total, numero: id.slice(0, 6).toUpperCase() });
+});
+
+// ── webhook de Mercado Pago: nos avisa cuando un pago cambia de estado ──
+router.post('/mp-webhook/:pedidoId', async (req, res) => {
+  // siempre respondemos 200 rapido, Mercado Pago reintenta si no le contestamos
+  res.sendStatus(200);
+
+  try {
+    const paymentId = (req.body && req.body.data && req.body.data.id) || req.query['data.id'] || req.query.id;
+    if (!paymentId) return;
+
+    const pedido = db.prepare('SELECT * FROM pedidos_web WHERE id = ?').get(req.params.pedidoId);
+    if (!pedido) return;
+
+    const n = db.prepare('SELECT mp_access_token FROM negocio WHERE user_id = ?').get(pedido.user_id);
+    if (!n || !n.mp_access_token) return;
+
+    const r = await fetch('https://api.mercadopago.com/v1/payments/' + paymentId, {
+      headers: { 'Authorization': 'Bearer ' + n.mp_access_token }
+    });
+    if (!r.ok) return;
+    const pago = await r.json();
+
+    if (pago.status === 'approved') {
+      db.prepare("UPDATE pedidos_web SET pago_estado = 'verificado' WHERE id = ?").run(req.params.pedidoId);
+    } else if (pago.status === 'rejected' || pago.status === 'cancelled') {
+      db.prepare("UPDATE pedidos_web SET pago_estado = 'pendiente' WHERE id = ?").run(req.params.pedidoId);
+    }
+  } catch (e) {}
 });
 
 // ── el comerciante ve sus pedidos ──
