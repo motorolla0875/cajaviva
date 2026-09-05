@@ -17,8 +17,9 @@
   body {
     margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
-    padding-bottom: 90px;
+    padding-bottom: 0;
   }
+  body.con-carrito { padding-bottom: 90px; }
   #bannerNeg {
     width: 100%; line-height: 0;
     max-width: 1240px; margin: 0 auto;
@@ -392,8 +393,8 @@
   </div>
 </div>
 
-<footer id="footerNeg" style="display:flex; align-items:center; justify-content:center; padding:20px 20px 90px; color:var(--muted); font-size:12.5px;">
-  <a href="https://cajaviva.app" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none; font-size:11.5px; white-space:nowrap;">Hecho con <b style="color:var(--accent-dark);">CajaViva</b></a>
+<footer id="footerNeg" style="display:flex; align-items:center; justify-content:center; padding:18px 20px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px;">
+  <a href="https://cajaviva.app" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none; font-size:11.5px; white-space:nowrap;">Creado con <b style="color:var(--accent-dark);">CajaViva</b></a>
 </footer>
 
 <div class="barra" id="barra" style="display:none;">
@@ -1157,7 +1158,11 @@ function elegirVarCat(varId, nombreVar, precio) {
 
 function actualizarBarra() {
   const ids = Object.keys(pedido);
-  if (ids.length === 0) { $('barra').style.display = 'none'; return; }
+  if (ids.length === 0) {
+    $('barra').style.display = 'none';
+    document.body.classList.remove('con-carrito');
+    return;
+  }
 
   let total = 0, cant = 0;
   ids.forEach(function (clave) {
@@ -1168,6 +1173,7 @@ function actualizarBarra() {
   });
 
   $('barra').style.display = 'block';
+  document.body.classList.add('con-carrito');
   $('cantPedido').textContent = cant + (cant === 1 ? ' producto' : ' productos');
   $('totalPedido').textContent = plata(total);
 }
