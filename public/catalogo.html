@@ -78,7 +78,6 @@
     #cajaBuscadorHeader { flex: 0 1 380px; }
     #ladoDerechoHeader { position: absolute; right: 0; }
     #navWebCat { display: flex !important; position: absolute; left: 0; }
-    .chips { display: none; }
     .grilla-prod {
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px;
     }
@@ -99,6 +98,9 @@
   .buscador input:focus { outline: none; }
 
   .chips { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 12px; }
+  @media (min-width: 820px) {
+    .chips { display: none; }
+  }
   .chips::-webkit-scrollbar { display: none; }
   .chips button {
     flex-shrink: 0; padding: 8px 14px; border-radius: 20px;
