@@ -1653,18 +1653,47 @@ function verFoto(urls) {
           '<img src="' + u + '" style="max-width:100%; max-height:100%; border-radius:12px; object-fit:contain;">' +
         '</div>';
       }).join('') +
-    '</div>';
+    '</div>' +
+    (lista.length > 1
+      ? '<button id="galAnt" style="display:none; position:absolute; left:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:20px; cursor:pointer;">&#8249;</button>' +
+        '<button id="galSig" style="display:none; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:20px; cursor:pointer;">&#8250;</button>'
+      : '');
 
   const tira = d.querySelector('#galTira');
   const contador = d.querySelector('#galContador');
+  const btnAnt = d.querySelector('#galAnt');
+  const btnSig = d.querySelector('#galSig');
 
   function pintar() {
     tira.style.transform = 'translateX(-' + (i * 100) + '%)';
     contador.textContent = lista.length > 1 ? (i + 1) + ' / ' + lista.length : '';
+    if (btnAnt) btnAnt.style.display = i > 0 ? 'flex' : 'none';
+    if (btnSig) btnSig.style.display = i < lista.length - 1 ? 'flex' : 'none';
   }
   pintar();
 
-  d.querySelector('#galCerrar').onclick = function () { d.remove(); };
+  if (btnAnt) {
+    btnAnt.style.alignItems = 'center'; btnAnt.style.justifyContent = 'center';
+    btnAnt.onclick = function () { i = Math.max(0, i - 1); pintar(); };
+  }
+  if (btnSig) {
+    btnSig.style.alignItems = 'center'; btnSig.style.justifyContent = 'center';
+    btnSig.onclick = function () { i = Math.min(lista.length - 1, i + 1); pintar(); };
+  }
+
+  function porTeclado(e) {
+    if (e.key === 'ArrowLeft') { i = Math.max(0, i - 1); pintar(); }
+    else if (e.key === 'ArrowRight') { i = Math.min(lista.length - 1, i + 1); pintar(); }
+    else if (e.key === 'Escape') { cerrar(); }
+  }
+  document.addEventListener('keydown', porTeclado);
+
+  function cerrar() {
+    document.removeEventListener('keydown', porTeclado);
+    d.remove();
+  }
+
+  d.querySelector('#galCerrar').onclick = cerrar;
 
   let x0 = null, arrastrandoCerrar = false;
   tira.addEventListener('touchstart', function (e) {
@@ -1692,7 +1721,7 @@ function verFoto(urls) {
       if (Math.abs(dx) > 90) {
         d.style.transform = 'translateX(' + (dx < 0 ? -500 : 500) + 'px)';
         d.style.opacity = '0';
-        setTimeout(function () { d.remove(); }, 200);
+        setTimeout(cerrar, 200);
       } else {
         d.style.transform = '';
         d.style.opacity = '';
