@@ -877,12 +877,14 @@ async function cargar() {
       document.getElementById('redesNeg').style.display = 'flex';
     }
 
+    const tieneRedes = !!(datos.negocio.instagram || datos.negocio.facebook || datos.negocio.twitter || datos.negocio.tiktok);
+
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
       document.getElementById('bannerNeg').style.display = 'block';
       // con banner, el nombre no se repite
       document.getElementById('nombreNeg').style.display = 'none';
-      if (!datos.negocio.mensaje) {
+      if (!datos.negocio.mensaje && !tieneRedes) {
         document.querySelector('header').style.display = 'none';
       } else {
         document.querySelector('header').style.padding = '12px 18px';
