@@ -83,25 +83,34 @@
   }
   .chips button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
-  .cat-hamb {
-    display: none; align-items: center; gap: 8px; width: 100%; margin-bottom: 12px;
-    padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px;
-    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
+  .cat-fab {
+    display: none; position: fixed; top: 14px; right: 14px; z-index: 40;
+    width: 46px; height: 46px; border-radius: 50%; border: none;
+    background: var(--panel); color: var(--text); font-size: 19px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,.22);
   }
-  .cat-hamb .ic { font-size: 17px; line-height: 1; }
-  .panel-cat-movil {
-    display: none; flex-direction: column; gap: 2px; margin: -6px 0 14px;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px;
+
+  .panel-cat-full {
+    display: none; position: fixed; inset: 0; z-index: 70;
+    background: var(--bg); flex-direction: column; padding: 18px 18px 24px; overflow-y: auto;
   }
-  .panel-cat-movil.on { display: flex; }
-  .panel-cat-movil button {
-    text-align: left; background: none; border: none; padding: 10px 10px; font-size: 14px;
-    color: var(--text); border-radius: 8px;
+  .panel-cat-full.on { display: flex; }
+  .cab-cat-full { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cab-cat-full h3 { margin: 0; font-size: 19px; font-weight: 500; }
+  .cab-cat-full button {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: var(--panel-2); color: var(--text); font-size: 15px; cursor: pointer;
   }
-  .panel-cat-movil button.on { background: var(--accent-soft); color: var(--accent-dark); font-weight: 500; }
+  #listaCatMovil { display: flex; flex-direction: column; gap: 4px; }
+  #listaCatMovil button {
+    text-align: left; background: none; border: none; padding: 14px 12px; font-size: 16px;
+    color: var(--text); border-radius: 10px;
+  }
+  #listaCatMovil button.on { background: var(--accent-soft); color: var(--accent-dark); font-weight: 500; }
+
   @media (max-width: 819px) {
     .chips { display: none; }
-    .cat-hamb { display: flex; }
+    .cat-fab { display: block; }
   }
 
   .cat-titulo { font-size: 13px; font-weight: 500; color: var(--muted); margin: 18px 0 8px; }
@@ -337,12 +346,17 @@
     <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
   </div>
   <div class="chips" id="chips"></div>
-  <button id="btnCatHamb" class="cat-hamb">
-    <span class="ic">&#9776;</span>
-    <span id="txtCatHamb">Categorias</span>
-  </button>
-  <div id="panelCatMovil" class="panel-cat-movil"></div>
   <div id="lista"><div class="vacio">Cargando productos...</div></div>
+</div>
+
+<button id="btnCatHamb" class="cat-fab" title="Categorias">&#9776;</button>
+
+<div id="panelCatMovil" class="panel-cat-full">
+  <div class="cab-cat-full">
+    <h3>Categorias</h3>
+    <button id="btnCerrarCatMovil">&#10005;</button>
+  </div>
+  <div id="listaCatMovil"></div>
 </div>
 
 <footer id="footerNeg" style="display:none; text-align:center; padding:24px 20px 90px; color:var(--muted); font-size:12.5px;">
@@ -883,7 +897,7 @@ function pintarChips() {
   if (cs.length < 2) {
     $('chips').innerHTML = '';
     $('btnCatHamb').style.display = 'none';
-    $('panelCatMovil').innerHTML = '';
+    $('listaCatMovil').innerHTML = '';
     return;
   }
   $('btnCatHamb').style.display = '';
@@ -896,8 +910,7 @@ function pintarChips() {
   };
 
   $('chips').innerHTML = botones(false);
-  $('panelCatMovil').innerHTML = botones(true);
-  $('txtCatHamb').textContent = filtro || 'Categorias';
+  $('listaCatMovil').innerHTML = botones(true);
 }
 
 function filtrar(c, cerrarMovil) {
@@ -908,7 +921,10 @@ function filtrar(c, cerrarMovil) {
 }
 
 document.getElementById('btnCatHamb').onclick = function () {
-  $('panelCatMovil').classList.toggle('on');
+  $('panelCatMovil').classList.add('on');
+};
+document.getElementById('btnCerrarCatMovil').onclick = function () {
+  $('panelCatMovil').classList.remove('on');
 };
 
 function pintar() {
