@@ -361,7 +361,10 @@
 <header>
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
-  <p id="mensajeNeg"></p>
+  <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+    <p id="mensajeNeg" style="margin:0;"></p>
+    <div id="redesNeg" style="display:none; gap:12px;"></div>
+  </div>
 </header>
 
 <div class="cont">
@@ -380,8 +383,6 @@
     <button id="btnCerrarCatMovil">&#10005;</button>
   </div>
   <div id="listaCatMovil"></div>
-
-  <div id="redesNeg" style="display:none; gap:16px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line);"></div>
 
   <a href="javascript:void(0)" id="linkQuienesSomos" style="display:none; margin-top:18px; font-size:14px; color:var(--accent-dark); text-decoration:underline;">Quienes somos</a>
 </div>
