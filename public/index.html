@@ -3040,11 +3040,6 @@
     </div>
 
     <div id="wrapFondoPer" style="display:none; margin-top:10px;">
-      <label>Fondo del catalogo</label>
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="btn-fondo-op" id="btnFondoClaro" style="flex:1;">Claro</button>
-        <button type="button" class="btn-fondo-op" id="btnFondoOscuro" style="flex:1;">Oscuro</button>
-      </div>
 
       <div class="cap-item" style="margin-top:12px;">
         <div class="txt"><div class="n">Color de fondo exacto</div>
@@ -7919,8 +7914,6 @@ async function abrirConfigCatalogo() {
     colorPerActivo = !!c.color_personalizado;
     $('swColorPer').classList.toggle('on', colorPerActivo);
     actualizarEstiloVsColorPer();
-    fondoPerCat = c.fondo === 'oscuro' ? 'oscuro' : 'claro';
-    pintarFondoPer();
     $('catColorFondo').value = c.color_fondo || '#FAFAF7';
     colorFondoActivo = !!c.color_fondo;
     $('swColorFondo').classList.toggle('on', colorFondoActivo);
@@ -7958,13 +7951,7 @@ $('swCatalogo').onclick = function () {
 
 $('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remove('on'); };
 
-let fondoPerCat = 'claro';
-function pintarFondoPer() {
-  $('btnFondoClaro').classList.toggle('on', fondoPerCat === 'claro');
-  $('btnFondoOscuro').classList.toggle('on', fondoPerCat === 'oscuro');
-}
-$('btnFondoClaro').onclick = function () { fondoPerCat = 'claro'; pintarFondoPer(); };
-$('btnFondoOscuro').onclick = function () { fondoPerCat = 'oscuro'; pintarFondoPer(); };
+const fondoPerCat = 'claro';
 
 let colorFondoActivo = false;
 $('swColorFondo').onclick = function () {
