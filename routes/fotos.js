@@ -139,6 +139,35 @@ router.delete('/banner', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── logo del catalogo ──
+router.post('/logo', subir.single('foto'), (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
+
+  const n = db.prepare('SELECT logo FROM negocio WHERE user_id = ?').get(req.userId);
+  if (n && n.logo) {
+    const ruta = path.join(CARPETA, path.basename(n.logo));
+    if (fs.existsSync(ruta)) { try { fs.unlinkSync(ruta); } catch (e) {} }
+  }
+
+  const nombre = uuidv4() + '-logo.webp';
+  guardarArchivo(req.file.buffer, nombre);
+  db.prepare('UPDATE negocio SET logo = ? WHERE user_id = ?').run('/fotos/' + nombre, req.userId);
+
+  res.json({ logo: '/fotos/' + nombre });
+});
+
+router.delete('/logo', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  const n = db.prepare('SELECT logo FROM negocio WHERE user_id = ?').get(req.userId);
+  if (n && n.logo) {
+    const ruta = path.join(CARPETA, path.basename(n.logo));
+    if (fs.existsSync(ruta)) { try { fs.unlinkSync(ruta); } catch (e) {} }
+  }
+  db.prepare('UPDATE negocio SET logo = NULL WHERE user_id = ?').run(req.userId);
+  res.json({ ok: true });
+});
+
 
 // ── comprobante de una reserva (publico) ──
 router.post('/reserva/:id', subir.single('foto'), (req, res) => {

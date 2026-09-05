@@ -3000,6 +3000,22 @@
     <label>Estilo del catalogo</label>
     <div class="fondos" id="temasCat"></div>
 
+    <label style="margin-top:10px;">O elegi tu propio color</label>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <input type="color" id="catColorPersonalizado" value="#1D9E75" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
+      <span style="font-size:13px; color:var(--muted); flex:1;">Si elegis un color aca, se usa en vez del estilo de arriba</span>
+      <button type="button" class="btn-foto borrar" id="btnQuitarColorPer" style="flex:0 0 auto; padding:8px 12px; display:none;">Quitar</button>
+    </div>
+
+    <label>Logo (opcional)</label>
+    <div class="banner-prev" id="logoPrev" style="max-width:110px;"><span>Sin logo</span></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button type="button" class="btn-foto" id="btnSubirLogo" style="flex:1;">Subir imagen</button>
+      <button type="button" class="btn-foto borrar" id="btnBorrarLogo" style="display:none; flex:0 0 auto; padding:10px 16px;">Quitar</button>
+    </div>
+    <input type="file" id="archLogo" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
+    <p class="hint">Ideal cuadrado, minimo 200 x 200 pixeles.</p>
+
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
     <div style="display:flex; gap:8px; margin-top:8px;">
@@ -3008,6 +3024,12 @@
     </div>
     <input type="file" id="archBanner" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
     <p class="hint">Ideal 1200 x 400 pixeles. Se comprime sola.</p>
+
+    <label>Instagram (opcional)</label>
+    <input type="text" id="catInstagram" placeholder="Ej: mi.negocio">
+
+    <label>Facebook (opcional)</label>
+    <input type="text" id="catFacebook" placeholder="Ej: mi.negocio">
 
     <div id="bloqueTurnosWeb" style="display:none;">
       <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
@@ -7742,6 +7764,11 @@ async function abrirConfigCatalogo() {
     temaCat = c.tema || 'verde';
     pintarTemas();
     mostrarBanner(c.banner || null);
+    mostrarLogo(c.logo || null);
+    $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
+    $('btnQuitarColorPer').style.display = c.color_personalizado ? 'block' : 'none';
+    $('catInstagram').value = c.instagram || '';
+    $('catFacebook').value = c.facebook || '';
     await cargarTurnosWeb();
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
@@ -7766,6 +7793,71 @@ $('swCatalogo').onclick = function () {
 
 $('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remove('on'); };
 
+$('btnQuitarColorPer').onclick = function () {
+  $('catColorPersonalizado').value = '#1D9E75';
+  $('btnQuitarColorPer').style.display = 'none';
+  colorPerQuitado = true;
+};
+$('catColorPersonalizado').addEventListener('input', function () {
+  $('btnQuitarColorPer').style.display = 'block';
+  colorPerQuitado = false;
+});
+let colorPerQuitado = false;
+
+function mostrarLogo(url) {
+  const p = document.getElementById('logoPrev');
+  if (url) {
+    p.innerHTML = '<img src="' + url + '?t=' + Date.now() + '">';
+    document.getElementById('btnBorrarLogo').style.display = 'block';
+    document.getElementById('btnSubirLogo').textContent = 'Cambiar imagen';
+  } else {
+    p.innerHTML = '<span>Sin logo</span>';
+    document.getElementById('btnBorrarLogo').style.display = 'none';
+    document.getElementById('btnSubirLogo').textContent = 'Subir imagen';
+  }
+}
+
+document.getElementById('btnSubirLogo').onclick = function () {
+  document.getElementById('archLogo').click();
+};
+
+document.getElementById('archLogo').onchange = async function (e) {
+  const f = e.target.files[0];
+  if (!f) return;
+
+  const btn = document.getElementById('btnSubirLogo');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+
+  try {
+    const img = await comprimirImagen(f, 400, 0.85);
+    const fd = new FormData();
+    fd.append('foto', img, 'logo.webp');
+
+    const r = await fetch(API + '/fotos/logo', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+
+    mostrarLogo(d.logo);
+    avisar('Logo guardado');
+  } catch (err) { avisar(err.message, true); }
+
+  btn.disabled = false;
+  e.target.value = '';
+};
+
+document.getElementById('btnBorrarLogo').onclick = async function () {
+  if (!confirm('Quitar el logo?')) return;
+  try {
+    await api('DELETE', '/fotos/logo');
+    mostrarLogo(null);
+    avisar('Logo quitado');
+  } catch (e) { avisar(e.message, true); }
+};
+
 $('btnGuardarCatalogo').onclick = async function () {
   const btn = $('btnGuardarCatalogo');
   btn.disabled = true; btn.textContent = 'Guardando...';
@@ -7780,10 +7872,15 @@ $('btnGuardarCatalogo').onclick = async function () {
       titular: $('catTitular').value.trim() || null,
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
-      tema: temaCat
+      tema: temaCat,
+      colorPersonalizado: colorPerQuitado ? '' : $('catColorPersonalizado').value,
+      instagram: $('catInstagram').value.trim() || null,
+      facebook: $('catFacebook').value.trim() || null
     });
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
+    $('btnQuitarColorPer').style.display = d.color_personalizado ? 'block' : 'none';
+    colorPerQuitado = false;
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
