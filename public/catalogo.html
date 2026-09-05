@@ -91,10 +91,17 @@
   }
 
   .panel-cat-full {
-    display: none; position: fixed; inset: 0; z-index: 70;
+    display: flex; position: fixed; inset: 0; z-index: 70;
     background: var(--bg); flex-direction: column; padding: 18px 18px 24px; overflow-y: auto;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    transform: translateY(24px);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
   }
-  .panel-cat-full.on { display: flex; }
+  .panel-cat-full.on {
+    visibility: visible; opacity: 1; pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity .25s ease, transform .25s ease;
+  }
   .cab-cat-full { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .cab-cat-full h3 { margin: 0; font-size: 19px; font-weight: 500; }
   .cab-cat-full button {
