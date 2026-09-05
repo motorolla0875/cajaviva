@@ -20,6 +20,20 @@
     padding-bottom: 0;
   }
   body.con-carrito { padding-bottom: 90px; }
+  body.cargando-cat { overflow: hidden; }
+
+  #preloadCat {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg); display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; transition: opacity .4s ease;
+  }
+  #preloadCat.oculto { opacity: 0; pointer-events: none; }
+  .pl-nombre { font-size: 18px; font-weight: 500; color: var(--text); }
+  .pl-spin {
+    width: 34px; height: 34px; border: 3px solid var(--line); border-top-color: var(--accent);
+    border-radius: 50%; animation: girarCat .8s linear infinite;
+  }
+  @keyframes girarCat { to { transform: rotate(360deg); } }
   #bannerNeg {
     width: 100%; line-height: 0;
     max-width: 1240px; margin: 0 auto;
@@ -357,7 +371,12 @@
   .vacio { text-align: center; color: var(--muted); padding: 50px 20px; }
 </style>
 </head>
-<body>
+<body class="cargando-cat">
+
+<div id="preloadCat">
+  <div class="pl-spin"></div>
+  <div class="pl-nombre" id="plNombre"></div>
+</div>
 
 <div id="bannerNeg" style="display:none;"><img id="bannerImg" alt=""></div>
 
@@ -833,6 +852,7 @@ async function cargar() {
     if (!r.ok) throw new Error('no existe');
     datos = await r.json();
 
+    $('plNombre').textContent = datos.negocio.nombre;
     aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo);
 
     if (datos.negocio.logo) {
@@ -891,10 +911,40 @@ async function cargar() {
     pintarChips();
     pintar();
     mostrarVueltaDeMp();
+    esperarImagenesYQuitarPreload();
   } catch (e) {
     $('lista').innerHTML = '<div class="vacio">Este catalogo no esta disponible.</div>';
     $('nombreNeg').textContent = 'Catalogo';
+    esperarImagenesYQuitarPreload();
   }
+}
+
+// espera a que carguen las fotos ya puestas en pantalla, y recien ahi saca la pantalla de carga
+function esperarImagenesYQuitarPreload() {
+  function quitar() {
+    const pl = document.getElementById('preloadCat');
+    if (!pl) return;
+    document.body.classList.remove('cargando-cat');
+    pl.classList.add('oculto');
+    setTimeout(function () { pl.remove(); }, 450);
+  }
+
+  const imgs = Array.prototype.slice.call(document.querySelectorAll('img'));
+  let restantes = imgs.length;
+  if (restantes === 0) { quitar(); return; }
+
+  const limite = setTimeout(quitar, 6000);
+  function chequear() {
+    restantes--;
+    if (restantes <= 0) { clearTimeout(limite); quitar(); }
+  }
+  imgs.forEach(function (img) {
+    if (img.complete) { restantes--; } else {
+      img.addEventListener('load', chequear);
+      img.addEventListener('error', chequear);
+    }
+  });
+  if (restantes <= 0) { clearTimeout(limite); quitar(); }
 }
 
 // si el cliente vuelve de pagar en Mercado Pago, le mostramos el resultado
