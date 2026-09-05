@@ -2235,6 +2235,120 @@
   <div class="vista" id="v-tienda">
     <div class="lista-wrap">
       <div id="resumenTienda"></div>
+      <div id="configTiendaInline" style="margin-top:18px;">
+    <h3 style="font-size:16px; margin-bottom:4px;">Configuracion del catalogo</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Una pagina con tus precios que podes mandar por WhatsApp. Tus clientes ven la lista y te arman el pedido.</p>
+    <div id="msgCat2"></div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Catalogo activo</div>
+        <div class="d">Si lo apagas, el link deja de funcionar</div></div>
+      <button class="switch" id="swCatalogo"></button>
+    </div>
+
+    <label>Direccion del catalogo</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span style="color:var(--muted); font-size:13px; flex-shrink:0;">cajaviva.app/c/</span>
+      <input type="text" id="catSlug" placeholder="mi-negocio" style="flex:1; min-width:0;">
+    </div>
+
+    <label>Tu WhatsApp (para recibir los pedidos)</label>
+    <input type="text" id="catWpp" inputmode="tel" placeholder="Ej: 1150250011">
+
+    <label>Mensaje de bienvenida (opcional)</label>
+    <input type="text" id="catMensaje" placeholder="Ej: Hacemos envios sin cargo">
+
+    <div class="seccion">Como se ve</div>
+
+    <label>Estilo del catalogo</label>
+    <div class="fondos" id="temasCat"></div>
+
+    <label>Banner de portada (opcional)</label>
+    <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button type="button" class="btn-foto" id="btnSubirBanner" style="flex:1;">Subir imagen</button>
+      <button type="button" class="btn-foto borrar" id="btnBorrarBanner" style="display:none; flex:0 0 auto; padding:10px 16px;">Quitar</button>
+    </div>
+    <input type="file" id="archBanner" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
+    <p class="hint">Ideal 1200 x 400 pixeles. Se comprime sola.</p>
+
+    <div id="bloqueTurnosWeb" style="display:none;">
+      <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
+
+      <div class="cap-item">
+        <div class="txt"><div class="n">Que pidan turno solos</div>
+          <div class="d">Tus clientes eligen dia y hora desde el catalogo</div></div>
+        <button class="switch" id="swTurnosWeb"></button>
+      </div>
+
+      <div id="wrapHorariosCat" style="display:none;">
+        <label>Que dias abris</label>
+        <div id="diasCat"></div>
+
+        <div class="fila2" style="margin-top:10px;">
+          <div><label>Desde</label><input type="time" id="catDesde" value="09:00"></div>
+          <div><label>Hasta</label><input type="time" id="catHasta" value="19:00"></div>
+        </div>
+
+        <button type="button" id="btnPartidoCat" class="mas-op" style="margin-top:4px;">Cierro al mediodia</button>
+
+        <div id="segundoTurnoCat" style="display:none;">
+          <p class="hint" style="margin:4px 0 6px;">Segundo turno</p>
+          <div class="fila2">
+            <div><label>Desde</label><input type="time" id="catDesde2" value="16:00"></div>
+            <div><label>Hasta</label><input type="time" id="catHasta2" value="20:00"></div>
+          </div>
+        </div>
+
+        <label>Seña para reservar (opcional)</label>
+        <input type="text" id="catSena" inputmode="decimal" placeholder="0">
+        <p class="hint">Si ponés un monto, el cliente tiene que transferir y mandarte el comprobante. Evita turnos falsos.</p>
+      </div>
+    </div>
+
+    <div class="seccion">Como te pagan</div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Efectivo</div>
+        <div class="d">Paga al recibir el pedido</div></div>
+      <button class="switch on" id="swEfectivo"></button>
+    </div>
+
+    <div class="cap-item">
+      <div class="txt"><div class="n">Transferencia</div>
+        <div class="d">Le mostramos tu alias para que transfiera</div></div>
+      <button class="switch" id="swTransfer"></button>
+    </div>
+
+    <div id="wrapAlias" style="display:none;">
+      <label>Tu alias o CBU</label>
+      <input type="text" id="catAlias" placeholder="Ej: mi.negocio.mp">
+      <label>A nombre de</label>
+      <input type="text" id="catTitular" placeholder="Ej: Juan Perez">
+    </div>
+
+    <div class="seccion">Tu dominio propio</div>
+    <p class="hint" style="margin:-4px 0 10px;">Si ya tenes un dominio, tu catalogo puede vivir ahi.</p>
+
+    <input type="text" id="catDominio" placeholder="mitienda.com">
+    <button type="button" class="btn-foto" id="btnGuardarDominio" style="margin-top:8px;">Guardar dominio</button>
+    <div id="pasosDominio" style="display:none; margin-top:12px;"></div>
+
+    <div id="catLinkBox" style="display:none; margin-top:16px; padding:14px; background:var(--accent-soft); border-radius:10px;">
+      <div style="font-size:12px; color:var(--accent-dark); margin-bottom:6px;">Tu link</div>
+      <div style="font-size:14px; font-weight:500; color:var(--accent-dark); word-break:break-all;" id="catLink"></div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn-pago" onclick="compartirCatalogo()" style="flex:1; border:none; border-radius:9px; padding:10px; font-size:13.5px; font-weight:500;">Compartir</button>
+        <button onclick="abrirCatalogo()" style="flex:1; border:1px solid var(--accent); border-radius:9px; padding:10px; background:var(--panel); color:var(--accent-dark); font-size:13.5px; font-weight:500;">Ver como queda</button>
+      </div>
+    </div>
+
+    <p class="hint" id="catCuantos"></p>
+    <button class="btn-sec" id="btnElegirProd">Elegir que productos mostrar</button>
+
+    <button class="btn-ppal" id="btnGuardarCatalogo" style="margin-top:14px;">Guardar</button>
+    <div id="msgTurnosWeb" style="margin-top:8px;"></div>
+  </div>
     </div>
   </div>
 
@@ -2971,123 +3085,7 @@
   </div>
 </div>
 
-<div class="modal-bg" id="modalCatalogo">
-  <div class="modal">
-    <h3>Catalogo para compartir</h3>
-    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Una pagina con tus precios que podes mandar por WhatsApp. Tus clientes ven la lista y te arman el pedido.</p>
-    <div id="msgCat2"></div>
 
-    <div class="cap-item">
-      <div class="txt"><div class="n">Catalogo activo</div>
-        <div class="d">Si lo apagas, el link deja de funcionar</div></div>
-      <button class="switch" id="swCatalogo"></button>
-    </div>
-
-    <label>Direccion del catalogo</label>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <span style="color:var(--muted); font-size:13px; flex-shrink:0;">cajaviva.app/c/</span>
-      <input type="text" id="catSlug" placeholder="mi-negocio" style="flex:1; min-width:0;">
-    </div>
-
-    <label>Tu WhatsApp (para recibir los pedidos)</label>
-    <input type="text" id="catWpp" inputmode="tel" placeholder="Ej: 1150250011">
-
-    <label>Mensaje de bienvenida (opcional)</label>
-    <input type="text" id="catMensaje" placeholder="Ej: Hacemos envios sin cargo">
-
-    <div class="seccion">Como se ve</div>
-
-    <label>Estilo del catalogo</label>
-    <div class="fondos" id="temasCat"></div>
-
-    <label>Banner de portada (opcional)</label>
-    <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button type="button" class="btn-foto" id="btnSubirBanner" style="flex:1;">Subir imagen</button>
-      <button type="button" class="btn-foto borrar" id="btnBorrarBanner" style="display:none; flex:0 0 auto; padding:10px 16px;">Quitar</button>
-    </div>
-    <input type="file" id="archBanner" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
-    <p class="hint">Ideal 1200 x 400 pixeles. Se comprime sola.</p>
-
-    <div id="bloqueTurnosWeb" style="display:none;">
-      <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
-
-      <div class="cap-item">
-        <div class="txt"><div class="n">Que pidan turno solos</div>
-          <div class="d">Tus clientes eligen dia y hora desde el catalogo</div></div>
-        <button class="switch" id="swTurnosWeb"></button>
-      </div>
-
-      <div id="wrapHorariosCat" style="display:none;">
-        <label>Que dias abris</label>
-        <div id="diasCat"></div>
-
-        <div class="fila2" style="margin-top:10px;">
-          <div><label>Desde</label><input type="time" id="catDesde" value="09:00"></div>
-          <div><label>Hasta</label><input type="time" id="catHasta" value="19:00"></div>
-        </div>
-
-        <button type="button" id="btnPartidoCat" class="mas-op" style="margin-top:4px;">Cierro al mediodia</button>
-
-        <div id="segundoTurnoCat" style="display:none;">
-          <p class="hint" style="margin:4px 0 6px;">Segundo turno</p>
-          <div class="fila2">
-            <div><label>Desde</label><input type="time" id="catDesde2" value="16:00"></div>
-            <div><label>Hasta</label><input type="time" id="catHasta2" value="20:00"></div>
-          </div>
-        </div>
-
-        <label>Seña para reservar (opcional)</label>
-        <input type="text" id="catSena" inputmode="decimal" placeholder="0">
-        <p class="hint">Si ponés un monto, el cliente tiene que transferir y mandarte el comprobante. Evita turnos falsos.</p>
-      </div>
-    </div>
-
-    <div class="seccion">Como te pagan</div>
-
-    <div class="cap-item">
-      <div class="txt"><div class="n">Efectivo</div>
-        <div class="d">Paga al recibir el pedido</div></div>
-      <button class="switch on" id="swEfectivo"></button>
-    </div>
-
-    <div class="cap-item">
-      <div class="txt"><div class="n">Transferencia</div>
-        <div class="d">Le mostramos tu alias para que transfiera</div></div>
-      <button class="switch" id="swTransfer"></button>
-    </div>
-
-    <div id="wrapAlias" style="display:none;">
-      <label>Tu alias o CBU</label>
-      <input type="text" id="catAlias" placeholder="Ej: mi.negocio.mp">
-      <label>A nombre de</label>
-      <input type="text" id="catTitular" placeholder="Ej: Juan Perez">
-    </div>
-
-    <div class="seccion">Tu dominio propio</div>
-    <p class="hint" style="margin:-4px 0 10px;">Si ya tenes un dominio, tu catalogo puede vivir ahi.</p>
-
-    <input type="text" id="catDominio" placeholder="mitienda.com">
-    <button type="button" class="btn-foto" id="btnGuardarDominio" style="margin-top:8px;">Guardar dominio</button>
-    <div id="pasosDominio" style="display:none; margin-top:12px;"></div>
-
-    <div id="catLinkBox" style="display:none; margin-top:16px; padding:14px; background:var(--accent-soft); border-radius:10px;">
-      <div style="font-size:12px; color:var(--accent-dark); margin-bottom:6px;">Tu link</div>
-      <div style="font-size:14px; font-weight:500; color:var(--accent-dark); word-break:break-all;" id="catLink"></div>
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button class="btn-pago" onclick="compartirCatalogo()" style="flex:1; border:none; border-radius:9px; padding:10px; font-size:13.5px; font-weight:500;">Compartir</button>
-        <button onclick="abrirCatalogo()" style="flex:1; border:1px solid var(--accent); border-radius:9px; padding:10px; background:var(--panel); color:var(--accent-dark); font-size:13.5px; font-weight:500;">Ver como queda</button>
-      </div>
-    </div>
-
-    <p class="hint" id="catCuantos"></p>
-    <button class="btn-sec" id="btnElegirProd">Elegir que productos mostrar</button>
-
-    <button class="btn-ppal" id="btnGuardarCatalogo">Guardar</button>
-    <div id="msgTurnosWeb" style="margin-top:8px;"></div>
-    <button class="btn-sec" id="btnCerrarCatalogo">Cerrar</button>
-  </div>
-</div>
 
 <div class="modal-bg" id="modalElegirVar">
   <div class="modal" style="max-width:400px;">
@@ -7715,11 +7713,9 @@ document.getElementById('swTransfer').onclick = function () {
   document.getElementById('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
 };
 
-// abre la configuracion del catalogo, sin depender de ningun otro botton
+// carga los datos actuales del catalogo en los campos, que ahora viven fijos en Mi tienda
 async function abrirConfigCatalogo() {
-  $('modalCuentaUsuario').classList.remove('on');
   $('msgCat2').innerHTML = '';
-  $('modalCatalogo').classList.add('on');
 
   try {
     const d = await api('GET', '/catalogo/config');
@@ -7747,7 +7743,12 @@ async function abrirConfigCatalogo() {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
 }
-$('btnCatalogo').onclick = abrirConfigCatalogo;
+// desde el menu de la cuenta: cierra el menu y lleva directo a Mi tienda
+$('btnCatalogo').onclick = function () {
+  $('modalCuentaUsuario').classList.remove('on');
+  irAVista('tienda');
+  cargarVistaTienda();
+};
 
 function mostrarLink(slug) {
   if (catActivo && slug) {
@@ -7764,7 +7765,6 @@ $('swCatalogo').onclick = function () {
   mostrarLink($('catSlug').value.trim());
 };
 
-$('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remove('on'); };
 
 $('btnGuardarCatalogo').onclick = async function () {
   const btn = $('btnGuardarCatalogo');
@@ -12519,20 +12519,12 @@ function cargarVistaTienda() {
       '<button class="btn-nuevo gris" style="flex:1;" onclick="compartirCatalogo()">Compartir</button>' +
       '<button class="btn-nuevo gris" style="flex:1;" onclick="abrirCatalogo()">Ver como queda</button>' +
       '</div>';
-  }
-
-  html += '<button class="btn-nuevo solo" style="margin-top:10px;" onclick="irAConfigTienda()">' +
-    (activo ? 'Configurar mi tienda' : 'Abrir mi tienda') + '</button>';
-
-  if (!activo) {
+  } else {
     html += '<p class="hint" style="margin-top:12px; text-align:center;">' +
-      'Con tu tienda online tus clientes ven tus productos y te hacen pedidos desde el celular.</p>';
+      'Con tu tienda online tus clientes ven tus productos y te hacen pedidos desde el celular. Prende "Catalogo activo" aqui abajo cuando este lista.</p>';
   }
 
   cont.innerHTML = html;
-}
-
-function irAConfigTienda() {
   abrirConfigCatalogo();
 }
 
