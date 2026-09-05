@@ -4659,8 +4659,31 @@ function pintarListaCat() {
   }).join('');
 }
 
+// ejemplo de categoria segun el rubro del negocio, para que el placeholder tenga sentido
+function ejemploCategoria() {
+  const r = negocio && negocio.rubro;
+  const EJEMPLOS = {
+    kiosco: 'Bebidas', almacen: 'Bebidas', minimercado: 'Bebidas', verduleria: 'Verduras',
+    carniceria: 'Cortes vacunos', fiambreria: 'Fiambres', dietetica: 'Cereales', panaderia: 'Facturas',
+    libreria: 'Utiles escolares', ferreteria: 'Herramientas', bazar: 'Cocina', regalos: 'Souvenirs',
+    petshop: 'Alimento para perros', repuestos: 'Filtros', perfumeria: 'Perfumes', farmacia: 'Analgesicos',
+    ropa: 'Remeras', calzado: 'Zapatillas', rotiseria: 'Empanadas', cafeteria: 'Cafes',
+    peluqueria: 'Coloracion', taller: 'Service', distribuidora: 'Gaseosas', bijouterie: 'Aros',
+    jugueteria: 'Juegos de mesa', electronica: 'Auriculares', pinturería: 'Latex', corralon: 'Cemento',
+    forrajeria: 'Balanceado', vivero: 'Plantas de interior', tabaqueria: 'Cigarrillos', vinoteca: 'Vinos tintos',
+    pescaderia: 'Pescados', polleria: 'Pollo', granja: 'Huevos', lenceria: 'Ropa interior',
+    deportiva: 'Buzos', blanqueria: 'Sabanas', marroquineria: 'Carteras', uniformes: 'Guardapolvos',
+    pizzeria: 'Pizzas', heladeria: 'Helados', bar: 'Cervezas', casa_comidas: 'Viandas',
+    manicura: 'Esmaltes', tatuajes: 'Tintas', masajes: 'Aceites', veterinaria: 'Vacunas',
+    entrenador: 'Suplementos', costurera: 'Hilos', restaurante: 'Entradas', parrilla: 'Cortes',
+    hotel: 'Desayuno', cabanas: 'Ropa de cama'
+  };
+  return EJEMPLOS[r] || 'Bebidas';
+}
+
 $('btnCategorias').onclick = function () {
   $('msgCat').innerHTML = ''; $('catNombre').value = '';
+  $('catNombre').placeholder = 'Ej: ' + ejemploCategoria();
   pintarListaCat();
   $('modalCategorias').classList.add('on');
 };
