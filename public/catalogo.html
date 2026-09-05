@@ -110,7 +110,7 @@
 
   .panel-cat-full {
     display: flex; position: fixed; inset: 0; z-index: 70;
-    background: var(--bg); flex-direction: column; padding: 18px 18px 24px; overflow-y: auto;
+    background: var(--bg-css); flex-direction: column; padding: 18px 18px 24px; overflow-y: auto;
     visibility: hidden; opacity: 0; pointer-events: none;
     transform: translateX(40px);
     transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
@@ -478,7 +478,7 @@
   </div>
 </div>
 
-<div id="fichaUnidad" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:70; overflow-y:auto;">
+<div id="fichaUnidad" style="display:none; position:fixed; inset:0; background:var(--bg-css); z-index:70; overflow-y:auto;">
   <div id="fichaGaleria" style="position:relative;"></div>
   <div style="max-width:640px; margin:0 auto; padding:18px;">
     <h2 id="fichaNombre" style="margin:0 0 4px; font-size:22px; font-weight:500;"></h2>
