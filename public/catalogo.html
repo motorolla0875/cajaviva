@@ -148,8 +148,11 @@
   }
   .prod .info { flex: 1 1 auto; min-width: 0; overflow: hidden; }
   .prod.vertical { flex-direction: column; align-items: stretch; }
-  .prod.vertical .info { width: 100%; text-align: center; }
-  .prod.vertical .ctrl { justify-content: center; width: 100%; }
+  .fila-datos { display: contents; }
+  .prod.vertical .fila-datos {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  }
+  .prod.vertical .info { text-align: left; }
   .foto-fila { display: flex; gap: 6px; width: 100%; }
   .foto-mini-port {
     flex: 1; min-width: 0; aspect-ratio: 1; object-fit: cover;
@@ -1148,6 +1151,7 @@ function pintar() {
 
     return '<div class="prod' + (fotosPortada ? ' vertical' : '') + '" id="prod-' + p.id + '">' +
       bloqueFoto +
+      '<div class="fila-datos">' +
       '<div class="info"' + abre + '>' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
@@ -1163,7 +1167,8 @@ function pintar() {
       (p.es_unidad && p.capacidad ? '<div class="desc-prod">Hasta ' + p.capacidad + ' personas</div>' : '') +
       r.badge +
       '</div>' +
-      '<div class="ctrl">' + r.ctrl + '</div></div>';
+      '<div class="ctrl">' + r.ctrl + '</div>' +
+      '</div></div>';
   }
 
   // en vez de recrear toda la grilla (lo que recrea todas las fotos y hace parpadear),
