@@ -1079,7 +1079,7 @@ function pintar() {
         (p.es_unidad ? abre : ' onclick="verFoto(JSON.parse(this.dataset.fotos))"') + '>' +
         (p.categoria && !p.es_unidad ? '<span class="tag-cat-foto">' + esc(p.categoria) + '</span>' : '') +
         (!p.es_unidad && p.galeria && p.galeria.length > 0
-          ? '<span class="tag-mas-fotos">&#128247; +' + p.galeria.length + '</span>' : '') +
+          ? '<span class="tag-mas-fotos">+' + p.galeria.length + '</span>' : '') +
         '</div>' : '') +
       '<div class="info"' + abre + '>' +
       '<div class="n">' + esc(p.nombre) + '</div>' +
