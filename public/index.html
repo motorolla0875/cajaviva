@@ -8781,7 +8781,10 @@ async function abrirElegirVariante(prodId) {
   try {
     const d = await api('GET', '/variantes/producto/' + prodId);
     $('tituloElegirVar').textContent = d.producto.nombre;
-    $('subElegirVar').textContent = plata(d.producto.precio_venta) + ' - toca la combinacion que lleva';
+    const poVar = d.producto.precio_oferta;
+    const txtPrecio = (poVar != null && poVar > 0 && poVar < d.producto.precio_venta)
+      ? plata(d.producto.precio_venta) + ' -> ' + plata(poVar) : plata(d.producto.precio_venta);
+    $('subElegirVar').textContent = txtPrecio + ' - toca la combinacion que lleva';
 
     if (d.variantes.length === 0) {
       $('opcionesVar').innerHTML = '<div class="vacio">Este producto no tiene combinaciones cargadas.</div>';
@@ -8789,7 +8792,7 @@ async function abrirElegirVariante(prodId) {
     }
 
     varsProducto = d.variantes;
-    varProdActual = { id: prodId, precio: d.producto.precio_venta, nombre: d.producto.nombre };
+    varProdActual = { id: prodId, precio: d.producto.precio_venta, precioOferta: d.producto.precio_oferta, nombre: d.producto.nombre };
     pintarOpcionesVenta();
   } catch (e) {
     $('opcionesVar').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
@@ -9682,12 +9685,20 @@ function sumarVarStock() {
 
 let varsProducto = [], varProdActual = null;
 
+function precioBaseVarProd() {
+  if (!varProdActual) return 0;
+  const po = varProdActual.precioOferta;
+  if (po != null && po > 0 && po < varProdActual.precio) return po;
+  return varProdActual.precio;
+}
+
 function pintarOpcionesVenta() {
   if (!varProdActual) return;
 
   $('opcionesVar').innerHTML = varsProducto.map(function (v) {
     const sin = v.stock <= 0;
-    const precio = v.precio_venta || varProdActual.precio;
+    const precio = v.precio_venta || precioBaseVarProd();
+    const enOferta = !v.precio_venta && precioBaseVarProd() !== varProdActual.precio;
     const clave = varProdActual.id + '|' + v.id;
     const c = carrito.filter(function (l) { return l.clave === clave; })
       .reduce(function (a, l) { return a + l.cantidad; }, 0);
@@ -9695,7 +9706,10 @@ function pintarOpcionesVenta() {
     return '<div class="opt-var' + (sin ? ' sin' : '') + '">' +
       '<span class="nom">' + esc(v.nombre) +
         '<small style="display:block;color:var(--muted);font-weight:400;font-size:12px;">' +
-        plata(precio) + ' - ' + (sin ? 'sin stock' : fmtCant(v.stock) + ' u.') + '</small></span>' +
+        (enOferta
+          ? '<span style="text-decoration:line-through;">' + plata(varProdActual.precio) + '</span> ' + plata(precio)
+          : plata(precio)) +
+        ' - ' + (sin ? 'sin stock' : fmtCant(v.stock) + ' u.') + '</small></span>' +
       '<div class="ctrl-var">' +
         (c > 0
           ? '<button onclick="sumarVarVenta(\'' + v.id + '\',-1)">-</button>' +
@@ -9712,7 +9726,7 @@ function sumarVarVenta(varId, d) {
   if (!v || !varProdActual) return;
 
   const clave = varProdActual.id + '|' + varId;
-  const precio = v.precio_venta || varProdActual.precio;
+  const precio = v.precio_venta || precioBaseVarProd();
   const l = carrito.filter(function (x) { return x.clave === clave; })[0];
   const nueva = (l ? l.cantidad : 0) + d;
 

@@ -23,7 +23,7 @@ router.get('/producto/:id', (req, res) => {
   const total = filas.reduce(function (s, v) { return s + v.stock; }, 0);
 
   res.json({
-    producto: { id: p.id, nombre: p.nombre, precio_venta: p.precio_venta, tiene_variantes: p.tiene_variantes },
+    producto: { id: p.id, nombre: p.nombre, precio_venta: p.precio_venta, precio_oferta: p.precio_oferta, tiene_variantes: p.tiene_variantes },
     variantes: filas,
     stockTotal: total
   });
