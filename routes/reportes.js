@@ -124,6 +124,90 @@ router.get('/por-dia', (req, res) => {
   res.json(filas);
 });
 
+// ── panorama del negocio: tendencia, comparacion con el periodo anterior,
+//    mejor/peor dia, ticket promedio, y que dia de la semana rinde mas ──
+router.get('/tendencia', (req, res) => {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const desde = req.query.desde || menosDias(29);
+  const hasta = req.query.hasta || hoyISO(req.userId);
+
+  // el periodo anterior, de la misma duracion, para poder comparar
+  const dMs = new Date(desde + 'T12:00:00');
+  const hMs = new Date(hasta + 'T12:00:00');
+  const diasPeriodo = Math.round((hMs - dMs) / 86400000) + 1;
+  const hastaAnt = new Date(dMs); hastaAnt.setDate(hastaAnt.getDate() - 1);
+  const desdeAnt = new Date(hastaAnt); desdeAnt.setDate(desdeAnt.getDate() - (diasPeriodo - 1));
+  const hastaAntISO = hastaAnt.toISOString().slice(0, 10);
+  const desdeAntISO = desdeAnt.toISOString().slice(0, 10);
+
+  function resumenPeriodo(d, h) {
+    const r = db.prepare(`
+      SELECT COUNT(*) AS ventas,
+             COALESCE(SUM(total), 0) AS facturado,
+             COALESCE(SUM(total - costo_total), 0) AS ganancia
+      FROM ventas WHERE user_id = ? AND fecha >= ? AND fecha <= ? AND estado != 'anulada'
+    `).get(req.userId, d, h);
+    const gastos = db.prepare(`
+      SELECT COALESCE(SUM(monto), 0) AS total FROM gastos
+      WHERE user_id = ? AND fecha >= ? AND fecha <= ?
+    `).get(req.userId, d, h);
+    return {
+      ventas: r.ventas, facturado: r.facturado, ganancia: r.ganancia,
+      gastos: gastos.total, balance: r.ganancia - gastos.total,
+      ticketProm: r.ventas > 0 ? r.facturado / r.ventas : 0
+    };
+  }
+
+  const actual = resumenPeriodo(desde, hasta);
+  const anterior = resumenPeriodo(desdeAntISO, hastaAntISO);
+
+  function variacion(a, b) {
+    if (b === 0) return a > 0 ? 100 : 0;
+    return Math.round(((a - b) / b) * 100);
+  }
+
+  // dia con mas y con menos facturado dentro del periodo
+  const porDia = db.prepare(`
+    SELECT fecha, COALESCE(SUM(total), 0) AS facturado
+    FROM ventas WHERE user_id = ? AND fecha >= ? AND fecha <= ? AND estado != 'anulada'
+    GROUP BY fecha ORDER BY facturado DESC
+  `).all(req.userId, desde, hasta);
+
+  const mejorDia = porDia.length > 0 ? porDia[0] : null;
+  const peorDia = porDia.length > 0 ? porDia[porDia.length - 1] : null;
+
+  // que dia de la semana rinde mas (0=domingo ... 6=sabado, se calcula en JS por SQLite)
+  const filasDia = db.prepare(`
+    SELECT fecha, total FROM ventas
+    WHERE user_id = ? AND fecha >= ? AND fecha <= ? AND estado != 'anulada'
+  `).all(req.userId, desde, hasta);
+
+  const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+  const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+  filasDia.forEach(function (f) {
+    const dia = new Date(f.fecha + 'T12:00:00').getDay();
+    porDiaSemana[dia] += f.total;
+  });
+  const diaSemanaTop = porDiaSemana.indexOf(Math.max.apply(null, porDiaSemana));
+  const totalSemana = porDiaSemana.reduce(function (a, b) { return a + b; }, 0);
+
+  res.json({
+    desde: desde, hasta: hasta,
+    desdeAnterior: desdeAntISO, hastaAnterior: hastaAntISO,
+    actual: actual,
+    anterior: anterior,
+    variacion: {
+      facturado: variacion(actual.facturado, anterior.facturado),
+      ganancia: variacion(actual.ganancia, anterior.ganancia),
+      ventas: variacion(actual.ventas, anterior.ventas)
+    },
+    mejorDia: mejorDia,
+    peorDia: peorDia && peorDia.facturado > 0 ? peorDia : null,
+    diaSemanaTop: totalSemana > 0 ? { nombre: NOMBRES_DIA[diaSemanaTop], facturado: porDiaSemana[diaSemanaTop] } : null
+  });
+});
+
 
 // ── rendimiento de los empleados ──
 router.get('/empleados', (req, res) => {
