@@ -5136,7 +5136,11 @@ function pintarLista() {
       (p.tiene_receta && textoReceta(p.id)
         ? '<div class="lleva">Lleva ' + esc(textoReceta(p.id)) + '</div>' : '') +
       (cap('cap_vencimientos') ? avisoVence(p) : '') +
-      '<div class="d">' + plata(p.precio_venta) +
+      '<div class="d">' + (pctOferta(p) > 0
+        ? '<span style="text-decoration:line-through; color:var(--muted);">' + plata(p.precio_venta) + '</span> ' +
+          '<span style="color:var(--danger); font-weight:600;">' + plata(p.precio_oferta) + '</span> ' +
+          '<span style="background:var(--danger); color:#fff; font-size:10px; font-weight:700; padding:1px 5px; border-radius:5px;">-' + pctOferta(p) + '%</span>'
+        : plata(p.precio_venta)) +
         (esServ
           ? (p.duracion ? ' &middot; ' + (p.duracion >= 60
               ? (p.duracion / 60) + (p.duracion === 60 ? ' hora' : ' horas')
