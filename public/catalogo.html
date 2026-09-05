@@ -645,15 +645,15 @@ const TEMAS_COMPLETOS = {
   }
 };
 
-function aplicarTemaCompleto(nombre, colorPersonalizado) {
+function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado) {
   let t;
   if (colorPersonalizado) {
-    t = paletaDesdeColor(colorPersonalizado);
+    t = paletaDesdeColor(colorPersonalizado, fondoPersonalizado);
   } else {
     t = TEMAS_COMPLETOS[nombre] || TEMAS_COMPLETOS.verde;
   }
   const r = document.documentElement;
-  r.style.setProperty('--icon-filter', (!colorPersonalizado && nombre === 'negro') ? 'invert(1)' : 'none');
+  r.style.setProperty('--icon-filter', (!colorPersonalizado && nombre === 'negro') || (colorPersonalizado && fondoPersonalizado === 'oscuro') ? 'invert(1)' : 'none');
   r.style.setProperty('--accent', t.a);
   r.style.setProperty('--accent-dark', t.d);
   r.style.setProperty('--accent-soft', t.s);
@@ -683,7 +683,16 @@ function mezclarColores(hexA, hexB, pct) {
   const a = hexARgb(hexA), b = hexARgb(hexB);
   return rgbAHex(a.r + (b.r - a.r) * pct, a.g + (b.g - a.g) * pct, a.b + (b.b - a.b) * pct);
 }
-function paletaDesdeColor(colorBase) {
+function paletaDesdeColor(colorBase, fondo) {
+  if (fondo === 'oscuro') {
+    return {
+      a: colorBase,
+      d: mezclarColores(colorBase, '#FFFFFF', 0.22),
+      s: mezclarColores('#242424', colorBase, 0.22),
+      bg: '#0F0F0F', panel: '#1A1A1A', panel2: '#242424',
+      line: '#333333', text: '#F2F2F2', muted: '#9A9A9A'
+    };
+  }
   return {
     a: colorBase,
     d: mezclarColores(colorBase, '#000000', 0.26),
@@ -710,7 +719,7 @@ async function cargar() {
     if (!r.ok) throw new Error('no existe');
     datos = await r.json();
 
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo);
 
     if (datos.negocio.logo) {
       const lg = document.getElementById('logoNeg');
@@ -1211,7 +1220,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {

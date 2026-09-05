@@ -1001,6 +1001,11 @@
     border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent-dark);
   }
   .btn-foto.borrar { border-color: var(--line); background: var(--panel); color: var(--danger); }
+  .btn-fondo-op {
+    padding: 10px; border-radius: 9px; font-size: 13.5px; font-weight: 500;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  }
+  .btn-fondo-op.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
   .prod .foto-mini {
     width: 100%; height: 74px; border-radius: 8px; object-fit: cover;
@@ -3005,6 +3010,14 @@
       <input type="color" id="catColorPersonalizado" value="#1D9E75" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
       <span style="font-size:13px; color:var(--muted); flex:1;">Si elegis un color aca, se usa en vez del estilo de arriba</span>
       <button type="button" class="btn-foto borrar" id="btnQuitarColorPer" style="flex:0 0 auto; padding:8px 12px; display:none;">Quitar</button>
+    </div>
+
+    <div id="wrapFondoPer" style="display:none; margin-top:10px;">
+      <label>Fondo del catalogo</label>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn-fondo-op" id="btnFondoClaro" style="flex:1;">Claro</button>
+        <button type="button" class="btn-fondo-op" id="btnFondoOscuro" style="flex:1;">Oscuro</button>
+      </div>
     </div>
 
     <label>Logo (opcional)</label>
@@ -7767,6 +7780,9 @@ async function abrirConfigCatalogo() {
     mostrarLogo(c.logo || null);
     $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
     $('btnQuitarColorPer').style.display = c.color_personalizado ? 'block' : 'none';
+    fondoPerCat = c.fondo === 'oscuro' ? 'oscuro' : 'claro';
+    pintarFondoPer();
+    $('wrapFondoPer').style.display = c.color_personalizado ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
     await cargarTurnosWeb();
@@ -7793,13 +7809,23 @@ $('swCatalogo').onclick = function () {
 
 $('btnCerrarCatalogo').onclick = function () { $('modalCatalogo').classList.remove('on'); };
 
+let fondoPerCat = 'claro';
+function pintarFondoPer() {
+  $('btnFondoClaro').classList.toggle('on', fondoPerCat === 'claro');
+  $('btnFondoOscuro').classList.toggle('on', fondoPerCat === 'oscuro');
+}
+$('btnFondoClaro').onclick = function () { fondoPerCat = 'claro'; pintarFondoPer(); };
+$('btnFondoOscuro').onclick = function () { fondoPerCat = 'oscuro'; pintarFondoPer(); };
+
 $('btnQuitarColorPer').onclick = function () {
   $('catColorPersonalizado').value = '#1D9E75';
   $('btnQuitarColorPer').style.display = 'none';
+  $('wrapFondoPer').style.display = 'none';
   colorPerQuitado = true;
 };
 $('catColorPersonalizado').addEventListener('input', function () {
   $('btnQuitarColorPer').style.display = 'block';
+  $('wrapFondoPer').style.display = 'block';
   colorPerQuitado = false;
 });
 let colorPerQuitado = false;
@@ -7873,6 +7899,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       efectivo: aceptaEfectivo,
       transferencia: aceptaTransfer,
       tema: temaCat,
+      fondo: fondoPerCat,
       colorPersonalizado: colorPerQuitado ? '' : $('catColorPersonalizado').value,
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null
@@ -7880,6 +7907,7 @@ $('btnGuardarCatalogo').onclick = async function () {
     $('catSlug').value = d.slug;
     mostrarLink(d.slug);
     $('btnQuitarColorPer').style.display = d.color_personalizado ? 'block' : 'none';
+    $('wrapFondoPer').style.display = d.color_personalizado ? 'block' : 'none';
     colorPerQuitado = false;
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
   } catch (e) {
