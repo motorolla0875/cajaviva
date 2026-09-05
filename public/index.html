@@ -6817,6 +6817,10 @@ async function cargarReportes() {
 
       // grafico de barras simple, sin librerias
       let svgBarras = '';
+      let etiquetasDias = '';
+      let leyendaPeriodo = '';
+      const NOMBRES_DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+
       if (porDia.length > 0) {
         const max = Math.max.apply(null, porDia.map(function (d) { return d.facturado; })) || 1;
         const anchoBarra = Math.max(6, Math.min(28, Math.floor(320 / porDia.length) - 3));
@@ -6836,6 +6840,20 @@ async function cargarReportes() {
 
         svgBarras = '<svg viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="width:100%; height:110px; display:block;" preserveAspectRatio="none">' +
           barras + '</svg>';
+
+        if (porDia.length <= 10) {
+          // pocos dias: el nombre de cada dia debajo de su barra
+          etiquetasDias = '<div style="display:flex; margin-top:4px;">' +
+            porDia.map(function (d) {
+              const dia = new Date(d.fecha + 'T12:00:00').getDay();
+              return '<div style="flex:1; text-align:center; font-size:10.5px; color:var(--muted);">' +
+                NOMBRES_DIA_CORTO[dia] + '</div>';
+            }).join('') + '</div>';
+        } else {
+          // muchos dias: una sola leyenda con el rango, en vez de saturar de fechas
+          leyendaPeriodo = '<div style="text-align:center; font-size:11.5px; color:var(--muted); margin-top:4px;">' +
+            'Del ' + fechaCorta(porDia[0].fecha) + ' al ' + fechaCorta(porDia[porDia.length - 1].fecha) + '</div>';
+        }
       }
 
       cont.innerHTML =
@@ -6845,8 +6863,8 @@ async function cargarReportes() {
           '<div style="font-size:12.5px; margin-top:4px;">' + flechaVar(t.variacion.facturado) + ' que el periodo anterior</div>' +
         '</div>' +
 
-        '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 14px 6px; margin-bottom:14px;">' +
-          svgBarras +
+        '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 14px 8px; margin-bottom:14px;">' +
+          svgBarras + etiquetasDias + leyendaPeriodo +
         '</div>' +
 
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">' +
