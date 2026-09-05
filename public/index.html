@@ -6859,7 +6859,7 @@ async function cargarReportes() {
       }
 
       // grafico de barras simple, sin librerias, con eje de valores fijo y barras deslizables
-      let svgBarras = '';
+      let barrasGrid = '';
       let ejeValores = '';
       let etiquetasDias = '';
       let leyendaPeriodo = '';
@@ -6869,31 +6869,26 @@ async function cargarReportes() {
 
       if (porDia.length > 0) {
         const max = Math.max.apply(null, porDia.map(function (d) { return d.facturado; })) || 1;
-        const anchoBarra = 22;
-        const gap = 8;
-        const anchoTotal = porDia.length * (anchoBarra + gap);
-        const alto = 90;
+        // cada columna ocupa 1fr (se estira si sobra lugar) pero nunca menos de 22px
+        // (ahi arranca el scroll horizontal, cuando no entran todas las columnas)
+        const gridCols = 'repeat(' + porDia.length + ', minmax(22px, 1fr))';
 
         const barras = porDia.map(function (d, i) {
-          const h = Math.max(2, Math.round((d.facturado / max) * alto));
-          const x = i * (anchoBarra + gap);
+          const pct = Math.max(2, Math.round((d.facturado / max) * 100));
           const esHoy = d.fecha === hoyISO();
-          return '<g style="cursor:pointer;" onclick="verDetalleDiaTendencia(' + i + ')">' +
-            '<rect x="' + x + '" y="0" width="' + anchoBarra + '" height="' + alto + '" fill="transparent"></rect>' +
-            '<rect x="' + x + '" y="' + (alto - h) + '" width="' + anchoBarra + '" height="' + h +
-            '" rx="3" fill="' + (esHoy ? 'var(--accent-dark)' : 'var(--accent)') +
-            '" opacity="' + (d.facturado > 0 ? '1' : '.18') + '">' +
-            '<title>' + fechaCorta(d.fecha) + ': ' + plata(d.facturado) + '</title></rect>' +
-            '</g>';
+          return '<div style="position:relative; height:100%; cursor:pointer;" onclick="verDetalleDiaTendencia(' + i + ')" title="' +
+            fechaCorta(d.fecha) + ': ' + plata(d.facturado) + '">' +
+            '<div style="position:absolute; left:0; right:0; bottom:0; height:' + pct + '%; min-height:2px; border-radius:3px 3px 0 0; background:' +
+            (esHoy ? 'var(--accent-dark)' : 'var(--accent)') + '; opacity:' + (d.facturado > 0 ? '1' : '.18') + ';"></div>' +
+            '</div>';
         }).join('');
 
-        // lineas de referencia punteadas: arriba (maximo), a la mitad
-        const lineas =
-          '<line x1="0" y1="1" x2="' + anchoTotal + '" y2="1" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>' +
-          '<line x1="0" y1="' + (alto / 2) + '" x2="' + anchoTotal + '" y2="' + (alto / 2) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>';
-
-        svgBarras = '<svg width="' + anchoTotal + '" height="' + altoChart + '" viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="display:block;" preserveAspectRatio="none">' +
-          lineas + barras + '</svg>';
+        barrasGrid = '<div style="position:relative; height:' + altoChart + 'px;">' +
+          // lineas de referencia punteadas: arriba (maximo) y a la mitad
+          '<div style="position:absolute; top:1px; left:0; right:0; border-top:1px dashed var(--line);"></div>' +
+          '<div style="position:absolute; top:50%; left:0; right:0; border-top:1px dashed var(--line);"></div>' +
+          '<div style="display:grid; grid-template-columns:' + gridCols + '; gap:8px; height:100%;">' + barras + '</div>' +
+        '</div>';
 
         // el eje con los montos, a la misma altura que sus lineas de referencia (no se desliza)
         ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
@@ -6903,11 +6898,11 @@ async function cargarReportes() {
         '</div>';
 
         if (porDia.length <= 10) {
-          // pocos dias: el nombre de cada dia debajo de su barra (se desliza junto con las barras)
-          etiquetasDias = '<div style="display:flex; margin-top:4px; width:' + anchoTotal + 'px;">' +
+          // pocos dias: el nombre de cada dia debajo de su barra, en la misma grilla (para que quede alineado)
+          etiquetasDias = '<div style="display:grid; grid-template-columns:' + gridCols + '; gap:8px; margin-top:4px;">' +
             porDia.map(function (d) {
               const dia = new Date(d.fecha + 'T12:00:00').getDay();
-              return '<div style="width:' + (anchoBarra + gap) + 'px; text-align:center; font-size:10.5px; color:var(--muted);">' +
+              return '<div style="text-align:center; font-size:10.5px; color:var(--muted);">' +
                 NOMBRES_DIA_CORTO[dia] + '</div>';
             }).join('') + '</div>';
         } else {
@@ -6927,7 +6922,7 @@ async function cargarReportes() {
         '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 10px 8px 14px; margin-bottom:14px;">' +
           '<div style="display:flex; align-items:stretch;">' + ejeValores +
             '<div id="scrollTendencia" style="flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; cursor:grab;">' +
-              svgBarras + etiquetasDias +
+              barrasGrid + etiquetasDias +
             '</div>' +
           '</div>' +
           leyendaPeriodo +
