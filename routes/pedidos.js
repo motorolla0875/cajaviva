@@ -172,8 +172,12 @@ router.get('/', (req, res) => {
     : estado === 'listos' ? "AND estado = 'entregado'"
     : estado === 'cancelados' ? "AND estado = 'cancelado'" : '';
 
+  // los pedidos con Mercado Pago que todavia no se confirmaron (el cliente no termino de pagar,
+  // o abandono el checkout) no se muestran: para el comerciante, no existieron
+  const condMp = "AND NOT (forma_pago = 'mercadopago' AND pago_estado != 'verificado')";
+
   const filas = db.prepare(`
-    SELECT * FROM pedidos_web WHERE user_id = ? ${cond}
+    SELECT * FROM pedidos_web WHERE user_id = ? ${cond} ${condMp}
     ORDER BY created_at DESC LIMIT 60
   `).all(req.userId);
 
@@ -204,7 +208,10 @@ router.get('/', (req, res) => {
     });
   }
 
-  const nuevos = db.prepare("SELECT COUNT(*) AS n FROM pedidos_web WHERE user_id = ? AND estado = 'nuevo'").get(req.userId);
+  const nuevos = db.prepare(`
+    SELECT COUNT(*) AS n FROM pedidos_web
+    WHERE user_id = ? AND estado = 'nuevo' AND NOT (forma_pago = 'mercadopago' AND pago_estado != 'verificado')
+  `).get(req.userId);
   res.json({ items: filas, nuevos: nuevos.n });
 });
 
