@@ -2774,6 +2774,12 @@
         <p class="hint">El stock se define ahi, por cada talle.</p>
       </div>
     </div>
+
+    <div id="wrapMasFotos">
+      <button type="button" class="btn-talles" id="btnMasFotos">Mas fotos para tu tienda</button>
+      <p class="hint">Hasta 3 fotos que ven tus clientes al tocar el producto en el catalogo.</p>
+    </div>
+
     <label id="lblDescripcion">Descripcion (opcional)</label>
     <input type="text" id="pNotas">
 
@@ -3213,13 +3219,15 @@
     <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Esto solo lo ven tus clientes en el catalogo.</p>
     <div id="msgVid"></div>
 
-    <label>Fotos (hasta 12)</label>
+    <label>Fotos (hasta <span id="limiteVidTxt">12</span>)</label>
     <div id="galeriaVid" class="galeria-grid"></div>
     <button type="button" class="btn-foto" id="btnAgregarFotoVid" style="margin-top:8px;">Agregar fotos</button>
     <input type="file" id="archFotoVid" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none;">
 
-    <label style="margin-top:16px;">Descripcion completa</label>
-    <textarea id="descLargaVid" rows="6" placeholder="Que incluye, como llegar, reglas de la casa..."></textarea>
+    <div id="wrapDescLargaVid">
+      <label style="margin-top:16px;">Descripcion completa</label>
+      <textarea id="descLargaVid" rows="6" placeholder="Que incluye, como llegar, reglas de la casa..."></textarea>
+    </div>
 
     <button class="btn-ppal" id="btnGuardarVid">Guardar</button>
     <button class="btn-sec" id="btnCerrarVid">Cerrar</button>
@@ -5295,6 +5303,7 @@ function abrirProd(id) {
       $('wrapRecetaProd').style.display = 'none';
       $('wrapSwOferta').style.display = 'none';
       $('wrapOferta').style.display = 'none';
+      $('wrapMasFotos').style.display = 'none';
       const esC = cap('cap_canchas') && !cap('cap_alquiler');
       $('tituloProd').textContent = esC ? 'Editar cancha' : 'Editar unidad';
       $('btnBorrarProd').textContent = esC ? 'Eliminar cancha' : 'Eliminar unidad';
@@ -5315,6 +5324,7 @@ function abrirProd(id) {
     }, 0);
   } else {
     $('wrapUnidadAlq').style.display = 'none';
+    $('wrapMasFotos').style.display = 'block';
     $('btnBorrarProd').textContent = 'Eliminar producto';
   }
   const mo = document.getElementById('masOpciones');
@@ -11633,6 +11643,34 @@ async function confirmarReservaWeb(id, aceptar) {
 /* ══ Vidriera del catalogo ══ */
 
 let vidProdId = null;
+let vidLimiteFotos = 12;
+
+document.getElementById('btnMasFotos').onclick = async function () {
+  if (!editandoId) {
+    if (!$('pNombre').value.trim() || num($('pVenta').value) <= 0) {
+      $('msgProd').innerHTML = '<div class="msg">Poné el nombre y el precio primero.</div>';
+      return;
+    }
+    const b = this;
+    b.disabled = true; b.textContent = 'Guardando...';
+    try { await guardarProductoRapido(); }
+    catch (e) {
+      $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
+      b.disabled = false; b.textContent = 'Mas fotos para tu tienda';
+      return;
+    }
+    b.disabled = false; b.textContent = 'Mas fotos para tu tienda';
+  }
+
+  vidProdId = editandoId;
+  vidLimiteFotos = 3;
+  $('tituloVid').textContent = 'Mas fotos para tu tienda';
+  $('wrapDescLargaVid').style.display = 'none';
+  $('btnGuardarVid').style.display = 'none';
+  $('msgVid').innerHTML = '';
+  $('modalVidriera').classList.add('on');
+  cargarVidriera();
+};
 
 document.getElementById('btnVidriera').onclick = async function () {
   if (!editandoId) {
@@ -11652,6 +11690,10 @@ document.getElementById('btnVidriera').onclick = async function () {
   }
 
   vidProdId = editandoId;
+  vidLimiteFotos = 12;
+  $('tituloVid').textContent = 'Como se ve en tu catalogo';
+  $('wrapDescLargaVid').style.display = 'block';
+  $('btnGuardarVid').style.display = 'block';
   $('msgVid').innerHTML = '';
   $('modalVidriera').classList.add('on');
   cargarVidriera();
@@ -11661,6 +11703,7 @@ $('btnCerrarVid').onclick = function () { $('modalVidriera').classList.remove('o
 
 async function cargarVidriera() {
   $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">Cargando...</div>';
+  $('limiteVidTxt').textContent = vidLimiteFotos;
   try {
     const d = await api('GET', '/galeria/' + vidProdId);
     $('descLargaVid').value = d.descripcion || '';
@@ -11672,7 +11715,7 @@ async function cargarVidriera() {
             '<button onclick="borrarFotoVid(\'' + f.id + '\')">&#10005;</button></div>';
         }).join('');
 
-    $('btnAgregarFotoVid').style.display = d.fotos.length >= 12 ? 'none' : 'block';
+    $('btnAgregarFotoVid').style.display = d.fotos.length >= vidLimiteFotos ? 'none' : 'block';
     $('btnAgregarFotoVid').textContent = 'Agregar fotos';
   } catch (e) {
     $('galeriaVid').innerHTML = '<div class="vacio" style="grid-column:1/-1;">' + esc(e.message) + '</div>';
@@ -11690,8 +11733,13 @@ $('archFotoVid').onchange = async function (e) {
   $('msgVid').innerHTML = '';
 
   let subidas = 0, fallidas = 0;
+  const yaHay = document.querySelectorAll('#galeriaVid .gal-item').length;
 
   for (let i = 0; i < archivos.length; i++) {
+    if (yaHay + subidas >= vidLimiteFotos) {
+      $('msgVid').innerHTML = '<div class="msg">Ya tenes ' + vidLimiteFotos + ' fotos. Borra alguna primero.</div>';
+      break;
+    }
     btn.textContent = 'Subiendo ' + (i + 1) + ' de ' + archivos.length + '...';
     try {
       const img = await comprimirImagen(archivos[i], 1000, 0.75);

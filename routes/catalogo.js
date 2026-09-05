@@ -169,15 +169,19 @@ router.get('/publico/:slug', (req, res) => {
     return Math.round(base * (1 + Math.max(rTemp, rFinde) / 100));
   }
 
-  // las unidades llevan su galeria y descripcion larga
+  // la galeria de fotos extra es para cualquier producto
   productos.forEach(function (p) {
-    if (!p.es_unidad) return;
-    p.precio_base = p.precio_venta || 0;
-    p.precio_hoy = precioDelDia(p.precio_venta || 0, hoyCat);
     try {
       p.galeria = db.prepare('SELECT url FROM galeria WHERE producto_id = ? ORDER BY orden').all(p.id)
         .map(function (f) { return f.url; });
     } catch (e) { p.galeria = []; }
+  });
+
+  // las unidades ademas llevan precio segun el dia y descripcion larga
+  productos.forEach(function (p) {
+    if (!p.es_unidad) return;
+    p.precio_base = p.precio_venta || 0;
+    p.precio_hoy = precioDelDia(p.precio_venta || 0, hoyCat);
     const d = db.prepare('SELECT descripcion_larga FROM productos WHERE id = ?').get(p.id);
     p.descripcion_larga = d ? d.descripcion_larga : null;
   });
