@@ -73,7 +73,7 @@
   @media (min-width: 820px) {
     .cont { max-width: 1000px; }
     #filaBuscadorHeader { max-width: 1000px; margin: 0 auto; justify-content: space-between; }
-    #filaBuscadorHeader .buscador { flex: 0 1 380px; }
+    #cajaBuscadorHeader { flex: 0 1 380px; }
     .grilla-prod {
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px;
     }
@@ -86,6 +86,7 @@
   }
 
   .buscador { margin-bottom: 14px; }
+  #cajaBuscadorHeader { flex: 1; }
   .buscador input {
     width: 100%; padding: 13px 14px; text-align: left;
     border: 1px solid var(--line); border-radius: var(--radius);
@@ -405,7 +406,7 @@
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
   <div id="filaBuscadorHeader" style="display:flex; align-items:center; gap:10px;">
-    <div class="buscador" style="margin-bottom:0; flex:1; min-width:0;">
+    <div class="buscador" id="cajaBuscadorHeader" style="margin-bottom:0; min-width:0;">
       <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
     </div>
     <div id="redesNeg" style="display:none; gap:12px; flex-shrink:0;"></div>
