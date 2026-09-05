@@ -822,7 +822,7 @@ function paletaDesdeColorYFondo(colorAcento, colorFondo) {
     return {
       a: colorAcento,
       d: mezclarColores(colorAcento, '#FFFFFF', 0.22),
-      s: mezclarColores(mezclarColores(colorFondo, '#FFFFFF', 0.14), colorAcento, 0.22),
+      s: mezclarColores('#242424', colorAcento, 0.22),
       bg: colorFondo,
       panel: mezclarColores(colorFondo, '#FFFFFF', 0.08),
       panel2: mezclarColores(colorFondo, '#FFFFFF', 0.14),
@@ -833,7 +833,7 @@ function paletaDesdeColorYFondo(colorAcento, colorFondo) {
   return {
     a: colorAcento,
     d: mezclarColores(colorAcento, '#000000', 0.26),
-    s: mezclarColores(mezclarColores(colorFondo, '#FFFFFF', 0.7), colorAcento, 0.12),
+    s: mezclarColores('#FFFFFF', colorAcento, 0.12),
     bg: colorFondo,
     panel: mezclarColores(colorFondo, '#FFFFFF', 0.65),
     panel2: mezclarColores(colorFondo, '#FFFFFF', 0.82),
