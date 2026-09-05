@@ -83,6 +83,27 @@
   }
   .chips button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 
+  .cat-hamb {
+    display: none; align-items: center; gap: 8px; width: 100%; margin-bottom: 12px;
+    padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
+  }
+  .cat-hamb .ic { font-size: 17px; line-height: 1; }
+  .panel-cat-movil {
+    display: none; flex-direction: column; gap: 2px; margin: -6px 0 14px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px;
+  }
+  .panel-cat-movil.on { display: flex; }
+  .panel-cat-movil button {
+    text-align: left; background: none; border: none; padding: 10px 10px; font-size: 14px;
+    color: var(--text); border-radius: 8px;
+  }
+  .panel-cat-movil button.on { background: var(--accent-soft); color: var(--accent-dark); font-weight: 500; }
+  @media (max-width: 819px) {
+    .chips { display: none; }
+    .cat-hamb { display: flex; }
+  }
+
   .cat-titulo { font-size: 13px; font-weight: 500; color: var(--muted); margin: 18px 0 8px; }
 
   .prod {
@@ -316,6 +337,11 @@
     <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
   </div>
   <div class="chips" id="chips"></div>
+  <button id="btnCatHamb" class="cat-hamb">
+    <span class="ic">&#9776;</span>
+    <span id="txtCatHamb">Categorias</span>
+  </button>
+  <div id="panelCatMovil" class="panel-cat-movil"></div>
   <div id="lista"><div class="vacio">Cargando productos...</div></div>
 </div>
 
@@ -854,15 +880,36 @@ function categorias() {
 
 function pintarChips() {
   const cs = categorias();
-  if (cs.length < 2) { $('chips').innerHTML = ''; return; }
-  $('chips').innerHTML =
-    '<button class="' + (filtro === '' ? 'on' : '') + '" onclick="filtrar(\'\')">Todos</button>' +
-    cs.map(function (c) {
-      return '<button class="' + (filtro === c ? 'on' : '') + '" onclick="filtrar(\'' + esc(c).replace(/'/g, "") + '\')">' + esc(c) + '</button>';
-    }).join('');
+  if (cs.length < 2) {
+    $('chips').innerHTML = '';
+    $('btnCatHamb').style.display = 'none';
+    $('panelCatMovil').innerHTML = '';
+    return;
+  }
+  $('btnCatHamb').style.display = '';
+
+  const botones = function (esMovil) {
+    return '<button class="' + (filtro === '' ? 'on' : '') + '" onclick="filtrar(\'\'' + (esMovil ? ', true' : '') + ')">Todos</button>' +
+      cs.map(function (c) {
+        return '<button class="' + (filtro === c ? 'on' : '') + '" onclick="filtrar(\'' + esc(c).replace(/'/g, "") + '\'' + (esMovil ? ', true' : '') + ')">' + esc(c) + '</button>';
+      }).join('');
+  };
+
+  $('chips').innerHTML = botones(false);
+  $('panelCatMovil').innerHTML = botones(true);
+  $('txtCatHamb').textContent = filtro || 'Categorias';
 }
 
-function filtrar(c) { filtro = c; pintarChips(); pintar(); }
+function filtrar(c, cerrarMovil) {
+  filtro = c;
+  pintarChips();
+  pintar();
+  if (cerrarMovil) $('panelCatMovil').classList.remove('on');
+}
+
+document.getElementById('btnCatHamb').onclick = function () {
+  $('panelCatMovil').classList.toggle('on');
+};
 
 function pintar() {
   const t = norm($('buscar').value.trim());
