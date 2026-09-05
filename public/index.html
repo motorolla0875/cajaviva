@@ -3109,6 +3109,15 @@
     <textarea id="catDescripcion" rows="4" placeholder="Contales a tus clientes que vendes, hace cuanto estas, que te distingue..."></textarea>
     <p class="hint">Se muestra al final de tu catalogo, cuando el cliente toca "Quienes somos".</p>
 
+    <div class="cap-item" style="margin-top:10px;">
+      <div class="txt"><div class="n">Fondo propio para Quienes somos</div>
+        <div class="d">Distinto al fondo general del catalogo</div></div>
+      <button class="switch" id="swColorFondoQuienes"></button>
+    </div>
+    <div id="wrapColorFondoQuienes" style="display:none; margin-top:8px;">
+      <input type="color" id="catColorFondoQuienes" value="#FFFFFF" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
+    </div>
+
     <div id="bloqueTurnosWeb" style="display:none;">
       <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
 
@@ -7950,6 +7959,10 @@ async function abrirConfigCatalogo() {
     $('swColorTexto').classList.toggle('on', colorTextoActivo);
     $('catColorTexto').value = c.color_texto || '#232320';
     $('wrapColorTexto').style.display = colorTextoActivo ? 'block' : 'none';
+    colorFondoQuienesActivo = !!c.color_fondo_quienes;
+    $('swColorFondoQuienes').classList.toggle('on', colorFondoQuienesActivo);
+    $('catColorFondoQuienes').value = c.color_fondo_quienes || '#FFFFFF';
+    $('wrapColorFondoQuienes').style.display = colorFondoQuienesActivo ? 'block' : 'none';
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -8004,6 +8017,13 @@ $('swColorTexto').onclick = function () {
   colorTextoActivo = !colorTextoActivo;
   this.classList.toggle('on', colorTextoActivo);
   $('wrapColorTexto').style.display = colorTextoActivo ? 'block' : 'none';
+};
+
+let colorFondoQuienesActivo = false;
+$('swColorFondoQuienes').onclick = function () {
+  colorFondoQuienesActivo = !colorFondoQuienesActivo;
+  this.classList.toggle('on', colorFondoQuienesActivo);
+  $('wrapColorFondoQuienes').style.display = colorFondoQuienesActivo ? 'block' : 'none';
 };
 
 let colorPerActivo = false;
@@ -8099,6 +8119,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorFondo: colorFondoActivo ? $('catColorFondo').value : '',
       colorFondo2: (colorFondoActivo && $('chkDegradadoFondo').checked) ? $('catColorFondo2').value : '',
       colorTexto: colorTextoActivo ? $('catColorTexto').value : '',
+      colorFondoQuienes: colorFondoQuienesActivo ? $('catColorFondoQuienes').value : '',
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
