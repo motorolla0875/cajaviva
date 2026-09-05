@@ -6869,6 +6869,7 @@ async function cargarReportes() {
 
       if (porDia.length > 0) {
         const max = Math.max.apply(null, porDia.map(function (d) { return d.facturado; })) || 1;
+        const NIVELES = 7;
         // cada columna ocupa 1fr (se estira si sobra lugar) pero nunca menos de 22px
         // (ahi arranca el scroll horizontal, cuando no entran todas las columnas)
         const gridCols = 'repeat(' + porDia.length + ', minmax(22px, 1fr))';
@@ -6884,17 +6885,19 @@ async function cargarReportes() {
         }).join('');
 
         barrasGrid = '<div style="position:relative; height:' + altoChart + 'px;">' +
-          // lineas de referencia punteadas: arriba (maximo) y a la mitad
-          '<div style="position:absolute; top:1px; left:0; right:0; border-top:1px dashed var(--line);"></div>' +
-          '<div style="position:absolute; top:50%; left:0; right:0; border-top:1px dashed var(--line);"></div>' +
+          // lineas de referencia punteadas, parejas entre el maximo y cero
+          Array.from({ length: NIVELES }, function (_, i) {
+            return '<div style="position:absolute; top:' + (i * 100 / (NIVELES - 1)) + '%; left:0; right:0; border-top:1px dashed var(--line);"></div>';
+          }).join('') +
           '<div style="display:grid; grid-template-columns:' + gridCols + '; gap:8px; height:100%;">' + barras + '</div>' +
         '</div>';
 
         // el eje con los montos, a la misma altura que sus lineas de referencia (no se desliza)
         ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
-          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max) + '</div>' +
-          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max / 2) + '</div>' +
-          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">$0</div>' +
+          Array.from({ length: NIVELES }, function (_, i) {
+            const valor = max * (NIVELES - 1 - i) / (NIVELES - 1);
+            return '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(valor) + '</div>';
+          }).join('') +
         '</div>';
 
         if (porDia.length <= 10) {
