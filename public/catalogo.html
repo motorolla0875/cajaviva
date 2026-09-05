@@ -39,7 +39,7 @@
 
   header {
     background: var(--panel);
-    padding: 18px 18px 12px; text-align: center; position: sticky; top: 0; z-index: 10;
+    padding: 12px 18px; text-align: center; position: sticky; top: 0; z-index: 10;
     border-radius: 0 0 18px 18px;
   }
   @media (max-width: 380px) {
@@ -49,7 +49,7 @@
     .prod { padding: 11px 12px; gap: 8px; }
     .prod .info .n { font-size: 14px; }
   }
-  header h1 { margin: 0; font-size: 21px; font-weight: 500; }
+  header h1 { margin: 0 0 10px; font-size: 21px; font-weight: 500; }
   header p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
 
   .cont { max-width: 640px; margin: 0 auto; padding: 16px; }
@@ -364,7 +364,7 @@
 <header>
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
-  <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+  <div style="display:flex; align-items:center; gap:10px;">
     <div class="buscador" style="margin-bottom:0; flex:1; min-width:0;">
       <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
     </div>
@@ -884,7 +884,6 @@ async function cargar() {
       document.getElementById('bannerNeg').style.display = 'block';
       // con banner, el nombre no se repite
       document.getElementById('nombreNeg').style.display = 'none';
-      document.querySelector('header').style.padding = '12px 18px';
     }
 
     document.title = datos.negocio.nombre;
