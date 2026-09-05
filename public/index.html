@@ -6896,7 +6896,7 @@ async function cargarReportes() {
         ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
           Array.from({ length: NIVELES }, function (_, i) {
             const valor = max * (NIVELES - 1 - i) / (NIVELES - 1);
-            return '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(valor) + '</div>';
+            return '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1; font-variant-numeric:tabular-nums;">' + plata(valor) + '</div>';
           }).join('') +
         '</div>';
 
