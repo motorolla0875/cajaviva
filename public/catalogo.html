@@ -361,7 +361,8 @@
   <img id="logoNeg" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 10px; display:none;">
   <h1 id="nombreNeg">Cargando...</h1>
   <p id="mensajeNeg"></p>
-  <a href="#quienesSomos" id="linkQuienesSomos" style="display:none; font-size:12.5px; color:var(--accent-dark); text-decoration:underline;">Quienes somos</a>
+  <div id="redesNeg" style="display:none; justify-content:center; gap:14px; margin-top:8px;"></div>
+  <a href="javascript:void(0)" id="linkQuienesSomos" style="display:none; font-size:12.5px; color:var(--accent-dark); text-decoration:underline; margin-top:6px;">Quienes somos</a>
 </header>
 
 <div class="cont">
@@ -382,16 +383,16 @@
   <div id="listaCatMovil"></div>
 </div>
 
-<div id="quienesSomos" style="display:none; max-width:640px; margin:0 auto; padding:0 20px;">
-  <div style="border-top:1px solid var(--line); padding-top:22px; margin-top:10px;">
-    <h3 style="font-size:16px; font-weight:600; margin:0 0 8px;">Quienes somos</h3>
-    <p id="textoQuienesSomos" style="color:var(--muted); font-size:14px; line-height:1.6; white-space:pre-wrap; margin:0;"></p>
+<div id="panelQuienesSomos" class="panel-cat-full">
+  <div class="cab-cat-full">
+    <h3>Quienes somos</h3>
+    <button id="btnCerrarQuienesSomos">&#10005;</button>
   </div>
+  <p id="textoQuienesSomos" style="color:var(--muted); font-size:14.5px; line-height:1.6; white-space:pre-wrap; margin:0;"></p>
 </div>
 
-<footer id="footerNeg" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 20px 90px; color:var(--muted); font-size:12.5px;">
+<footer id="footerNeg" style="display:flex; align-items:center; justify-content:center; padding:20px 20px 90px; color:var(--muted); font-size:12.5px;">
   <a href="https://cajaviva.app" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none; font-size:11.5px; white-space:nowrap;">Hecho con <b style="color:var(--accent-dark);">CajaViva</b></a>
-  <div id="redesNeg" style="display:flex; gap:14px;"></div>
 </footer>
 
 <div class="barra" id="barra" style="display:none;">
@@ -837,13 +838,14 @@ async function cargar() {
 
     if (datos.negocio.descripcion) {
       $('textoQuienesSomos').textContent = datos.negocio.descripcion;
-      $('quienesSomos').style.display = 'block';
       $('linkQuienesSomos').style.display = 'inline-block';
-      $('linkQuienesSomos').onclick = function (e) {
-        e.preventDefault();
-        $('quienesSomos').scrollIntoView({ behavior: 'smooth' });
+      $('linkQuienesSomos').onclick = function () {
+        $('panelQuienesSomos').classList.add('on');
       };
     }
+    document.getElementById('btnCerrarQuienesSomos').onclick = function () {
+      $('panelQuienesSomos').classList.remove('on');
+    };
 
     if (datos.negocio.instagram || datos.negocio.facebook || datos.negocio.twitter || datos.negocio.tiktok) {
       const redes = [];
@@ -868,6 +870,7 @@ async function cargar() {
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 2h-3v13.6a3 3 0 1 1-2.2-2.9v-3.1a6.1 6.1 0 1 0 5.2 6V9.3a7.4 7.4 0 0 0 4.3 1.4V7.6a4.4 4.4 0 0 1-4.3-4.4z"/></svg></a>');
       }
       document.getElementById('redesNeg').innerHTML = redes.join('');
+      document.getElementById('redesNeg').style.display = 'flex';
     }
 
     if (datos.negocio.banner) {
