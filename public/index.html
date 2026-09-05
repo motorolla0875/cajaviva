@@ -6926,7 +6926,7 @@ async function cargarReportes() {
 
         '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 10px 8px 14px; margin-bottom:14px;">' +
           '<div style="display:flex; align-items:stretch;">' + ejeValores +
-            '<div style="flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch;">' +
+            '<div id="scrollTendencia" style="flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; cursor:grab;">' +
               svgBarras + etiquetasDias +
             '</div>' +
           '</div>' +
@@ -6977,6 +6977,28 @@ async function cargarReportes() {
             }).join('') +
             (deudores.length > 10 ? '<p class="hint">Y ' + (deudores.length - 10) + ' mas en Fiado.</p>' : '');
         })();
+
+      // arrastrar con el mouse la zona del grafico (en el celular ya se desliza con el dedo)
+      (function () {
+        const sc = document.getElementById('scrollTendencia');
+        if (!sc) return;
+        sc.onmousedown = function (e) {
+          window._dragTendencia = { xIni: e.pageX, sIni: sc.scrollLeft, el: sc };
+          sc.style.cursor = 'grabbing';
+        };
+        if (!window._dragTendenciaInit) {
+          window._dragTendenciaInit = true;
+          document.addEventListener('mousemove', function (e) {
+            const d = window._dragTendencia;
+            if (!d) return;
+            d.el.scrollLeft = d.sIni - (e.pageX - d.xIni);
+          });
+          document.addEventListener('mouseup', function () {
+            if (window._dragTendencia) window._dragTendencia.el.style.cursor = 'grab';
+            window._dragTendencia = null;
+          });
+        }
+      })();
 
     } else if (repTab === 'vendidos') {
       const d = await api('GET', '/reportes/mas-vendidos' + qs);
