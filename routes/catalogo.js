@@ -20,6 +20,7 @@ try { db.exec("ALTER TABLE negocio ADD COLUMN color_personalizado_2 TEXT"); } ca
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo_2 TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_texto TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo_quienes TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN fotos_portada INTEGER NOT NULL DEFAULT 0"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN logo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN instagram TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN facebook TEXT"); } catch (e) {}
@@ -44,7 +45,7 @@ router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
-    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
+    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, fotos_portada, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
 
@@ -98,7 +99,7 @@ router.put('/config', (req, res) => {
     UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
       alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?,
       tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_personalizado_2 = ?,
-      color_fondo = ?, color_fondo_2 = ?, color_texto = ?, color_fondo_quienes = ?, instagram = ?, facebook = ?,
+      color_fondo = ?, color_fondo_2 = ?, color_texto = ?, color_fondo_quienes = ?, fotos_portada = ?, instagram = ?, facebook = ?,
       twitter = ?, tiktok = ?, descripcion = ?,
       acepta_mercadopago = ?, mp_access_token = COALESCE(?, mp_access_token)
     WHERE user_id = ?
@@ -108,6 +109,7 @@ router.put('/config', (req, res) => {
          req.body?.tema || 'verde', req.body?.fondo || 'claro',
          req.body?.fuente || 'sistema', colorPer || null, colorPer2 || null,
          colorFondo || null, colorFondo2 || null, colorTexto || null, colorFondoQuienes || null,
+         req.body?.fotosPortada ? 1 : 0,
          req.body?.instagram || null, req.body?.facebook || null,
          req.body?.twitter || null, req.body?.tiktok || null,
          req.body?.descripcion || null,
@@ -115,7 +117,7 @@ router.put('/config', (req, res) => {
 
   const actualizado = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner,
-    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
+    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, fotos_portada, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
     FROM negocio WHERE user_id = ?`).get(req.userId);
 
   actualizado.mp_conectado = !!actualizado.mp_access_token;
@@ -234,6 +236,7 @@ router.get('/publico/:slug', (req, res) => {
       color_fondo_2: n.color_fondo_2 || null,
       color_texto: n.color_texto || null,
       color_fondo_quienes: n.color_fondo_quienes || null,
+      fotos_portada: !!n.fotos_portada,
       logo: n.logo || null,
       instagram: n.instagram || null,
       facebook: n.facebook || null,

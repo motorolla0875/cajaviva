@@ -3025,6 +3025,12 @@
 
     <div class="seccion">Como se ve</div>
 
+    <div class="cap-item">
+      <div class="txt"><div class="n">Mostrar todas las fotos en la portada</div>
+        <div class="d">Los productos con varias fotos las muestran todas juntas, arriba de los datos</div></div>
+      <button class="switch" id="swFotosPortada"></button>
+    </div>
+
     <label>Estilo del catalogo</label>
     <div class="fondos" id="temasCat"></div>
 
@@ -7963,6 +7969,8 @@ async function abrirConfigCatalogo() {
     $('swColorFondoQuienes').classList.toggle('on', colorFondoQuienesActivo);
     $('catColorFondoQuienes').value = c.color_fondo_quienes || '#FFFFFF';
     $('wrapColorFondoQuienes').style.display = colorFondoQuienesActivo ? 'block' : 'none';
+    fotosPortadaActivo = !!c.fotos_portada;
+    $('swFotosPortada').classList.toggle('on', fotosPortadaActivo);
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -8024,6 +8032,12 @@ $('swColorFondoQuienes').onclick = function () {
   colorFondoQuienesActivo = !colorFondoQuienesActivo;
   this.classList.toggle('on', colorFondoQuienesActivo);
   $('wrapColorFondoQuienes').style.display = colorFondoQuienesActivo ? 'block' : 'none';
+};
+
+let fotosPortadaActivo = false;
+$('swFotosPortada').onclick = function () {
+  fotosPortadaActivo = !fotosPortadaActivo;
+  this.classList.toggle('on', fotosPortadaActivo);
 };
 
 let colorPerActivo = false;
@@ -8120,6 +8134,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorFondo2: (colorFondoActivo && $('chkDegradadoFondo').checked) ? $('catColorFondo2').value : '',
       colorTexto: colorTextoActivo ? $('catColorTexto').value : '',
       colorFondoQuienes: colorFondoQuienesActivo ? $('catColorFondoQuienes').value : '',
+      fotosPortada: fotosPortadaActivo,
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
