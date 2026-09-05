@@ -7715,7 +7715,8 @@ document.getElementById('swTransfer').onclick = function () {
   document.getElementById('wrapAlias').style.display = aceptaTransfer ? 'block' : 'none';
 };
 
-$('btnCatalogo').onclick = async function () {
+// abre la configuracion del catalogo, sin depender de ningun otro botton
+async function abrirConfigCatalogo() {
   $('modalCuentaUsuario').classList.remove('on');
   $('msgCat2').innerHTML = '';
   $('modalCatalogo').classList.add('on');
@@ -7745,7 +7746,8 @@ $('btnCatalogo').onclick = async function () {
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
   }
-};
+}
+$('btnCatalogo').onclick = abrirConfigCatalogo;
 
 function mostrarLink(slug) {
   if (catActivo && slug) {
@@ -12512,15 +12514,17 @@ function cargarVistaTienda() {
   }
   html += '</div>';
 
-  html += '<button class="btn-nuevo solo" style="margin-top:14px;" onclick="irAConfigTienda()">' +
-    (activo ? 'Configurar mi tienda' : 'Abrir mi tienda') + '</button>';
-
   if (activo) {
-    html += '<div style="display:flex; gap:8px;">' +
+    html += '<div style="display:flex; gap:8px; margin-top:14px;">' +
       '<button class="btn-nuevo gris" style="flex:1;" onclick="compartirCatalogo()">Compartir</button>' +
       '<button class="btn-nuevo gris" style="flex:1;" onclick="abrirCatalogo()">Ver como queda</button>' +
       '</div>';
-  } else {
+  }
+
+  html += '<button class="btn-nuevo solo" style="margin-top:10px;" onclick="irAConfigTienda()">' +
+    (activo ? 'Configurar mi tienda' : 'Abrir mi tienda') + '</button>';
+
+  if (!activo) {
     html += '<p class="hint" style="margin-top:12px; text-align:center;">' +
       'Con tu tienda online tus clientes ven tus productos y te hacen pedidos desde el celular.</p>';
   }
@@ -12529,8 +12533,7 @@ function cargarVistaTienda() {
 }
 
 function irAConfigTienda() {
-  const b = document.getElementById('btnCatalogo');
-  if (b) b.click();
+  abrirConfigCatalogo();
 }
 
 // descuento de a 5% con los botones
