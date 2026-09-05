@@ -6848,11 +6848,13 @@ async function cargarReportes() {
         return '<span style="color:var(--muted);">Igual</span>';
       }
 
-      // grafico de barras simple, sin librerias
+      // grafico de barras simple, sin librerias, con eje de valores a la izquierda
       let svgBarras = '';
+      let ejeValores = '';
       let etiquetasDias = '';
       let leyendaPeriodo = '';
       const NOMBRES_DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+      const altoChart = 110;
 
       if (porDia.length > 0) {
         const max = Math.max.apply(null, porDia.map(function (d) { return d.facturado; })) || 1;
@@ -6871,8 +6873,20 @@ async function cargarReportes() {
             '<title>' + fechaCorta(d.fecha) + ': ' + plata(d.facturado) + '</title></rect>';
         }).join('');
 
-        svgBarras = '<svg viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="width:100%; height:110px; display:block;" preserveAspectRatio="none">' +
-          barras + '</svg>';
+        // lineas de referencia punteadas: arriba (maximo), a la mitad
+        const lineas =
+          '<line x1="0" y1="1" x2="' + anchoTotal + '" y2="1" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>' +
+          '<line x1="0" y1="' + (alto / 2) + '" x2="' + anchoTotal + '" y2="' + (alto / 2) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,2"/>';
+
+        svgBarras = '<svg viewBox="0 0 ' + anchoTotal + ' ' + alto + '" style="width:100%; height:' + altoChart + 'px; display:block;" preserveAspectRatio="none">' +
+          lineas + barras + '</svg>';
+
+        // el eje con los montos, a la misma altura que sus lineas de referencia
+        ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
+          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max) + '</div>' +
+          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(max / 2) + '</div>' +
+          '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">$0</div>' +
+        '</div>';
 
         if (porDia.length <= 10) {
           // pocos dias: el nombre de cada dia debajo de su barra
@@ -6897,7 +6911,8 @@ async function cargarReportes() {
         '</div>' +
 
         '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 14px 8px; margin-bottom:14px;">' +
-          svgBarras + etiquetasDias + leyendaPeriodo +
+          '<div style="display:flex; align-items:stretch;">' + ejeValores + '<div style="flex:1; min-width:0;">' + svgBarras + '</div></div>' +
+          etiquetasDias + leyendaPeriodo +
         '</div>' +
 
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">' +
