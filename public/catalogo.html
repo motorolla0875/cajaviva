@@ -749,7 +749,7 @@ const TEMAS_COMPLETOS = {
   }
 };
 
-function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo, colorPersonalizado2, colorFondo2) {
+function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo, colorPersonalizado2, colorFondo2, colorTexto) {
   let t;
   if (colorPersonalizado && colorFondo) {
     t = paletaDesdeColorYFondo(colorPersonalizado, colorFondo);
@@ -772,7 +772,7 @@ function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, col
   r.style.setProperty('--panel', t.panel);
   r.style.setProperty('--panel-2', t.panel2);
   r.style.setProperty('--line', t.line);
-  r.style.setProperty('--text', t.text);
+  r.style.setProperty('--text', colorTexto || t.text);
   r.style.setProperty('--muted', t.muted);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', t.a);
@@ -864,7 +864,7 @@ async function cargar() {
     datos = await r.json();
 
     $('plNombre').textContent = datos.negocio.nombre;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2, datos.negocio.color_texto);
 
     if (datos.negocio.logo) {
       const lg = document.getElementById('logoNeg');
@@ -1682,7 +1682,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo, datos.negocio.color_personalizado_2, datos.negocio.color_fondo_2, datos.negocio.color_texto);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {

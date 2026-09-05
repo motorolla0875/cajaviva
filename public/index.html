@@ -3064,6 +3064,15 @@
       <div id="wrapDegradadoFondo" style="display:none; margin-top:6px;">
         <input type="color" id="catColorFondo2" value="#FFFFFF" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
       </div>
+
+      <div class="cap-item" style="margin-top:12px;">
+        <div class="txt"><div class="n">Color de texto</div>
+          <div class="d">En vez del que se calcula solo segun tu fondo</div></div>
+        <button class="switch" id="swColorTexto"></button>
+      </div>
+      <div id="wrapColorTexto" style="display:none; margin-top:8px;">
+        <input type="color" id="catColorTexto" value="#232320" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
+      </div>
     </div>
 
     <label>Logo (opcional)</label>
@@ -7937,6 +7946,10 @@ async function abrirConfigCatalogo() {
     $('catColorFondo2').value = c.color_fondo_2 || '#FFFFFF';
     $('chkDegradadoFondo').checked = !!c.color_fondo_2;
     $('wrapDegradadoFondo').style.display = c.color_fondo_2 ? 'block' : 'none';
+    colorTextoActivo = !!c.color_texto;
+    $('swColorTexto').classList.toggle('on', colorTextoActivo);
+    $('catColorTexto').value = c.color_texto || '#232320';
+    $('wrapColorTexto').style.display = colorTextoActivo ? 'block' : 'none';
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -7984,6 +7997,13 @@ $('chkDegradadoFondo').onclick = function () {
 $('swColorFondo').onclick = function () {
   colorFondoActivo = !colorFondoActivo;
   this.classList.toggle('on', colorFondoActivo);
+};
+
+let colorTextoActivo = false;
+$('swColorTexto').onclick = function () {
+  colorTextoActivo = !colorTextoActivo;
+  this.classList.toggle('on', colorTextoActivo);
+  $('wrapColorTexto').style.display = colorTextoActivo ? 'block' : 'none';
 };
 
 let colorPerActivo = false;
@@ -8078,6 +8098,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorPersonalizado2: (colorPerActivo && $('chkDegradadoPer').checked) ? $('catColorPersonalizado2').value : '',
       colorFondo: colorFondoActivo ? $('catColorFondo').value : '',
       colorFondo2: (colorFondoActivo && $('chkDegradadoFondo').checked) ? $('catColorFondo2').value : '',
+      colorTexto: colorTextoActivo ? $('catColorTexto').value : '',
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
