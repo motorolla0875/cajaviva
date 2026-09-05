@@ -6873,7 +6873,26 @@ async function cargarReportes() {
         '<div class="seccion">Balance del periodo</div>' +
         '<div class="rep-resumen' + (t.actual.balance < 0 ? ' alerta' : '') + '" style="margin:0;">' +
           '<div class="lbl">Ganancia menos gastos</div>' +
-          '<div class="val">' + plata(t.actual.balance) + '</div></div>';
+          '<div class="val">' + plata(t.actual.balance) + '</div></div>' +
+
+        (function () {
+          const deudores = (clientes || []).filter(function (c) { return c.saldo > 0; })
+            .sort(function (a, b) { return b.saldo - a.saldo; });
+          if (deudores.length === 0) return '';
+          const totalDeuda = deudores.reduce(function (s, c) { return s + c.saldo; }, 0);
+          return '<div class="seccion" style="margin-top:18px;">Quien te debe</div>' +
+            '<div class="rep-resumen alerta" style="margin-bottom:2px;">' +
+              '<div class="lbl">Fiado sin cobrar - ' + deudores.length + (deudores.length === 1 ? ' cliente' : ' clientes') + '</div>' +
+              '<div class="val">' + plata(totalDeuda) + '</div></div>' +
+            deudores.slice(0, 10).map(function (c, n) {
+              return '<div class="rep-item" style="cursor:pointer;" onclick="abrirCuenta(\'' + c.id + '\')">' +
+                '<div class="rep-pos' + (n < 3 ? ' top' : '') + '">' + (n + 1) + '</div>' +
+                '<div class="datos"><div class="n">' + esc(c.nombre) + '</div>' +
+                (c.whatsapp ? '<div class="d">' + esc(c.whatsapp) + '</div>' : '') + '</div>' +
+                '<div class="cifra"><b>' + plata(c.saldo) + '</b><span>debe</span></div></div>';
+            }).join('') +
+            (deudores.length > 10 ? '<p class="hint">Y ' + (deudores.length - 10) + ' mas en Fiado.</p>' : '');
+        })();
 
     } else if (repTab === 'vendidos') {
       const d = await api('GET', '/reportes/mas-vendidos' + qs);
