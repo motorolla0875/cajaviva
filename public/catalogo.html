@@ -1583,7 +1583,7 @@ function verFoto(urls) {
   tira.addEventListener('touchmove', function (e) {
     if (x0 === null) return;
     const dx = e.touches[0].clientX - x0;
-    if (dx < 0 && i >= lista.length - 1) {
+    if ((dx < 0 && i >= lista.length - 1) || (dx > 0 && i <= 0)) {
       arrastrandoCerrar = true;
       d.style.transform = 'translateX(' + dx + 'px)';
       d.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / 300);
@@ -1596,8 +1596,8 @@ function verFoto(urls) {
     d.style.transition = 'transform .2s ease, opacity .2s ease';
 
     if (arrastrandoCerrar) {
-      if (dx < -90) {
-        d.style.transform = 'translateX(-500px)';
+      if (Math.abs(dx) > 90) {
+        d.style.transform = 'translateX(' + (dx < 0 ? -500 : 500) + 'px)';
         d.style.opacity = '0';
         setTimeout(function () { d.remove(); }, 200);
       } else {
