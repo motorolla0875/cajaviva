@@ -826,7 +826,7 @@ async function cargar() {
       lg.style.display = 'block';
     }
 
-    if (datos.negocio.instagram || datos.negocio.facebook) {
+    if (datos.negocio.instagram || datos.negocio.facebook || datos.negocio.twitter || datos.negocio.tiktok) {
       const redes = [];
       if (datos.negocio.instagram) {
         redes.push('<a href="https://instagram.com/' + encodeURIComponent(datos.negocio.instagram.replace(/^@/, '')) +
@@ -837,6 +837,16 @@ async function cargar() {
         redes.push('<a href="https://facebook.com/' + encodeURIComponent(datos.negocio.facebook.replace(/^@/, '')) +
           '" target="_blank" rel="noopener" style="color:var(--accent-dark); font-size:22px; line-height:1;" aria-label="Facebook">' +
           '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>');
+      }
+      if (datos.negocio.twitter) {
+        redes.push('<a href="https://x.com/' + encodeURIComponent(datos.negocio.twitter.replace(/^@/, '')) +
+          '" target="_blank" rel="noopener" style="color:var(--accent-dark); font-size:22px; line-height:1;" aria-label="X">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23.2 22h-6.9l-5.4-6.9L4.4 22H1.3l8-9.1L1 2h7l4.9 6.3L18.9 2z"/></svg></a>');
+      }
+      if (datos.negocio.tiktok) {
+        redes.push('<a href="https://tiktok.com/@' + encodeURIComponent(datos.negocio.tiktok.replace(/^@/, '')) +
+          '" target="_blank" rel="noopener" style="color:var(--accent-dark); font-size:22px; line-height:1;" aria-label="TikTok">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 2h-3v13.6a3 3 0 1 1-2.2-2.9v-3.1a6.1 6.1 0 1 0 5.2 6V9.3a7.4 7.4 0 0 0 4.3 1.4V7.6a4.4 4.4 0 0 1-4.3-4.4z"/></svg></a>');
       }
       document.getElementById('redesNeg').innerHTML = redes.join('');
       document.getElementById('footerNeg').style.display = 'block';

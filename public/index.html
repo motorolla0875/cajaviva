@@ -3065,6 +3065,12 @@
     <label>Facebook (opcional)</label>
     <input type="text" id="catFacebook" placeholder="Ej: mi.negocio">
 
+    <label>X / Twitter (opcional)</label>
+    <input type="text" id="catTwitter" placeholder="Ej: mi.negocio">
+
+    <label>TikTok (opcional)</label>
+    <input type="text" id="catTiktok" placeholder="Ej: mi.negocio">
+
     <div id="bloqueTurnosWeb" style="display:none;">
       <div class="seccion" id="tituloReservaWeb">Turnos por la web</div>
 
@@ -7894,6 +7900,8 @@ async function abrirConfigCatalogo() {
     $('wrapFondoPer').style.display = c.color_personalizado ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
+    $('catTwitter').value = c.twitter || '';
+    $('catTiktok').value = c.tiktok || '';
     aceptaMp = !!c.acepta_mercadopago;
     mpConectado = !!c.mp_conectado;
     $('mpToken').value = '';
@@ -8028,6 +8036,8 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorFondo: colorFondoQuitado ? '' : $('catColorFondo').value,
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
+      twitter: $('catTwitter').value.trim() || null,
+      tiktok: $('catTiktok').value.trim() || null,
       aceptaMercadopago: aceptaMp,
       mpAccessToken: $('mpToken').value.trim()
     });
