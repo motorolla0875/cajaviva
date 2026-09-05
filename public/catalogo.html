@@ -1162,7 +1162,7 @@ function pintar() {
       '<div class="n">' + esc(p.nombre) + '</div>' +
       (p.notas ? '<div class="desc-prod">' + esc(p.notas) + '</div>' : '') +
       (sinStock
-        ? '<span class="chip-sinstock">Sin stock - consultanos</span>' : '') +
+        ? '<span class="chip-sinstock">Sin stock</span>' : '') +
       '<div class="p">' + (enOferta
         ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
           '<span style="color:var(--accent-dark); font-weight:600;">' + plata(p.precio_oferta) + '</span>' +
