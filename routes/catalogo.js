@@ -15,6 +15,7 @@ try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fuente TEXT NOT NULL DEFAULT 'sistema'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN color_personalizado TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN color_fondo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN logo TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN instagram TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN facebook TEXT"); } catch (e) {}
@@ -34,7 +35,7 @@ router.get('/config', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
-    color_personalizado, logo, instagram, facebook
+    color_personalizado, color_fondo, logo, instagram, facebook
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
   res.json({ config: n || null, productos: cuantos.n });
@@ -59,21 +60,24 @@ router.put('/config', (req, res) => {
   let colorPer = (req.body?.colorPersonalizado || '').trim();
   if (colorPer && !/^#[0-9a-fA-F]{6}$/.test(colorPer)) colorPer = '';
 
+  let colorFondo = (req.body?.colorFondo || '').trim();
+  if (colorFondo && !/^#[0-9a-fA-F]{6}$/.test(colorFondo)) colorFondo = '';
+
   db.prepare(`
     UPDATE negocio SET slug = ?, catalogo_activo = ?, whatsapp = ?, catalogo_mensaje = ?,
       alias_pago = ?, titular_pago = ?, acepta_efectivo = ?, acepta_transferencia = ?,
-      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, instagram = ?, facebook = ?
+      tema = ?, fondo = ?, fuente = ?, color_personalizado = ?, color_fondo = ?, instagram = ?, facebook = ?
     WHERE user_id = ?
   `).run(slug, req.body?.activo ? 1 : 0, req.body?.whatsapp || null,
          req.body?.mensaje || null, req.body?.alias || null, req.body?.titular || null,
          req.body?.efectivo ? 1 : 0, req.body?.transferencia ? 1 : 0,
          req.body?.tema || 'verde', req.body?.fondo || 'claro',
-         req.body?.fuente || 'sistema', colorPer || null,
+         req.body?.fuente || 'sistema', colorPer || null, colorFondo || null,
          req.body?.instagram || null, req.body?.facebook || null, req.userId);
 
   res.json(db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner,
-    color_personalizado, logo, instagram, facebook
+    color_personalizado, color_fondo, logo, instagram, facebook
     FROM negocio WHERE user_id = ?`).get(req.userId));
 });
 
@@ -170,6 +174,7 @@ router.get('/publico/:slug', (req, res) => {
       fuente: n.fuente || 'sistema',
       banner: n.banner,
       color_personalizado: n.color_personalizado || null,
+      color_fondo: n.color_fondo || null,
       logo: n.logo || null,
       instagram: n.instagram || null,
       facebook: n.facebook || null

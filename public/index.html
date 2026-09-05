@@ -3018,6 +3018,11 @@
         <button type="button" class="btn-fondo-op" id="btnFondoClaro" style="flex:1;">Claro</button>
         <button type="button" class="btn-fondo-op" id="btnFondoOscuro" style="flex:1;">Oscuro</button>
       </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+        <input type="color" id="catColorFondo" value="#FAFAF7" style="width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:none;">
+        <span style="font-size:13px; color:var(--muted); flex:1;">O elegi el color de fondo exacto (ej: amarillo)</span>
+        <button type="button" class="btn-foto borrar" id="btnQuitarColorFondo" style="flex:0 0 auto; padding:8px 12px; display:none;">Quitar</button>
+      </div>
     </div>
 
     <label>Logo (opcional)</label>
@@ -7782,6 +7787,8 @@ async function abrirConfigCatalogo() {
     $('btnQuitarColorPer').style.display = c.color_personalizado ? 'block' : 'none';
     fondoPerCat = c.fondo === 'oscuro' ? 'oscuro' : 'claro';
     pintarFondoPer();
+    $('catColorFondo').value = c.color_fondo || '#FAFAF7';
+    $('btnQuitarColorFondo').style.display = c.color_fondo ? 'block' : 'none';
     $('wrapFondoPer').style.display = c.color_personalizado ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -7816,6 +7823,17 @@ function pintarFondoPer() {
 }
 $('btnFondoClaro').onclick = function () { fondoPerCat = 'claro'; pintarFondoPer(); };
 $('btnFondoOscuro').onclick = function () { fondoPerCat = 'oscuro'; pintarFondoPer(); };
+
+let colorFondoQuitado = false;
+$('btnQuitarColorFondo').onclick = function () {
+  $('catColorFondo').value = '#FAFAF7';
+  $('btnQuitarColorFondo').style.display = 'none';
+  colorFondoQuitado = true;
+};
+$('catColorFondo').addEventListener('input', function () {
+  $('btnQuitarColorFondo').style.display = 'block';
+  colorFondoQuitado = false;
+});
 
 $('btnQuitarColorPer').onclick = function () {
   $('catColorPersonalizado').value = '#1D9E75';
@@ -7901,6 +7919,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       tema: temaCat,
       fondo: fondoPerCat,
       colorPersonalizado: colorPerQuitado ? '' : $('catColorPersonalizado').value,
+      colorFondo: colorFondoQuitado ? '' : $('catColorFondo').value,
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null
     });
@@ -7908,6 +7927,8 @@ $('btnGuardarCatalogo').onclick = async function () {
     mostrarLink(d.slug);
     $('btnQuitarColorPer').style.display = d.color_personalizado ? 'block' : 'none';
     $('wrapFondoPer').style.display = d.color_personalizado ? 'block' : 'none';
+    $('btnQuitarColorFondo').style.display = d.color_fondo ? 'block' : 'none';
+    colorFondoQuitado = false;
     colorPerQuitado = false;
     avisar(catActivo ? 'Catalogo activo' : 'Catalogo apagado');
   } catch (e) {

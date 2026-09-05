@@ -645,15 +645,18 @@ const TEMAS_COMPLETOS = {
   }
 };
 
-function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado) {
+function aplicarTemaCompleto(nombre, colorPersonalizado, fondoPersonalizado, colorFondo) {
   let t;
-  if (colorPersonalizado) {
+  if (colorFondo) {
+    t = paletaDesdeColorYFondo(colorPersonalizado || '#1D9E75', colorFondo);
+  } else if (colorPersonalizado) {
     t = paletaDesdeColor(colorPersonalizado, fondoPersonalizado);
   } else {
     t = TEMAS_COMPLETOS[nombre] || TEMAS_COMPLETOS.verde;
   }
   const r = document.documentElement;
-  r.style.setProperty('--icon-filter', (!colorPersonalizado && nombre === 'negro') || (colorPersonalizado && fondoPersonalizado === 'oscuro') ? 'invert(1)' : 'none');
+  const usaOscuro = colorFondo ? luminancia(colorFondo) < 0.5 : (colorPersonalizado && fondoPersonalizado === 'oscuro');
+  r.style.setProperty('--icon-filter', (!colorPersonalizado && !colorFondo && nombre === 'negro') || usaOscuro ? 'invert(1)' : 'none');
   r.style.setProperty('--accent', t.a);
   r.style.setProperty('--accent-dark', t.d);
   r.style.setProperty('--accent-soft', t.s);
@@ -702,6 +705,39 @@ function paletaDesdeColor(colorBase, fondo) {
   };
 }
 
+// que tan claro es un color (0 = negro, 1 = blanco), para saber si el texto va claro u oscuro
+function luminancia(hex) {
+  const c = hexARgb(hex);
+  return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+}
+
+// paleta a partir de un color de acento Y un color de fondo elegidos libremente
+function paletaDesdeColorYFondo(colorAcento, colorFondo) {
+  const oscuro = luminancia(colorFondo) < 0.5;
+  if (oscuro) {
+    return {
+      a: colorAcento,
+      d: mezclarColores(colorAcento, '#FFFFFF', 0.22),
+      s: mezclarColores(mezclarColores(colorFondo, '#FFFFFF', 0.14), colorAcento, 0.22),
+      bg: colorFondo,
+      panel: mezclarColores(colorFondo, '#FFFFFF', 0.08),
+      panel2: mezclarColores(colorFondo, '#FFFFFF', 0.14),
+      line: mezclarColores(colorFondo, '#FFFFFF', 0.22),
+      text: '#F5F5F2', muted: '#B7B6AE'
+    };
+  }
+  return {
+    a: colorAcento,
+    d: mezclarColores(colorAcento, '#000000', 0.26),
+    s: mezclarColores(mezclarColores(colorFondo, '#FFFFFF', 0.7), colorAcento, 0.12),
+    bg: colorFondo,
+    panel: mezclarColores(colorFondo, '#FFFFFF', 0.65),
+    panel2: mezclarColores(colorFondo, '#FFFFFF', 0.82),
+    line: mezclarColores(colorFondo, '#000000', 0.1),
+    text: '#232320', muted: '#5F5E56'
+  };
+}
+
 function aplicarTema(nombre) {
   const t = TEMAS_CAT[nombre] || TEMAS_CAT.verde;
   const r = document.documentElement;
@@ -719,7 +755,7 @@ async function cargar() {
     if (!r.ok) throw new Error('no existe');
     datos = await r.json();
 
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo);
 
     if (datos.negocio.logo) {
       const lg = document.getElementById('logoNeg');
@@ -1220,7 +1256,7 @@ async function refrescarStock() {
     const nuevo = await r.json();
     datos.productos = nuevo.productos;
     datos.negocio = nuevo.negocio;
-    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo);
+    aplicarTemaCompleto(datos.negocio.tema, datos.negocio.color_personalizado, datos.negocio.fondo, datos.negocio.color_fondo);
 
     // sacar del pedido lo que ya no tiene stock
     Object.keys(pedido).forEach(function (clave) {
