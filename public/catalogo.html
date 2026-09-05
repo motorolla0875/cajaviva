@@ -1136,9 +1136,31 @@ function pintar() {
       '<div class="ctrl">' + r.ctrl + '</div></div>';
   }
 
-  let html = '<div class="grilla-prod">' + lista.map(tarjeta).join('') + '</div>';
+  // en vez de recrear toda la grilla (lo que recrea todas las fotos y hace parpadear),
+  // se reutilizan las tarjetas que ya estaban en pantalla y solo se agregan/sacan las que cambian
+  let grilla = $('lista').querySelector('.grilla-prod');
+  if (!grilla) {
+    $('lista').innerHTML = '<div class="grilla-prod"></div>';
+    grilla = $('lista').querySelector('.grilla-prod');
+  }
 
-  $('lista').innerHTML = html;
+  const idsNuevos = {};
+  lista.forEach(function (p) { idsNuevos[p.id] = true; });
+
+  Array.prototype.slice.call(grilla.children).forEach(function (el) {
+    const id = el.id.replace('prod-', '');
+    if (!idsNuevos[id]) el.remove();
+  });
+
+  lista.forEach(function (p) {
+    let el = document.getElementById('prod-' + p.id);
+    if (!el) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = tarjeta(p);
+      el = tmp.firstElementChild;
+    }
+    grilla.appendChild(el);
+  });
 }
 
 
