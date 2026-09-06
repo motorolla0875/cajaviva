@@ -176,4 +176,72 @@ router.post('/publico', async (req, res) => {
   }
 });
 
+// ── dictar un producto por voz: convierte lo que dijo el usuario en los datos del formulario ──
+const PROMPT_DICTADO = `Sos un asistente que convierte lo que un comerciante dice en voz alta en los datos de un producto para cargar en su sistema.
+
+Te llega una frase transcripta de voz, en español, a veces con errores de dictado. Tenes que devolver SOLO un JSON valido, sin texto alrededor, sin markdown, con esta forma exacta:
+
+{"nombre": "string o null", "precioVenta": numero o null, "precioCosto": numero o null, "stockInicial": numero o null, "unidad": "unidad" o "kg" o "litro"}
+
+Reglas:
+- nombre: el nombre del producto tal cual lo dijo, con mayuscula inicial. Si no lo dijo, null.
+- precioVenta: el precio al que lo vende. Si dice "cuesta", "sale", "vendo a", "precio de venta", usa ese numero. Si solo menciona un numero de precio sin aclarar cual es, asumilo como precio de venta.
+- precioCosto: el precio que le costo a el/ella, si lo menciona ("me costo", "precio de costo", "lo compre a"). Si no lo dice, null.
+- stockInicial: la cantidad que tiene, si dice "tengo", "hay", "stock de", "cargar X unidades". Si no lo dice, null.
+- unidad: "kg" si vende por kilo o gramos, "litro" si vende por litro, sino "unidad".
+- Los numeros van sin simbolo de moneda ni puntos de miles, con punto decimal si hace falta.
+- Si no podes entender nada util, devolves todos los campos en null.
+
+No expliques nada, no agregues texto, SOLO el JSON.`;
+
+router.post('/dictar-producto', async (req, res) => {
+  const texto = (req.body?.texto || '').trim();
+  if (!texto) return res.status(400).json({ error: 'No se escucho nada.' });
+  if (texto.length > 500) return res.status(400).json({ error: 'Es mucho texto, proba mas corto.' });
+
+  const clave = process.env.GROQ_API_KEY;
+  if (!clave) return res.status(500).json({ error: 'El dictado no esta disponible ahora.' });
+
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + clave
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: PROMPT_DICTADO },
+          { role: 'user', content: texto }
+        ],
+        temperature: 0.1,
+        max_tokens: 200,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) {
+      console.error('Groq dictado:', d);
+      return res.status(500).json({ error: 'No se pudo interpretar ahora. Proba de nuevo.' });
+    }
+
+    const contenido = d.choices?.[0]?.message?.content || '{}';
+    let datos;
+    try { datos = JSON.parse(contenido); } catch (e) { datos = {}; }
+
+    res.json({
+      nombre: typeof datos.nombre === 'string' ? datos.nombre.trim() : null,
+      precioVenta: typeof datos.precioVenta === 'number' ? datos.precioVenta : null,
+      precioCosto: typeof datos.precioCosto === 'number' ? datos.precioCosto : null,
+      stockInicial: typeof datos.stockInicial === 'number' ? datos.stockInicial : null,
+      unidad: ['unidad', 'kg', 'litro'].indexOf(datos.unidad) >= 0 ? datos.unidad : 'unidad'
+    });
+  } catch (e) {
+    console.error('dictar-producto:', e.message);
+    res.status(500).json({ error: 'No se pudo interpretar ahora.' });
+  }
+});
+
 module.exports = router;

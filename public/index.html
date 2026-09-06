@@ -2706,6 +2706,14 @@
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
     <div id="msgProd"></div>
+
+    <div id="wrapDictado" style="display:none; margin-bottom:14px;">
+      <button type="button" id="btnDictarProd" style="width:100%; padding:14px; border-radius:12px; border:1.5px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:14.5px; font-weight:500; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <span id="iconoDictado">&#127908;</span> Cargar hablando
+      </button>
+      <p class="hint" id="hintDictado" style="text-align:center;"></p>
+    </div>
+
     <div class="foto-wrap">
       <div class="foto-prev" id="previewFoto"><span>Sin foto</span></div>
       <div class="foto-btns">
@@ -3783,6 +3791,78 @@ let carrito = [];
 let medioPago = 'efectivo';
 let catFiltro = '';
 let editandoId = null, editandoCli = null;
+
+/* ══ Cargar producto hablando ══ */
+const hayDictadoVoz = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+let reconocedorProd = null;
+
+if (hayDictadoVoz) {
+  document.getElementById('btnDictarProd').onclick = function () {
+    const boton = this;
+    if (reconocedorProd) { reconocedorProd.stop(); return; }
+
+    const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    reconocedorProd = new Reconocedor();
+    reconocedorProd.lang = 'es-AR';
+    reconocedorProd.continuous = false;
+    reconocedorProd.interimResults = false;
+
+    $('hintDictado').textContent = '';
+    $('iconoDictado').textContent = '\u{1F534}';
+    boton.lastChild.textContent = ' Escuchando... toca para terminar';
+
+    reconocedorProd.onresult = async function (e) {
+      const texto = e.results[0][0].transcript;
+      $('iconoDictado').textContent = '\u23F3';
+      boton.lastChild.textContent = ' Entendiendo...';
+      boton.disabled = true;
+
+      try {
+        const d = await api('POST', '/asistente/dictar-producto', { texto: texto });
+        let algo = false;
+        if (d.nombre) { $('pNombre').value = d.nombre; algo = true; }
+        if (d.precioVenta != null) { $('pVenta').value = d.precioVenta; algo = true; }
+        if (d.precioCosto != null) { $('pCosto').value = d.precioCosto; algo = true; }
+        if (d.stockInicial != null && $('wrapStockIni').style.display !== 'none') {
+          $('pStock').value = d.stockInicial; algo = true;
+        }
+        if (d.unidad && d.unidad !== 'unidad' && cap('cap_peso')) {
+          $('pUnidad').value = d.unidad;
+        }
+        $('hintDictado').textContent = algo
+          ? 'Escuchado: "' + texto + '" - revisa los datos antes de guardar'
+          : 'No entendi los datos, escuche: "' + texto + '"';
+      } catch (err) {
+        $('hintDictado').textContent = 'No se pudo interpretar. Proba de nuevo.';
+      }
+
+      boton.disabled = false;
+      $('iconoDictado').textContent = '\u{1F3A4}';
+      boton.lastChild.textContent = ' Cargar hablando';
+      reconocedorProd = null;
+    };
+
+    reconocedorProd.onerror = function (e) {
+      $('hintDictado').textContent = e.error === 'not-allowed'
+        ? 'Dale permiso al microfono para poder dictar.'
+        : 'No se escucho nada, proba de nuevo.';
+      $('iconoDictado').textContent = '\u{1F3A4}';
+      boton.lastChild.textContent = ' Cargar hablando';
+      reconocedorProd = null;
+    };
+
+    reconocedorProd.onend = function () {
+      if (reconocedorProd) {
+        $('iconoDictado').textContent = '\u{1F3A4}';
+        boton.lastChild.textContent = ' Cargar hablando';
+        reconocedorProd = null;
+      }
+    };
+
+    reconocedorProd.start();
+  };
+}
+
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
 let periodo = 'hoy';
 let filtroProd = 'todos';
@@ -5285,6 +5365,7 @@ function abrirProd(id) {
   $('tituloProd').textContent = p ? 'Editar producto'
     : (cap('cap_alquiler') ? 'Nuevo producto para vender' : 'Nuevo producto');
   $('msgProd').innerHTML = '';
+  $('wrapDictado').style.display = (!p && hayDictadoVoz) ? 'block' : 'none';
   $('pNombre').value = p ? p.nombre : '';
   pintarSelectCategorias();
   $('pCategoria').value = p && p.categoria_id ? p.categoria_id : '';
