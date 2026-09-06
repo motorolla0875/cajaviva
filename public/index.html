@@ -3896,24 +3896,37 @@ function hablarProd(texto) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = 'es-AR';
-    u.onend = resolve;
-    u.onerror = resolve;
+    let resuelto = false;
+    function terminar() { if (!resuelto) { resuelto = true; resolve(); } }
+    u.onend = terminar;
+    u.onerror = terminar;
     window.speechSynthesis.speak(u);
+    // resguardo: algunos navegadores (sobre todo iPhone) a veces no avisan que termino de hablar
+    setTimeout(terminar, Math.max(4000, texto.length * 90));
   });
 }
 
 function escucharProd() {
   return new Promise(function (resolve) {
-    const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const r = new Reconocedor();
-    r.lang = 'es-AR';
-    r.continuous = false;
-    r.interimResults = false;
     let resuelto = false;
-    r.onresult = function (e) { resuelto = true; resolve(e.results[0][0].transcript); };
-    r.onerror = function () { if (!resuelto) { resuelto = true; resolve(''); } };
-    r.onend = function () { if (!resuelto) { resuelto = true; resolve(''); } };
-    r.start();
+    function terminar(texto) {
+      if (resuelto) return;
+      resuelto = true;
+      resolve(texto || '');
+    }
+    try {
+      const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const r = new Reconocedor();
+      r.lang = 'es-AR';
+      r.continuous = false;
+      r.interimResults = false;
+      r.onresult = function (e) { terminar(e.results[0][0].transcript); };
+      r.onerror = function () { terminar(''); };
+      r.onend = function () { terminar(''); };
+      r.start();
+    } catch (e) { terminar(''); }
+    // resguardo: si no paso nada en 10 segundos, seguimos igual en vez de quedar colgado
+    setTimeout(function () { terminar(''); }, 10000);
   });
 }
 
@@ -3965,54 +3978,59 @@ async function iniciarAsistenteVoz() {
     return resp;
   }
 
-  const rNombre = await preguntar('Como se llama el producto?');
-  if (rNombre) $('pNombre').value = rNombre.charAt(0).toUpperCase() + rNombre.slice(1);
+  try {
+    const rNombre = await preguntar('Como se llama el producto?');
+    if (rNombre) $('pNombre').value = rNombre.charAt(0).toUpperCase() + rNombre.slice(1);
 
-  if (categorias.length > 0) {
-    const nombresCat = categorias.map(function (c) { return c.nombre; }).join(', ');
-    const rCat = await preguntar('En que categoria va? Tenes: ' + nombresCat);
-    if (rCat) {
-      const rNorm = norm(rCat);
-      const encontrada = categorias.filter(function (c) {
-        return rNorm.indexOf(norm(c.nombre)) >= 0 || norm(c.nombre).indexOf(rNorm) >= 0;
-      })[0];
-      if (encontrada) $('pCategoria').value = encontrada.id;
+    if (categorias.length > 0) {
+      const nombresCat = categorias.map(function (c) { return c.nombre; }).join(', ');
+      const rCat = await preguntar('En que categoria va? Tenes: ' + nombresCat);
+      if (rCat) {
+        const rNorm = norm(rCat);
+        const encontrada = categorias.filter(function (c) {
+          return rNorm.indexOf(norm(c.nombre)) >= 0 || norm(c.nombre).indexOf(rNorm) >= 0;
+        })[0];
+        if (encontrada) $('pCategoria').value = encontrada.id;
+      }
     }
-  }
 
-  const rVenta = await preguntar('Cual es el precio de venta?');
-  const numVenta = numeroDesdeTexto(rVenta);
-  if (numVenta != null) $('pVenta').value = numVenta;
+    const rVenta = await preguntar('Cual es el precio de venta?');
+    const numVenta = numeroDesdeTexto(rVenta);
+    if (numVenta != null) $('pVenta').value = numVenta;
 
-  const rCosto = await preguntar('Cual es el precio de costo? Si no sabes, decime no se');
-  if (!/no\s*se/.test(norm(rCosto))) {
-    const numCosto = numeroDesdeTexto(rCosto);
-    if (numCosto != null) $('pCosto').value = numCosto;
-  }
-
-  const rOferta = await preguntar('Esta en oferta? Decime el precio de oferta, o decime no');
-  if (!/^no\b/.test(norm(rOferta).trim())) {
-    const numOferta = numeroDesdeTexto(rOferta);
-    if (numOferta != null && numVenta != null && numOferta < numVenta) {
-      ofertaActual = true;
-      $('swOferta').classList.add('on');
-      $('wrapOferta').style.display = 'block';
-      $('pOferta').value = numOferta;
-      actualizarHintOferta();
+    const rCosto = await preguntar('Cual es el precio de costo? Si no sabes, decime no se');
+    if (!/no\s*se/.test(norm(rCosto))) {
+      const numCosto = numeroDesdeTexto(rCosto);
+      if (numCosto != null) $('pCosto').value = numCosto;
     }
-  }
 
-  if ($('wrapStockIni').style.display !== 'none') {
-    const rStock = await preguntar('Cuanto stock tenes?');
-    if (!/no\s*se/.test(norm(rStock))) {
-      const numStock = numeroDesdeTexto(rStock);
-      if (numStock != null) $('pStock').value = numStock;
+    const rOferta = await preguntar('Esta en oferta? Decime el precio de oferta, o decime no');
+    if (!/^no\b/.test(norm(rOferta).trim())) {
+      const numOferta = numeroDesdeTexto(rOferta);
+      if (numOferta != null && numVenta != null && numOferta < numVenta) {
+        ofertaActual = true;
+        $('swOferta').classList.add('on');
+        $('wrapOferta').style.display = 'block';
+        $('pOferta').value = numOferta;
+        actualizarHintOferta();
+      }
     }
-  }
 
-  await hablarProd('Listo, revisa los datos y guarda.');
-  estado.textContent = 'Listo, revisa los datos antes de guardar.';
-  btn.disabled = false;
+    if ($('wrapStockIni').style.display !== 'none') {
+      const rStock = await preguntar('Cuanto stock tenes?');
+      if (!/no\s*se/.test(norm(rStock))) {
+        const numStock = numeroDesdeTexto(rStock);
+        if (numStock != null) $('pStock').value = numStock;
+      }
+    }
+
+    await hablarProd('Listo, revisa los datos y guarda.');
+    estado.textContent = 'Listo, revisa los datos antes de guardar.';
+  } catch (e) {
+    estado.textContent = 'Algo fallo, revisa los datos que se cargaron hasta aca.';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 if (hayDictadoVoz) {
