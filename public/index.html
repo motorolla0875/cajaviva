@@ -2708,15 +2708,16 @@
     <div id="msgProd"></div>
 
     <div id="wrapDictado" style="display:none; margin-bottom:14px;">
-      <button type="button" id="btnDictarProd" style="width:100%; padding:14px; border-radius:12px; border:1.5px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:14.5px; font-weight:500; display:flex; align-items:center; justify-content:center; gap:8px;">
+      <button type="button" id="btnDictarProd" style="display:none;">
         <span id="iconoDictado">&#127908;</span> Cargar hablando
       </button>
-      <p class="hint" id="hintDictado" style="text-align:center;"></p>
+      <p class="hint" id="hintDictado" style="display:none;"></p>
 
-      <button type="button" id="btnAsistenteVoz" style="width:100%; margin-top:8px; padding:14px; border-radius:12px; border:1.5px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:14.5px; font-weight:500;">
+      <button type="button" id="btnAsistenteVoz" style="width:100%; padding:14px; border-radius:12px; border:1.5px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:14.5px; font-weight:500;">
         &#128483; Asistente por voz (paso a paso)
       </button>
       <p class="hint" id="estadoAsistenteVoz" style="text-align:center;"></p>
+      <button type="button" id="btnElegirVoz" style="width:100%; margin-top:6px; padding:8px; border:none; background:none; color:var(--muted); font-size:12.5px; text-decoration:underline;">Elegir otra voz</button>
     </div>
 
     <div class="foto-wrap">
@@ -3886,12 +3887,21 @@ if (hayDictadoVoz) {
 /* ══ Asistente por voz, paso a paso ══ */
 const haySintesisVoz = !!window.speechSynthesis;
 
+function vozElegida() {
+  if (!haySintesisVoz) return null;
+  const nombre = localStorage.getItem('vozAsistenteCajaViva');
+  if (!nombre) return null;
+  return window.speechSynthesis.getVoices().filter(function (v) { return v.name === nombre; })[0] || null;
+}
+
 function hablarProd(texto) {
   return new Promise(function (resolve) {
     if (!haySintesisVoz) { resolve(); return; }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = 'es-AR';
+    const v = vozElegida();
+    if (v) { u.voice = v; u.lang = v.lang; }
     let resuelto = false;
     function terminar() { if (!resuelto) { resuelto = true; resolve(); } }
     u.onend = terminar;
@@ -4033,6 +4043,72 @@ if (hayDictadoVoz) {
   document.getElementById('btnAsistenteVoz').onclick = iniciarAsistenteVoz;
 } else {
   document.getElementById('btnAsistenteVoz').style.display = 'none';
+}
+
+if (haySintesisVoz) {
+  document.getElementById('btnElegirVoz').onclick = abrirSelectorVoz;
+} else {
+  document.getElementById('btnElegirVoz').style.display = 'none';
+}
+
+function vocesEnEspanol() {
+  return window.speechSynthesis.getVoices().filter(function (v) { return v.lang.toLowerCase().indexOf('es') === 0; });
+}
+
+function abrirSelectorVoz() {
+  let voces = vocesEnEspanol();
+  if (voces.length === 0) {
+    // algunos navegadores tardan en cargar la lista de voces
+    setTimeout(function () {
+      voces = vocesEnEspanol();
+      pintarSelectorVoz(voces);
+    }, 300);
+    return;
+  }
+  pintarSelectorVoz(voces);
+}
+
+function pintarSelectorVoz(voces) {
+  const actual = localStorage.getItem('vozAsistenteCajaViva');
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;';
+  d.innerHTML =
+    '<div style="background:var(--panel); width:100%; max-width:420px; border-radius:16px 16px 0 0; padding:20px; max-height:70vh; overflow-y:auto;">' +
+      '<h3 style="margin:0 0 4px; font-size:18px; font-weight:500;">Elegi la voz</h3>' +
+      '<p class="hint" style="margin:0 0 14px;">Las voces disponibles dependen de tu celular.</p>' +
+      (voces.length === 0
+        ? '<p class="hint">No se encontraron voces en español en este dispositivo.</p>'
+        : voces.map(function (v, i) {
+            return '<div style="display:flex; align-items:center; gap:8px; padding:10px 0; border-top:1px solid var(--line);">' +
+              '<button data-i="' + i + '" class="btn-voz-probar" style="flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:var(--accent-soft); color:var(--accent-dark); font-size:15px;">&#9654;</button>' +
+              '<span style="flex:1; font-size:14px;">' + esc(v.name) + (v.name === actual ? ' <b>(actual)</b>' : '') + '</span>' +
+              '<button data-i="' + i + '" class="btn-voz-usar" style="flex:0 0 auto; padding:8px 12px; border-radius:8px; border:1px solid var(--accent); background:none; color:var(--accent-dark); font-size:13px;">Usar</button>' +
+            '</div>';
+          }).join('')) +
+      '<button id="btnCerrarVoz" style="width:100%; margin-top:16px; padding:12px; border:none; border-radius:10px; background:var(--panel-2); color:var(--text); font-size:14px;">Cerrar</button>' +
+    '</div>';
+
+  d.querySelectorAll('.btn-voz-probar').forEach(function (b) {
+    b.onclick = function () {
+      const v = voces[parseInt(this.dataset.i)];
+      const u = new SpeechSynthesisUtterance('Hola, asi sueno yo. Cual es el nombre del producto?');
+      u.voice = v; u.lang = v.lang;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    };
+  });
+  d.querySelectorAll('.btn-voz-usar').forEach(function (b) {
+    b.onclick = function () {
+      const v = voces[parseInt(this.dataset.i)];
+      localStorage.setItem('vozAsistenteCajaViva', v.name);
+      d.remove();
+      avisar('Listo, ahora el asistente usa esa voz');
+    };
+  });
+  d.querySelector('#btnCerrarVoz').onclick = function () { d.remove(); };
+  d.onclick = function (e) { if (e.target === d) d.remove(); };
+
+  document.body.appendChild(d);
 }
 
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
