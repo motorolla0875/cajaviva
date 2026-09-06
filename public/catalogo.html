@@ -1692,7 +1692,7 @@ function verFoto(urls) {
         '</div>';
       }).join('') +
     '</div>' +
-    (lista.length > 1
+    (lista.length > 1 && window.matchMedia('(min-width: 820px)').matches
       ? '<button id="galAnt" style="display:none; position:absolute; left:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:20px; cursor:pointer;">&#8249;</button>' +
         '<button id="galSig" style="display:none; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:20px; cursor:pointer;">&#8250;</button>'
       : '');
