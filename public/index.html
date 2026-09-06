@@ -2712,6 +2712,11 @@
         <span id="iconoDictado">&#127908;</span> Cargar hablando
       </button>
       <p class="hint" id="hintDictado" style="text-align:center;"></p>
+
+      <button type="button" id="btnAsistenteVoz" style="width:100%; margin-top:8px; padding:14px; border-radius:12px; border:1.5px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:14.5px; font-weight:500;">
+        &#128483; Asistente por voz (paso a paso)
+      </button>
+      <p class="hint" id="estadoAsistenteVoz" style="text-align:center;"></p>
     </div>
 
     <div class="foto-wrap">
@@ -3876,6 +3881,144 @@ if (hayDictadoVoz) {
 
     reconocedorProd.start();
   };
+}
+
+/* ══ Asistente por voz, paso a paso ══ */
+const haySintesisVoz = !!window.speechSynthesis;
+
+function norm(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function hablarProd(texto) {
+  return new Promise(function (resolve) {
+    if (!haySintesisVoz) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'es-AR';
+    u.onend = resolve;
+    u.onerror = resolve;
+    window.speechSynthesis.speak(u);
+  });
+}
+
+function escucharProd() {
+  return new Promise(function (resolve) {
+    const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const r = new Reconocedor();
+    r.lang = 'es-AR';
+    r.continuous = false;
+    r.interimResults = false;
+    let resuelto = false;
+    r.onresult = function (e) { resuelto = true; resolve(e.results[0][0].transcript); };
+    r.onerror = function () { if (!resuelto) { resuelto = true; resolve(''); } };
+    r.onend = function () { if (!resuelto) { resuelto = true; resolve(''); } };
+    r.start();
+  });
+}
+
+// convierte lo que se escucho en numero: primero busca digitos, y si no hay, entiende numeros en palabras
+function numeroDesdeTexto(texto) {
+  if (!texto) return null;
+  const t = texto.toLowerCase();
+  const directo = t.replace(/\./g, '').replace(',', '.').match(/\d+(\.\d+)?/);
+  if (directo) return parseFloat(directo[0]);
+
+  const unidades = {
+    cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
+    diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
+    veinte: 20, veintiun: 21, veintiuno: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25,
+    veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29,
+    treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90,
+    cien: 100, ciento: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500,
+    seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900
+  };
+  const limpio = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/pesos?|\$/g, '');
+  const palabras = limpio.split(/\s+/).filter(Boolean);
+  let total = 0, actual = 0, huboAlgo = false;
+  palabras.forEach(function (p) {
+    if (p === 'mil') {
+      total += (actual === 0 ? 1 : actual) * 1000;
+      actual = 0; huboAlgo = true;
+    } else if (p === 'millon' || p === 'millones') {
+      total += (actual === 0 ? 1 : actual) * 1000000;
+      actual = 0; huboAlgo = true;
+    } else if (unidades[p] != null) {
+      actual += unidades[p]; huboAlgo = true;
+    }
+  });
+  total += actual;
+  return huboAlgo ? total : null;
+}
+
+async function iniciarAsistenteVoz() {
+  const btn = document.getElementById('btnAsistenteVoz');
+  const estado = document.getElementById('estadoAsistenteVoz');
+  btn.disabled = true;
+
+  async function preguntar(texto) {
+    estado.textContent = texto;
+    await hablarProd(texto);
+    estado.textContent = 'Escuchando...';
+    const resp = await escucharProd();
+    estado.textContent = resp ? 'Dijiste: "' + resp + '"' : 'No te escuche, seguimos.';
+    return resp;
+  }
+
+  const rNombre = await preguntar('Como se llama el producto?');
+  if (rNombre) $('pNombre').value = rNombre.charAt(0).toUpperCase() + rNombre.slice(1);
+
+  if (categorias.length > 0) {
+    const nombresCat = categorias.map(function (c) { return c.nombre; }).join(', ');
+    const rCat = await preguntar('En que categoria va? Tenes: ' + nombresCat);
+    if (rCat) {
+      const rNorm = norm(rCat);
+      const encontrada = categorias.filter(function (c) {
+        return rNorm.indexOf(norm(c.nombre)) >= 0 || norm(c.nombre).indexOf(rNorm) >= 0;
+      })[0];
+      if (encontrada) $('pCategoria').value = encontrada.id;
+    }
+  }
+
+  const rVenta = await preguntar('Cual es el precio de venta?');
+  const numVenta = numeroDesdeTexto(rVenta);
+  if (numVenta != null) $('pVenta').value = numVenta;
+
+  const rCosto = await preguntar('Cual es el precio de costo? Si no sabes, decime no se');
+  if (!/no\s*se/.test(norm(rCosto))) {
+    const numCosto = numeroDesdeTexto(rCosto);
+    if (numCosto != null) $('pCosto').value = numCosto;
+  }
+
+  const rOferta = await preguntar('Esta en oferta? Decime el precio de oferta, o decime no');
+  if (!/^no\b/.test(norm(rOferta).trim())) {
+    const numOferta = numeroDesdeTexto(rOferta);
+    if (numOferta != null && numVenta != null && numOferta < numVenta) {
+      ofertaActual = true;
+      $('swOferta').classList.add('on');
+      $('wrapOferta').style.display = 'block';
+      $('pOferta').value = numOferta;
+      actualizarHintOferta();
+    }
+  }
+
+  if ($('wrapStockIni').style.display !== 'none') {
+    const rStock = await preguntar('Cuanto stock tenes?');
+    if (!/no\s*se/.test(norm(rStock))) {
+      const numStock = numeroDesdeTexto(rStock);
+      if (numStock != null) $('pStock').value = numStock;
+    }
+  }
+
+  await hablarProd('Listo, revisa los datos y guarda.');
+  estado.textContent = 'Listo, revisa los datos antes de guardar.';
+  btn.disabled = false;
+}
+
+if (hayDictadoVoz) {
+  document.getElementById('btnAsistenteVoz').onclick = iniciarAsistenteVoz;
+} else {
+  document.getElementById('btnAsistenteVoz').style.display = 'none';
 }
 
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
