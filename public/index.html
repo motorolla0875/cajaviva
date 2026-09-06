@@ -3818,7 +3818,10 @@ if (hayDictadoVoz) {
       boton.disabled = true;
 
       try {
-        const d = await api('POST', '/asistente/dictar-producto', { texto: texto });
+        const d = await api('POST', '/asistente/dictar-producto', {
+          texto: texto,
+          categorias: categorias.map(function (c) { return c.nombre; })
+        });
         let algo = false;
         if (d.nombre) { $('pNombre').value = d.nombre; algo = true; }
         if (d.precioVenta != null) { $('pVenta').value = d.precioVenta; algo = true; }
@@ -3828,6 +3831,18 @@ if (hayDictadoVoz) {
         }
         if (d.unidad && d.unidad !== 'unidad' && cap('cap_peso')) {
           $('pUnidad').value = d.unidad;
+        }
+        if (d.categoria) {
+          const catEncontrada = categorias.filter(function (c) { return c.nombre === d.categoria; })[0];
+          if (catEncontrada) { $('pCategoria').value = catEncontrada.id; algo = true; }
+        }
+        if (d.precioOferta != null) {
+          ofertaActual = true;
+          $('swOferta').classList.add('on');
+          $('wrapOferta').style.display = 'block';
+          $('pOferta').value = d.precioOferta;
+          actualizarHintOferta();
+          algo = true;
         }
         $('hintDictado').textContent = algo
           ? 'Escuchado: "' + texto + '" - revisa los datos antes de guardar'

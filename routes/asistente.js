@@ -181,7 +181,7 @@ const PROMPT_DICTADO = `Sos un asistente que convierte lo que un comerciante dic
 
 Te llega una frase transcripta de voz, en español, a veces con errores de dictado. Tenes que devolver SOLO un JSON valido, sin texto alrededor, sin markdown, con esta forma exacta:
 
-{"nombre": "string o null", "precioVenta": numero o null, "precioCosto": numero o null, "stockInicial": numero o null, "unidad": "unidad" o "kg" o "litro"}
+{"nombre": "string o null", "precioVenta": numero o null, "precioCosto": numero o null, "stockInicial": numero o null, "unidad": "unidad" o "kg" o "litro", "categoria": "string o null", "precioOferta": numero o null}
 
 Reglas:
 - nombre: el nombre del producto tal cual lo dijo, con mayuscula inicial. Si no lo dijo, null.
@@ -189,6 +189,8 @@ Reglas:
 - precioCosto: el precio que le costo a el/ella, si lo menciona ("me costo", "precio de costo", "lo compre a"). Si no lo dice, null.
 - stockInicial: la cantidad que tiene, si dice "tengo", "hay", "stock de", "cargar X unidades". Si no lo dice, null.
 - unidad: "kg" si vende por kilo o gramos, "litro" si vende por litro, sino "unidad".
+- categoria: si menciona una categoria ("es de categoria X", "va en X", "es ropa", "es una bebida"), elegi la que mas se parezca de la LISTA DE CATEGORIAS EXISTENTES que te paso en el mensaje del usuario. Solo devolves un nombre que este LITERAL en esa lista. Si no menciona categoria o ninguna se parece, null.
+- precioOferta: si dice que esta "en oferta", "con descuento", "rebajado" a tal precio, ese es el precioOferta (tiene que ser menor al precioVenta). Si no menciona oferta, null.
 - Los numeros van sin simbolo de moneda ni puntos de miles, con punto decimal si hace falta.
 - Si no podes entender nada util, devolves todos los campos en null.
 
@@ -199,10 +201,17 @@ router.post('/dictar-producto', async (req, res) => {
   if (!texto) return res.status(400).json({ error: 'No se escucho nada.' });
   if (texto.length > 500) return res.status(400).json({ error: 'Es mucho texto, proba mas corto.' });
 
+  const categoriasExistentes = Array.isArray(req.body?.categorias)
+    ? req.body.categorias.filter(function (c) { return typeof c === 'string'; }).slice(0, 60) : [];
+
   const clave = process.env.GROQ_API_KEY;
   if (!clave) return res.status(500).json({ error: 'El dictado no esta disponible ahora.' });
 
   try {
+    const mensajeUsuario = 'LISTA DE CATEGORIAS EXISTENTES: ' +
+      (categoriasExistentes.length ? categoriasExistentes.join(', ') : '(no tiene categorias cargadas)') +
+      '\n\nLo que dijo: ' + texto;
+
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -213,7 +222,7 @@ router.post('/dictar-producto', async (req, res) => {
         model: 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: PROMPT_DICTADO },
-          { role: 'user', content: texto }
+          { role: 'user', content: mensajeUsuario }
         ],
         temperature: 0.1,
         max_tokens: 200,
@@ -231,12 +240,22 @@ router.post('/dictar-producto', async (req, res) => {
     let datos;
     try { datos = JSON.parse(contenido); } catch (e) { datos = {}; }
 
+    // la categoria solo se acepta si coincide literal con una de las que existen
+    let categoria = typeof datos.categoria === 'string' ? datos.categoria.trim() : null;
+    if (categoria && categoriasExistentes.indexOf(categoria) < 0) categoria = null;
+
+    let precioOferta = typeof datos.precioOferta === 'number' ? datos.precioOferta : null;
+    const precioVentaOk = typeof datos.precioVenta === 'number' ? datos.precioVenta : null;
+    if (precioOferta != null && (precioVentaOk == null || precioOferta >= precioVentaOk)) precioOferta = null;
+
     res.json({
       nombre: typeof datos.nombre === 'string' ? datos.nombre.trim() : null,
-      precioVenta: typeof datos.precioVenta === 'number' ? datos.precioVenta : null,
+      precioVenta: precioVentaOk,
       precioCosto: typeof datos.precioCosto === 'number' ? datos.precioCosto : null,
       stockInicial: typeof datos.stockInicial === 'number' ? datos.stockInicial : null,
-      unidad: ['unidad', 'kg', 'litro'].indexOf(datos.unidad) >= 0 ? datos.unidad : 'unidad'
+      unidad: ['unidad', 'kg', 'litro'].indexOf(datos.unidad) >= 0 ? datos.unidad : 'unidad',
+      categoria: categoria,
+      precioOferta: precioOferta
     });
   } catch (e) {
     console.error('dictar-producto:', e.message);
