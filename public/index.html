@@ -3886,10 +3886,6 @@ if (hayDictadoVoz) {
 /* ══ Asistente por voz, paso a paso ══ */
 const haySintesisVoz = !!window.speechSynthesis;
 
-function norm(s) {
-  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-}
-
 function hablarProd(texto) {
   return new Promise(function (resolve) {
     if (!haySintesisVoz) { resolve(); return; }
