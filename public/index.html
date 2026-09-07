@@ -2736,6 +2736,7 @@
 
     <label>Nombre</label>
     <input type="text" id="pNombre" placeholder="Ej: Coca Cola 500ml">
+    <div id="sugerenciaCat" style="display:none; margin-top:6px;"></div>
     <div id="wrapCategoria">
     <label>Categoria</label>
     <div style="display:flex; gap:8px;">
@@ -4055,6 +4056,42 @@ if (hayDictadoVoz) {
 } else {
   document.getElementById('btnAsistenteVoz').style.display = 'none';
 }
+
+/* ══ Sugerir categoria mientras escribe el nombre ══ */
+let timeoutSugCat = null;
+
+document.getElementById('pNombre').addEventListener('input', function () {
+  clearTimeout(timeoutSugCat);
+  $('sugerenciaCat').style.display = 'none';
+
+  const nombre = this.value.trim();
+  if (nombre.length < 3 || categorias.length === 0) return;
+  // si ya hay una categoria elegida, no lo interrumpimos con una sugerencia
+  if ($('pCategoria').value) return;
+
+  timeoutSugCat = setTimeout(async function () {
+    try {
+      const d = await api('POST', '/asistente/sugerir-categoria', {
+        nombre: nombre,
+        categorias: categorias.map(function (c) { return c.nombre; })
+      });
+      if (!d.categoria || $('pCategoria').value || $('pNombre').value.trim() !== nombre) return;
+
+      const encontrada = categorias.filter(function (c) { return c.nombre === d.categoria; })[0];
+      if (!encontrada) return;
+
+      $('sugerenciaCat').style.display = 'block';
+      $('sugerenciaCat').innerHTML =
+        '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
+          '&#10024; Sugerencia inteligente: <b>' + esc(encontrada.nombre) + '</b>' +
+        '</button>';
+      $('btnUsarSugCat').onclick = function () {
+        $('pCategoria').value = encontrada.id;
+        $('sugerenciaCat').style.display = 'none';
+      };
+    } catch (e) {}
+  }, 700);
+});
 
 let cuentaCliId = null, stockProdId = null, stockModo = 'reponer';
 let periodo = 'hoy';
@@ -5559,6 +5596,7 @@ function abrirProd(id) {
     : (cap('cap_alquiler') ? 'Nuevo producto para vender' : 'Nuevo producto');
   $('msgProd').innerHTML = '';
   $('wrapDictado').style.display = (!p && hayDictadoVoz) ? 'block' : 'none';
+  $('sugerenciaCat').style.display = 'none';
   $('pNombre').value = p ? p.nombre : '';
   pintarSelectCategorias();
   $('pCategoria').value = p && p.categoria_id ? p.categoria_id : '';

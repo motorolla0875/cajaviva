@@ -263,4 +263,66 @@ router.post('/dictar-producto', async (req, res) => {
   }
 });
 
+// ── sugerir una categoria segun el nombre del producto, mientras el usuario escribe ──
+const PROMPT_CATEGORIA = `Sos un asistente que sugiere en que categoria va un producto, segun su nombre, para un comerciante.
+
+Te llega el nombre de un producto y la lista de categorias que ese comerciante ya tiene creadas. Devolves SOLO un JSON valido, sin texto alrededor, sin markdown:
+
+{"categoria": "string o null"}
+
+Reglas:
+- Elegi la categoria de la lista que mejor le quede al producto por su nombre (por ejemplo "Coca Cola" -> "Bebidas", "Remera" -> "Ropa" o "Remeras" si existe esa categoria exacta).
+- Solo devolves un nombre que este LITERAL en la lista que te paso.
+- Si ninguna categoria de la lista tiene sentido para ese producto, o la lista esta vacia, devolves null.
+- No inventes categorias que no esten en la lista.
+
+No expliques nada, SOLO el JSON.`;
+
+router.post('/sugerir-categoria', async (req, res) => {
+  const nombre = (req.body?.nombre || '').trim();
+  const categoriasExistentes = Array.isArray(req.body?.categorias)
+    ? req.body.categorias.filter(function (c) { return typeof c === 'string'; }).slice(0, 60) : [];
+
+  if (!nombre || nombre.length < 3 || categoriasExistentes.length === 0) {
+    return res.json({ categoria: null });
+  }
+
+  const clave = process.env.GROQ_API_KEY;
+  if (!clave) return res.json({ categoria: null });
+
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + clave
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: PROMPT_CATEGORIA },
+          { role: 'user', content: 'Producto: ' + nombre + '\nCategorias existentes: ' + categoriasExistentes.join(', ') }
+        ],
+        temperature: 0.1,
+        max_tokens: 60,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) return res.json({ categoria: null });
+
+    const contenido = d.choices?.[0]?.message?.content || '{}';
+    let datos;
+    try { datos = JSON.parse(contenido); } catch (e) { datos = {}; }
+
+    let categoria = typeof datos.categoria === 'string' ? datos.categoria.trim() : null;
+    if (categoria && categoriasExistentes.indexOf(categoria) < 0) categoria = null;
+
+    res.json({ categoria: categoria });
+  } catch (e) {
+    res.json({ categoria: null });
+  }
+});
+
 module.exports = router;
