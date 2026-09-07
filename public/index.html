@@ -4091,7 +4091,7 @@ const DICCIONARIO_CATEGORIAS = [
   ['Mascotas', ['alimento para perro', 'alimento para gato', 'balanceado', 'collar para perro', 'arena sanitaria', 'correa', 'juguete para perro', 'pecera', 'jaula', 'shampoo para perro', 'antipulgas']],
   ['Bazar', ['plato', 'vaso', 'cubierto', 'olla', 'sarten', 'taza', 'jarra', 'fuente', 'tupper', 'termo', 'mate', 'bombilla', 'repasador', 'mantel', 'vela', 'porta velas', 'florero']],
   ['Deportes', ['pelota de futbol', 'guante de boxeo', 'mancuerna', 'colchoneta', 'bicicleta', 'bici', 'casco', 'raqueta', 'red de futbol', 'bolsa de gimnasio', 'botella deportiva', 'canilleras']],
-  ['Automotor', ['aceite de motor', 'filtro de aire', 'bujia', 'liquido de frenos', 'limpiaparabrisas', 'cubierta', 'neumatico', 'bateria de auto', 'llanta', 'aromatizante para auto']],
+  ['Automotor', ['aceite de motor', 'filtro de aire', 'bujia', 'liquido de frenos', 'pastilla de freno', 'pastillas de freno', 'disco de freno', 'campana de freno', 'limpiaparabrisas', 'cubierta', 'neumatico', 'bateria de auto', 'llanta', 'aromatizante para auto']],
   ['Jardin', ['maceta', 'tierra', 'fertilizante', 'semilla', 'planta', 'manguera de riego', 'pala de jardin', 'regadera', 'pasto', 'insecticida para plantas']],
   ['Regaleria', ['peluche', 'tarjeta de regalo', 'globo', 'globos', 'papel de regalo', 'moño', 'cotillon', 'piñata', 'vela de cumpleaños']],
   ['Optica', ['anteojo', 'anteojos', 'lente', 'lentes de contacto', 'anteojo de sol', 'estuche para anteojos']],
@@ -4179,18 +4179,20 @@ document.getElementById('pNombre').addEventListener('input', function () {
   // si ya hay una categoria elegida, no lo interrumpimos con una sugerencia
   if ($('pCategoria').value) return;
 
-  // primero el diccionario local, instantaneo
-  const local = buscarCategoriaLocal(nombre);
-  if (local) { mostrarSugerenciaCat(local); return; }
-
-  // si no encontro nada conocido, recien ahi se prueba con la IA como respaldo
-  $('sugerenciaCat').style.display = 'block';
-  $('sugerenciaCat').innerHTML =
-    '<div style="display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px;">' +
-      '<span class="spin-chico"></span> Buscando categoria...' +
-    '</div>';
-
+  // se espera una pausa antes de buscar (tambien en el diccionario local), para no aplicar
+  // algo apurado con el texto a medio escribir (ej: "pastillas de fre..." podria dar
+  // Farmacia por "pastilla" antes de llegar a "freno", que es lo correcto)
   timeoutSugCat = setTimeout(async function () {
+    const local = buscarCategoriaLocal(nombre);
+    if (local) { mostrarSugerenciaCat(local); return; }
+
+    // si no encontro nada conocido, recien ahi se prueba con la IA como respaldo
+    $('sugerenciaCat').style.display = 'block';
+    $('sugerenciaCat').innerHTML =
+      '<div style="display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px;">' +
+        '<span class="spin-chico"></span> Buscando categoria...' +
+      '</div>';
+
     try {
       const d = await api('POST', '/asistente/sugerir-categoria', {
         nombre: nombre,
