@@ -8,6 +8,7 @@ const router = express.Router();
 try { db.exec('ALTER TABLE cheques ADD COLUMN numero TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE cheques ADD COLUMN banco TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE cheques ADD COLUMN rechazado INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE cheques ADD COLUMN deuda_descontada INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 
 function hoyISO(userId) {
   if (userId && db.hoyEn) return db.hoyEn(userId);
@@ -62,7 +63,7 @@ router.post('/', (req, res) => {
          req.body.fechaCobro, req.body?.nota || null,
          req.body?.numero || null, req.body?.banco || null);
 
-  // si viene de un cliente, le baja la deuda
+  // si viene de un cliente y se eligio descontarla ya, le baja la deuda de una
   if (clienteId && req.body?.bajaDeuda) {
     db.prepare('UPDATE clientes SET saldo = saldo - ? WHERE id = ? AND user_id = ?')
       .run(monto, clienteId, req.userId);
@@ -71,12 +72,14 @@ router.post('/', (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, 'pago')
     `).run(uuidv4(), req.userId, clienteId, monto, hoyISO(req.userId),
            'Cheque ' + (req.body?.numero || '') + ' al ' + req.body.fechaCobro);
+    db.prepare('UPDATE cheques SET deuda_descontada = 1 WHERE id = ?').run(id);
   }
 
   res.json({ id: id });
 });
 
-// ── acreditar: la plata entra a la caja ──
+// ── acreditar: la plata entra a la caja. Si la deuda no se habia descontado
+// todavia (porque al cargar el cheque no se tildo esa opcion), se descuenta recien ahora ──
 router.post('/:id/acreditar', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
@@ -85,10 +88,22 @@ router.post('/:id/acreditar', (req, res) => {
   if (ch.acreditado) return res.status(400).json({ error: 'Ese cheque ya esta acreditado.' });
 
   db.prepare('UPDATE cheques SET acreditado = 1, rechazado = 0 WHERE id = ?').run(ch.id);
+
+  if (ch.cliente_id && !ch.deuda_descontada) {
+    db.prepare('UPDATE clientes SET saldo = saldo - ? WHERE id = ? AND user_id = ?')
+      .run(ch.monto, ch.cliente_id, req.userId);
+    db.prepare(`
+      INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
+      VALUES (?, ?, ?, ?, ?, ?, 'pago')
+    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO(req.userId),
+           'Cheque ' + (ch.numero || '') + ' acreditado');
+    db.prepare('UPDATE cheques SET deuda_descontada = 1 WHERE id = ?').run(ch.id);
+  }
+
   res.json({ ok: true });
 });
 
-// ── rechazado: vuelve la deuda ──
+// ── rechazado: vuelve la deuda, pero solo si de verdad se le habia descontado antes ──
 router.post('/:id/rechazar', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
 
@@ -97,22 +112,37 @@ router.post('/:id/rechazar', (req, res) => {
 
   db.prepare('UPDATE cheques SET rechazado = 1, acreditado = 0 WHERE id = ?').run(ch.id);
 
-  if (ch.cliente_id) {
+  if (ch.cliente_id && ch.deuda_descontada) {
     db.prepare('UPDATE clientes SET saldo = saldo + ? WHERE id = ?').run(ch.monto, ch.cliente_id);
     db.prepare(`
       INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
-      VALUES (?, ?, ?, ?, ?, 'Cheque rechazado', 'devolucion')
-    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO(req.userId));
+      VALUES (?, ?, ?, ?, ?, ?, 'devolucion')
+    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO(req.userId), 'Cheque rechazado');
+    db.prepare('UPDATE cheques SET deuda_descontada = 0 WHERE id = ?').run(ch.id);
   }
 
   res.json({ ok: true });
 });
 
-// ── volver a pendiente ──
+// ── volver a pendiente: si la deuda estaba descontada (venia de acreditado), se le vuelve a sumar ──
 router.post('/:id/pendiente', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+
+  const ch = db.prepare('SELECT * FROM cheques WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!ch) return res.status(404).json({ error: 'Cheque no encontrado.' });
+
   db.prepare('UPDATE cheques SET acreditado = 0, rechazado = 0 WHERE id = ? AND user_id = ?')
     .run(req.params.id, req.userId);
+
+  if (ch.acreditado && ch.cliente_id && ch.deuda_descontada) {
+    db.prepare('UPDATE clientes SET saldo = saldo + ? WHERE id = ?').run(ch.monto, ch.cliente_id);
+    db.prepare(`
+      INSERT INTO pagos_cliente (id, user_id, cliente_id, monto, fecha, nota, tipo)
+      VALUES (?, ?, ?, ?, ?, ?, 'devolucion')
+    `).run(uuidv4(), req.userId, ch.cliente_id, ch.monto, hoyISO(req.userId), 'Cheque vuelto a pendiente');
+    db.prepare('UPDATE cheques SET deuda_descontada = 0 WHERE id = ?').run(ch.id);
+  }
+
   res.json({ ok: true });
 });
 
