@@ -264,18 +264,19 @@ router.post('/dictar-producto', async (req, res) => {
 });
 
 // ── sugerir una categoria segun el nombre del producto, mientras el usuario escribe ──
-const PROMPT_CATEGORIA = `Sos un asistente que sugiere en que categoria va un producto, segun su nombre, para un comerciante.
+const PROMPT_CATEGORIA = `Sos un experto clasificador de productos y servicios comerciales, como los que usan los sistemas de facturacion mas completos del mercado (tipo Alegra). Tu trabajo es decir en que rubro/categoria comercial entra CUALQUIER cosa que un comerciante venda, sin importar si es un producto de almacen, una herramienta, un mueble, un servicio, repuestos, indumentaria, tecnologia, o lo que sea.
 
-Te llega el nombre de un producto (a veces una sola palabra) y la lista de categorias que ese comerciante ya tiene creadas (puede venir vacia). Devolves SOLO un JSON valido, sin texto alrededor, sin markdown:
+Te llega el nombre de lo que vende (a veces una sola palabra, a veces con errores de tipeo) y la lista de categorias que ese comerciante ya tiene creadas (puede venir vacia). Devolves SOLO un JSON valido, sin texto alrededor, sin markdown:
 
 {"categoria": "string o null", "esNueva": true o false}
 
 Reglas:
-- Casi siempre se puede adivinar una categoria, incluso con una sola palabra. Un nombre de producto (aunque sea generico o corto, como "pan", "remeras", "parlante", "pilas", "shampoo") ya alcanza para saber a que rubro pertenece. Se decidido, no seas conservador.
-- Si alguna categoria de la lista le queda bien al producto, usa esa exacta, tal cual esta escrita, y esNueva en false.
-- Si ninguna de la lista le queda bien (o la lista esta vacia), inventa un nombre de categoria corto y generico que tenga sentido, y esNueva en true. Ejemplos: "pan" -> "Panaderia", "remeras" -> "Ropa", "parlante" -> "Electronica", "coca cola" -> "Bebidas", "shampoo" -> "Perfumeria", "pilas" -> "Ferreteria", "helado" -> "Heladeria", "galletitas" -> "Almacen".
-- El nombre de categoria siempre en mayuscula inicial, corto (una o dos palabras), generico (no el nombre del producto en si, sino el rubro al que pertenece).
-- SOLO devolves categoria en null si el texto no es un nombre de producto reconocible (por ejemplo esta vacio, son solo numeros, o es una palabra sin sentido).
+- Pensa en TODO el universo de rubros comerciales posibles, no solo comida o ropa: herramientas y equipos, muebles, electrodomesticos, indumentaria, calzado, ferreteria, construccion, repuestos de auto, informatica, telefonia, servicios (peluqueria, gastronomia, reparaciones, estetica, salud), papeleria, jugueteria, deportes, mascotas, jardineria, decoracion, regaleria, optica, farmacia, perfumeria, bazar, y cualquier otro rubro real que exista.
+- Casi cualquier nombre alcanza para adivinar el rubro, incluso una sola palabra generica ("bomba de aire" -> "Herramientas y equipos", "corte de pelo" -> "Servicios de peluqueria", "sofa" -> "Muebles de sala", "milanesa a la napolitana" -> "Comidas preparadas"). Se muy decidido, casi nunca deberias devolver null.
+- Si alguna categoria de la lista del comerciante le queda bien, usa esa exacta tal cual esta escrita, y esNueva en false.
+- Si ninguna de la lista le queda bien (o la lista esta vacia), inventa el nombre de categoria comercial mas natural y usado en el rubro real (2 a 4 palabras esta bien si hace falta, ej "Herramientas y equipos", "Servicios de peluqueria", "Muebles de sala"), con esNueva en true.
+- Mayuscula inicial. El nombre describe el RUBRO, nunca el producto puntual.
+- SOLO devolves categoria en null si el texto esta vacio, son puros numeros/simbolos, o es tan confuso que ni un humano podria adivinar que se vende.
 
 No expliques nada, SOLO el JSON.`;
 
