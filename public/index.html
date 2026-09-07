@@ -4105,10 +4105,11 @@ function buscarCategoriaLocal(nombre) {
     const cat = DICCIONARIO_CATEGORIAS[i][0];
     const palabras = DICCIONARIO_CATEGORIAS[i][1];
     for (let j = 0; j < palabras.length; j++) {
-      const palabra = norm(palabras[j]);
-      // se prefiere siempre la palabra clave mas larga y especifica que coincida,
-      // sin importar en que categoria este (asi "papas fritas" gana sobre "papa")
-      if (n.indexOf(palabra) >= 0 && palabra.length > mejorLargo) {
+      const palabra = norm(palabras[j]).trim();
+      // coincide como palabra completa (con limite de palabra), no como texto suelto
+      // dentro de otra palabra (asi "te" no matchea el "te" de "corte de pelo")
+      const re = new RegExp('\\b' + palabra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+      if (re.test(n) && palabra.length > mejorLargo) {
         mejorCat = cat;
         mejorLargo = palabra.length;
       }
