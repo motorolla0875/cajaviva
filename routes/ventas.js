@@ -158,11 +158,31 @@ router.get('/resumen', (req, res) => {
     FROM gastos WHERE user_id = ? AND fecha >= ? AND fecha <= ?
   `).get(req.userId, desde, hasta);
 
+  // "fiado sin cobrar" no puede ser solo lo vendido a cuenta corriente en el periodo:
+  // si el cliente ya pago esa deuda (o parte), no tiene que seguir contando como sin cobrar.
+  // por cada cliente se toma lo menor entre lo que vendio fiado en el periodo y lo que
+  // realmente debe ahora en total (ventas fiado de siempre menos pagos de siempre)
   const f = db.prepare(`
-    SELECT COALESCE(SUM(total),0) AS fiado FROM ventas
-    WHERE user_id = ? AND estado = 'cobrada' AND medio_pago = 'cuenta_corriente'
-      AND fecha >= ? AND fecha <= ?
-  `).get(req.userId, desde, hasta);
+    SELECT COALESCE(SUM(
+      MIN(
+        periodo_fiado,
+        MAX(0, deuda_total - pagos_total)
+      )
+    ), 0) AS fiado
+    FROM (
+      SELECT v.cliente_id,
+        SUM(v.total) AS periodo_fiado,
+        (SELECT COALESCE(SUM(v2.total), 0) FROM ventas v2
+          WHERE v2.cliente_id = v.cliente_id AND v2.user_id = ?
+            AND v2.estado = 'cobrada' AND v2.medio_pago = 'cuenta_corriente') AS deuda_total,
+        (SELECT COALESCE(SUM(p.monto), 0) FROM pagos_cliente p
+          WHERE p.cliente_id = v.cliente_id AND p.user_id = ?) AS pagos_total
+      FROM ventas v
+      WHERE v.user_id = ? AND v.estado = 'cobrada' AND v.medio_pago = 'cuenta_corriente'
+        AND v.fecha >= ? AND v.fecha <= ? AND v.cliente_id IS NOT NULL
+      GROUP BY v.cliente_id
+    )
+  `).get(req.userId, req.userId, req.userId, desde, hasta);
 
   const salida = {
     desde, hasta,
