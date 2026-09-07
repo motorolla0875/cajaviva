@@ -53,7 +53,7 @@ router.post('/preguntar', async (req, res) => {
           { role: 'user', content: pregunta }
         ],
         temperature: 0.3,
-        max_tokens: 400
+        max_tokens: 600
       })
     });
 
@@ -158,7 +158,7 @@ router.post('/publico', async (req, res) => {
           { role: 'user', content: pregunta }
         ],
         temperature: 0.3,
-        max_tokens: 350
+        max_tokens: 550
       })
     });
 
@@ -225,7 +225,7 @@ router.post('/dictar-producto', async (req, res) => {
           { role: 'user', content: mensajeUsuario }
         ],
         temperature: 0.1,
-        max_tokens: 200,
+        max_tokens: 700,
         response_format: { type: 'json_object' }
       })
     });
@@ -307,7 +307,7 @@ router.post('/sugerir-categoria', async (req, res) => {
             (categoriasExistentes.length ? categoriasExistentes.join(', ') : '(todavia no tiene ninguna)') }
         ],
         temperature: 0.2,
-        max_tokens: 60,
+        max_tokens: 500,
         response_format: { type: 'json_object' }
       })
     });
