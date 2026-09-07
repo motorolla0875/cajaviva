@@ -2509,6 +2509,17 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalCuantasMesas">
+  <div class="modal">
+    <h3>Agregar mesas</h3>
+    <p style="color:var(--muted); font-size:13px; margin:0 0 12px;">Cuantas mesas queres agregar?</p>
+    <div id="msgCuantasMesas"></div>
+    <input type="text" id="cantMesasNuevas" inputmode="numeric" value="8">
+    <button class="btn-ppal" id="btnConfirmarMesas" style="margin-top:14px;">Agregar</button>
+    <button class="btn-sec" id="btnCancelarMesas">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalPlan">
   <div class="modal">
     <h3>Mi plan</h3>
@@ -13005,15 +13016,29 @@ async function cargarMesas() {
   }
 }
 
-async function agregarMesas() {
-  const n = prompt('Cuantas mesas queres agregar?', '8');
-  if (!n) return;
+function agregarMesas() {
+  $('cantMesasNuevas').value = '8';
+  $('msgCuantasMesas').innerHTML = '';
+  $('modalCuantasMesas').classList.add('on');
+  setTimeout(function () { $('cantMesasNuevas').focus(); $('cantMesasNuevas').select(); }, 100);
+}
+$('btnCancelarMesas').onclick = function () { $('modalCuantasMesas').classList.remove('on'); };
+$('btnConfirmarMesas').onclick = async function () {
+  const n = $('cantMesasNuevas').value.trim();
+  if (!n || parseInt(n) <= 0) {
+    $('msgCuantasMesas').innerHTML = '<div class="msg">Poné un numero valido.</div>';
+    return;
+  }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Agregando...';
   try {
     await api('POST', '/mesas/varias', { cuantas: parseInt(n) });
     await cargarMesas();
+    $('modalCuantasMesas').classList.remove('on');
     avisar('Mesas cargadas');
-  } catch (e) { avisar(e.message, true); }
-}
+  } catch (e) { $('msgCuantasMesas').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+  btn.disabled = false; btn.textContent = 'Agregar';
+};
 
 
 let mesaActual = null;
