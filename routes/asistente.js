@@ -266,15 +266,15 @@ router.post('/dictar-producto', async (req, res) => {
 // ── sugerir una categoria segun el nombre del producto, mientras el usuario escribe ──
 const PROMPT_CATEGORIA = `Sos un asistente que sugiere en que categoria va un producto, segun su nombre, para un comerciante.
 
-Te llega el nombre de un producto y la lista de categorias que ese comerciante ya tiene creadas. Devolves SOLO un JSON valido, sin texto alrededor, sin markdown:
+Te llega el nombre de un producto y la lista de categorias que ese comerciante ya tiene creadas (puede venir vacia). Devolves SOLO un JSON valido, sin texto alrededor, sin markdown:
 
-{"categoria": "string o null"}
+{"categoria": "string o null", "esNueva": true o false}
 
 Reglas:
-- Elegi la categoria de la lista que mejor le quede al producto por su nombre (por ejemplo "Coca Cola" -> "Bebidas", "Remera" -> "Ropa" o "Remeras" si existe esa categoria exacta).
-- Solo devolves un nombre que este LITERAL en la lista que te paso.
-- Si ninguna categoria de la lista tiene sentido para ese producto, o la lista esta vacia, devolves null.
-- No inventes categorias que no esten en la lista.
+- Si alguna categoria de la lista le queda bien al producto, usa esa exacta, tal cual esta escrita, y esNueva en false.
+- Si ninguna de la lista le queda bien (o la lista esta vacia), inventa un nombre de categoria corto y generico que tenga sentido (por ejemplo "Coca Cola" -> "Bebidas", "Galletitas Criollitas" -> "Galletitas", "Remera azul talle M" -> "Ropa"), y esNueva en true.
+- El nombre de categoria siempre en mayuscula inicial, corto (una o dos palabras), generico (no el nombre del producto en si).
+- Si el nombre del producto es muy ambiguo o corto y no da para adivinar categoria, categoria en null.
 
 No expliques nada, SOLO el JSON.`;
 
@@ -283,7 +283,7 @@ router.post('/sugerir-categoria', async (req, res) => {
   const categoriasExistentes = Array.isArray(req.body?.categorias)
     ? req.body.categorias.filter(function (c) { return typeof c === 'string'; }).slice(0, 60) : [];
 
-  if (!nombre || nombre.length < 3 || categoriasExistentes.length === 0) {
+  if (!nombre || nombre.length < 3) {
     return res.json({ categoria: null });
   }
 
@@ -301,9 +301,10 @@ router.post('/sugerir-categoria', async (req, res) => {
         model: 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: PROMPT_CATEGORIA },
-          { role: 'user', content: 'Producto: ' + nombre + '\nCategorias existentes: ' + categoriasExistentes.join(', ') }
+          { role: 'user', content: 'Producto: ' + nombre + '\nCategorias existentes: ' +
+            (categoriasExistentes.length ? categoriasExistentes.join(', ') : '(todavia no tiene ninguna)') }
         ],
-        temperature: 0.1,
+        temperature: 0.2,
         max_tokens: 60,
         response_format: { type: 'json_object' }
       })
@@ -317,9 +318,12 @@ router.post('/sugerir-categoria', async (req, res) => {
     try { datos = JSON.parse(contenido); } catch (e) { datos = {}; }
 
     let categoria = typeof datos.categoria === 'string' ? datos.categoria.trim() : null;
-    if (categoria && categoriasExistentes.indexOf(categoria) < 0) categoria = null;
+    if (categoria && categoria.length > 30) categoria = null;
 
-    res.json({ categoria: categoria });
+    // si dijo que ya existe pero en realidad no esta literal en la lista, la tratamos como nueva igual
+    const esNueva = !!datos.esNueva || (categoria && categoriasExistentes.indexOf(categoria) < 0);
+
+    res.json({ categoria: categoria, esNueva: !!esNueva });
   } catch (e) {
     res.json({ categoria: null });
   }

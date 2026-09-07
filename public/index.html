@@ -4065,7 +4065,7 @@ document.getElementById('pNombre').addEventListener('input', function () {
   $('sugerenciaCat').style.display = 'none';
 
   const nombre = this.value.trim();
-  if (nombre.length < 3 || categorias.length === 0) return;
+  if (nombre.length < 3) return;
   // si ya hay una categoria elegida, no lo interrumpimos con una sugerencia
   if ($('pCategoria').value) return;
 
@@ -4078,16 +4078,26 @@ document.getElementById('pNombre').addEventListener('input', function () {
       if (!d.categoria || $('pCategoria').value || $('pNombre').value.trim() !== nombre) return;
 
       const encontrada = categorias.filter(function (c) { return c.nombre === d.categoria; })[0];
-      if (!encontrada) return;
+      if (!encontrada && !d.esNueva) return;
 
       $('sugerenciaCat').style.display = 'block';
       $('sugerenciaCat').innerHTML =
         '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
-          '&#10024; Sugerencia inteligente: <b>' + esc(encontrada.nombre) + '</b>' +
+          '&#10024; Sugerencia inteligente: <b>' + esc(d.categoria) + '</b>' + (!encontrada ? ' (nueva)' : '') +
         '</button>';
-      $('btnUsarSugCat').onclick = function () {
-        $('pCategoria').value = encontrada.id;
-        $('sugerenciaCat').style.display = 'none';
+      $('btnUsarSugCat').onclick = async function () {
+        this.disabled = true;
+        try {
+          if (encontrada) {
+            $('pCategoria').value = encontrada.id;
+          } else {
+            const r = await api('POST', '/categorias', { nombre: d.categoria });
+            await cargarCategorias();
+            pintarSelectCategorias();
+            $('pCategoria').value = r.id;
+          }
+          $('sugerenciaCat').style.display = 'none';
+        } catch (e) { avisar(e.message, true); this.disabled = false; }
       };
     } catch (e) {}
   }, 700);
