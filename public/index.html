@@ -4140,10 +4140,19 @@ function mostrarSugerenciaCat(nombreCategoria) {
     '</button>';
   $('btnUsarSugCat').onclick = function () {
     // no se crea todavia: se crea recien cuando se guarde el producto, para que
-    // si cancelas no quede una categoria nueva creada sin querer
+    // si cancelas no quede una categoria nueva creada sin querer.
+    // mientras tanto se muestra seleccionada en el propio desplegable, con una opcion temporal
     categoriaPendienteNueva = nombreCategoria;
-    $('sugerenciaCat').innerHTML =
-      '<p class="hint ok" style="margin:0;">&#10024; Se va a crear <b>' + esc(nombreCategoria) + '</b> al guardar el producto</p>';
+    const sel = $('pCategoria');
+    let opt = sel.querySelector('option[value="__nueva__"]');
+    if (!opt) {
+      opt = document.createElement('option');
+      opt.value = '__nueva__';
+      sel.appendChild(opt);
+    }
+    opt.textContent = nombreCategoria + ' (nueva)';
+    sel.value = '__nueva__';
+    $('sugerenciaCat').style.display = 'none';
   };
 }
 
