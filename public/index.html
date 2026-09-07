@@ -3902,12 +3902,15 @@ function hablarProd(texto) {
   });
 }
 
+let reconocedorVozActivo = null;
+
 function escucharProd() {
   return new Promise(function (resolve) {
     let resuelto = false;
     function terminar(texto) {
       if (resuelto) return;
       resuelto = true;
+      reconocedorVozActivo = null;
       resolve(texto || '');
     }
     try {
@@ -3919,12 +3922,22 @@ function escucharProd() {
       r.onresult = function (e) { terminar(e.results[0][0].transcript); };
       r.onerror = function () { terminar(''); };
       r.onend = function () { terminar(''); };
+      reconocedorVozActivo = r;
       r.start();
     } catch (e) { terminar(''); }
     // resguardo: si no paso nada en 10 segundos, seguimos igual en vez de quedar colgado
     setTimeout(function () { terminar(''); }, 10000);
   });
 }
+
+// si el modal de producto se cierra por cualquier via (Cancelar, deslizar, tocar afuera, guardar),
+// se corta la voz y el microfono al instante en vez de esperar a que termine el paso actual
+new MutationObserver(function () {
+  if (!$('modalProd').classList.contains('on')) {
+    window.speechSynthesis.cancel();
+    if (reconocedorVozActivo) { try { reconocedorVozActivo.abort(); } catch (e) {} }
+  }
+}).observe($('modalProd'), { attributes: true, attributeFilter: ['class'] });
 
 // convierte lo que se escucho en numero: primero busca digitos, y si no hay, entiende numeros en palabras
 function numeroDesdeTexto(texto) {
@@ -3966,10 +3979,13 @@ async function iniciarAsistenteVoz() {
   btn.disabled = true;
 
   async function preguntar(texto) {
+    if (!$('modalProd').classList.contains('on')) throw new Error('cerrado');
     estado.textContent = texto;
     await hablarProd(texto);
+    if (!$('modalProd').classList.contains('on')) throw new Error('cerrado');
     estado.textContent = 'Escuchando...';
     const resp = await escucharProd();
+    if (!$('modalProd').classList.contains('on')) throw new Error('cerrado');
     estado.textContent = resp ? 'Dijiste: "' + resp + '"' : 'No te escuche, seguimos.';
     return resp;
   }
