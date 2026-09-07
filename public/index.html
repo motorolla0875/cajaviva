@@ -4172,12 +4172,19 @@ async function resolverCategoriaPendiente() {
 
 document.getElementById('pNombre').addEventListener('input', function () {
   clearTimeout(timeoutSugCat);
-  $('sugerenciaCat').style.display = 'none';
 
   const nombre = this.value.trim();
-  if (nombre.length < 3) return;
+  if (nombre.length < 3) { $('sugerenciaCat').style.display = 'none'; return; }
   // si ya hay una categoria elegida, no lo interrumpimos con una sugerencia
-  if ($('pCategoria').value) return;
+  if ($('pCategoria').value) { $('sugerenciaCat').style.display = 'none'; return; }
+
+  // se muestra "pensando" desde la primera letra, para que se sienta que esta atento
+  // mientras escribis. Recien cuando hagas una pausa se reemplaza por el resultado real
+  $('sugerenciaCat').style.display = 'block';
+  $('sugerenciaCat').innerHTML =
+    '<div style="display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px;">' +
+      '<span class="spin-chico"></span> Pensando la categoria...' +
+    '</div>';
 
   // se espera una pausa antes de buscar (tambien en el diccionario local), para no aplicar
   // algo apurado con el texto a medio escribir (ej: "pastillas de fre..." podria dar
