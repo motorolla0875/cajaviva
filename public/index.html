@@ -3934,11 +3934,11 @@ function escucharProd() {
 // si el modal de producto se cierra por cualquier via (Cancelar, deslizar, tocar afuera, guardar),
 // se corta la voz y el microfono al instante en vez de esperar a que termine el paso actual
 new MutationObserver(function () {
-  if (!$('modalProd').classList.contains('on')) {
+  if (!document.getElementById('modalProd').classList.contains('on')) {
     window.speechSynthesis.cancel();
     if (reconocedorVozActivo) { try { reconocedorVozActivo.abort(); } catch (e) {} }
   }
-}).observe($('modalProd'), { attributes: true, attributeFilter: ['class'] });
+}).observe(document.getElementById('modalProd'), { attributes: true, attributeFilter: ['class'] });
 
 // convierte lo que se escucho en numero: primero busca digitos, y si no hay, entiende numeros en palabras
 function numeroDesdeTexto(texto) {
