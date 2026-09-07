@@ -4126,6 +4126,7 @@ function mostrarSugerenciaCat(nombreCategoria) {
   if (encontrada) {
     // ya existe entre tus categorias: se aplica directo, sin pedir que la confirmes
     $('pCategoria').value = encontrada.id;
+    categoriaPendienteNueva = null;
     $('sugerenciaCat').style.display = 'block';
     $('sugerenciaCat').innerHTML =
       '<p class="hint ok" style="margin:0;">&#10024; Categoria asignada: <b>' + esc(encontrada.nombre) + '</b></p>';
@@ -4137,19 +4138,28 @@ function mostrarSugerenciaCat(nombreCategoria) {
     '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
       '&#10024; Sugerencia inteligente: <b>' + esc(nombreCategoria) + '</b> (nueva)' +
     '</button>';
-  $('btnUsarSugCat').onclick = async function () {
-    this.disabled = true;
-    try {
-      const r = await api('POST', '/categorias', { nombre: nombreCategoria });
-      await cargarCategorias();
-      pintarSelectCategorias();
-      $('pCategoria').value = r.id;
-      $('sugerenciaCat').style.display = 'none';
-    } catch (e) { avisar(e.message, true); this.disabled = false; }
+  $('btnUsarSugCat').onclick = function () {
+    // no se crea todavia: se crea recien cuando se guarde el producto, para que
+    // si cancelas no quede una categoria nueva creada sin querer
+    categoriaPendienteNueva = nombreCategoria;
+    $('sugerenciaCat').innerHTML =
+      '<p class="hint ok" style="margin:0;">&#10024; Se va a crear <b>' + esc(nombreCategoria) + '</b> al guardar el producto</p>';
   };
 }
 
 let timeoutSugCat = null;
+let categoriaPendienteNueva = null;
+
+// si quedo una categoria nueva pendiente de crear (por la sugerencia inteligente),
+// se crea recien aca, justo antes de guardar el producto de verdad
+async function resolverCategoriaPendiente() {
+  if (!categoriaPendienteNueva) return;
+  const r = await api('POST', '/categorias', { nombre: categoriaPendienteNueva });
+  await cargarCategorias();
+  pintarSelectCategorias();
+  $('pCategoria').value = r.id;
+  categoriaPendienteNueva = null;
+}
 
 document.getElementById('pNombre').addEventListener('input', function () {
   clearTimeout(timeoutSugCat);
@@ -5698,6 +5708,7 @@ function abrirProd(id) {
   $('msgProd').innerHTML = '';
   $('wrapDictado').style.display = (!p && hayDictadoVoz) ? 'block' : 'none';
   $('sugerenciaCat').style.display = 'none';
+  categoriaPendienteNueva = null;
   $('pNombre').value = p ? p.nombre : '';
   pintarSelectCategorias();
   $('pCategoria').value = p && p.categoria_id ? p.categoria_id : '';
@@ -5844,6 +5855,8 @@ async function guardarProductoRapido() {
   const venta = num($('pVenta').value);
   if (venta <= 0 && !esInsumoActual) throw new Error('El precio de venta tiene que ser mayor a 0.');
 
+  await resolverCategoriaPendiente();
+
   const cuerpo = {
     nombre: nombre, precioVenta: venta,
     categoriaId: $('pCategoria').value || null,
@@ -5886,6 +5899,9 @@ $('btnGuardarProd').onclick = async function () {
   if (!nombre) { $('msgProd').innerHTML = '<div class="msg">Ponele un nombre al producto.</div>'; return; }
   const venta = num($('pVenta').value);
   if (venta <= 0 && !esInsumoActual) { $('msgProd').innerHTML = '<div class="msg">El precio de venta tiene que ser mayor a 0.</div>'; return; }
+
+  try { await resolverCategoriaPendiente(); }
+  catch (e) { $('msgProd').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; return; }
 
   const cuerpo = {
     nombre: nombre, precioVenta: venta,
