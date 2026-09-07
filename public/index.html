@@ -910,6 +910,7 @@
     border: 1px solid var(--line); border-radius: var(--radius);
     background: var(--panel); color: var(--text); font-size: 14px;
   }
+  .modal .btn-sec.borrar { color: var(--danger); border-color: var(--danger); }
   .modal .btn-del {
     width: 100%; padding: 12px; margin-top: 8px;
     border: none; background: none; color: var(--danger); font-size: 13.5px;
@@ -2506,6 +2507,7 @@
     <button class="btn-ppal" id="btnCobrarMesa">Cobrar la mesa</button>
     <button class="btn-sec" id="btnMoverMesa">Pasar a otra mesa</button>
     <button class="btn-sec" id="btnCerrarMesa">Cerrar</button>
+    <button class="btn-sec borrar" id="btnBorrarMesa" style="display:none;">Borrar esta mesa</button>
   </div>
 </div>
 
@@ -13066,6 +13068,7 @@ function pintarConsumoMesa() {
     $('totalMesa').textContent = plata(0);
     $('btnCobrarMesa').style.display = 'none';
     $('btnMoverMesa').style.display = 'none';
+    $('btnBorrarMesa').style.display = 'block';
     return;
   }
 
@@ -13080,10 +13083,22 @@ function pintarConsumoMesa() {
   $('totalMesa').textContent = plata(m.total);
   $('btnCobrarMesa').style.display = 'block';
   $('btnMoverMesa').style.display = 'block';
+  $('btnBorrarMesa').style.display = 'none';
 }
 
 $('btnCerrarMesa').onclick = function () {
   $('modalMesa').classList.remove('on');
+};
+
+$('btnBorrarMesa').onclick = async function () {
+  if (!mesaActual) return;
+  if (!confirm('Borrar "' + mesaActual.nombre + '"? No se puede deshacer.')) return;
+  try {
+    await api('DELETE', '/mesas/' + mesaActual.id);
+    $('modalMesa').classList.remove('on');
+    await cargarMesas();
+    avisar('Mesa borrada');
+  } catch (e) { $('msgMesa').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
 };
 
 async function sacarDeMesa(itemId) {
