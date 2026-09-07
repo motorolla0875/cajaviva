@@ -4107,8 +4107,10 @@ function buscarCategoriaLocal(nombre) {
     for (let j = 0; j < palabras.length; j++) {
       const palabra = norm(palabras[j]).trim();
       // coincide como palabra completa (con limite de palabra), no como texto suelto
-      // dentro de otra palabra (asi "te" no matchea el "te" de "corte de pelo")
-      const re = new RegExp('\\b' + palabra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+      // dentro de otra palabra (asi "te" no matchea el "te" de "corte de pelo").
+      // se acepta un plural con "s" o "es" al final, para no tener que cargar las dos formas
+      const escapada = palabra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('\\b' + escapada + '(s|es)?\\b');
       if (re.test(n) && palabra.length > mejorLargo) {
         mejorCat = cat;
         mejorLargo = palabra.length;
