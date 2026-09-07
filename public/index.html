@@ -4064,6 +4064,64 @@ if (hayDictadoVoz) {
 }
 
 /* ══ Sugerir categoria mientras escribe el nombre ══ */
+
+// diccionario local: palabras clave -> categoria. Se revisa primero (instantaneo, sin
+// depender de internet ni de la IA). Cubre lo mas comun de kiosco, almacen, ropa, etc.
+const DICCIONARIO_CATEGORIAS = [
+  ['Panaderia', ['pan', 'factura', 'facturas', 'bizcocho', 'medialuna', 'medialunas', 'torta', 'budin', 'criollo', 'criollito', 'prepizza']],
+  ['Bebidas', ['coca', 'pepsi', 'gaseosa', 'cerveza', 'fernet', 'vino', 'whisky', 'vodka', 'gin', 'agua', 'jugo', 'soda', 'energizante', 'speed', 'sprite', 'fanta', 'aperol', 'champagne', 'sidra']],
+  ['Lacteos', ['leche', 'yogur', 'yogurt', 'queso', 'manteca', 'crema', 'dulce de leche', 'danonino', 'postre']],
+  ['Fiambreria', ['jamon', 'salame', 'salchichon', 'mortadela', 'fiambre', 'paleta', 'bondiola', 'chorizo', 'salchicha']],
+  ['Almacen', ['galletita', 'galletitas', 'arroz', 'fideo', 'fideos', 'harina', 'azucar', 'yerba', 'cafe', 'te ', 'aceite', 'sal ', 'polenta', 'lenteja', 'garbanzo', 'atun', 'conserva', 'mermelada', 'mayonesa', 'ketchup', 'mostaza', 'golosina', 'chocolate', 'alfajor', 'caramelo', 'chicle', 'turron']],
+  ['Verduleria', ['tomate', 'lechuga', 'papa', 'cebolla', 'zanahoria', 'fruta', 'banana', 'manzana', 'naranja', 'limon', 'palta', 'zapallo', 'verdura']],
+  ['Heladeria', ['helado', 'palito', 'polo']],
+  ['Ropa', ['remera', 'remeras', 'pantalon', 'campera', 'buzo', 'sweater', 'pollera', 'vestido', 'short', 'bermuda', 'musculosa', 'camisa', 'jean', 'ropa interior', 'bombacha', 'calzoncillo', 'media', 'medias', 'bufanda', 'gorro', 'guante']],
+  ['Calzado', ['zapatilla', 'zapatilla', 'zapato', 'bota', 'sandalia', 'ojota', 'championes']],
+  ['Electronica', ['parlante', 'auricular', 'cargador', 'cable', 'pendrive', 'mouse', 'teclado', 'celular', 'bateria externa', 'power bank', 'ficha', 'zapatilla electrica', 'led', 'lampara', 'pila', 'pilas', 'control remoto']],
+  ['Ferreteria', ['tornillo', 'clavo', 'destornillador', 'martillo', 'candado', 'cinta metrica', 'llave', 'taladro', 'pintura', 'silicona', 'cinta aisladora', 'foco', 'lamparita', 'cerradura', 'bisagra']],
+  ['Perfumeria', ['shampoo', 'jabon', 'desodorante', 'perfume', 'crema', 'pañal', 'pañales', 'toallita', 'algodon', 'hisopo', 'cepillo de dientes', 'pasta dental', 'colonia', 'talco', 'protector solar']],
+  ['Limpieza', ['lavandina', 'detergente', 'trapo', 'esponja', 'escoba', 'jabon en polvo', 'suavizante', 'limpiador', 'papel higienico', 'rollo de cocina', 'guante de latex', 'insecticida']],
+  ['Libreria', ['cuaderno', 'lapicera', 'lapiz', 'birome', 'goma', 'fibra', 'resma', 'carpeta', 'cartuchera', 'regla', 'tijera']],
+  ['Jugueteria', ['juguete', 'muñeca', 'auto de juguete', 'pelota', 'juego de mesa']],
+  ['Mascotas', ['alimento para perro', 'alimento para gato', 'balanceado', 'collar para perro', 'arena sanitaria']]
+];
+
+function buscarCategoriaLocal(nombre) {
+  const n = norm(nombre);
+  for (let i = 0; i < DICCIONARIO_CATEGORIAS.length; i++) {
+    const cat = DICCIONARIO_CATEGORIAS[i][0];
+    const palabras = DICCIONARIO_CATEGORIAS[i][1];
+    for (let j = 0; j < palabras.length; j++) {
+      if (n.indexOf(norm(palabras[j])) >= 0) return cat;
+    }
+  }
+  return null;
+}
+
+function mostrarSugerenciaCat(nombreCategoria) {
+  const encontrada = categorias.filter(function (c) { return norm(c.nombre) === norm(nombreCategoria); })[0];
+
+  $('sugerenciaCat').style.display = 'block';
+  $('sugerenciaCat').innerHTML =
+    '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
+      '&#10024; Sugerencia inteligente: <b>' + esc(encontrada ? encontrada.nombre : nombreCategoria) + '</b>' + (!encontrada ? ' (nueva)' : '') +
+    '</button>';
+  $('btnUsarSugCat').onclick = async function () {
+    this.disabled = true;
+    try {
+      if (encontrada) {
+        $('pCategoria').value = encontrada.id;
+      } else {
+        const r = await api('POST', '/categorias', { nombre: nombreCategoria });
+        await cargarCategorias();
+        pintarSelectCategorias();
+        $('pCategoria').value = r.id;
+      }
+      $('sugerenciaCat').style.display = 'none';
+    } catch (e) { avisar(e.message, true); this.disabled = false; }
+  };
+}
+
 let timeoutSugCat = null;
 
 document.getElementById('pNombre').addEventListener('input', function () {
@@ -4075,6 +4133,11 @@ document.getElementById('pNombre').addEventListener('input', function () {
   // si ya hay una categoria elegida, no lo interrumpimos con una sugerencia
   if ($('pCategoria').value) return;
 
+  // primero el diccionario local, instantaneo
+  const local = buscarCategoriaLocal(nombre);
+  if (local) { mostrarSugerenciaCat(local); return; }
+
+  // si no encontro nada conocido, recien ahi se prueba con la IA como respaldo
   $('sugerenciaCat').style.display = 'block';
   $('sugerenciaCat').innerHTML =
     '<div style="display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px;">' +
@@ -4091,29 +4154,7 @@ document.getElementById('pNombre').addEventListener('input', function () {
         $('sugerenciaCat').style.display = 'none';
         return;
       }
-
-      const encontrada = categorias.filter(function (c) { return c.nombre === d.categoria; })[0];
-      if (!encontrada && !d.esNueva) { $('sugerenciaCat').style.display = 'none'; return; }
-
-      $('sugerenciaCat').style.display = 'block';
-      $('sugerenciaCat').innerHTML =
-        '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
-          '&#10024; Sugerencia inteligente: <b>' + esc(d.categoria) + '</b>' + (!encontrada ? ' (nueva)' : '') +
-        '</button>';
-      $('btnUsarSugCat').onclick = async function () {
-        this.disabled = true;
-        try {
-          if (encontrada) {
-            $('pCategoria').value = encontrada.id;
-          } else {
-            const r = await api('POST', '/categorias', { nombre: d.categoria });
-            await cargarCategorias();
-            pintarSelectCategorias();
-            $('pCategoria').value = r.id;
-          }
-          $('sugerenciaCat').style.display = 'none';
-        } catch (e) { avisar(e.message, true); this.disabled = false; }
-      };
+      mostrarSugerenciaCat(d.categoria);
     } catch (e) { $('sugerenciaCat').style.display = 'none'; }
   }, 700);
 });
