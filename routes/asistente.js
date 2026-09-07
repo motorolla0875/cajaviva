@@ -313,11 +313,17 @@ router.post('/sugerir-categoria', async (req, res) => {
     });
 
     const d = await r.json();
-    if (!r.ok) return res.json({ categoria: null });
+    if (!r.ok) {
+      console.error('sugerir-categoria, Groq respondio mal:', JSON.stringify(d));
+      return res.json({ categoria: null });
+    }
 
     const contenido = d.choices?.[0]?.message?.content || '{}';
     let datos;
-    try { datos = JSON.parse(contenido); } catch (e) { datos = {}; }
+    try { datos = JSON.parse(contenido); } catch (e) {
+      console.error('sugerir-categoria, no se pudo parsear:', contenido);
+      datos = {};
+    }
 
     let categoria = typeof datos.categoria === 'string' ? datos.categoria.trim() : null;
     if (categoria && categoria.length > 30) categoria = null;
@@ -327,6 +333,7 @@ router.post('/sugerir-categoria', async (req, res) => {
 
     res.json({ categoria: categoria, esNueva: !!esNueva });
   } catch (e) {
+    console.error('sugerir-categoria, error de conexion:', e.message);
     res.json({ categoria: null });
   }
 });

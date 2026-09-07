@@ -4169,12 +4169,20 @@ document.getElementById('pNombre').addEventListener('input', function () {
         nombre: nombre,
         categorias: categorias.map(function (c) { return c.nombre; })
       });
-      if (!d.categoria || $('pCategoria').value || $('pNombre').value.trim() !== nombre) {
+      if ($('pCategoria').value || $('pNombre').value.trim() !== nombre) {
         $('sugerenciaCat').style.display = 'none';
         return;
       }
+      if (!d.categoria) {
+        $('sugerenciaCat').style.display = 'block';
+        $('sugerenciaCat').innerHTML = '<p class="hint" style="margin:0;">No encontramos una categoria para "' + esc(nombre) + '".</p>';
+        return;
+      }
       mostrarSugerenciaCat(d.categoria);
-    } catch (e) { $('sugerenciaCat').style.display = 'none'; }
+    } catch (e) {
+      $('sugerenciaCat').style.display = 'block';
+      $('sugerenciaCat').innerHTML = '<p class="hint" style="margin:0; color:var(--danger);">No se pudo buscar la categoria (' + esc(e.message || 'error') + ').</p>';
+    }
   }, 700);
 });
 
