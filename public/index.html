@@ -4123,22 +4123,27 @@ function buscarCategoriaLocal(nombre) {
 function mostrarSugerenciaCat(nombreCategoria) {
   const encontrada = categorias.filter(function (c) { return norm(c.nombre) === norm(nombreCategoria); })[0];
 
+  if (encontrada) {
+    // ya existe entre tus categorias: se aplica directo, sin pedir que la confirmes
+    $('pCategoria').value = encontrada.id;
+    $('sugerenciaCat').style.display = 'block';
+    $('sugerenciaCat').innerHTML =
+      '<p class="hint ok" style="margin:0;">&#10024; Categoria asignada: <b>' + esc(encontrada.nombre) + '</b></p>';
+    return;
+  }
+
   $('sugerenciaCat').style.display = 'block';
   $('sugerenciaCat').innerHTML =
     '<button type="button" id="btnUsarSugCat" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px dashed var(--accent); background:var(--accent-soft); color:var(--accent-dark); font-size:13px;">' +
-      '&#10024; Sugerencia inteligente: <b>' + esc(encontrada ? encontrada.nombre : nombreCategoria) + '</b>' + (!encontrada ? ' (nueva)' : '') +
+      '&#10024; Sugerencia inteligente: <b>' + esc(nombreCategoria) + '</b> (nueva)' +
     '</button>';
   $('btnUsarSugCat').onclick = async function () {
     this.disabled = true;
     try {
-      if (encontrada) {
-        $('pCategoria').value = encontrada.id;
-      } else {
-        const r = await api('POST', '/categorias', { nombre: nombreCategoria });
-        await cargarCategorias();
-        pintarSelectCategorias();
-        $('pCategoria').value = r.id;
-      }
+      const r = await api('POST', '/categorias', { nombre: nombreCategoria });
+      await cargarCategorias();
+      pintarSelectCategorias();
+      $('pCategoria').value = r.id;
       $('sugerenciaCat').style.display = 'none';
     } catch (e) { avisar(e.message, true); this.disabled = false; }
   };
