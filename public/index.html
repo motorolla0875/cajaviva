@@ -4075,6 +4075,7 @@ const DICCIONARIO_CATEGORIAS = [
   ['Carniceria', ['carne', 'asado', 'bife', 'milanesa', 'pollo', 'pechuga', 'muslo', 'costilla', 'matambre', 'vacio', 'nalga', 'peceto', 'cuadril', 'chorizo fresco', 'morcilla', 'higado', 'achuras', 'cerdo', 'cordero']],
   ['Pescaderia', ['pescado', 'merluza', 'salmon', 'atun fresco', 'camaron', 'langostino', 'calamar', 'mejillon', 'mariscos']],
   ['Almacen', ['galletita', 'galletitas', 'arroz', 'fideo', 'fideos', 'harina', 'azucar', 'yerba', 'cafe', 'te ', 'aceite', 'sal ', 'polenta', 'lenteja', 'garbanzo', 'poroto', 'atun en lata', 'conserva', 'mermelada', 'mayonesa', 'ketchup', 'mostaza', 'golosina', 'golosinas', 'chocolate', 'alfajor', 'caramelo', 'chicle', 'turron', 'gelatina', 'vinagre', 'sopa', 'caldo', 'pure de tomate', 'salsa de tomate', 'huevo', 'huevos', 'miel', 'cereal', 'avena', 'copos de maiz', 'bombon', 'oblea', 'obleas']],
+  ['Snacks y frituras', ['papas fritas', 'papa frita', 'papitas', 'lays', 'pringles', 'doritos', 'cheetos', 'chizitos', 'palitos salados', 'palitos de queso', 'snack', 'snacks', 'pochoclo', 'pop corn', 'maiz pisado', 'mani salado', 'rositas']],
   ['Verduleria', ['tomate', 'lechuga', 'papa', 'cebolla', 'zanahoria', 'fruta', 'banana', 'manzana', 'naranja', 'mandarina', 'limon', 'palta', 'zapallo', 'zapallito', 'verdura', 'acelga', 'espinaca', 'ajo', 'morron', 'pepino', 'choclo', 'batata', 'uva', 'pera', 'durazno', 'sandia', 'melon', 'frutilla', 'kiwi']],
   ['Heladeria', ['helado', 'palito', 'polo', 'sorbete']],
   ['Ropa', ['remera', 'remeras', 'pantalon', 'pantalones', 'campera', 'camperas', 'buzo', 'sweater', 'pullover', 'pollera', 'vestido', 'short', 'bermuda', 'musculosa', 'camisa', 'jean', 'jeans', 'ropa interior', 'bombacha', 'calzoncillo', 'boxer', 'corpiño', 'media', 'medias', 'bufanda', 'gorro', 'guante', 'guantes', 'traje de baño', 'malla', 'piloto', 'tapado', 'saco', 'blazer', 'chaleco', 'body', 'pijama', 'chomba', 'gomas de pelo']],
@@ -4099,14 +4100,21 @@ const DICCIONARIO_CATEGORIAS = [
 
 function buscarCategoriaLocal(nombre) {
   const n = norm(nombre);
+  let mejorCat = null, mejorLargo = 0;
   for (let i = 0; i < DICCIONARIO_CATEGORIAS.length; i++) {
     const cat = DICCIONARIO_CATEGORIAS[i][0];
     const palabras = DICCIONARIO_CATEGORIAS[i][1];
     for (let j = 0; j < palabras.length; j++) {
-      if (n.indexOf(norm(palabras[j])) >= 0) return cat;
+      const palabra = norm(palabras[j]);
+      // se prefiere siempre la palabra clave mas larga y especifica que coincida,
+      // sin importar en que categoria este (asi "papas fritas" gana sobre "papa")
+      if (n.indexOf(palabra) >= 0 && palabra.length > mejorLargo) {
+        mejorCat = cat;
+        mejorLargo = palabra.length;
+      }
     }
   }
-  return null;
+  return mejorCat;
 }
 
 function mostrarSugerenciaCat(nombreCategoria) {
