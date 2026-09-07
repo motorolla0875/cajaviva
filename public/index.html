@@ -10635,6 +10635,7 @@ function avisoVence(p) {
 
 document.getElementById('btnNuevoInsumo').onclick = function () {
   abrirProd(null);
+  $('wrapDictado').style.display = 'none';
   esInsumoActual = true;
   $('swEsInsumo').classList.add('on');
   $('tituloProd').textContent = 'Nuevo insumo';
@@ -10707,6 +10708,7 @@ document.getElementById('btnNuevaReceta').onclick = function () {
   }
 
   abrirProd(null);
+  $('wrapDictado').style.display = 'none';
   $('tituloProd').textContent = 'Nuevo producto con receta';
   $('pNombre').placeholder = 'Nombre del producto';
 
@@ -10839,6 +10841,7 @@ let esUnidadActual = false;
 
 document.getElementById('btnNuevaUnidad').onclick = function () {
   abrirProd(null);
+  $('wrapDictado').style.display = 'none';
   esUnidadActual = true;
   const esCancha = cap('cap_canchas') && !cap('cap_alquiler');
   $('tituloProd').textContent = esCancha ? 'Nueva cancha' : 'Nueva unidad para alquilar';
@@ -12478,6 +12481,7 @@ function aplicarEjemplos(esUnidad) {
 
 document.getElementById('btnNuevoServicio').onclick = function () {
   abrirProd(null);
+  $('wrapDictado').style.display = 'none';
   esServicioActual = true;
   $('swEsServicio').classList.add('on');
   $('tituloProd').textContent = 'Nuevo servicio';
