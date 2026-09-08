@@ -10166,7 +10166,7 @@ document.getElementById('swTurnosWeb').onclick = function () {
 async function cargarTurnosWeb() {
   const bloque = document.getElementById('bloqueTurnosWeb');
   if (!bloque) return;
-  const usaSena = cap('cap_turnos') || cap('cap_alquiler');
+  const usaSena = cap('cap_turnos') || cap('cap_alquiler') || cap('cap_canchas');
   bloque.style.display = usaSena ? 'block' : 'none';
 
   // en alquiler siempre se puede reservar: sin interruptor ni horarios
@@ -10224,7 +10224,7 @@ async function cargarTurnosWeb() {
 }
 
 async function guardarTurnosWeb() {
-  if (!cap('cap_turnos') && !cap('cap_alquiler')) return;
+  if (!cap('cap_turnos') && !cap('cap_alquiler') && !cap('cap_canchas')) return;
   const el = document.getElementById('msgTurnosWeb');
   try {
     await api('PUT', '/turnos/horarios', {
