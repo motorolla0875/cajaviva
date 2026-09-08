@@ -1470,7 +1470,7 @@ function elegirPago(f) {
 function cerrarPedido() { $('modalPedido').style.display = 'none'; }
 
 // deslizar horizontal para cerrar cualquiera de los modales del catalogo
-function activarDeslizarCat(m) {
+function activarDeslizarCat(m, soloIzqADer) {
   if (!m || m.dataset.deslizar) return;
   m.dataset.deslizar = '1';
 
@@ -1480,6 +1480,9 @@ function activarDeslizarCat(m) {
 
   caja.addEventListener('touchstart', function (e) {
     if (e.touches.length !== 1) return;
+    // si el toque empieza arriba de una galeria de fotos que se desliza, no lo tomamos
+    // para cerrar el modal, asi no se pisan los dos gestos
+    if (e.target.closest && e.target.closest('.gal-scroll')) { moviendo = false; return; }
     x0 = e.touches[0].clientX;
     y0 = e.touches[0].clientY;
     moviendo = true;
@@ -1491,6 +1494,7 @@ function activarDeslizarCat(m) {
     const dx = e.touches[0].clientX - x0;
     const dy = Math.abs(e.touches[0].clientY - y0);
     if (dy > Math.abs(dx)) return;
+    if (soloIzqADer && dx < 0) return;
     caja.style.transform = 'translateX(' + dx + 'px)';
     caja.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / 300);
   }, { passive: true });
@@ -1501,7 +1505,7 @@ function activarDeslizarCat(m) {
     const dx = (e.changedTouches[0].clientX - x0);
     caja.style.transition = 'transform .2s ease, opacity .2s ease';
 
-    if (Math.abs(dx) > 90) {
+    if (Math.abs(dx) > 90 && (!soloIzqADer || dx > 0)) {
       caja.style.transform = 'translateX(' + (dx > 0 ? 500 : -500) + 'px)';
       caja.style.opacity = '0';
       setTimeout(function () {
@@ -1518,8 +1522,10 @@ function activarDeslizarCat(m) {
 }
 
 setTimeout(function () {
-  ['modalPedido', 'modalVar', 'modalCancha', 'modalAlq', 'alqListo', 'modalTurnoWeb', 'turnoListo', 'modalListo']
+  ['modalPedido', 'modalVar', 'modalAlq', 'alqListo', 'modalTurnoWeb', 'turnoListo', 'modalListo']
     .forEach(function (id) { activarDeslizarCat(document.getElementById(id)); });
+  // en la cancha hay fotos para deslizar adentro, asi que solo se cierra de izquierda a derecha
+  activarDeslizarCat(document.getElementById('modalCancha'), true);
 }, 800);
 
 function copiarAlias() {
