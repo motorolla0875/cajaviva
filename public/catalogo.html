@@ -548,6 +548,8 @@
       <button id="btnReservarCanchaWeb" style="width:100%; padding:15px; margin-top:16px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:500;">Reservar</button>
     </div>
 
+    <div id="fotosDescCancha" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--line);"></div>
+
     <button onclick="cerrarCanchaWeb()" style="width:100%; padding:12px; margin-top:10px; border:none; background:none; color:var(--muted); font-size:14px;">Cancelar</button>
   </div>
 </div>
@@ -2240,9 +2242,7 @@ function verDisponibilidadFicha(e) {
   const u = unidadFicha;
   saltarFicha = true;
   cerrarFicha();
-  setTimeout(function () {
-    if (u.cobro_por === 'hora') pedirCancha(u); else consultarUnidad(u);
-  }, 60);
+  setTimeout(function () { consultarUnidad(u); }, 60);
 }
 
 const bvd = document.getElementById('btnVerDisp');
@@ -2295,11 +2295,6 @@ let horaWeb = null;
 let datosCanchaWeb = null;
 
 function pedirCancha(p) {
-  // si tiene galeria o descripcion, primero la ficha (igual que las demas unidades)
-  const tieneFicha = (p.galeria && p.galeria.length > 0) || p.descripcion_larga;
-  if (tieneFicha && !saltarFicha) { abrirFicha(p); return; }
-  saltarFicha = false;
-
   canchaWeb = p;
   horaWeb = null;
 
@@ -2313,6 +2308,24 @@ function pedirCancha(p) {
   const hoy = new Date().toISOString().slice(0, 10);
   const f = document.getElementById('cwDia');
   f.value = hoy; f.min = hoy;
+
+  // fotos y descripcion, si el comerciante cargo algo, se muestran debajo del turno
+  const fotos = (p.galeria && p.galeria.length > 0)
+    ? p.galeria
+    : (p.foto_grande || p.foto ? [p.foto_grande || p.foto] : []);
+  const cont = document.getElementById('fotosDescCancha');
+  if (fotos.length === 0 && !p.descripcion_larga) {
+    cont.style.display = 'none';
+  } else {
+    cont.style.display = 'block';
+    cont.innerHTML =
+      (fotos.length > 0
+        ? '<div class="gal-scroll" style="margin-bottom:12px;">' + fotos.map(function (u) {
+            return '<img src="' + u + '" data-fotos=\'' + esc(JSON.stringify(fotos)) + '\' onclick="verFoto(JSON.parse(this.dataset.fotos))" style="width:100%; max-width:260px; border-radius:12px;">';
+          }).join('') + '</div>'
+        : '') +
+      (p.descripcion_larga ? '<p style="font-size:13.5px; color:var(--text); line-height:1.5; margin:0;">' + esc(p.descripcion_larga) + '</p>' : '');
+  }
 
   document.getElementById('modalCancha').style.display = 'block';
   buscarHorasCancha();
