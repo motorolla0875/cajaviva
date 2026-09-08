@@ -2240,7 +2240,9 @@ function verDisponibilidadFicha(e) {
   const u = unidadFicha;
   saltarFicha = true;
   cerrarFicha();
-  setTimeout(function () { consultarUnidad(u); }, 60);
+  setTimeout(function () {
+    if (u.cobro_por === 'hora') pedirCancha(u); else consultarUnidad(u);
+  }, 60);
 }
 
 const bvd = document.getElementById('btnVerDisp');
@@ -2293,6 +2295,11 @@ let horaWeb = null;
 let datosCanchaWeb = null;
 
 function pedirCancha(p) {
+  // si tiene galeria o descripcion, primero la ficha (igual que las demas unidades)
+  const tieneFicha = (p.galeria && p.galeria.length > 0) || p.descripcion_larga;
+  if (tieneFicha && !saltarFicha) { abrirFicha(p); return; }
+  saltarFicha = false;
+
   canchaWeb = p;
   horaWeb = null;
 
