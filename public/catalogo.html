@@ -428,8 +428,12 @@
     <div class="buscador" id="cajaBuscadorHeader" style="margin-bottom:0; min-width:0;">
       <input type="text" id="buscar" placeholder="Buscar producto..." autocomplete="off">
     </div>
+    <button id="btnBuscarIcono" style="display:none; flex-shrink:0; width:38px; height:38px; border-radius:50%; border:none; background:var(--panel-2); color:var(--text); font-size:16px; align-items:center; justify-content:center;">&#128269;</button>
     <div id="ladoDerechoHeader" style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
       <div id="redesNeg" style="display:none; gap:12px;"></div>
+      <button id="btnCarritoIcono" style="display:none; position:relative; flex-shrink:0; width:38px; height:38px; border-radius:50%; border:none; background:var(--panel-2); color:var(--text); font-size:17px; align-items:center; justify-content:center;">
+        &#128092;<span id="contadorCarritoIcono" style="display:none; position:absolute; top:-4px; right:-4px; background:var(--accent-dark); color:#fff; font-size:10.5px; font-weight:700; min-width:17px; height:17px; border-radius:9px; align-items:center; justify-content:center; padding:0 3px;"></span>
+      </button>
       <button id="btnCatHamb" class="cat-fab" title="Categorias">&#9776;</button>
     </div>
   </div>
@@ -957,6 +961,12 @@ async function cargar() {
       document.getElementById('redesNeg').style.display = 'flex';
     }
 
+    if (datos.negocio.buscador_icono) {
+      document.getElementById('cajaBuscadorHeader').style.display = 'none';
+      document.getElementById('btnBuscarIcono').style.display = 'flex';
+      document.getElementById('btnCarritoIcono').style.display = 'flex';
+    }
+
     if (datos.negocio.banner) {
       document.getElementById('bannerImg').src = datos.negocio.banner;
       document.getElementById('bannerNeg').style.display = 'block';
@@ -1104,6 +1114,25 @@ document.addEventListener('click', function (e) {
     $('dropCatWeb').style.display = 'none';
   }
 });
+
+document.getElementById('btnBuscarIcono').onclick = function () {
+  const caja = document.getElementById('cajaBuscadorHeader');
+  const abierto = caja.style.display === 'block';
+  caja.style.display = abierto ? 'none' : 'block';
+  this.style.display = abierto ? 'flex' : 'none';
+  if (!abierto) document.getElementById('buscar').focus();
+};
+// si se cierra el teclado sin escribir nada, se vuelve a ver como el icono
+document.getElementById('buscar').addEventListener('blur', function () {
+  if (datos.negocio.buscador_icono && !this.value.trim()) {
+    document.getElementById('cajaBuscadorHeader').style.display = 'none';
+    document.getElementById('btnBuscarIcono').style.display = 'flex';
+  }
+});
+
+document.getElementById('btnCarritoIcono').onclick = function () {
+  document.getElementById('btnPedir').click();
+};
 
 // el circulo de categorias se esconde al bajar, y vuelve a aparecer al subir
 (function () {
@@ -1364,9 +1393,11 @@ function elegirVarCat(varId, nombreVar, precio) {
 
 function actualizarBarra() {
   const ids = Object.keys(pedido);
+  const contador = document.getElementById('contadorCarritoIcono');
   if (ids.length === 0) {
     $('barra').style.display = 'none';
     document.body.classList.remove('con-carrito');
+    if (contador) contador.style.display = 'none';
     return;
   }
 
@@ -1377,6 +1408,11 @@ function actualizarBarra() {
     total += d.precio * pedido[clave];
     cant += pedido[clave];
   });
+
+  if (contador) {
+    contador.textContent = cant;
+    contador.style.display = 'flex';
+  }
 
   $('barra').style.display = 'block';
   document.body.classList.add('con-carrito');

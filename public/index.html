@@ -3064,6 +3064,12 @@
       <button class="switch" id="swFotosPortada"></button>
     </div>
 
+    <div class="cap-item">
+      <div class="txt"><div class="n">Buscador como icono</div>
+        <div class="d">En vez del buscador visible, un icono de lupa arriba que se toca para buscar</div></div>
+      <button class="switch" id="swBuscadorIcono"></button>
+    </div>
+
     <label>Estilo del catalogo</label>
     <div class="fondos" id="temasCat"></div>
 
@@ -8431,6 +8437,8 @@ async function abrirConfigCatalogo() {
     $('wrapColorFondoQuienes').style.display = colorFondoQuienesActivo ? 'block' : 'none';
     fotosPortadaActivo = !!c.fotos_portada;
     $('swFotosPortada').classList.toggle('on', fotosPortadaActivo);
+    buscadorIconoActivo = !!c.buscador_icono;
+    $('swBuscadorIcono').classList.toggle('on', buscadorIconoActivo);
     $('wrapFondoPer').style.display = colorPerActivo ? 'block' : 'none';
     $('catInstagram').value = c.instagram || '';
     $('catFacebook').value = c.facebook || '';
@@ -8498,6 +8506,12 @@ let fotosPortadaActivo = false;
 $('swFotosPortada').onclick = function () {
   fotosPortadaActivo = !fotosPortadaActivo;
   this.classList.toggle('on', fotosPortadaActivo);
+};
+
+let buscadorIconoActivo = false;
+$('swBuscadorIcono').onclick = function () {
+  buscadorIconoActivo = !buscadorIconoActivo;
+  this.classList.toggle('on', buscadorIconoActivo);
 };
 
 let colorPerActivo = false;
@@ -8595,6 +8609,7 @@ $('btnGuardarCatalogo').onclick = async function () {
       colorTexto: colorTextoActivo ? $('catColorTexto').value : '',
       colorFondoQuienes: colorFondoQuienesActivo ? $('catColorFondoQuienes').value : '',
       fotosPortada: fotosPortadaActivo,
+      buscadorIcono: buscadorIconoActivo,
       instagram: $('catInstagram').value.trim() || null,
       facebook: $('catFacebook').value.trim() || null,
       twitter: $('catTwitter').value.trim() || null,
