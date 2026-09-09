@@ -2297,15 +2297,15 @@ function moverGal(d) {
 /* ══ Reservar cancha desde el catalogo ══ */
 
 let canchaWeb = null;
-let horaWeb = null;
+let horasSeleccionadas = [];
 let datosCanchaWeb = null;
 
 function pedirCancha(p) {
   canchaWeb = p;
-  horaWeb = null;
+  horasSeleccionadas = [];
 
   document.getElementById('tituloCanchaWeb').textContent = p.nombre;
-  document.getElementById('subCanchaWeb').textContent = plata(p.precio_hoy || p.precio_venta) + ' el turno';
+  document.getElementById('subCanchaWeb').textContent = plata(p.precio_hoy || p.precio_venta) + ' la hora';
   document.getElementById('msgCanchaWeb').innerHTML = '';
   document.getElementById('datosCanchaWeb').style.display = 'none';
   document.getElementById('cwNombre').value = '';
@@ -2345,7 +2345,7 @@ async function buscarHorasCancha() {
   const cont = document.getElementById('horasCanchaWeb');
   cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">Buscando...</div>';
   document.getElementById('datosCanchaWeb').style.display = 'none';
-  horaWeb = null;
+  horasSeleccionadas = [];
 
   try {
     const r = await fetch('/api/alquileres/publico/' + slug + '/horas?unidad=' +
@@ -2355,24 +2355,56 @@ async function buscarHorasCancha() {
 
     if (!d.horas || d.horas.length === 0) {
       cont.innerHTML = '<div style="color:#8A5A0F;font-size:13.5px;background:#FDF3E3;padding:12px;border-radius:10px;">' +
-        'No quedan turnos ese dia. Proba con otro.</div>';
+        'No hay turnos ese dia. Proba con otro.</div>';
       return;
     }
 
-    cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Elegi el horario</div>' +
+    cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Elegi el horario (toca varios seguidos para reservar mas de una hora)</div>' +
       '<div class="horas-grid">' + d.horas.map(function (h) {
-        return '<button class="hora-btn" onclick="elegirHoraCancha(\'' + h + '\', this)">' + h + '</button>';
+        return '<button class="hora-btn' + (h.ocupada ? ' tomada' : '') + '" ' +
+          (h.ocupada ? 'disabled' : 'onclick="elegirHoraCancha(\'' + h.hora + '\')"') +
+          '>' + h.hora + '</button>';
       }).join('') + '</div>';
   } catch (e) {
     cont.innerHTML = '<div style="color:var(--muted);font-size:13.5px;">No se pudo consultar.</div>';
   }
 }
 
-function elegirHoraCancha(h, btn) {
-  horaWeb = h;
-  document.querySelectorAll('#horasCanchaWeb .hora-btn').forEach(function (b) { b.classList.remove('on'); });
-  btn.classList.add('on');
+function elegirHoraCancha(h) {
+  const idx = horasSeleccionadas.indexOf(h);
+
+  if (idx >= 0) {
+    // ya estaba elegida: si es la ultima del bloque, se saca. si es del medio, se corta el bloque ahi
+    horasSeleccionadas = horasSeleccionadas.slice(0, idx);
+  } else if (horasSeleccionadas.length === 0) {
+    horasSeleccionadas = [h];
+  } else {
+    const min = horasSeleccionadas[0], max = horasSeleccionadas[horasSeleccionadas.length - 1];
+    const antes = String(parseInt(min.split(':')[0]) - 1).padStart(2, '0') + ':' + min.split(':')[1];
+    const despues = String(parseInt(max.split(':')[0]) + 1).padStart(2, '0') + ':' + max.split(':')[1];
+
+    if (h === despues) horasSeleccionadas.push(h);
+    else if (h === antes) horasSeleccionadas.unshift(h);
+    else horasSeleccionadas = [h]; // no es consecutiva: se arranca de nuevo desde ahi
+  }
+
+  document.querySelectorAll('#horasCanchaWeb .hora-btn').forEach(function (b) {
+    b.classList.toggle('on', horasSeleccionadas.indexOf(b.textContent) >= 0);
+  });
+
+  if (horasSeleccionadas.length === 0) {
+    document.getElementById('datosCanchaWeb').style.display = 'none';
+    return;
+  }
+
+  const desde = horasSeleccionadas[0];
+  const hastaH = String(parseInt(horasSeleccionadas[horasSeleccionadas.length - 1].split(':')[0]) + 1)
+    .padStart(2, '0') + ':' + horasSeleccionadas[horasSeleccionadas.length - 1].split(':')[1];
+  const total = (canchaWeb.precio_hoy || canchaWeb.precio_venta || 0) * horasSeleccionadas.length;
+
   document.getElementById('datosCanchaWeb').style.display = 'block';
+  document.getElementById('subCanchaWeb').textContent =
+    desde + ' a ' + hastaH + ' (' + horasSeleccionadas.length + (horasSeleccionadas.length === 1 ? ' hora' : ' horas') + ') - ' + plata(total);
 }
 
 document.getElementById('btnReservarCanchaWeb').onclick = async function () {
@@ -2382,12 +2414,14 @@ document.getElementById('btnReservarCanchaWeb').onclick = async function () {
       '<div style="background:#FBEAEA;color:#C0392B;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;">Poné tu nombre.</div>';
     return;
   }
-  if (!horaWeb) return;
+  if (horasSeleccionadas.length === 0) return;
 
   const btn = this;
   btn.disabled = true; btn.textContent = 'Reservando...';
 
-  const hFin = String(parseInt(horaWeb.split(':')[0]) + 1).padStart(2, '0') + ':' + horaWeb.split(':')[1];
+  const horaWeb = horasSeleccionadas[0];
+  const ultima = horasSeleccionadas[horasSeleccionadas.length - 1];
+  const hFin = String(parseInt(ultima.split(':')[0]) + 1).padStart(2, '0') + ':' + ultima.split(':')[1];
 
   try {
     const r = await fetch('/api/alquileres/publico/' + slug, {

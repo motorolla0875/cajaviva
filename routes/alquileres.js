@@ -646,49 +646,6 @@ router.get('/publico/:slug/libres', (req, res) => {
   });
 });
 
-// ── el cliente reserva (publico) ──
-router.post('/publico/:slug', (req, res) => {
-  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
-  if (!n) return res.status(404).json({ error: 'No encontrado.' });
-
-  const { unidadId, nombre, telefono, desde, hasta, personas, nota } = req.body || {};
-  if (!nombre || !nombre.trim()) return res.status(400).json({ error: 'Poné tu nombre.' });
-  if (!unidadId || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
-  if (hasta < desde) return res.status(400).json({ error: 'La salida no puede ser antes de la entrada.' });
-  if (hasta === desde && !req.body?.horaEntrada) {
-    return res.status(400).json({ error: 'Para el mismo dia poné los horarios.' });
-  }
-
-  const u = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ? AND es_unidad = 1')
-    .get(unidadId, n.user_id);
-  if (!u) return res.status(400).json({ error: 'Unidad no encontrada.' });
-
-  const choque = db.prepare(`
-    SELECT id FROM reservas
-    WHERE user_id = ? AND unidad_id = ? AND estado IN ('reservada','en_curso')
-      AND desde < ? AND hasta > ?
-  `).get(n.user_id, unidadId, hasta, desde);
-
-  if (choque) return res.status(400).json({ error: 'Esas fechas ya se ocuparon. Proba con otras.' });
-
-  const nn = noches(desde, hasta);
-  const total = (u.precio_venta || 0) * nn;
-  const id = uuidv4();
-
-  db.prepare(`
-    INSERT INTO reservas (id, user_id, unidad_id, cliente_nombre, telefono,
-      desde, hasta, personas, precio_noche, total, estado, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reservada', ?)
-  `).run(id, n.user_id, unidadId, nombre.trim(), telefono || null,
-         desde, hasta, parseInt(personas) || null, u.precio_venta || 0, total,
-         (nota ? nota + ' - ' : '') + 'Pedido por la web');
-
-  res.json({
-    id: id, unidad: u.nombre, desde: desde, hasta: hasta,
-    noches: nn, total: total,
-    sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago
-  });
-});
 
 
 // ── reservas pedidas por la web, sin confirmar ──
@@ -1004,7 +961,8 @@ router.get('/publico/:slug/horas', (req, res) => {
         const a = aMin(t.hora_entrada), b = aMin(t.hora_salida);
         return ini < b && (ini + 60) > a;
       });
-      if (!ocupada && (!esHoy || ini > minAhora)) libres.push(h);
+      const pasada = esHoy && ini <= minAhora;
+      libres.push({ hora: h, ocupada: ocupada || pasada });
       ini += 60;
     }
   });
