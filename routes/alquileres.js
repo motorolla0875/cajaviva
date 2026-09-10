@@ -615,37 +615,6 @@ router.post('/publico/:slug', (req, res) => {
 });
 
 
-// ── disponibilidad publica ──
-router.get('/publico/:slug/libres', (req, res) => {
-  const n = db.prepare('SELECT * FROM negocio WHERE slug = ? AND catalogo_activo = 1').get(req.params.slug);
-  if (!n) return res.status(404).json({ error: 'No encontrado.' });
-
-  const desde = req.query.desde || hoyISO();
-  const hasta = req.query.hasta || desde;
-  if (hasta <= desde) return res.json({ unidades: [], noches: 0 });
-
-  const unidades = db.prepare(`
-    SELECT id, nombre, precio_venta, capacidad, cobro_por, foto_mini, foto_url, notas
-    FROM productos
-    WHERE user_id = ? AND activo = 1 AND es_unidad = 1 AND en_catalogo = 1
-    ORDER BY nombre
-  `).all(n.user_id);
-
-  const ocupadas = db.prepare(`
-    SELECT unidad_id FROM reservas
-    WHERE user_id = ? AND estado IN ('reservada','en_curso')
-      AND desde < ? AND hasta > ?
-  `).all(n.user_id, hasta, desde).map(function (r) { return r.unidad_id; });
-
-  const libres = unidades.filter(function (u) { return ocupadas.indexOf(u.id) < 0; });
-
-  res.json({
-    desde: desde, hasta: hasta, noches: noches(desde, hasta),
-    unidades: libres, sena: n.sena_monto || 0,
-    alias: n.alias_pago, titular: n.titular_pago
-  });
-});
-
 
 
 // ── reservas pedidas por la web, sin confirmar ──

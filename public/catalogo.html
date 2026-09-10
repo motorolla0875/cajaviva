@@ -2109,6 +2109,10 @@ async function buscarDisponibles() {
     cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">' +
       'Del ' + fmtF(d.desde) + ' al ' + fmtF(d.hasta) + ' - ' +
       d.noches + (d.noches === 1 ? ' noche' : ' noches') + '</div>' +
+      (d.sena > 0
+        ? '<div style="background:var(--accent-soft); color:var(--accent-dark); font-size:12.5px; padding:9px 12px; border-radius:9px; margin-bottom:10px;">' +
+          '&#9888; Para reservar se pide una seña de <b>' + plata(d.sena) + '</b></div>'
+        : '') +
       lista.map(function (u) {
         return '<button class="unid-op" onclick="elegirUnidad(\'' + u.id + '\', this)">' +
           (u.foto_mini || u.foto_url ? '<img src="' + (u.foto_mini || u.foto_url) + '">' : '') +
@@ -2362,6 +2366,10 @@ async function buscarHorasCancha() {
     }
 
     cont.innerHTML = '<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Elegi el horario (toca varios seguidos para reservar mas de una hora)</div>' +
+      (d.sena > 0
+        ? '<div style="background:var(--accent-soft); color:var(--accent-dark); font-size:12.5px; padding:9px 12px; border-radius:9px; margin-bottom:10px;">' +
+          '&#9888; Para reservar se pide una seña de <b>' + plata(d.sena) + '</b></div>'
+        : '') +
       '<div class="horas-grid">' + d.horas.map(function (h) {
         return '<button class="hora-btn' + (h.ocupada ? ' tomada' : '') + '" ' +
           (h.ocupada ? 'disabled' : 'onclick="elegirHoraCancha(\'' + h.hora + '\')"') +
