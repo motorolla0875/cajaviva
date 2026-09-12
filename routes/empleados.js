@@ -28,6 +28,19 @@ try { db.exec('ALTER TABLE empleados ADD COLUMN username TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE empleados ADD COLUMN password_hash TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE empleados ADD COLUMN codigo_usado INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 
+// permisos granulares (el dueño elige que puede hacer cada empleado)
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_reportes INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_productos INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_categorias INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_fotos INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_gastos INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_cheques INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_negocio INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE empleados ADD COLUMN perm_catalogo INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+
+const CAMPOS_PERMISOS = ['perm_reportes', 'perm_productos', 'perm_categorias', 'perm_fotos',
+  'perm_gastos', 'perm_cheques', 'perm_negocio', 'perm_catalogo'];
+
 function nuevoCodigo() {
   let c;
   do {
@@ -62,7 +75,7 @@ router.post('/', (req, res) => {
   res.json({ id: id, codigo: codigo });
 });
 
-// ── activar o desactivar ──
+// ── activar o desactivar, y editar permisos ──
 router.put('/:id', (req, res) => {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
   const e = db.prepare('SELECT * FROM empleados WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
@@ -70,8 +83,10 @@ router.put('/:id', (req, res) => {
 
   const nombre = (req.body?.nombre || e.nombre).trim();
   const activo = req.body?.activo != null ? (req.body.activo ? 1 : 0) : e.activo;
+  const permisos = CAMPOS_PERMISOS.map((c) => req.body?.[c] != null ? (req.body[c] ? 1 : 0) : e[c]);
 
-  db.prepare('UPDATE empleados SET nombre = ?, activo = ? WHERE id = ?').run(nombre, activo, e.id);
+  db.prepare(`UPDATE empleados SET nombre = ?, activo = ?, ${CAMPOS_PERMISOS.map((c) => c + ' = ?').join(', ')} WHERE id = ?`)
+    .run(nombre, activo, ...permisos, e.id);
   res.json({ ok: true });
 });
 
@@ -98,7 +113,9 @@ function sesionEmpleado(e) {
   const token = jwt.sign({ id: e.user_id, emp: e.id }, SECRETO, { expiresIn: '30d' });
   const u = db.prepare('SELECT id, username, plan FROM users WHERE id = ?').get(e.user_id);
   const n = db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(e.user_id);
-  return { token: token, user: u, negocio: n, empleado: { id: e.id, nombre: e.nombre } };
+  const permisos = {};
+  CAMPOS_PERMISOS.forEach((c) => { permisos[c] = !!e[c]; });
+  return { token: token, user: u, negocio: n, empleado: { id: e.id, nombre: e.nombre, permisos: permisos } };
 }
 
 // ── validar el codigo de invitacion ──

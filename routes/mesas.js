@@ -59,7 +59,7 @@ router.get('/', (req, res) => {
 
 // ── crear, renombrar, borrar ──
 router.post('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Poné un nombre.' });
@@ -74,7 +74,7 @@ router.post('/', (req, res) => {
 });
 
 router.put('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Poné un nombre.' });
 
@@ -85,7 +85,7 @@ router.put('/:id', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const items = db.prepare('SELECT COUNT(*) AS c FROM mesa_consumo WHERE mesa_id = ?').get(req.params.id);
   if (items.c > 0) return res.status(400).json({ error: 'Esa mesa tiene consumo. Cobrala primero.' });
@@ -96,7 +96,7 @@ router.delete('/:id', (req, res) => {
 
 // ── crear varias de una ──
 router.post('/varias', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const cuantas = parseInt(req.body?.cuantas) || 0;
   if (cuantas < 1 || cuantas > 60) return res.status(400).json({ error: 'Entre 1 y 60 mesas.' });

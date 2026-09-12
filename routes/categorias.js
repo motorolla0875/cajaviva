@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 
 // ── crear ──
 router.post('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_categorias')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Ponele un nombre a la categoria.' });
 
@@ -32,7 +32,7 @@ router.post('/', (req, res) => {
 
 // ── editar ──
 router.put('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_categorias')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Ponele un nombre.' });
 
@@ -46,7 +46,7 @@ router.put('/:id', (req, res) => {
 
 // ── borrar: los productos quedan sin categoria, no se borran ──
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_categorias')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE productos SET categoria_id = NULL WHERE categoria_id = ? AND user_id = ?')
     .run(req.params.id, req.userId);
   db.prepare('DELETE FROM categorias WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);

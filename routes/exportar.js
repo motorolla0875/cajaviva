@@ -11,6 +11,7 @@ function hoyISO(userId) {
 
 // ── ventas del periodo en Excel ──
 router.get('/ventas', async (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const desde = req.query.desde || hoyISO(req.userId);
   const hasta = req.query.hasta || hoyISO(req.userId);
 
@@ -240,6 +241,7 @@ router.get('/ticket/:id', (req, res) => {
 
 // ── reporte del periodo en PDF ──
 router.get('/reporte', (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const desde = req.query.desde || hoyISO(req.userId);
   const hasta = req.query.hasta || hoyISO(req.userId);
 

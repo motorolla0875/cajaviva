@@ -24,7 +24,7 @@ function guardarArchivo(buffer, nombre) {
 
 // ── subir la foto de un producto ──
 router.post('/producto/:id', subir.fields([{ name: 'grande' }, { name: 'mini' }]), (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!p) return res.status(404).json({ error: 'Producto no encontrado.' });
@@ -53,7 +53,7 @@ router.post('/producto/:id', subir.fields([{ name: 'grande' }, { name: 'mini' }]
 
 // ── borrar la foto ──
 router.delete('/producto/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!p) return res.status(404).json({ error: 'Producto no encontrado.' });
@@ -112,7 +112,7 @@ router.post('/sena/:turnoId', subir.single('foto'), (req, res) => {
 
 // ── banner del catalogo ──
 router.post('/banner', subir.single('foto'), (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
 
   const n = db.prepare('SELECT banner FROM negocio WHERE user_id = ?').get(req.userId);
@@ -129,7 +129,7 @@ router.post('/banner', subir.single('foto'), (req, res) => {
 });
 
 router.delete('/banner', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const n = db.prepare('SELECT banner FROM negocio WHERE user_id = ?').get(req.userId);
   if (n && n.banner) {
     const ruta = path.join(CARPETA, path.basename(n.banner));
@@ -141,7 +141,7 @@ router.delete('/banner', (req, res) => {
 
 // ── logo del catalogo ──
 router.post('/logo', subir.single('foto'), (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   if (!req.file) return res.status(400).json({ error: 'No llego la imagen.' });
 
   const n = db.prepare('SELECT logo FROM negocio WHERE user_id = ?').get(req.userId);
@@ -158,7 +158,7 @@ router.post('/logo', subir.single('foto'), (req, res) => {
 });
 
 router.delete('/logo', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const n = db.prepare('SELECT logo FROM negocio WHERE user_id = ?').get(req.userId);
   if (n && n.logo) {
     const ruta = path.join(CARPETA, path.basename(n.logo));

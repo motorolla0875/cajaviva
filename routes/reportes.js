@@ -15,7 +15,7 @@ function menosDias(n) {
 
 // ── los mas vendidos ──
 router.get('/mas-vendidos', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -41,7 +41,7 @@ router.get('/mas-vendidos', (req, res) => {
 
 // ── los que no se venden ──
 router.get('/sin-movimiento', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -71,7 +71,7 @@ router.get('/sin-movimiento', (req, res) => {
 
 // ── que hay que comprar ──
 router.get('/reponer', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const dias = parseInt(req.query.dias) || 30;
   const desde = menosDias(dias);
@@ -108,7 +108,7 @@ router.get('/reponer', (req, res) => {
 
 // ── ventas por dia, para ver la tendencia ──
 router.get('/por-dia', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -127,7 +127,7 @@ router.get('/por-dia', (req, res) => {
 // ── panorama del negocio: tendencia, comparacion con el periodo anterior,
 //    mejor/peor dia, ticket promedio, y que dia de la semana rinde mas ──
 router.get('/tendencia', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -211,7 +211,7 @@ router.get('/tendencia', (req, res) => {
 
 // ── rendimiento de los empleados ──
 router.get('/empleados', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -241,7 +241,7 @@ router.get('/empleados', (req, res) => {
 
 // ── detalle diario de un empleado ──
 router.get('/empleados/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);
@@ -264,7 +264,7 @@ router.get('/empleados/:id', (req, res) => {
 
 // ── lo que esta por vencer ──
 router.get('/vencimientos', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const hoy = hoyISO(req.userId);
   const filas = db.prepare(`
@@ -293,7 +293,7 @@ router.get('/vencimientos', (req, res) => {
 
 // ── unidades mas alquiladas ──
 router.get('/unidades', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const desde = req.query.desde || menosDias(29);
   const hasta = req.query.hasta || hoyISO(req.userId);

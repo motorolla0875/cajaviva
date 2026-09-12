@@ -39,7 +39,7 @@ router.get('/', (req, res) => {
 
 // ── crear producto ──
 router.post('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto, precioOferta,
           unidad, stockInicial, stockMinimo, notas, vence, avisoDias, esInsumo,
           esServicio, duracion, proveedorId,
@@ -87,7 +87,7 @@ router.post('/', (req, res) => {
 
 // ── editar producto ──
 router.put('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const { nombre, categoriaId, codigoBarras, precioVenta, precioCosto, precioOferta,
           unidad, stockMinimo, notas, vence, avisoDias, esServicio, duracion, proveedorId,
           vendePieza, pesoPieza, precioPieza,
@@ -210,7 +210,7 @@ router.post('/:id/quitar', (req, res) => {
 
 // ── borrado suave ──
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE productos SET activo = 0 WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });
@@ -218,7 +218,7 @@ router.delete('/:id', (req, res) => {
 
 // ── actualizar precios en lote ──
 router.post('/precios-lote', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const { categoriaId, ids, campo, modo, valor, redondeo } = req.body || {};
   const v = parseFloat(valor);
@@ -333,7 +333,7 @@ router.post('/precios-preview', (req, res) => {
 
 // ── deshacer el ultimo cambio de precios ──
 router.post('/precios-deshacer', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   let ultimo;
   try {
@@ -354,7 +354,7 @@ router.post('/precios-deshacer', (req, res) => {
 
 // ── historial de precios de un producto ──
 router.get('/:id/historial', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const p = db.prepare('SELECT * FROM productos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!p) return res.status(404).json({ error: 'Producto no encontrado.' });

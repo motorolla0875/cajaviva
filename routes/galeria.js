@@ -43,7 +43,7 @@ router.get('/:productoId', (req, res) => {
 
 // ── agregar una foto ──
 router.post('/:productoId', subir.single('foto'), (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const p = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?')
     .get(req.params.productoId, req.userId);
@@ -66,7 +66,7 @@ router.post('/:productoId', subir.single('foto'), (req, res) => {
 
 // ── borrar una foto ──
 router.delete('/foto/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const f = db.prepare('SELECT * FROM galeria WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!f) return res.status(404).json({ error: 'No encontrada.' });
@@ -80,7 +80,7 @@ router.delete('/foto/:id', (req, res) => {
 
 // ── guardar la descripcion larga ──
 router.put('/:productoId/descripcion', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_fotos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE productos SET descripcion_larga = ? WHERE id = ? AND user_id = ?')
     .run(req.body?.texto || null, req.params.productoId, req.userId);
   res.json({ ok: true });

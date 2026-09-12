@@ -129,6 +129,7 @@ router.put('/rubro', (req, res) => {
 
 // prende o apaga una capacidad suelta, sin cambiar de rubro
 router.put('/capacidad', (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const cap = req.body?.cap;
   if (CAPS.indexOf(cap) < 0) return res.status(400).json({ error: 'Capacidad no valida.' });
   const valor = req.body?.valor ? 1 : 0;
@@ -139,6 +140,7 @@ router.put('/capacidad', (req, res) => {
 
 // cambiar solo el nombre
 router.put('/nombre', (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const nombre = (req.body?.nombre || '').trim();
   if (!nombre) return res.status(400).json({ error: 'Ponele un nombre al negocio.' });
   db.prepare('UPDATE negocio SET nombre = ? WHERE user_id = ?').run(nombre, req.userId);
@@ -148,7 +150,7 @@ router.put('/nombre', (req, res) => {
 
 // ── datos del negocio: pais, zona, contacto ──
 router.put('/datos', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const b = req.body || {};
 
   db.prepare(`

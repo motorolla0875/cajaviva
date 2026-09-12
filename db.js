@@ -221,3 +221,11 @@ function minutosAhoraEn(userId) {
 module.exports.zonaDe = zonaDe;
 module.exports.hoyEn = hoyEn;
 module.exports.minutosAhoraEn = minutosAhoraEn;
+
+// chequea si el request (dueño o empleado) tiene un permiso especifico.
+// el dueño siempre puede todo; el empleado solo lo que tenga prendido.
+function tienePermiso(req, campo) {
+  if (!req.esEmpleado) return true;
+  return !!(req.permisos && req.permisos[campo]);
+}
+module.exports.tienePermiso = tienePermiso;

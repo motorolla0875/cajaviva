@@ -17,7 +17,7 @@ function hoyISO(userId) {
 
 // ── listar ──
 router.get('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const estado = req.query.estado || 'pendientes';
   let cond = '';
@@ -47,7 +47,7 @@ router.get('/', (req, res) => {
 
 // ── crear ──
 router.post('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const monto = parseFloat(req.body?.monto);
   if (isNaN(monto) || monto <= 0) return res.status(400).json({ error: 'Poné un monto valido.' });
@@ -81,7 +81,7 @@ router.post('/', (req, res) => {
 // ── acreditar: la plata entra a la caja. Si la deuda no se habia descontado
 // todavia (porque al cargar el cheque no se tildo esa opcion), se descuenta recien ahora ──
 router.post('/:id/acreditar', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const ch = db.prepare('SELECT * FROM cheques WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!ch) return res.status(404).json({ error: 'Cheque no encontrado.' });
@@ -105,7 +105,7 @@ router.post('/:id/acreditar', (req, res) => {
 
 // ── rechazado: vuelve la deuda, pero solo si de verdad se le habia descontado antes ──
 router.post('/:id/rechazar', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const ch = db.prepare('SELECT * FROM cheques WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!ch) return res.status(404).json({ error: 'Cheque no encontrado.' });
@@ -126,7 +126,7 @@ router.post('/:id/rechazar', (req, res) => {
 
 // ── volver a pendiente: si la deuda estaba descontada (venia de acreditado), se le vuelve a sumar ──
 router.post('/:id/pendiente', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const ch = db.prepare('SELECT * FROM cheques WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
   if (!ch) return res.status(404).json({ error: 'Cheque no encontrado.' });
@@ -148,7 +148,7 @@ router.post('/:id/pendiente', (req, res) => {
 
 // ── borrar ──
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_cheques')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('DELETE FROM cheques WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });

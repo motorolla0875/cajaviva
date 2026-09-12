@@ -42,7 +42,7 @@ function armarSlug(t) {
 
 // ── configuracion del catalogo (dueño) ──
 router.get('/config', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
     color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, fotos_portada, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
@@ -59,7 +59,7 @@ router.get('/config', (req, res) => {
 });
 
 router.put('/config', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const n = db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(req.userId);
   if (!n) return res.status(404).json({ error: 'Negocio no encontrado.' });
@@ -128,14 +128,14 @@ router.put('/config', (req, res) => {
 
 // ── desconectar Mercado Pago ──
 router.delete('/mercadopago', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE negocio SET mp_access_token = NULL, acepta_mercadopago = 0 WHERE user_id = ?').run(req.userId);
   res.json({ ok: true });
 });
 
 // ── mostrar u ocultar un producto del catalogo ──
 router.put('/producto/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE productos SET en_catalogo = ? WHERE id = ? AND user_id = ?')
     .run(req.body?.mostrar ? 1 : 0, req.params.id, req.userId);
   res.json({ ok: true });
@@ -143,7 +143,7 @@ router.put('/producto/:id', (req, res) => {
 
 // ── mostrar u ocultar todos ──
 router.put('/todos', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const v = req.body?.mostrar ? 1 : 0;
   if (req.body?.categoriaId) {
     db.prepare('UPDATE productos SET en_catalogo = ? WHERE user_id = ? AND categoria_id = ?')
@@ -256,7 +256,7 @@ router.get('/dominio', (req, res) => {
 });
 
 router.put('/dominio', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   let d = (req.body?.dominio || '').trim().toLowerCase();
   d = d.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
@@ -287,7 +287,7 @@ router.get('/por-dominio/:host', (req, res) => {
 
 // ── pedir el certificado del dominio propio ──
 router.post('/dominio/certificar', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
 
   const n = db.prepare('SELECT dominio, dominio_ok FROM negocio WHERE user_id = ?').get(req.userId);
   if (!n || !n.dominio) return res.status(400).json({ error: 'Primero guarda tu dominio.' });

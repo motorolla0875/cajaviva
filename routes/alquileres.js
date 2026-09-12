@@ -424,7 +424,7 @@ router.post('/:id/cobrar', (req, res) => {
 
 // ── borrar ──
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('DELETE FROM reservas WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });
@@ -684,7 +684,7 @@ router.get('/temporadas/lista', (req, res) => {
 });
 
 router.post('/temporadas/nueva', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const { nombre, desde, hasta, recargo } = req.body || {};
   if (!nombre || !desde || !hasta) return res.status(400).json({ error: 'Faltan datos.' });
 
@@ -695,13 +695,13 @@ router.post('/temporadas/nueva', (req, res) => {
 });
 
 router.delete('/temporadas/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('DELETE FROM temporadas WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });
 
 router.put('/temporadas/finde', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE negocio SET recargo_finde = ? WHERE user_id = ?')
     .run(parseFloat(req.body?.recargo) || 0, req.userId);
   res.json({ ok: true });
@@ -815,7 +815,7 @@ router.get('/horarios', (req, res) => {
 });
 
 router.put('/horarios', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_negocio')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const b = req.body || {};
   db.prepare(`
     UPDATE negocio SET hora_desde = ?, hora_hasta = ?,

@@ -21,7 +21,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_gastos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const { descripcion, monto, fecha, proveedorId } = req.body || {};
   if (!descripcion || !descripcion.trim()) return res.status(400).json({ error: 'Falta la descripcion.' });
   const m = parseFloat(monto);
@@ -38,7 +38,7 @@ router.post('/', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño puede hacer esto.' });
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_gastos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('DELETE FROM gastos WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });

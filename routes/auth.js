@@ -175,6 +175,9 @@ function requiereAuth(req, res, next) {
     req.userId = p.id;
     req.empleadoId = p.emp || null;
     req.esEmpleado = !!p.emp;
+    req.permisos = req.esEmpleado
+      ? (db.prepare('SELECT * FROM empleados WHERE id = ?').get(req.empleadoId) || {})
+      : null;
     next();
   } catch (e) {
     res.status(401).json({ error: 'Sesion invalida.' });
