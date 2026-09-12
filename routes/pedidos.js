@@ -105,6 +105,8 @@ router.post('/publico/:slug', async (req, res) => {
            l.cantidad, l.precio);
   });
 
+  if (db.avisar) db.avisar(n.user_id, 'pedidos');
+
   // si eligio pagar con Mercado Pago, se genera el link de pago con la cuenta del propio comerciante
   if (pagaConMp) {
     try {

@@ -607,6 +607,8 @@ router.post('/publico/:slug', (req, res) => {
          (nota ? nota + ' - ' : '') + 'Pedido por la web',
          horaEntrada || null, horaSalida || null);
 
+  if (db.avisar) db.avisar(n.user_id, 'pedidos');
+
   res.json({
     id: id, unidad: u.nombre, desde: desde, hasta: hasta,
     noches: nn2, total: total,

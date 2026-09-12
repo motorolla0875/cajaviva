@@ -5057,6 +5057,7 @@ function conectarTiempoReal() {
       try {
         const d = JSON.parse(ev.data);
         if (d.tipo === 'productos') cargarProductos();
+        if (d.tipo === 'pedidos') revisarPedidos(true);
       } catch (e) {}
     };
     socketVivo.onclose = function () { setTimeout(conectarTiempoReal, 4000); };
@@ -9133,7 +9134,7 @@ async function convertirPedido(id) {
 let ultimosPedidos = null;
 
 async function revisarPedidos(avisarSiHay) {
-  if (esEmpleado || !token) return;
+  if (!token) return;
   try {
     const d = await api('GET', '/pedidos?estado=pendientes');
     let total = d.nuevos;

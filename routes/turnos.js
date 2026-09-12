@@ -341,6 +341,8 @@ router.post('/publico/:slug', (req, res) => {
          pideSena ? 'pendiente' : null,
          pideSena ? (n.sena_monto || 0) : 0);
 
+  if (db.avisar) db.avisar(n.user_id, 'pedidos');
+
   res.json({ id: id, servicio: p.nombre, fecha: fecha, hora: hora, precio: p.precio_venta,
              sena: n.sena_monto || 0, alias: n.alias_pago, titular: n.titular_pago });
 });
