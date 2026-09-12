@@ -1572,6 +1572,27 @@
   body.modo-empleado #rangoFechas,
   body.modo-empleado #buscarCaja { display: none !important; }
 
+  /* si el dueño le dio el permiso puntual, se vuelve a mostrar (mismo elemento, mas especificidad) */
+  body.modo-empleado.perm-productos #btnNuevo,
+  body.modo-empleado.perm-productos #btnProveedores,
+  body.modo-empleado.perm-productos #btnImportarProd,
+  body.modo-empleado.perm-productos #btnPrecios { display: revert !important; }
+  body.modo-empleado.perm-categorias #btnCategorias { display: revert !important; }
+  body.modo-empleado.perm-reportes nav button[data-vista="reportes"] { display: revert !important; }
+  body.modo-empleado.perm-gastos #btnGasto,
+  body.modo-empleado.perm-gastos #listaGastos,
+  body.modo-empleado.perm-gastos .seccion-gastos { display: revert !important; }
+  body.modo-empleado.perm-negocio #btnConfigNegocio { display: revert !important; }
+  body.modo-empleado.perm-catalogo #btnCatalogo { display: revert !important; }
+  body.modo-empleado.perm-cheques #btnCheques { display: revert !important; }
+  body.modo-empleado.perm-reportes .tarjeta.destacada,
+  body.modo-empleado.perm-reportes .tarjeta:nth-child(3),
+  body.modo-empleado.perm-reportes .tarjeta:nth-child(4) { display: revert !important; }
+  body.modo-empleado.perm-reportes .tarjetas { grid-template-columns: initial; }
+  body.modo-empleado.perm-reportes #periodos,
+  body.modo-empleado.perm-reportes #rangoFechas,
+  body.modo-empleado.perm-reportes #buscarCaja { display: revert !important; }
+
   .chip-empleado {
     background: #FDF3E3; border-bottom: 1px solid var(--warn);
     padding: 8px 18px; font-size: 12.5px; color: #8A5A0F;
@@ -3654,6 +3675,24 @@
     </div>
     <div id="listaEmp" style="margin-top:16px;"></div>
     <button class="btn-sec" id="btnCerrarEmpleados">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalPermisosEmp">
+  <div class="modal">
+    <h3 id="tituloPermisosEmp">Permisos</h3>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Elegi que puede hacer este empleado. Vender y cobrar siempre puede, sin importar esto.</p>
+    <div id="msgPermisosEmp"></div>
+    <div class="cap-item"><div class="txt"><div class="n">Ver reportes</div></div><button class="switch" id="permSw_perm_reportes"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Agregar, editar y borrar productos</div></div><button class="switch" id="permSw_perm_productos"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Crear y editar categorias</div></div><button class="switch" id="permSw_perm_categorias"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Subir y borrar fotos</div></div><button class="switch" id="permSw_perm_fotos"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Cargar y borrar gastos</div></div><button class="switch" id="permSw_perm_gastos"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Gestionar cheques</div></div><button class="switch" id="permSw_perm_cheques"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Configurar mi negocio</div></div><button class="switch" id="permSw_perm_negocio"></button></div>
+    <div class="cap-item"><div class="txt"><div class="n">Configurar la tienda online</div></div><button class="switch" id="permSw_perm_catalogo"></button></div>
+    <button class="btn-ppal" id="btnGuardarPermisosEmp">Guardar</button>
+    <button class="btn-sec" id="btnCerrarPermisosEmp">Cerrar</button>
   </div>
 </div>
 
@@ -6850,6 +6889,8 @@ $('btnImprimirVentaDet').onclick = function () {
 let empleados = [];
 let empActual = null;
 let esEmpleado = false;
+let misPermisos = null;
+function tengoPermiso(campo) { return !esEmpleado || !!(misPermisos && misPermisos[campo]); }
 
 async function cargarEmpleados() {
   empleados = await api('GET', '/empleados');
@@ -6866,6 +6907,7 @@ function pintarEmpleados() {
       '<div class="n">' + esc(e.nombre) +
         '<div class="c">' + (e.ventas > 0 ? e.ventas + ' ventas - ' + plata(e.vendido) : 'sin ventas') +
         (e.activo ? '' : ' - dado de baja') + '</div></div>' +
+      '<button onclick="abrirPermisosEmp(\'' + e.id + '\')" title="Permisos">&#9881;</button>' +
       '<button onclick="verCodigoEmp(\'' + e.id + '\')" title="Ver codigo">#</button>' +
       '<button onclick="alternarEmp(\'' + e.id + '\')" title="' + (e.activo ? 'Dar de baja' : 'Reactivar') + '">' +
         (e.activo ? '&#9210;' : '&#10003;') + '</button>' +
@@ -6882,6 +6924,8 @@ $('btnEmpleados').onclick = async function () {
 };
 $('btnCerrarEmpleados').onclick = function () { $('modalEmpleados').classList.remove('on'); };
 
+let codigoPendienteMostrar = null;
+
 $('btnAgregarEmp').onclick = async function () {
   const nombre = $('empNombre').value.trim();
   if (!nombre) { $('msgEmp').innerHTML = '<div class="msg">Ponele un nombre.</div>'; return; }
@@ -6889,10 +6933,8 @@ $('btnAgregarEmp').onclick = async function () {
     const r = await api('POST', '/empleados', { nombre: nombre });
     $('empNombre').value = ''; $('msgEmp').innerHTML = '';
     await cargarEmpleados();
-    empActual = r.id;
-    $('tituloCodEmp').textContent = 'Codigo de ' + nombre;
-    $('codigoGrande').textContent = r.codigo;
-    $('modalCodigoEmp').classList.add('on');
+    codigoPendienteMostrar = { nombre: nombre, codigo: r.codigo };
+    abrirPermisosEmp(r.id);
   } catch (e) { $('msgEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
 };
 
@@ -6905,6 +6947,49 @@ function verCodigoEmp(id) {
   $('modalCodigoEmp').classList.add('on');
 }
 $('btnCerrarCodEmp').onclick = function () { $('modalCodigoEmp').classList.remove('on'); };
+
+const CAMPOS_PERMISOS_EMP = ['perm_reportes', 'perm_productos',
+  'perm_categorias', 'perm_fotos', 'perm_gastos', 'perm_cheques', 'perm_negocio', 'perm_catalogo'];
+
+function abrirPermisosEmp(id) {
+  const e = empleados.filter(function (x) { return x.id === id; })[0];
+  if (!e) return;
+  empActual = id;
+  $('tituloPermisosEmp').textContent = 'Permisos de ' + e.nombre;
+  $('msgPermisosEmp').innerHTML = '';
+  CAMPOS_PERMISOS_EMP.forEach(function (c) {
+    $('permSw_' + c).classList.toggle('on', !!e[c]);
+  });
+  $('modalPermisosEmp').classList.add('on');
+}
+function mostrarCodigoPendienteSiHay() {
+  if (!codigoPendienteMostrar) return;
+  $('tituloCodEmp').textContent = 'Codigo de ' + codigoPendienteMostrar.nombre;
+  $('codigoGrande').textContent = codigoPendienteMostrar.codigo;
+  $('modalCodigoEmp').classList.add('on');
+  codigoPendienteMostrar = null;
+}
+$('btnCerrarPermisosEmp').onclick = function () {
+  $('modalPermisosEmp').classList.remove('on');
+  mostrarCodigoPendienteSiHay();
+};
+CAMPOS_PERMISOS_EMP.forEach(function (c) {
+  $('permSw_' + c).onclick = function () { this.classList.toggle('on'); };
+});
+$('btnGuardarPermisosEmp').onclick = async function () {
+  if (!empActual) return;
+  const cuerpo = {};
+  CAMPOS_PERMISOS_EMP.forEach(function (c) {
+    cuerpo[c] = $('permSw_' + c).classList.contains('on');
+  });
+  try {
+    await api('PUT', '/empleados/' + empActual, cuerpo);
+    await cargarEmpleados();
+    $('modalPermisosEmp').classList.remove('on');
+    if (codigoPendienteMostrar) { mostrarCodigoPendienteSiHay(); }
+    else { avisar('Permisos actualizados'); }
+  } catch (e) { $('msgPermisosEmp').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
+};
 
 $('btnNuevoCodigo').onclick = async function () {
   if (!empActual) return;
@@ -6983,9 +7068,10 @@ async function entrarComoEmpleado(d) {
   localStorage.setItem('cajaviva_token', token);
   localStorage.setItem('cajaviva_ya_uso', '1');
   localStorage.setItem('cajaviva_empleado', d.empleado.nombre);
+  localStorage.setItem('cajaviva_empleado_permisos', JSON.stringify(d.empleado.permisos || {}));
   usuario = d.user; negocio = d.negocio;
   $('modalIngresoEmp').classList.remove('on');
-  aplicarModoEmpleado(d.empleado.nombre);
+  aplicarModoEmpleado(d.empleado.nombre, d.empleado.permisos);
   await arrancarApp();
 }
 
@@ -7047,7 +7133,7 @@ $('btnCrearEmp').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Crear y entrar';
 };
 
-function aplicarModoEmpleado(nombre) {
+function aplicarModoEmpleado(nombre, permisos) {
   esEmpleado = true;
   periodo = 'hoy';
   const t = document.getElementById('tituloVentasCaja');
@@ -7062,6 +7148,14 @@ function aplicarModoEmpleado(nombre) {
 
   // ocultar lo que no le corresponde
   document.body.classList.add('modo-empleado');
+  misPermisos = permisos || {};
+
+  // y volver a mostrar puntualmente lo que el dueño si le habilito
+  if (permisos) {
+    Object.keys(permisos).forEach(function (c) {
+      if (permisos[c]) document.body.classList.add(c.replace('perm_', 'perm-'));
+    });
+  }
 }
 
 /* ══ En escritorio, el detalle va al costado ══ */
@@ -14514,7 +14608,11 @@ $('btnGuardarPass').onclick = async function () {
       }
 
       const nomEmp = localStorage.getItem('cajaviva_empleado');
-      if (nomEmp) aplicarModoEmpleado(nomEmp);
+      if (nomEmp) {
+        let permisosGuardados = null;
+        try { permisosGuardados = JSON.parse(localStorage.getItem('cajaviva_empleado_permisos') || 'null'); } catch (e) {}
+        aplicarModoEmpleado(nomEmp, permisosGuardados);
+      }
       await arrancarApp();
       return;
     } catch (e) {
