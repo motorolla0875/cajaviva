@@ -186,8 +186,11 @@ router.get('/', (req, res) => {
   const condMp = "AND NOT (forma_pago = 'mercadopago' AND pago_estado != 'verificado')";
 
   const filas = db.prepare(`
-    SELECT * FROM pedidos_web WHERE user_id = ? ${cond} ${condMp}
-    ORDER BY created_at DESC LIMIT 60
+    SELECT p.*, e.nombre AS empleado_nombre FROM pedidos_web p
+    LEFT JOIN ventas v ON v.id = p.venta_id
+    LEFT JOIN empleados e ON e.id = v.empleado_id
+    WHERE p.user_id = ? ${cond} ${condMp}
+    ORDER BY p.created_at DESC LIMIT 60
   `).all(req.userId);
 
   for (const p of filas) {

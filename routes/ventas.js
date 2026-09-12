@@ -142,9 +142,10 @@ router.get('/', (req, res) => {
         ORDER BY v.created_at DESC
       `).all(req.userId, desde, hasta, req.empleadoId)
     : db.prepare(`
-        SELECT v.*, c.nombre AS cliente_nombre
+        SELECT v.*, c.nombre AS cliente_nombre, e.nombre AS empleado_nombre
         FROM ventas v
         LEFT JOIN clientes c ON c.id = v.cliente_id
+        LEFT JOIN empleados e ON e.id = v.empleado_id
         WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
         ORDER BY v.created_at DESC
       `).all(req.userId, desde, hasta);

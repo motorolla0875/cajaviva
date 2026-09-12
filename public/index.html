@@ -6739,7 +6739,9 @@ function pintarVentaDet() {
     : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
 
   $('subVentaDet').textContent = fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' - ' + medio +
-    (v.cliente_nombre ? ' - ' + v.cliente_nombre : '');
+    (v.cliente_nombre ? ' - ' + v.cliente_nombre : '') +
+    (v.empleado_nombre ? ' - Vendió ' + v.empleado_nombre : '') +
+    (v.notas && v.notas.indexOf('Pedido web') === 0 ? ' - Venta online' : '');
   $('msgVentaDet').innerHTML = '';
 
   $('itemsVentaDet').innerHTML = v.items.map(function (i) {
@@ -9068,7 +9070,8 @@ async function cargarPedidos() {
           (p.estado === 'nuevo' ? '<span class="badge-nuevo">NUEVO</span>' : '') +
           (yaPagado ? '<span class="badge-nuevo" style="background:var(--accent-dark);">PAGADO</span>' : '') + '</div>' +
         '<div class="d">Pedido ' + p.id.slice(0, 6).toUpperCase() + ' - ' + fechaCorta(p.created_at) + ' ' + horaDe(p.created_at) + ' - ' + pago +
-          (p.telefono ? ' - ' + esc(p.telefono) : '') + '</div>' +
+          (p.telefono ? ' - ' + esc(p.telefono) : '') +
+          (p.empleado_nombre ? ' - Entregó ' + esc(p.empleado_nombre) : '') + '</div>' +
         (p.direccion ? '<div class="d">Envio a ' + esc(p.direccion) + '</div>' : '') +
         (p.nota ? '<div class="d">Nota: ' + esc(p.nota) + '</div>' : '') +
         '</div><div class="m">' + plata(p.total) + '</div></div>' +
@@ -14483,6 +14486,8 @@ async function cargarCaja() {
           '<div class="n">' + esc(detalle) + '</div>' +
           '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
             (v.cliente_nombre ? ' &middot; ' + esc(v.cliente_nombre) : '') +
+            (v.empleado_nombre ? ' &middot; Vendió ' + esc(v.empleado_nombre) : '') +
+            (v.notas && v.notas.indexOf('Pedido web') === 0 ? ' &middot; Venta online' : '') +
             (v.notas && v.notas.indexOf('Mesa') === 0 ? ' &middot; ' + esc(v.notas) : '') + '</div></div>' +
           '<div class="monto">' + plata(v.total) + '</div>' +
           '<button class="x" onclick="anularVenta(\'' + v.id + '\')">&#10005;</button></div>';
