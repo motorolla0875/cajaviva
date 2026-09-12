@@ -95,6 +95,7 @@ router.put('/:id', (req, res) => {
   const total = db.prepare('SELECT COALESCE(SUM(stock), 0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(v.producto_id);
   db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(total.n, v.producto_id);
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true, stockTotal: total.n });
 });
 
@@ -117,6 +118,7 @@ router.post('/:id/reponer', (req, res) => {
   const total = db.prepare('SELECT COALESCE(SUM(stock), 0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(v.producto_id);
   db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(total.n, v.producto_id);
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true, stockTotal: total.n });
 });
 
@@ -137,6 +139,7 @@ router.delete('/:id', (req, res) => {
   db.prepare('UPDATE productos SET stock = ?, tiene_variantes = ? WHERE id = ?')
     .run(quedan.s, quedan.n > 0 ? 1 : 0, v.producto_id);
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true, quedan: quedan.n });
 });
 

@@ -1275,6 +1275,12 @@ function cambiar(id, d) {
     return;
   }
 
+  // no dejar pedir mas de lo que hay en stock
+  if (p && d > 0 && !p.es_servicio && !p.es_unidad && (pedido[id] || 0) + d > p.stock) {
+    alert('Ya pediste todo el stock disponible de "' + p.nombre + '" (' + p.stock + ').');
+    return;
+  }
+
   pedido[id] = (pedido[id] || 0) + d;
   if (pedido[id] <= 0) delete pedido[id];
   actualizarUnaTarjeta(id);
@@ -1342,7 +1348,14 @@ function pintarOpcionesVar() {
 
 function sumarVar(varId, nombreVar, precio, d) {
   const clave = prodVarActual.id + '|' + varId;
-  if (d > 0) variantesElegidas[clave] = { id: varId, nombre: nombreVar, precio: precio };
+  if (d > 0) {
+    const v = (prodVarActual.variantes || []).filter(function (x) { return x.id === varId; })[0];
+    if (v && (pedido[clave] || 0) + d > v.stock) {
+      alert('Ya pediste todo el stock disponible de "' + nombreVar + '" (' + v.stock + ').');
+      return;
+    }
+    variantesElegidas[clave] = { id: varId, nombre: nombreVar, precio: precio };
+  }
 
   pedido[clave] = (pedido[clave] || 0) + d;
   if (pedido[clave] <= 0) { delete pedido[clave]; delete variantesElegidas[clave]; }

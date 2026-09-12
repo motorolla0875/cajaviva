@@ -70,6 +70,13 @@ router.post('/publico/:slug', async (req, res) => {
     }
     // si tiene variantes pero no vino ninguna, se acepta igual (el comerciante pregunta)
 
+    // no dejar pedir mas de lo que hay en stock (los servicios no llevan stock)
+    if (variante) {
+      if (variante.stock < c) continue;
+    } else if (!p.es_servicio && p.stock < c) {
+      continue;
+    }
+
     // la oferta se cobra cuando no hay variante, o la variante no tiene su propio precio (usa el base)
     const usaBase = !variante || !variante.precio_venta;
     const enOferta = usaBase && p.precio_oferta != null && p.precio_oferta > 0 && p.precio_oferta < p.precio_venta;
@@ -283,6 +290,7 @@ router.post('/:id/vender', (req, res) => {
   });
 
   db.prepare("UPDATE pedidos_web SET estado = 'entregado', venta_id = ? WHERE id = ?").run(ventaId, p.id);
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ventaId: ventaId, total: totalFinal });
 });
 

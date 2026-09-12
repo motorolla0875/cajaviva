@@ -36,6 +36,27 @@ router.post('/', (req, res) => {
       if (!variante) return res.status(400).json({ error: 'Esa combinacion ya no existe.' });
     }
 
+    // no dejar vender mas de lo que hay en stock (asi ninguna sesion desactualizada puede sobrevender)
+    if (variante) {
+      if (variante.stock < cantidad) {
+        return res.status(400).json({ error: `No queda suficiente stock de ${prod.nombre} (${variante.nombre}) - quedan ${variante.stock}.` });
+      }
+    } else if (!prod.es_servicio) {
+      if (prod.tiene_receta && prod.descuenta_insumos) {
+        const receta = db.prepare(`
+          SELECT ri.cantidad, i.nombre, i.stock FROM receta_items ri
+          JOIN productos i ON i.id = ri.insumo_id WHERE ri.producto_id = ?
+        `).all(prod.id);
+        for (const r of receta) {
+          if (r.stock < r.cantidad * cantidad) {
+            return res.status(400).json({ error: `No queda suficiente stock de ${r.nombre} para preparar ${prod.nombre}.` });
+          }
+        }
+      } else if (prod.stock < cantidad) {
+        return res.status(400).json({ error: `No queda suficiente stock de ${prod.nombre} (quedan ${prod.stock}).` });
+      }
+    }
+
     const precio = it.precioUnitario != null ? parseFloat(it.precioUnitario)
       : (variante && variante.precio_venta ? variante.precio_venta : prod.precio_venta);
     const costo = prod.precio_costo || 0;
@@ -103,6 +124,7 @@ router.post('/', (req, res) => {
       .run(total - pagado, clienteId, req.userId);
   }
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ id: ventaId, total, estado });
 });
 

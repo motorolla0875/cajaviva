@@ -5046,6 +5046,24 @@ function usarDatosGuardados() {
   pintarClientes(); pintarSelectClientes();
 }
 
+let socketVivo = null;
+function conectarTiempoReal() {
+  if (!token) return;
+  try {
+    if (socketVivo) { try { socketVivo.onclose = null; socketVivo.close(); } catch (e) {} }
+    const protocolo = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socketVivo = new WebSocket(protocolo + '//' + location.host + '/ws?token=' + encodeURIComponent(token));
+    socketVivo.onmessage = function (ev) {
+      try {
+        const d = JSON.parse(ev.data);
+        if (d.tipo === 'productos') cargarProductos();
+      } catch (e) {}
+    };
+    socketVivo.onclose = function () { setTimeout(conectarTiempoReal, 4000); };
+    socketVivo.onerror = function () { try { socketVivo.close(); } catch (e) {} };
+  } catch (e) {}
+}
+
 async function arrancarApp() {
   mostrar('app');
   try { acomodarBuscadorGlobal(); } catch (e) {}
@@ -5056,6 +5074,7 @@ async function arrancarApp() {
   revisarTurnos();
   pintarContadorCola();
   subirCola();
+  conectarTiempoReal();
   try {
     await cargarCategorias();
     await cargarProveedores();

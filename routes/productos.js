@@ -82,6 +82,7 @@ router.post('/', (req, res) => {
            proveedorId || null);
   }
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ id });
 });
 
@@ -138,6 +139,7 @@ router.put('/:id', (req, res) => {
          cobraPorHora ? 1 : 0, agendaPropia ? 1 : 0,
          req.params.id, req.userId);
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true });
 });
 
@@ -190,6 +192,7 @@ router.post('/:id/reponer', (req, res) => {
            `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO(req.userId));
   }
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true, stock: prod.stock + cantidad });
 });
 
@@ -205,6 +208,7 @@ router.post('/:id/quitar', (req, res) => {
   db.prepare('UPDATE productos SET stock = stock - ?, updated_at = datetime(\'now\') WHERE id = ?')
     .run(cantidad, prod.id);
 
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true, stock: prod.stock - cantidad });
 });
 
@@ -212,6 +216,7 @@ router.post('/:id/quitar', (req, res) => {
 router.delete('/:id', (req, res) => {
   if (req.esEmpleado && !db.tienePermiso(req, 'perm_productos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   db.prepare('UPDATE productos SET activo = 0 WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
+  if (db.avisar) db.avisar(req.userId, 'productos');
   res.json({ ok: true });
 });
 

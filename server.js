@@ -1,11 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const { WebSocketServer } = require('ws');
 const db = require('./db');
 const { router: authRouter, requiereAuth } = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5200;
+const SECRETO_WS = process.env.JWT_SECRET || 'cajaviva-cambiar-esto-en-produccion';
 
 app.use(express.json());
 // si entra por un dominio propio, se sirve el catalogo de ese negocio
@@ -122,4 +125,46 @@ app.use('/api/catalogo', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/catalogo'));
 
-app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));
+const server = app.listen(PORT, () => console.log(`CajaViva escuchando en el puerto ${PORT}`));
+
+// ── avisos en vivo: cuando algo cambia (stock, precios, etc), se empuja a todas
+// las pantallas abiertas del mismo negocio (dueño y empleados), sin que nadie recargue ──
+const wss = new WebSocketServer({ server: server, path: '/ws' });
+const conexionesPorNegocio = new Map(); // userId -> Set de sockets conectados
+
+wss.on('connection', function (ws, req) {
+  let userId = null;
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const token = url.searchParams.get('token');
+    const p = jwt.verify(token, SECRETO_WS);
+    userId = p.id;
+  } catch (e) {
+    ws.close();
+    return;
+  }
+  if (!conexionesPorNegocio.has(userId)) conexionesPorNegocio.set(userId, new Set());
+  conexionesPorNegocio.get(userId).add(ws);
+
+  ws.on('close', function () {
+    const set = conexionesPorNegocio.get(userId);
+    if (set) {
+      set.delete(ws);
+      if (set.size === 0) conexionesPorNegocio.delete(userId);
+    }
+  });
+  ws.on('error', function () {});
+});
+
+// cualquier ruta puede llamar a db.avisar(userId, 'productos') para avisarle
+// a todas las pantallas abiertas de ese negocio que algo cambio
+db.avisar = function (userId, tipo) {
+  const set = conexionesPorNegocio.get(userId);
+  if (!set || set.size === 0) return;
+  const msg = JSON.stringify({ tipo: tipo });
+  set.forEach(function (ws) {
+    try { ws.send(msg); } catch (e) {}
+  });
+};
+
+
