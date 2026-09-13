@@ -5476,6 +5476,27 @@ function pintarGrilla() {
 }
 $('buscar').addEventListener('input', pintarGrilla);
 
+// lector de codigo de barras fisico (USB/Bluetooth): escribe el codigo solo y aprieta Enter
+$('buscar').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const codigo = norm(this.value.trim());
+  if (!codigo) return;
+  e.preventDefault();
+
+  const p = productos.filter(function (x) { return norm(x.codigo_barras || '') === codigo; })[0];
+  if (!p) {
+    sonidoError(); vibrar([60, 40, 60]);
+    avisar('No se encontro ningun producto con ese codigo', true);
+    return;
+  }
+
+  sonidoOk(); vibrar(40);
+  agregar(p.id);
+  avisar(p.nombre + ' agregado');
+  this.value = '';
+  pintarGrilla();
+});
+
 // evita que las fotos parpadeen al repintar
 function marcarSeleccion() {
   document.querySelectorAll('.grilla .prod').forEach(function (el) {
