@@ -5467,7 +5467,7 @@ function pintarGrilla() {
       '</div>' +
       '<div class="p">' + (precioEfectivo(p) !== p.precio_venta
         ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
-          '<span style="color:var(--danger);">' + plata(precioEfectivo(p)) + '</span>'
+          '<span style="color:var(--accent-dark);">' + plata(precioEfectivo(p)) + '</span>'
         : plata(p.precio_venta)) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
       (sin && !esServ ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
@@ -5754,7 +5754,7 @@ function pintarLista() {
       (cap('cap_vencimientos') ? avisoVence(p) : '') +
       '<div class="d">' + (pctOferta(p) > 0
         ? '<span style="text-decoration:line-through; color:var(--muted);">' + plata(p.precio_venta) + '</span> ' +
-          '<span style="color:var(--danger); font-weight:600;">' + plata(p.precio_oferta) + '</span> ' +
+          '<span style="color:var(--accent-dark); font-weight:600;">' + plata(p.precio_oferta) + '</span> ' +
           '<span style="background:#0F6E56; color:#fff; font-size:10px; font-weight:700; padding:1px 5px; border-radius:5px;">-' + pctOferta(p) + '%</span>'
         : plata(p.precio_venta)) +
         (esServ
