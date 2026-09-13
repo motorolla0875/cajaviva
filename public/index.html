@@ -5086,6 +5086,9 @@ async function arrancarApp() {
   pintarContadorCola();
   subirCola();
   conectarTiempoReal();
+  if (document.querySelector('nav button[data-vista="vender"]').classList.contains('on')) {
+    setTimeout(function () { $('buscar').focus(); }, 100);
+  }
   try {
     await cargarCategorias();
     await cargarProveedores();
@@ -5282,6 +5285,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
     if (b.dataset.vista === 'tienda') cargarVistaTienda();
     if (b.dataset.vista === 'mesas') cargarMesas();
+    if (b.dataset.vista === 'vender') setTimeout(function () { $('buscar').focus(); }, 50);
   };
 });
 
