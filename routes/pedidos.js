@@ -177,13 +177,13 @@ router.post('/mp-webhook/:pedidoId', async (req, res) => {
 // ── el comerciante ve sus pedidos ──
 router.get('/', (req, res) => {
   const estado = req.query.estado || 'pendientes';
-  const cond = estado === 'pendientes' ? "AND estado IN ('nuevo','confirmado')"
-    : estado === 'listos' ? "AND estado = 'entregado'"
-    : estado === 'cancelados' ? "AND estado = 'cancelado'" : '';
+  const cond = estado === 'pendientes' ? "AND p.estado IN ('nuevo','confirmado')"
+    : estado === 'listos' ? "AND p.estado = 'entregado'"
+    : estado === 'cancelados' ? "AND p.estado = 'cancelado'" : '';
 
   // los pedidos con Mercado Pago que todavia no se confirmaron (el cliente no termino de pagar,
   // o abandono el checkout) no se muestran: para el comerciante, no existieron
-  const condMp = "AND NOT (forma_pago = 'mercadopago' AND pago_estado != 'verificado')";
+  const condMp = "AND NOT (p.forma_pago = 'mercadopago' AND p.pago_estado != 'verificado')";
 
   const filas = db.prepare(`
     SELECT p.*, e.nombre AS empleado_nombre FROM pedidos_web p
