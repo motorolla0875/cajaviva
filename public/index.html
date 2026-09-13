@@ -4456,6 +4456,8 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s == 
 const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; };
 function cap(nombre) { return !!(negocio && negocio[nombre]); }
 function fmtCant(n) { return Math.round(n * 1000) / 1000; }
+// si el producto no tiene su propio minimo configurado, se usa 3 como minimo general
+function minimoDe(p) { return p.stock_minimo > 0 ? p.stock_minimo : 3; }
 
 function hoyISO() {
   const d = new Date();
@@ -5443,7 +5445,7 @@ function pintarGrilla() {
     const alcanza = conRec ? alcanzaPara(p.id) : null;
     const sin = !esServ && (conRec ? (alcanza !== null && alcanza <= 0) : p.stock <= 0);
     const tieneFoto = !!(p.foto_mini || p.foto_url);
-    const bajo = !sin && !esServ && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
+    const bajo = !sin && !esServ && p.stock <= minimoDe(p);
     const cant = carrito.filter(function (l) { return l.productoId === p.id; })
       .reduce(function (a, l) { return a + l.cantidad; }, 0);
     return '<button data-id="' + p.id + '" class="prod' + (tieneFoto ? ' con-foto' : '') + (sin ? ' sin-stock' : '') + (bajo ? ' poco-stock' : '') + (cant > 0 ? ' en-venta' : '') + '" onclick="agregar(\'' + p.id + '\')">' +
@@ -5740,7 +5742,7 @@ function pintarLista() {
   $('listaProd').innerHTML = lista.map(function (p) {
     const tieneCosto = !esEmpleado && p.precio_costo > 0;
     const margen = tieneCosto ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo) * 100) : null;
-    const clase = p.stock <= 0 ? 'cero' : (p.stock_minimo > 0 && p.stock <= p.stock_minimo ? 'bajo' : '');
+    const clase = p.stock <= 0 ? 'cero' : (p.stock <= minimoDe(p) ? 'bajo' : '');
     const esServ = !!p.es_servicio;
     return '<div class="fila">' +
       (p.foto_mini || p.foto_url ? '<img class="foto-fila" src="' + (p.foto_mini || p.foto_url) + '" loading="lazy">' : '') +
@@ -5777,7 +5779,7 @@ function pintarLista() {
         : esServ ? '<span class="etiqueta" style="background:var(--accent-soft);color:var(--accent-dark);">servicio</span>'
         : p.stock < 0 ? '<div class="alerta-stock cero">Faltan ' + fmtCant(-p.stock) + ' - revisa</div>'
         : p.stock === 0 ? '<div class="alerta-stock cero">Sin stock</div>'
-        : (p.stock_minimo > 0 && p.stock <= p.stock_minimo) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
+        : (p.stock <= minimoDe(p)) ? '<div class="alerta-stock bajo">Queda poco</div>' : '') +
       '</div>' +
       ((esServ || p.tiene_receta || p.es_unidad) ? '' : '<div class="stock ' + clase + '"><b>' + fmtCant(p.stock) + '</b>' + (p.unidad === 'unidad' ? 'u.' : p.unidad) + '</div>') +
       '<div class="acc">' +
@@ -7245,7 +7247,7 @@ function pintarFiltrosProd() {
   const negativos = conStock.filter(function (p) { return p.stock < 0; }).length;
   const sinStock = conStock.filter(function (p) { return p.stock === 0; }).length;
   const bajos = conStock.filter(function (p) {
-    return p.stock > 0 && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
+    return p.stock > 0 && p.stock <= minimoDe(p);
   }).length;
   const revisar = negativos + sinStock + bajos;
 
@@ -7338,9 +7340,9 @@ function pasaFiltroProd(p) {
   if (p.es_servicio || p.tiene_receta) return false;
   if (filtroProd === 'negativo') return p.stock < 0;
   if (filtroProd === 'cero') return p.stock === 0;
-  if (filtroProd === 'bajo') return p.stock > 0 && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
+  if (filtroProd === 'bajo') return p.stock > 0 && p.stock <= minimoDe(p);
   if (filtroProd === 'revisar') {
-    return p.stock <= 0 || (p.stock_minimo > 0 && p.stock <= p.stock_minimo);
+    return p.stock <= 0 || (p.stock <= minimoDe(p));
   }
   return true;
 }

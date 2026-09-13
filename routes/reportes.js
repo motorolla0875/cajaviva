@@ -90,7 +90,7 @@ router.get('/reponer', (req, res) => {
     WHERE p.user_id = ? AND p.activo = 1
       AND COALESCE(p.es_unidad, 0) = 0 AND COALESCE(p.es_servicio, 0) = 0
       AND COALESCE(p.tiene_receta, 0) = 0
-      AND (p.stock <= 0 OR (p.stock_minimo > 0 AND p.stock <= p.stock_minimo))
+      AND p.stock <= (CASE WHEN p.stock_minimo > 0 THEN p.stock_minimo ELSE 3 END)
     ORDER BY p.stock ASC, vendidas DESC
   `).all(desde, hasta, req.userId);
 
