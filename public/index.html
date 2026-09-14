@@ -8689,6 +8689,16 @@ async function cargarVentasMl() {
         '<div class="d">Se vendio ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
         '</div><div class="monto">' + plata(p.total) + '</div></div>';
     }).join('');
+
+    html += '<div class="seccion" style="margin-top:16px;">Detalle de pedidos</div>';
+    html += r.ventas.map(function (v) {
+      const detalle = v.items.map(function (i) { return fmtCant(i.cantidad) + ' x ' + esc(i.nombre); }).join(', ');
+      return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="verVenta(\'' + v.id + '\')">' +
+        '<div class="n">' + detalle + '</div>' +
+        '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + '</div>' +
+        '</div><div class="monto">' + plata(v.total) + '</div></div>';
+    }).join('');
+
     $('resumenVentasMl').innerHTML = html;
   } catch (e) {
     $('resumenVentasMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';

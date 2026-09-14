@@ -88,10 +88,21 @@ router.get('/ventas', (req, res) => {
     FROM ventas WHERE user_id = ? AND medio_pago = 'mercadolibre'
   `).get(req.userId);
 
+  // el detalle de cada pedido, para poder tocarlo y ver el mismo detalle que en Caja
+  const ventas = db.prepare(`
+    SELECT id, fecha, created_at, total FROM ventas
+    WHERE user_id = ? AND medio_pago = 'mercadolibre'
+    ORDER BY created_at DESC LIMIT 200
+  `).all(req.userId);
+  ventas.forEach((v) => {
+    v.items = db.prepare('SELECT nombre, cantidad FROM venta_items WHERE venta_id = ?').all(v.id);
+  });
+
   res.json({
     porProducto: filas.map((f) => ({ nombre: f.nombre, cantidad: f.cantidad, pedidos: f.pedidos, total: f.total })),
     totalPedidos: resumen.pedidos,
-    totalVendido: resumen.total
+    totalVendido: resumen.total,
+    ventas
   });
 });
 
