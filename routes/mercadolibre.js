@@ -280,6 +280,8 @@ async function procesarNotificacion(payload) {
   if (payload.topic === 'items') return procesarCambioItem(payload);
 }
 
+const ultimoAvisoPorItem = new Map(); // evita que un aviso viejo pise a uno mas nuevo que llego primero
+
 async function procesarCambioItem(payload) {
   const conexion = db.prepare('SELECT user_id FROM mercadolibre_conexion WHERE ml_user_id = ?').get(String(payload.user_id));
   if (!conexion) return;
@@ -288,17 +290,27 @@ async function procesarCambioItem(payload) {
   const itemId = String(payload.resource || '').split('/').pop();
   if (!itemId) return;
 
+  // si llegan dos avisos del mismo item muy seguidos, puede que se procesen fuera de orden;
+  // con el timestamp del aviso ("sent") nos aseguramos de no aplicar uno mas viejo despues de uno nuevo
+  const enviado = payload.sent ? new Date(payload.sent).getTime() : Date.now();
+  const anterior = ultimoAvisoPorItem.get(itemId);
+  if (anterior && enviado < anterior) return;
+  ultimoAvisoPorItem.set(itemId, enviado);
+
   const prod = db.prepare('SELECT id, stock FROM productos WHERE user_id = ? AND ml_item_id = ?').get(userId, itemId);
   if (!prod) return; // esta publicacion no esta vinculada a ningun producto nuestro
 
   const token = await obtenerTokenValido(userId);
-  if (!token) return;
+  if (!token) { console.error('No se pudo renovar el token para actualizar stock del item', itemId); return; }
 
   const r = await fetch('https://api.mercadolibre.com/items/' + itemId + '?attributes=available_quantity', {
     headers: { Authorization: 'Bearer ' + token }
   });
   const item = await r.json();
-  if (!r.ok || item.available_quantity == null) return;
+  if (!r.ok || item.available_quantity == null) {
+    console.error('No se pudo traer el stock actual del item', itemId, JSON.stringify(item));
+    return;
+  }
 
   if (item.available_quantity !== prod.stock) {
     db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(item.available_quantity, prod.id);
