@@ -90,7 +90,7 @@ router.get('/ventas', (req, res) => {
 
   // el detalle de cada pedido, para poder tocarlo y ver el mismo detalle que en Caja
   const ventas = db.prepare(`
-    SELECT id, fecha, created_at, total, ml_comprador, ml_envio_estado FROM ventas
+    SELECT id, fecha, created_at, total, ml_order_id, ml_comprador, ml_envio_estado FROM ventas
     WHERE user_id = ? AND medio_pago = 'mercadolibre'
     ORDER BY created_at DESC LIMIT 200
   `).all(req.userId);

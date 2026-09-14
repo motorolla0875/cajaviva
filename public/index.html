@@ -3852,6 +3852,10 @@
     <div id="avisoCerrado"></div>
     <div id="msgVentaDet"></div>
     <div id="itemsVentaDet"></div>
+    <div id="bloqueMlVentaDet" style="display:none; background:var(--panel-2); border-radius:10px; padding:12px; margin-bottom:10px;">
+      <div class="seccion" style="margin:0 0 6px;">Datos de MercadoLibre</div>
+      <div id="datosMlVentaDet" style="font-size:13.5px; line-height:1.7;"></div>
+    </div>
     <div class="cierre-linea total"><span>Total</span><b id="totalVentaDet">$0</b></div>
     <button class="btn-sec" id="btnDevolver">Registrar una devolucion</button>
     <button class="btn-sec" id="btnImprimirVentaDet">Imprimir ticket</button>
@@ -6929,6 +6933,18 @@ function pintarVentaDet() {
   }).join('');
 
   $('totalVentaDet').textContent = plata(v.total);
+
+  const ETIQUETAS_ENVIO = { pending: 'Pendiente de preparar', handling: 'Preparando envio', ready_to_ship: 'Listo para despachar', shipped: 'Despachado', delivered: 'Entregado al comprador', not_delivered: 'No se pudo entregar', cancelled: 'Envio cancelado' };
+  if (v.medio_pago === 'mercadolibre') {
+    $('bloqueMlVentaDet').style.display = 'block';
+    $('datosMlVentaDet').innerHTML =
+      (v.ml_order_id ? '<div>Nº de orden: <b>' + esc(v.ml_order_id) + '</b></div>' : '') +
+      (v.ml_comprador ? '<div>Comprador: <b>' + esc(v.ml_comprador) + '</b></div>' : '') +
+      (v.ml_envio_estado ? '<div>Envio: <b>' + (ETIQUETAS_ENVIO[v.ml_envio_estado] || esc(v.ml_envio_estado)) + '</b></div>' : '') +
+      (!v.ml_comprador && !v.ml_envio_estado ? '<div class="hint" style="margin:0;">Esta venta es de antes de que empezaramos a guardar estos datos.</div>' : '');
+  } else {
+    $('bloqueMlVentaDet').style.display = 'none';
+  }
 }
 
 async function cambiarItemVenta(itemId, delta) {
@@ -8695,11 +8711,12 @@ async function cargarVentasMl() {
     const ETIQUETAS_ENVIO = { pending: 'Envio pendiente', handling: 'Preparando envio', ready_to_ship: 'Listo para despachar', shipped: 'Despachado', delivered: 'Entregado', not_delivered: 'No entregado', cancelled: 'Envio cancelado' };
     html += r.ventas.map(function (v) {
       const detalle = v.items.map(function (i) { return fmtCant(i.cantidad) + ' x ' + esc(i.nombre); }).join(', ');
+      const esNuevo = v.ml_order_id && pedidosMlNuevos.has(v.ml_order_id);
       const extra = (v.ml_comprador ? esc(v.ml_comprador) : '') +
         (v.ml_comprador && v.ml_envio_estado ? ' - ' : '') +
         (v.ml_envio_estado ? (ETIQUETAS_ENVIO[v.ml_envio_estado] || esc(v.ml_envio_estado)) : '');
-      return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="verVenta(\'' + v.id + '\')">' +
-        '<div class="n">' + detalle + '</div>' +
+      return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="abrirPedidoMl(\'' + v.id + '\', \'' + (v.ml_order_id || '') + '\')">' +
+        '<div class="n">' + (esNuevo ? '<span class="contador" style="position:static; margin-right:6px;">Nuevo</span>' : '') + detalle + '</div>' +
         '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + (extra ? ' - ' + extra : '') + '</div>' +
         '</div><div class="monto">' + plata(v.total) + '</div></div>';
     }).join('');
@@ -8728,6 +8745,11 @@ $('mlRepTabs').addEventListener('click', function (e) {
   Array.prototype.forEach.call($('mlRepTabs').children, function (x) { x.classList.toggle('on', x === b); });
   cargarReportesMl();
 });
+
+async function abrirPedidoMl(ventaId, ordenId) {
+  if (ordenId) pedidosMlNuevos.delete(ordenId);
+  await verVenta(ventaId);
+}
 
 async function cargarReportesMl() {
   const cont = $('reportesMl');
@@ -9726,6 +9748,7 @@ function sonidoPedido() {
 
 let contadorVentasMl = 0;
 let temporizadorAlertaMl = null;
+let pedidosMlNuevos = new Set();
 
 function pintarContadorMl() {
   const b = document.getElementById('tabMercadolibre');
@@ -9739,6 +9762,7 @@ function mostrarAlertaVentaMl(datos) {
   vibrar([60, 40, 60]);
   contadorVentasMl++;
   pintarContadorMl();
+  if (datos.ordenId) pedidosMlNuevos.add(datos.ordenId);
 
   const detalle = (datos.items || []).map(function (i) {
     return fmtCant(i.cantidad) + ' x ' + esc(i.nombre);
