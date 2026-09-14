@@ -2826,10 +2826,24 @@
   <div class="modal">
     <h3>Vincular publicación</h3>
     <p class="hint" id="tituloPublicacionVincular" style="margin-top:0;"></p>
-    <input type="text" id="buscarProductoVincular" placeholder="Buscar producto..." style="margin-bottom:10px;">
-    <div class="chips" id="categoriasVincularMl" style="margin-bottom:10px; flex-wrap:wrap;"></div>
-    <div id="listaProductosVincular" style="max-height:340px; overflow-y:auto;"></div>
-    <button class="btn-sec" id="btnCerrarVincularMl">Cancelar</button>
+
+    <div id="buscarVincularBox">
+      <input type="text" id="buscarProductoVincular" placeholder="Buscar producto..." style="margin-bottom:10px;">
+      <div class="chips" id="categoriasVincularMl" style="margin-bottom:10px; flex-wrap:wrap;"></div>
+      <div id="listaProductosVincular" style="max-height:340px; overflow-y:auto;"></div>
+      <button class="btn-sec" id="btnCerrarVincularMl">Cancelar</button>
+    </div>
+
+    <div id="confirmarVincularBox" style="display:none;">
+      <div class="mov" style="background:var(--panel-2);">
+        <img id="confirmarVincularFoto" src="" style="width:56px; height:56px; border-radius:10px; object-fit:cover; margin-right:12px; display:none;">
+        <div class="info"><div class="n" id="confirmarVincularNombre"></div>
+        <div class="d" id="confirmarVincularPrecio"></div></div>
+      </div>
+      <p class="hint" style="margin:12px 0;">¿Vincular esta publicación con este producto?</p>
+      <button class="btn-ppal" id="btnConfirmarVincular">Confirmar</button>
+      <button class="btn-sec" id="btnVolverVincular">Volver</button>
+    </div>
   </div>
 </div>
 
@@ -8867,6 +8881,8 @@ function abrirVincularMl(mlItemId) {
   $('tituloPublicacionVincular').textContent = pub ? pub.titulo : '';
   $('buscarProductoVincular').value = '';
   categoriaVincularActiva = null;
+  $('buscarVincularBox').style.display = 'block';
+  $('confirmarVincularBox').style.display = 'none';
   pintarCategoriasVincular();
   pintarListaVincular();
   $('modalVincularMl').classList.add('on');
@@ -8899,7 +8915,9 @@ function pintarListaVincular() {
     return;
   }
   $('listaProductosVincular').innerHTML = lista.map(function (p) {
-    return '<div class="mov" style="cursor:pointer;" onclick="elegirProductoVincular(\'' + p.id + '\')">' +
+    const foto = p.foto_mini || p.foto_url;
+    return '<div class="mov" style="cursor:pointer;" onclick="mostrarConfirmarVincular(\'' + p.id + '\')">' +
+      (foto ? '<img src="' + foto + '" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:10px;" loading="lazy">' : '') +
       '<div class="info"><div class="n">' + esc(p.nombre) + '</div>' +
       '<div class="d">' + plata(p.precio_venta) + (p.categoria_nombre ? ' - ' + esc(p.categoria_nombre) : '') + '</div></div>' +
       '</div>';
@@ -8908,15 +8926,40 @@ function pintarListaVincular() {
 
 $('buscarProductoVincular').addEventListener('input', pintarListaVincular);
 
-async function elegirProductoVincular(productoId) {
+let productoAConfirmarVincular = null;
+
+function mostrarConfirmarVincular(productoId) {
+  const p = productos.filter(function (x) { return x.id === productoId; })[0];
+  if (!p) return;
+  productoAConfirmarVincular = productoId;
+  const foto = p.foto_mini || p.foto_url;
+  $('confirmarVincularFoto').style.display = foto ? 'block' : 'none';
+  $('confirmarVincularFoto').src = foto || '';
+  $('confirmarVincularNombre').textContent = p.nombre;
+  $('confirmarVincularPrecio').textContent = plata(p.precio_venta) + (p.categoria_nombre ? ' - ' + p.categoria_nombre : '');
+  $('buscarVincularBox').style.display = 'none';
+  $('confirmarVincularBox').style.display = 'block';
+}
+
+$('btnVolverVincular').onclick = function () {
+  $('confirmarVincularBox').style.display = 'none';
+  $('buscarVincularBox').style.display = 'block';
+};
+
+$('btnConfirmarVincular').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Vinculando...';
   try {
-    await api('POST', '/mercadolibre/vincular', { productoId: productoId, mlItemId: mlItemIdAVincular });
+    await api('POST', '/mercadolibre/vincular', { productoId: productoAConfirmarVincular, mlItemId: mlItemIdAVincular });
     avisar('Vinculado');
     $('modalVincularMl').classList.remove('on');
     await cargarProductos();
     await cargarPublicacionesMl();
-  } catch (e) { avisar(e.message, true); }
-}
+  } catch (e) {
+    avisar(e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Confirmar';
+};
 
 async function desvincularMl(mlItemId) {
   const vinculado = productos.filter(function (p) { return p.ml_item_id === mlItemId; })[0];
