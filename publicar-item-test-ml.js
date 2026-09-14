@@ -18,11 +18,16 @@ async function main() {
     return;
   }
   let actual = nivel.find((cat) => /otra/i.test(cat.name)) || nivel[0];
+  console.log('\nCategorias de primer nivel disponibles:');
+  nivel.forEach((cat) => console.log(' -', cat.id, cat.name));
+  console.log('\nBuscando en:', actual.id, actual.name);
+
   for (let vueltas = 0; vueltas < 6; vueltas++) {
     const info = await (await fetch('https://api.mercadolibre.com/categories/' + actual.id, {
       headers: { Authorization: 'Bearer ' + token }
     })).json();
     if (!info.children_categories || info.children_categories.length === 0) { categoryId = actual.id; break; }
+    console.log('  subcategorias de', actual.name + ':', info.children_categories.map((c) => c.id + ' ' + c.name).join(' | '));
     actual = info.children_categories.find((cat) => /otra/i.test(cat.name)) || info.children_categories[0];
   }
   if (!categoryId) categoryId = actual.id;
