@@ -9,6 +9,41 @@ const ML_CLIENT_ID = process.env.MELI_CLIENT_ID;
 const ML_CLIENT_SECRET = process.env.MELI_CLIENT_SECRET;
 const ML_REDIRECT_URI = 'https://cajaviva.app/mercadolibre/callback';
 
+// ── consigue un access_token valido para este usuario, renovandolo con el
+//    refresh_token si esta vencido o le queda poco (asi no hace falta acordarse
+//    de esto en cada lugar que hable con la API de MercadoLibre) ──
+async function obtenerTokenValido(userId) {
+  const c = db.prepare('SELECT * FROM mercadolibre_conexion WHERE user_id = ?').get(userId);
+  if (!c) return null;
+
+  const faltaPoco = new Date(c.expira_en).getTime() - Date.now() < 5 * 60 * 1000; // menos de 5 min
+  if (!faltaPoco) return c.access_token;
+
+  const r = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: ML_CLIENT_ID,
+      client_secret: ML_CLIENT_SECRET,
+      refresh_token: c.refresh_token
+    })
+  });
+  const datos = await r.json();
+  if (!r.ok) {
+    // si el refresh token ya no sirve, se borra la conexion para que el comerciante
+    // se de cuenta (en "estado" va a ver que no esta mas conectado) y vuelva a autorizar
+    if (r.status === 400 || r.status === 401) db.prepare('DELETE FROM mercadolibre_conexion WHERE user_id = ?').run(userId);
+    throw new Error(datos.message || 'No se pudo renovar la conexion con MercadoLibre.');
+  }
+
+  const expiraEn = new Date(Date.now() + datos.expires_in * 1000).toISOString();
+  db.prepare('UPDATE mercadolibre_conexion SET access_token = ?, refresh_token = ?, expira_en = ? WHERE user_id = ?')
+    .run(datos.access_token, datos.refresh_token, expiraEn, userId);
+
+  return datos.access_token;
+}
+
 // ── el comerciante toca "Conectar MercadoLibre": lo mandamos a autorizar ──
 router.get('/conectar', (req, res) => {
   if (!ML_CLIENT_ID) return res.status(500).json({ error: 'Falta configurar MELI_CLIENT_ID en el servidor.' });
@@ -36,6 +71,59 @@ router.get('/estado', (req, res) => {
   });
 });
 
+// ── trae las publicaciones activas del vendedor, para elegir cual vincular a que producto ──
+router.get('/publicaciones', async (req, res) => {
+  try {
+    const c = db.prepare('SELECT ml_user_id FROM mercadolibre_conexion WHERE user_id = ?').get(req.userId);
+    if (!c) return res.status(400).json({ error: 'Todavia no conectaste tu cuenta de MercadoLibre.' });
+
+    const token = await obtenerTokenValido(req.userId);
+
+    // 1) los IDs de todas las publicaciones activas (hasta 100 por pagina)
+    const rBusqueda = await fetch(
+      `https://api.mercadolibre.com/users/${c.ml_user_id}/items/search?status=active&limit=100`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    const busqueda = await rBusqueda.json();
+    if (!rBusqueda.ok) throw new Error(busqueda.message || 'MercadoLibre no devolvio las publicaciones.');
+    const ids = busqueda.results || [];
+    if (ids.length === 0) return res.json({ publicaciones: [] });
+
+    // 2) el detalle de cada una, de a 20 por pedido (limite de la API)
+    const publicaciones = [];
+    for (let i = 0; i < ids.length; i += 20) {
+      const tanda = ids.slice(i, i + 20);
+      const rDet = await fetch(
+        `https://api.mercadolibre.com/items?ids=${tanda.join(',')}&attributes=id,title,price,available_quantity,thumbnail,variations`,
+        { headers: { Authorization: 'Bearer ' + token } }
+      );
+      const det = await rDet.json();
+      det.forEach((it) => {
+        if (it.code === 200) publicaciones.push(it.body);
+      });
+    }
+
+    // ya vinculados, para que el frontend los marque
+    const vinculados = db.prepare('SELECT id, ml_item_id FROM productos WHERE user_id = ? AND ml_item_id IS NOT NULL').all(req.userId);
+    const vinculadosPorItem = {};
+    vinculados.forEach((p) => { vinculadosPorItem[p.ml_item_id] = p.id; });
+
+    res.json({
+      publicaciones: publicaciones.map((p) => ({
+        id: p.id,
+        titulo: p.title,
+        precio: p.price,
+        stock: p.available_quantity,
+        foto: p.thumbnail,
+        tieneVariantes: (p.variations || []).length > 0,
+        productoVinculado: vinculadosPorItem[p.id] || null
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── desconectar la cuenta ──
 router.post('/desconectar', (req, res) => {
   db.prepare('DELETE FROM mercadolibre_conexion WHERE user_id = ?').run(req.userId);
@@ -48,7 +136,27 @@ router.post('/webhook', (req, res) => {
   res.sendStatus(200);
 });
 
+// ── vincular un producto de CajaViva con una publicacion de MercadoLibre ──
+router.post('/vincular', (req, res) => {
+  const { productoId, mlItemId } = req.body || {};
+  if (!productoId || !mlItemId) return res.status(400).json({ error: 'Falta el producto o la publicacion.' });
+
+  const p = db.prepare('SELECT id FROM productos WHERE id = ? AND user_id = ?').get(productoId, req.userId);
+  if (!p) return res.status(404).json({ error: 'Producto no encontrado.' });
+
+  db.prepare('UPDATE productos SET ml_item_id = ? WHERE id = ?').run(mlItemId, productoId);
+  res.json({ ok: true });
+});
+
+// ── desvincular ──
+router.post('/desvincular', (req, res) => {
+  const { productoId } = req.body || {};
+  db.prepare('UPDATE productos SET ml_item_id = NULL WHERE id = ? AND user_id = ?').run(productoId, req.userId);
+  res.json({ ok: true });
+});
+
 module.exports = router;
+
 
 // ── funciones que se usan desde server.js, sin pasar por requiereAuth ──
 // (el callback lo visita el navegador del comerciante directo desde MercadoLibre,

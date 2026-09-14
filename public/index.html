@@ -2298,6 +2298,10 @@
       <div id="mlConectado" style="display:none;">
         <p class="hint ok" style="margin-top:0;">Conectado como <b id="mlNickname"></b>.</p>
         <button type="button" class="btn-sec" id="btnDesconectarMl">Desconectar</button>
+
+        <div class="seccion" style="margin-top:20px;">Vincular publicaciones</div>
+        <p class="hint" style="margin:0 0 12px;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
+        <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -8561,8 +8565,62 @@ async function cargarEstadoMl() {
     const e = await api('GET', '/mercadolibre/estado');
     $('mlNoConectado').style.display = e.conectado ? 'none' : 'block';
     $('mlConectado').style.display = e.conectado ? 'block' : 'none';
-    if (e.conectado) $('mlNickname').textContent = e.nickname || '';
+    if (e.conectado) {
+      $('mlNickname').textContent = e.nickname || '';
+      cargarPublicacionesMl();
+    }
   } catch (err) {}
+}
+
+async function cargarPublicacionesMl() {
+  $('listaPublicacionesMl').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const r = await api('GET', '/mercadolibre/publicaciones');
+    if (r.publicaciones.length === 0) {
+      $('listaPublicacionesMl').innerHTML = '<div class="vacio">No tenes publicaciones activas en MercadoLibre.</div>';
+      return;
+    }
+    const opcionesProductos = productos.map(function (p) {
+      return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>';
+    }).join('');
+
+    $('listaPublicacionesMl').innerHTML = r.publicaciones.map(function (pub) {
+      const vinculado = productos.filter(function (p) { return p.id === pub.productoVinculado; })[0];
+      return '<div class="mov"><img src="' + esc(pub.foto) + '" style="width:44px; height:44px; border-radius:8px; object-fit:cover; margin-right:10px;">' +
+        '<div class="info"><div class="n">' + esc(pub.titulo) + '</div>' +
+        '<div class="d">' + plata(pub.precio) + ' - Stock en ML: ' + pub.stock + (pub.tieneVariantes ? ' - Tiene variantes (todavia no soportado)' : '') + '</div></div>' +
+        (vinculado
+          ? '<div style="display:flex; align-items:center; gap:8px;"><span class="hint ok" style="margin:0;">Vinculado a ' + esc(vinculado.nombre) + '</span>' +
+            '<button class="x" title="Desvincular" onclick="desvincularMl(\'' + pub.id + '\')">&#10005;</button></div>'
+          : '<div style="display:flex; align-items:center; gap:6px;">' +
+            '<select id="sel_' + pub.id + '" style="width:160px;"><option value="">Elegi un producto...</option>' + opcionesProductos + '</select>' +
+            '<button class="x" title="Vincular" onclick="vincularMl(\'' + pub.id + '\')">&#10003;</button></div>') +
+        '</div>';
+    }).join('');
+  } catch (e) {
+    $('listaPublicacionesMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+async function vincularMl(mlItemId) {
+  const sel = $('sel_' + mlItemId);
+  if (!sel.value) { avisar('Elegi un producto primero', true); return; }
+  try {
+    await api('POST', '/mercadolibre/vincular', { productoId: sel.value, mlItemId: mlItemId });
+    avisar('Vinculado');
+    await cargarPublicacionesMl();
+  } catch (e) { avisar(e.message, true); }
+}
+
+async function desvincularMl(mlItemId) {
+  const vinculado = productos.filter(function (p) { return p.ml_item_id === mlItemId; })[0];
+  if (!vinculado) return;
+  try {
+    await api('POST', '/mercadolibre/desvincular', { productoId: vinculado.id });
+    avisar('Desvinculado');
+    await cargarProductos();
+    await cargarPublicacionesMl();
+  } catch (e) { avisar(e.message, true); }
 }
 
 $('btnConectarMl').onclick = async function () {

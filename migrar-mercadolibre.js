@@ -15,4 +15,6 @@ db.exec(`
   );
 `);
 
-console.log('Tabla mercadolibre_conexion lista.');
+try { db.exec('ALTER TABLE productos ADD COLUMN ml_item_id TEXT;'); } catch (e) {}
+
+console.log('Tabla mercadolibre_conexion y columna ml_item_id listas.');
