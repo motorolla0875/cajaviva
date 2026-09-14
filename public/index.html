@@ -2326,7 +2326,7 @@
         </div>
 
         <div id="mlPanelVincular">
-          <p class="hint" style="margin:12px 0;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
+          <p class="hint" style="margin:12px 0;">Elegí qué producto de CajaViva es cada publicación, para que el stock se mantenga sincronizado.</p>
           <input type="text" id="buscarMl" placeholder="Buscar publicacion..." autocomplete="off" style="display:none;">
           <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
         </div>
@@ -2336,7 +2336,7 @@
         </div>
 
         <div id="mlPanelReportes" style="display:none;">
-          <p class="hint" style="margin:12px 0;">Estos datos son solo de tus ventas por MercadoLibre. Para ver todo tu negocio junto, anda a la pestana Reportes.</p>
+          <p class="hint" style="margin:12px 0;">Estos datos son solo de tus ventas por MercadoLibre. Para ver todo tu negocio junto, andá a la pestaña Reportes.</p>
           <div class="periodos" id="mlRepPeriodos">
             <button data-dias="7">7 dias</button>
             <button data-dias="30" class="on">30 dias</button>
@@ -8696,7 +8696,7 @@ async function cargarVentasMl() {
   try {
     const r = await api('GET', '/mercadolibre/ventas');
     if (r.porProducto.length === 0) {
-      $('resumenVentasMl').innerHTML = '<div class="vacio">Todavia no tenes ventas de MercadoLibre.</div>';
+      $('resumenVentasMl').innerHTML = '<div class="vacio">Todavía no tenés ventas de MercadoLibre.</div>';
       return;
     }
     let html = '<div class="mov" style="background:var(--panel-2);">' +
@@ -8707,7 +8707,7 @@ async function cargarVentasMl() {
         (p.foto ? '<img src="' + p.foto + '" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:10px;" loading="lazy">' : '') +
         '<div class="info">' +
         '<div class="n">' + esc(p.nombre) + '</div>' +
-        '<div class="d">Se vendio ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
+        '<div class="d">Se vendió ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
         '</div><div class="monto">' + plata(p.total) + '</div></div>';
     }).join('');
 
@@ -8894,7 +8894,7 @@ async function cargarPublicacionesMl() {
   try {
     const r = await api('GET', '/mercadolibre/publicaciones');
     if (r.publicaciones.length === 0) {
-      $('listaPublicacionesMl').innerHTML = '<div class="vacio">No tenes publicaciones activas en MercadoLibre.</div>';
+      $('listaPublicacionesMl').innerHTML = '<div class="vacio">No tenés publicaciones activas en MercadoLibre.</div>';
       return;
     }
     window._publicacionesMl = r.publicaciones;
@@ -8903,7 +8903,7 @@ async function cargarPublicacionesMl() {
       const vinculado = productos.filter(function (p) { return p.id === pub.productoVinculado; })[0];
       return '<div class="mov"><img src="' + esc(pub.foto) + '" style="width:44px; height:44px; border-radius:8px; object-fit:cover; margin-right:10px;">' +
         '<div class="info"><div class="n">' + esc(pub.titulo) + '</div>' +
-        '<div class="d">' + plata(pub.precio) + ' - Stock en ML: ' + pub.stock + (pub.tieneVariantes ? ' - Tiene variantes (todavia no soportado)' : '') + '</div></div>' +
+        '<div class="d">' + plata(pub.precio) + ' - Stock en ML: ' + pub.stock + (pub.tieneVariantes ? ' - Tiene variantes (todavía no soportado)' : '') + '</div></div>' +
         (vinculado
           ? '<div style="display:flex; align-items:center; gap:8px;"><span class="hint ok" style="margin:0;">Vinculado a ' + esc(vinculado.nombre) + '</span>' +
             '<button class="x" title="Desvincular" onclick="desvincularMl(\'' + pub.id + '\')">&#10005;</button></div>'
