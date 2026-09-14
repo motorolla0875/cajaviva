@@ -17,7 +17,7 @@ async function main() {
     console.log('No se pudo traer la lista de categorias. Respuesta:', JSON.stringify(nivel));
     return;
   }
-  let actual = nivel.find((cat) => /^otr/i.test(cat.name)) || nivel[0];
+  let actual = nivel.find((cat) => cat.id === 'MLA3025') || nivel[0]; // Libros, Revistas y Comics - rama simple, sin requisitos raros
   console.log('\nCategorias de primer nivel disponibles:');
   nivel.forEach((cat) => console.log(' -', cat.id, cat.name));
   console.log('\nBuscando en:', actual.id, actual.name);
