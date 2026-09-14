@@ -2327,6 +2327,7 @@
 
         <div id="mlPanelVincular">
           <p class="hint" style="margin:12px 0;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
+          <input type="text" id="buscarMl" placeholder="Buscar publicacion..." autocomplete="off" style="display:none;">
           <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
         </div>
 
@@ -8877,10 +8878,22 @@ async function cargarPublicacionesMl() {
           : '<button class="btn-sec" style="width:auto; padding:8px 16px;" onclick="abrirVincularMl(\'' + pub.id + '\')">Vincular</button>') +
         '</div>';
     }).join('');
+    filtrarPublicacionesMl();
   } catch (e) {
     $('listaPublicacionesMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
 }
+
+function filtrarPublicacionesMl() {
+  const t = norm($('buscarMl').value.trim());
+  document.querySelectorAll('#listaPublicacionesMl .mov').forEach(function (el, i) {
+    if (!t) { el.style.display = ''; return; }
+    const pub = (window._publicacionesMl || [])[i];
+    if (!pub) { el.style.display = ''; return; }
+    el.style.display = norm(pub.titulo).indexOf(t) >= 0 ? '' : 'none';
+  });
+}
+$('buscarMl').addEventListener('input', filtrarPublicacionesMl);
 
 let mlItemIdAVincular = null;
 let categoriaVincularActiva = null;
@@ -13544,7 +13557,8 @@ function campoDeBusqueda() {
     'v-reportes': 'buscarRep',
     'v-reservas': 'buscarReservas',
     'v-canchas': 'buscarCanchas',
-    'v-agenda': 'buscarAgenda'
+    'v-agenda': 'buscarAgenda',
+    'v-mercadolibre': 'buscarMl'
   };
 
   const id = mapa[v.id];
