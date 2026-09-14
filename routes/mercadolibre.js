@@ -269,8 +269,39 @@ router.post('/webhook', (req, res) => {
 });
 
 async function procesarNotificacion(payload) {
-  if (!payload || payload.topic !== 'orders_v2') return; // por ahora solo nos interesan las ventas
+  if (!payload) return;
+  if (payload.topic === 'orders_v2') return procesarOrden(payload);
+  if (payload.topic === 'items') return procesarCambioItem(payload);
+}
 
+async function procesarCambioItem(payload) {
+  const conexion = db.prepare('SELECT user_id FROM mercadolibre_conexion WHERE ml_user_id = ?').get(String(payload.user_id));
+  if (!conexion) return;
+  const userId = conexion.user_id;
+
+  const itemId = String(payload.resource || '').split('/').pop();
+  if (!itemId) return;
+
+  const prod = db.prepare('SELECT id, stock FROM productos WHERE user_id = ? AND ml_item_id = ?').get(userId, itemId);
+  if (!prod) return; // esta publicacion no esta vinculada a ningun producto nuestro
+
+  const token = await obtenerTokenValido(userId);
+  if (!token) return;
+
+  const r = await fetch('https://api.mercadolibre.com/items/' + itemId + '?attributes=available_quantity', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  const item = await r.json();
+  if (!r.ok || item.available_quantity == null) return;
+
+  if (item.available_quantity !== prod.stock) {
+    db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(item.available_quantity, prod.id);
+    if (db.avisar) db.avisar(userId, 'productos');
+    console.log('Stock actualizado desde MercadoLibre para', prod.id, '->', item.available_quantity);
+  }
+}
+
+async function procesarOrden(payload) {
   const conexion = db.prepare('SELECT user_id FROM mercadolibre_conexion WHERE ml_user_id = ?').get(String(payload.user_id));
   if (!conexion) return; // no es de ningun comerciante nuestro
   const userId = conexion.user_id;

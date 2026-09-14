@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const mercadolibre = require('./mercadolibre');
 
 const router = express.Router();
 
@@ -193,6 +194,7 @@ router.post('/:id/reponer', (req, res) => {
   }
 
   if (db.avisar) db.avisar(req.userId, 'productos');
+  mercadolibre.actualizarStockMl(req.userId, prod.id, prod.stock + cantidad).catch(function () {});
   res.json({ ok: true, stock: prod.stock + cantidad });
 });
 
@@ -209,6 +211,7 @@ router.post('/:id/quitar', (req, res) => {
     .run(cantidad, prod.id);
 
   if (db.avisar) db.avisar(req.userId, 'productos');
+  mercadolibre.actualizarStockMl(req.userId, prod.id, prod.stock - cantidad).catch(function () {});
   res.json({ ok: true, stock: prod.stock - cantidad });
 });
 
