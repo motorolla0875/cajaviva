@@ -2822,6 +2822,17 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalVincularMl">
+  <div class="modal">
+    <h3>Vincular publicación</h3>
+    <p class="hint" id="tituloPublicacionVincular" style="margin-top:0;"></p>
+    <input type="text" id="buscarProductoVincular" placeholder="Buscar producto..." style="margin-bottom:10px;">
+    <div class="chips" id="categoriasVincularMl" style="margin-bottom:10px; flex-wrap:wrap;"></div>
+    <div id="listaProductosVincular" style="max-height:340px; overflow-y:auto;"></div>
+    <button class="btn-sec" id="btnCerrarVincularMl">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalProd">
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
@@ -8829,9 +8840,7 @@ async function cargarPublicacionesMl() {
       $('listaPublicacionesMl').innerHTML = '<div class="vacio">No tenes publicaciones activas en MercadoLibre.</div>';
       return;
     }
-    const opcionesProductos = productos.map(function (p) {
-      return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>';
-    }).join('');
+    window._publicacionesMl = r.publicaciones;
 
     $('listaPublicacionesMl').innerHTML = r.publicaciones.map(function (pub) {
       const vinculado = productos.filter(function (p) { return p.id === pub.productoVinculado; })[0];
@@ -8841,9 +8850,7 @@ async function cargarPublicacionesMl() {
         (vinculado
           ? '<div style="display:flex; align-items:center; gap:8px;"><span class="hint ok" style="margin:0;">Vinculado a ' + esc(vinculado.nombre) + '</span>' +
             '<button class="x" title="Desvincular" onclick="desvincularMl(\'' + pub.id + '\')">&#10005;</button></div>'
-          : '<div style="display:flex; align-items:center; gap:6px;">' +
-            '<select id="sel_' + pub.id + '" style="width:160px;"><option value="">Elegi un producto...</option>' + opcionesProductos + '</select>' +
-            '<button class="x" title="Vincular" onclick="vincularMl(\'' + pub.id + '\')">&#10003;</button></div>') +
+          : '<button class="btn-sec" style="width:auto; padding:8px 16px;" onclick="abrirVincularMl(\'' + pub.id + '\')">Vincular</button>') +
         '</div>';
     }).join('');
   } catch (e) {
@@ -8851,12 +8858,61 @@ async function cargarPublicacionesMl() {
   }
 }
 
-async function vincularMl(mlItemId) {
-  const sel = $('sel_' + mlItemId);
-  if (!sel.value) { avisar('Elegi un producto primero', true); return; }
+let mlItemIdAVincular = null;
+let categoriaVincularActiva = null;
+
+function abrirVincularMl(mlItemId) {
+  mlItemIdAVincular = mlItemId;
+  const pub = (window._publicacionesMl || []).filter(function (p) { return p.id === mlItemId; })[0];
+  $('tituloPublicacionVincular').textContent = pub ? pub.titulo : '';
+  $('buscarProductoVincular').value = '';
+  categoriaVincularActiva = null;
+  pintarCategoriasVincular();
+  pintarListaVincular();
+  $('modalVincularMl').classList.add('on');
+}
+
+$('btnCerrarVincularMl').onclick = function () { $('modalVincularMl').classList.remove('on'); };
+
+function pintarCategoriasVincular() {
+  const html = '<button class="' + (categoriaVincularActiva === null ? 'on' : '') + '" onclick="filtrarCategoriaVincular(null)">Todos</button>' +
+    categorias.map(function (c) {
+      return '<button class="' + (categoriaVincularActiva === c.id ? 'on' : '') + '" onclick="filtrarCategoriaVincular(\'' + c.id + '\')">' + esc(c.nombre) + '</button>';
+    }).join('');
+  $('categoriasVincularMl').innerHTML = html;
+}
+
+function filtrarCategoriaVincular(catId) {
+  categoriaVincularActiva = catId;
+  pintarCategoriasVincular();
+  pintarListaVincular();
+}
+
+function pintarListaVincular() {
+  const texto = norm($('buscarProductoVincular').value.trim());
+  let lista = productos;
+  if (categoriaVincularActiva) lista = lista.filter(function (p) { return p.categoria_id === categoriaVincularActiva; });
+  if (texto) lista = lista.filter(function (p) { return norm(p.nombre).indexOf(texto) >= 0; });
+
+  if (lista.length === 0) {
+    $('listaProductosVincular').innerHTML = '<div class="vacio">No se encontraron productos.</div>';
+    return;
+  }
+  $('listaProductosVincular').innerHTML = lista.map(function (p) {
+    return '<div class="mov" style="cursor:pointer;" onclick="elegirProductoVincular(\'' + p.id + '\')">' +
+      '<div class="info"><div class="n">' + esc(p.nombre) + '</div>' +
+      '<div class="d">' + plata(p.precio_venta) + (p.categoria_nombre ? ' - ' + esc(p.categoria_nombre) : '') + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+$('buscarProductoVincular').addEventListener('input', pintarListaVincular);
+
+async function elegirProductoVincular(productoId) {
   try {
-    await api('POST', '/mercadolibre/vincular', { productoId: sel.value, mlItemId: mlItemId });
+    await api('POST', '/mercadolibre/vincular', { productoId: productoId, mlItemId: mlItemIdAVincular });
     avisar('Vinculado');
+    $('modalVincularMl').classList.remove('on');
     await cargarPublicacionesMl();
   } catch (e) { avisar(e.message, true); }
 }
