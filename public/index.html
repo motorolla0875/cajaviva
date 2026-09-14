@@ -8695,23 +8695,11 @@ async function cargarVentasMl() {
   $('resumenVentasMl').innerHTML = '<div class="vacio">Cargando...</div>';
   try {
     const r = await api('GET', '/mercadolibre/ventas');
-    if (r.porProducto.length === 0) {
+    if (r.ventas.length === 0) {
       $('resumenVentasMl').innerHTML = '<div class="vacio">Todavía no tenés ventas de MercadoLibre.</div>';
       return;
     }
-    let html = '<div class="mov" style="background:var(--panel-2);">' +
-      '<div class="info"><div class="n">Total: ' + r.totalPedidos + ' pedido' + (r.totalPedidos === 1 ? '' : 's') + '</div></div>' +
-      '<div class="monto">' + plata(r.totalVendido) + '</div></div>';
-    html += r.porProducto.map(function (p) {
-      return '<div class="mov">' +
-        (p.foto ? '<img src="' + p.foto + '" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:10px;" loading="lazy">' : '') +
-        '<div class="info">' +
-        '<div class="n">' + esc(p.nombre) + '</div>' +
-        '<div class="d">Se vendió ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
-        '</div><div class="monto">' + plata(p.total) + '</div></div>';
-    }).join('');
-
-    html += '<div class="seccion" style="margin-top:16px;">Detalle de pedidos</div>';
+    let html = '<div class="seccion">Detalle de pedidos</div>';
     const ETIQUETAS_ENVIO = { pending: 'Envio pendiente', handling: 'Preparando envio', ready_to_ship: 'Listo para despachar', shipped: 'Despachado', delivered: 'Entregado', not_delivered: 'No entregado', cancelled: 'Envio cancelado' };
     html += r.ventas.map(function (v, i) {
       const primeraFoto = (v.items.filter(function (i) { return i.foto_mini || i.foto_url; })[0] || {});
