@@ -44,6 +44,7 @@ async function main() {
   // 3) creamos la publicacion
   const body = {
     title: 'Item de Prueba - Por favor, NO OFERTAR',
+    family_name: 'Item de Prueba',
     category_id: categoryId,
     price: 3500,
     currency_id: 'ARS',
