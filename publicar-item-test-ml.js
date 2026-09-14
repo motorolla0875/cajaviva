@@ -9,7 +9,12 @@ async function main() {
 
   // 1) buscamos "Otras categorias" recorriendo el arbol, hasta llegar a una hoja (sin hijos)
   let categoryId = null;
-  let nivel = await (await fetch('https://api.mercadolibre.com/sites/MLA/categories')).json();
+  const rNivel = await fetch('https://api.mercadolibre.com/sites/MLA/categories');
+  let nivel = await rNivel.json();
+  if (!Array.isArray(nivel)) {
+    console.log('No se pudo traer la lista de categorias. Respuesta:', JSON.stringify(nivel));
+    return;
+  }
   let actual = nivel.find((cat) => /otra/i.test(cat.name)) || nivel[0];
   for (let vueltas = 0; vueltas < 6; vueltas++) {
     const info = await (await fetch('https://api.mercadolibre.com/categories/' + actual.id)).json();
