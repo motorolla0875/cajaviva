@@ -90,7 +90,7 @@ router.get('/ventas', (req, res) => {
 
   // el detalle de cada pedido, para poder tocarlo y ver el mismo detalle que en Caja
   const ventas = db.prepare(`
-    SELECT id, fecha, created_at, total FROM ventas
+    SELECT id, fecha, created_at, total, ml_comprador, ml_envio_estado FROM ventas
     WHERE user_id = ? AND medio_pago = 'mercadolibre'
     ORDER BY created_at DESC LIMIT 200
   `).all(req.userId);
@@ -347,11 +347,26 @@ async function procesarOrden(payload) {
   const ventaId = uuidv4();
   const fechaVenta = new Date().toISOString().slice(0, 10);
 
+  // nombre del comprador y estado del envio, si vienen en la orden
+  const comprador = orden.buyer
+    ? ((orden.buyer.first_name || '') + ' ' + (orden.buyer.last_name || '')).trim() || orden.buyer.nickname || null
+    : null;
+  let envioEstado = null;
+  if (orden.shipping && orden.shipping.id) {
+    try {
+      const rEnvio = await fetch('https://api.mercadolibre.com/shipments/' + orden.shipping.id, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const envio = await rEnvio.json();
+      if (rEnvio.ok) envioEstado = envio.status;
+    } catch (e) {}
+  }
+
   db.prepare(`
     INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
-      costo_total, medio_pago, monto_pagado, descuento_pct, notas, ml_order_id)
-    VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, 'mercadolibre', ?, 0, ?, ?)
-  `).run(ventaId, userId, fechaVenta, total, costoTotal, total, 'Venta MercadoLibre #' + orden.id, String(orden.id));
+      costo_total, medio_pago, monto_pagado, descuento_pct, notas, ml_order_id, ml_comprador, ml_envio_estado)
+    VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, 'mercadolibre', ?, 0, ?, ?, ?, ?)
+  `).run(ventaId, userId, fechaVenta, total, costoTotal, total, 'Venta MercadoLibre #' + orden.id, String(orden.id), comprador, envioEstado);
 
   for (const l of lineas) {
     db.prepare(`
@@ -369,6 +384,7 @@ async function procesarOrden(payload) {
     db.avisar(userId, 'venta_mercadolibre', {
       items: lineas.map(function (l) { return { nombre: l.prod.nombre, cantidad: l.cantidad }; }),
       total: total,
+      comprador: comprador,
       ordenId: String(orden.id)
     });
   }
