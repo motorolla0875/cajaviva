@@ -122,9 +122,8 @@ router.get('/reportes', (req, res) => {
       ), 0) AS vendidoUltimoMes
     FROM productos p
     WHERE p.user_id = ? AND p.ml_item_id IS NOT NULL AND p.activo = 1
-    HAVING vendidoUltimoMes > 0
     ORDER BY vendidoUltimoMes DESC, p.stock ASC
-  `).all(req.userId).filter((p) => p.stock <= Math.max(3, p.vendidoUltimoMes));
+  `).all(req.userId).filter((p) => p.vendidoUltimoMes > 0 && p.stock <= Math.max(3, p.vendidoUltimoMes));
 
   // vinculados a MercadoLibre que nunca tuvieron ninguna venta por ese canal
   const noSeVende = db.prepare(`
