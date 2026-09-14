@@ -2315,12 +2315,25 @@
         <p class="hint ok" style="margin-top:0;">Conectado como <b id="mlNickname"></b>.</p>
         <button type="button" class="btn-sec" id="btnDesconectarMl">Desconectar</button>
 
-        <div class="seccion" style="margin-top:20px;">Vincular publicaciones</div>
-        <p class="hint" style="margin:0 0 12px;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
-        <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
+        <div class="chips" id="tabsMl" style="margin-top:16px;">
+          <button class="on" data-modoml="vincular">Vincular publicaciones</button>
+          <button data-modoml="ventas">Mis ventas</button>
+          <button data-modoml="reportes">Reportes MercadoLibre</button>
+        </div>
 
-        <div class="seccion" style="margin-top:20px;">Mis ventas de MercadoLibre</div>
-        <div id="resumenVentasMl"><div class="vacio">Cargando...</div></div>
+        <div id="mlPanelVincular">
+          <p class="hint" style="margin:12px 0;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
+          <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
+        </div>
+
+        <div id="mlPanelVentas" style="display:none;">
+          <div id="resumenVentasMl" style="margin-top:12px;"><div class="vacio">Cargando...</div></div>
+        </div>
+
+        <div id="mlPanelReportes" style="display:none;">
+          <p class="hint" style="margin:12px 0;">Estos datos son solo de tus ventas por MercadoLibre. Para ver todo tu negocio junto, anda a la pestana Reportes.</p>
+          <div id="reportesMl"><div class="vacio">Cargando...</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -8604,6 +8617,17 @@ async function cargarEstadoMl() {
   } catch (err) {}
 }
 
+$('tabsMl').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  Array.prototype.forEach.call($('tabsMl').children, function (x) { x.classList.toggle('on', x === b); });
+  const modo = b.dataset.modoml;
+  $('mlPanelVincular').style.display = modo === 'vincular' ? 'block' : 'none';
+  $('mlPanelVentas').style.display = modo === 'ventas' ? 'block' : 'none';
+  $('mlPanelReportes').style.display = modo === 'reportes' ? 'block' : 'none';
+  if (modo === 'reportes') cargarReportesMl();
+});
+
 async function cargarVentasMl() {
   $('resumenVentasMl').innerHTML = '<div class="vacio">Cargando...</div>';
   try {
@@ -8624,6 +8648,60 @@ async function cargarVentasMl() {
     $('resumenVentasMl').innerHTML = html;
   } catch (e) {
     $('resumenVentasMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
+}
+
+async function cargarReportesMl() {
+  $('reportesMl').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const r = await api('GET', '/mercadolibre/reportes');
+    let html = '';
+
+    html += '<div class="seccion">Tendencia (ultimos 30 dias)</div>';
+    if (r.tendencia.length === 0) {
+      html += '<div class="vacio">Todavia no hay ventas para mostrar tendencia.</div>';
+    } else {
+      html += r.tendencia.map(function (t) {
+        return '<div class="mov"><div class="info"><div class="n">' + fechaCorta(t.fecha) + '</div>' +
+          '<div class="d">' + t.pedidos + ' pedido' + (t.pedidos === 1 ? '' : 's') + '</div></div>' +
+          '<div class="monto">' + plata(t.total) + '</div></div>';
+      }).join('');
+    }
+
+    html += '<div class="seccion" style="margin-top:16px;">Lo mas vendido</div>';
+    if (r.masVendido.length === 0) {
+      html += '<div class="vacio">Sin datos todavia.</div>';
+    } else {
+      html += r.masVendido.map(function (m, i) {
+        return '<div class="mov"><div class="info"><div class="n">' + (i + 1) + '. ' + esc(m.nombre) + '</div></div>' +
+          '<div class="monto">' + fmtCant(m.cantidad) + ' u.</div></div>';
+      }).join('');
+    }
+
+    html += '<div class="seccion" style="margin-top:16px;">Que comprar (se vende pero queda poco)</div>';
+    if (r.queComprar.length === 0) {
+      html += '<div class="vacio">Nada urgente por ahora.</div>';
+    } else {
+      html += r.queComprar.map(function (q) {
+        return '<div class="mov"><div class="info"><div class="n">' + esc(q.nombre) + '</div>' +
+          '<div class="d">Vendiste ' + fmtCant(q.vendidoUltimoMes) + ' este mes</div></div>' +
+          '<div class="monto" style="color:var(--danger);">Quedan ' + fmtCant(q.stock) + '</div></div>';
+      }).join('');
+    }
+
+    html += '<div class="seccion" style="margin-top:16px;">Vinculados que no se venden</div>';
+    if (r.noSeVende.length === 0) {
+      html += '<div class="vacio">Todos tus productos vinculados tuvieron alguna venta.</div>';
+    } else {
+      html += r.noSeVende.map(function (n) {
+        return '<div class="mov"><div class="info"><div class="n">' + esc(n.nombre) + '</div>' +
+          '<div class="d">Sin ninguna venta por MercadoLibre todavia</div></div></div>';
+      }).join('');
+    }
+
+    $('reportesMl').innerHTML = html;
+  } catch (e) {
+    $('reportesMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
 }
 

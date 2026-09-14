@@ -95,6 +95,51 @@ router.get('/ventas', (req, res) => {
   });
 });
 
+// ── reportes: tendencia, lo mas vendido, que comprar, que no se vende - todo solo de MercadoLibre ──
+router.get('/reportes', (req, res) => {
+  const tendencia = db.prepare(`
+    SELECT fecha, COUNT(*) AS pedidos, SUM(total) AS total
+    FROM ventas
+    WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= date('now', '-30 days')
+    GROUP BY fecha ORDER BY fecha ASC
+  `).all(req.userId);
+
+  const masVendido = db.prepare(`
+    SELECT vi.nombre, SUM(vi.cantidad) AS cantidad
+    FROM venta_items vi
+    JOIN ventas v ON v.id = vi.venta_id
+    WHERE v.user_id = ? AND v.medio_pago = 'mercadolibre'
+    GROUP BY vi.nombre ORDER BY cantidad DESC LIMIT 8
+  `).all(req.userId);
+
+  // vinculados a MercadoLibre, con ventas recientes (ultimos 30 dias) y poco stock
+  const queComprar = db.prepare(`
+    SELECT p.nombre, p.stock,
+      COALESCE((
+        SELECT SUM(vi.cantidad) FROM venta_items vi
+        JOIN ventas v ON v.id = vi.venta_id
+        WHERE v.medio_pago = 'mercadolibre' AND vi.producto_id = p.id AND v.fecha >= date('now', '-30 days')
+      ), 0) AS vendidoUltimoMes
+    FROM productos p
+    WHERE p.user_id = ? AND p.ml_item_id IS NOT NULL AND p.activo = 1
+    HAVING vendidoUltimoMes > 0
+    ORDER BY vendidoUltimoMes DESC, p.stock ASC
+  `).all(req.userId).filter((p) => p.stock <= Math.max(3, p.vendidoUltimoMes));
+
+  // vinculados a MercadoLibre que nunca tuvieron ninguna venta por ese canal
+  const noSeVende = db.prepare(`
+    SELECT p.nombre, p.stock FROM productos p
+    WHERE p.user_id = ? AND p.ml_item_id IS NOT NULL AND p.activo = 1
+      AND p.id NOT IN (
+        SELECT vi.producto_id FROM venta_items vi
+        JOIN ventas v ON v.id = vi.venta_id
+        WHERE v.medio_pago = 'mercadolibre' AND vi.producto_id IS NOT NULL
+      )
+  `).all(req.userId);
+
+  res.json({ tendencia, masVendido, queComprar, noSeVende });
+});
+
 // ── trae las publicaciones activas del vendedor, para elegir cual vincular a que producto ──
 router.get('/publicaciones', async (req, res) => {
   try {
