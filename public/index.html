@@ -1757,6 +1757,22 @@
   .aviso.ver { opacity: 1; }
   .aviso.err { background: var(--danger); }
 
+  .alerta-ml {
+    position: fixed; top: 20px; right: 20px; max-width: 320px;
+    background: var(--panel); border: 1px solid var(--accent); border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    opacity: 0; pointer-events: none; transform: translateY(-12px);
+    transition: opacity .25s, transform .25s; z-index: 500;
+  }
+  .alerta-ml.ver { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .alerta-ml .titulo { font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 8px; padding-right: 20px; }
+  .alerta-ml .items { font-size: 13.5px; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+  .alerta-ml .nota { font-size: 12px; color: var(--accent-dark); }
+  .alerta-ml .cerrar {
+    position: absolute; top: 10px; right: 12px; background: none; border: none;
+    color: var(--muted); font-size: 13px; cursor: pointer; padding: 4px;
+  }
+
   @media (max-width: 900px) {
     .vista.on { flex-direction: column; }
     .der {
@@ -3872,6 +3888,12 @@
 </div>
 
 <div class="aviso" id="aviso"></div>
+<div id="alertaVentaMl" class="alerta-ml">
+  <button type="button" id="btnCerrarAlertaMl" class="cerrar">&#10005;</button>
+  <div class="titulo">&#128230; ¡Vendiste por MercadoLibre!</div>
+  <div id="alertaMlItems" class="items"></div>
+  <div class="nota">El stock ya se descontó solo en CajaViva y en MercadoLibre.</div>
+</div>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -5098,6 +5120,7 @@ function conectarTiempoReal() {
         const d = JSON.parse(ev.data);
         if (d.tipo === 'productos') cargarProductos();
         if (d.tipo === 'pedidos') revisarPedidos(true);
+        if (d.tipo === 'venta_mercadolibre') mostrarAlertaVentaMl(d.datos);
       } catch (e) {}
     };
     socketVivo.onclose = function () { setTimeout(conectarTiempoReal, 4000); };
@@ -5318,7 +5341,11 @@ document.querySelectorAll('nav button').forEach(function (b) {
     acomodarBuscadorGlobal();
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
     if (b.dataset.vista === 'tienda') cargarVistaTienda();
-    if (b.dataset.vista === 'mercadolibre') cargarEstadoMl();
+    if (b.dataset.vista === 'mercadolibre') {
+      cargarEstadoMl();
+      contadorVentasMl = 0;
+      pintarContadorMl();
+    }
     if (b.dataset.vista === 'mesas') cargarMesas();
     if (b.dataset.vista === 'vender' && window.innerWidth >= 900) setTimeout(function () { $('buscar').focus(); }, 50);
   };
@@ -9348,6 +9375,37 @@ function sonidoPedido() {
   pitido(880, 0.12);
   setTimeout(function () { pitido(1320, 0.16); }, 130);
 }
+
+let contadorVentasMl = 0;
+let temporizadorAlertaMl = null;
+
+function pintarContadorMl() {
+  const b = document.getElementById('tabMercadolibre');
+  if (!b) return;
+  b.innerHTML = 'MercadoLibre' + (contadorVentasMl > 0 ? '<span class="contador">' + contadorVentasMl + '</span>' : '');
+}
+
+function mostrarAlertaVentaMl(datos) {
+  if (!datos) return;
+  sonidoPedido();
+  vibrar([60, 40, 60]);
+  contadorVentasMl++;
+  pintarContadorMl();
+
+  const detalle = (datos.items || []).map(function (i) {
+    return fmtCant(i.cantidad) + ' x ' + esc(i.nombre);
+  }).join('<br>');
+  $('alertaMlItems').innerHTML = detalle + '<br><b>' + plata(datos.total) + '</b>';
+
+  $('alertaVentaMl').classList.add('ver');
+  if (temporizadorAlertaMl) clearTimeout(temporizadorAlertaMl);
+  temporizadorAlertaMl = setTimeout(function () { $('alertaVentaMl').classList.remove('ver'); }, 9000);
+}
+
+$('btnCerrarAlertaMl').onclick = function () {
+  $('alertaVentaMl').classList.remove('ver');
+  if (temporizadorAlertaMl) clearTimeout(temporizadorAlertaMl);
+};
 
 setInterval(function () { revisarPedidos(true); }, 20000);
 

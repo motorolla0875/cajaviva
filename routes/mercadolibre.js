@@ -203,7 +203,14 @@ async function procesarNotificacion(payload) {
     }
   }
 
-  if (db.avisar) db.avisar(userId, 'productos');
+  if (db.avisar) {
+    db.avisar(userId, 'productos');
+    db.avisar(userId, 'venta_mercadolibre', {
+      items: lineas.map(function (l) { return { nombre: l.prod.nombre, cantidad: l.cantidad }; }),
+      total: total,
+      ordenId: String(orden.id)
+    });
+  }
   console.log('Venta creada desde MercadoLibre:', ventaId, '- orden', orden.id);
   if (huboSinVincular) console.log('Aviso: la orden', orden.id, 'tenia productos sin vincular, se omitieron de la venta.');
 }

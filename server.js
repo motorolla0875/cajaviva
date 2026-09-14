@@ -162,11 +162,12 @@ wss.on('connection', function (ws, req) {
 });
 
 // cualquier ruta puede llamar a db.avisar(userId, 'productos') para avisarle
-// a todas las pantallas abiertas de ese negocio que algo cambio
-db.avisar = function (userId, tipo) {
+// a todas las pantallas abiertas de ese negocio que algo cambio. el tercer
+// parametro (opcional) manda datos extra, por ejemplo el detalle de una venta
+db.avisar = function (userId, tipo, datos) {
   const set = conexionesPorNegocio.get(userId);
   if (!set || set.size === 0) return;
-  const msg = JSON.stringify({ tipo: tipo });
+  const msg = JSON.stringify(datos ? { tipo: tipo, datos: datos } : { tipo: tipo });
   set.forEach(function (ws) {
     try { ws.send(msg); } catch (e) {}
   });
