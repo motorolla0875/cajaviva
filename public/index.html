@@ -5559,8 +5559,8 @@ function pintarGrilla() {
         : '<div class="s' + (sin ? ' cero' : (bajo ? ' bajo' : '')) + '">' +
           (sin ? 'Sin stock' + (p.stock < 0 ? ' (' + fmtCant(p.stock) + ')' : '') : fmtCant(p.stock) + (p.unidad === 'unidad' ? ' u.' : ' ' + p.unidad) + (bajo ? ' - queda poco' : '')) + '</div>') +
       '</div>' +
-      (p.ml_item_id ? '<img src="/img/mercadolibre-icon.png" alt="MercadoLibre" title="Vinculado a MercadoLibre" style="width:55px; height:auto; display:block; margin-bottom:3px;">' : '') +
-      '<div class="p">' + (precioEfectivo(p) !== p.precio_venta
+      (p.ml_item_id ? '<img src="/img/mercadolibre-icon.png" alt="MercadoLibre" title="Vinculado a MercadoLibre" style="width:55px; height:auto; display:block; margin:0 auto 3px auto;">' : '') +
+      '<div class="p"' + (p.ml_item_id ? ' style="text-align:center;"' : '') + '>' + (precioEfectivo(p) !== p.precio_venta
         ? '<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:4px;">' + plata(p.precio_venta) + '</span>' +
           '<span style="color:var(--accent-dark);">' + plata(precioEfectivo(p)) + '</span>'
         : plata(p.precio_venta)) + (p.unidad !== 'unidad' ? ' /' + p.unidad : '') + '</div>' +
