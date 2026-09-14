@@ -8711,11 +8711,11 @@ async function cargarVentasMl() {
 
     html += '<div class="seccion" style="margin-top:16px;">Detalle de pedidos</div>';
     const ETIQUETAS_ENVIO = { pending: 'Envio pendiente', handling: 'Preparando envio', ready_to_ship: 'Listo para despachar', shipped: 'Despachado', delivered: 'Entregado', not_delivered: 'No entregado', cancelled: 'Envio cancelado' };
-    html += r.ventas.map(function (v) {
+    html += r.ventas.map(function (v, i) {
       const primeraFoto = (v.items.filter(function (i) { return i.foto_mini || i.foto_url; })[0] || {});
       const foto = primeraFoto.foto_mini || primeraFoto.foto_url;
       const detalle = v.items.map(function (i) { return fmtCant(i.cantidad) + ' x ' + esc(i.nombre); }).join(', ');
-      const esNuevo = v.ml_order_id && pedidosMlNuevos.has(v.ml_order_id);
+      const esNuevo = i < 3;
       const extra = (v.ml_comprador ? esc(v.ml_comprador) : '') +
         (v.ml_comprador && v.ml_envio_estado ? ' - ' : '') +
         (v.ml_envio_estado ? (ETIQUETAS_ENVIO[v.ml_envio_estado] || esc(v.ml_envio_estado)) : '');
@@ -8752,7 +8752,6 @@ $('mlRepTabs').addEventListener('click', function (e) {
 });
 
 async function abrirPedidoMl(ventaId, ordenId) {
-  if (ordenId) pedidosMlNuevos.delete(ordenId);
   await verVenta(ventaId);
 }
 
@@ -9753,7 +9752,6 @@ function sonidoPedido() {
 
 let contadorVentasMl = 0;
 let temporizadorAlertaMl = null;
-let pedidosMlNuevos = new Set();
 
 function pintarContadorMl() {
   const b = document.getElementById('tabMercadolibre');
@@ -9767,7 +9765,6 @@ function mostrarAlertaVentaMl(datos) {
   vibrar([60, 40, 60]);
   contadorVentasMl++;
   pintarContadorMl();
-  if (datos.ordenId) pedidosMlNuevos.add(datos.ordenId);
 
   const detalle = (datos.items || []).map(function (i) {
     return fmtCant(i.cantidad) + ' x ' + esc(i.nombre);
