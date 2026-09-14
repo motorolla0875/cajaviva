@@ -7,12 +7,16 @@ async function main() {
   if (!c) { console.log('No hay ninguna cuenta de MercadoLibre conectada.'); return; }
   const token = c.access_token;
 
-  // 1) buscamos una categoria valida para el titulo (asi como lo hace la web)
-  const rCat = await fetch('https://api.mercadolibre.com/sites/MLA/domain_discovery/search?q=' + encodeURIComponent('producto generico'), {
-    headers: { Authorization: 'Bearer ' + token }
-  });
-  const categorias = await rCat.json();
-  const categoryId = (categorias && categorias[0] && categorias[0].category_id) || 'MLA1574';
+  // 1) buscamos "Otras categorias" recorriendo el arbol, hasta llegar a una hoja (sin hijos)
+  let categoryId = null;
+  let nivel = await (await fetch('https://api.mercadolibre.com/sites/MLA/categories')).json();
+  let actual = nivel.find((cat) => /otra/i.test(cat.name)) || nivel[0];
+  for (let vueltas = 0; vueltas < 6; vueltas++) {
+    const info = await (await fetch('https://api.mercadolibre.com/categories/' + actual.id)).json();
+    if (!info.children_categories || info.children_categories.length === 0) { categoryId = actual.id; break; }
+    actual = info.children_categories.find((cat) => /otra/i.test(cat.name)) || info.children_categories[0];
+  }
+  if (!categoryId) categoryId = actual.id;
 
   console.log('Usando categoria:', categoryId);
 
