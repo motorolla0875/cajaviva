@@ -520,10 +520,15 @@ async function actualizarStockMl(userId, productoId, nuevoStock) {
     const token = await obtenerTokenValido(userId);
     if (!token) return;
 
+    const cantidad = Math.max(0, Math.round(nuevoStock));
+    // si volvio a haber stock, tratamos de reactivar la publicacion por si MercadoLibre la habia
+    // pausado sola al llegar a 0 - si estaba pausada por otro motivo, MercadoLibre va a ignorar esto
+    const body = cantidad > 0 ? { available_quantity: cantidad, status: 'active' } : { available_quantity: cantidad };
+
     const r = await fetch('https://api.mercadolibre.com/items/' + prod.ml_item_id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ available_quantity: Math.max(0, Math.round(nuevoStock)) })
+      body: JSON.stringify(body)
     });
     if (!r.ok) {
       const d = await r.json().catch(() => ({}));
