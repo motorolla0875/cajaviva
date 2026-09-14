@@ -536,3 +536,53 @@ async function actualizarStockMl(userId, productoId, nuevoStock) {
 
 module.exports.manejarCallback = manejarCallback;
 module.exports.actualizarStockMl = actualizarStockMl;
+
+// ── revision periodica de respaldo: a veces el aviso de "items" no llega o se pierde,
+//    asi que cada 10 minutos comparamos el stock real de MercadoLibre contra el nuestro,
+//    para los productos vinculados, y corregimos si quedaron desincronizados ──
+async function revisarStockDeUnUsuario(userId) {
+  const productos = db.prepare("SELECT id, stock, ml_item_id FROM productos WHERE user_id = ? AND ml_item_id IS NOT NULL AND activo = 1").all(userId);
+  if (productos.length === 0) return;
+
+  const token = await obtenerTokenValido(userId);
+  if (!token) return;
+
+  for (let i = 0; i < productos.length; i += 20) {
+    const tanda = productos.slice(i, i + 20);
+    const ids = tanda.map((p) => p.ml_item_id).join(',');
+    const r = await fetch('https://api.mercadolibre.com/items?ids=' + ids + '&attributes=id,available_quantity', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const datos = await r.json();
+    if (!r.ok) { console.error('Revision periodica de stock ML: fallo consultar items -', JSON.stringify(datos)); continue; }
+
+    datos.forEach((d) => {
+      if (d.code !== 200) return;
+      const prod = tanda.find((p) => p.ml_item_id === d.body.id);
+      if (!prod) return;
+      if (d.body.available_quantity !== prod.stock) {
+        db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(d.body.available_quantity, prod.id);
+        if (db.avisar) db.avisar(userId, 'productos');
+        console.log('Revision periodica: corregido el stock de', prod.id, '->', d.body.available_quantity, '(el aviso en vivo no habia llegado)');
+      }
+    });
+  }
+}
+
+async function revisarStockDeTodasLasConexiones() {
+  const conexiones = db.prepare('SELECT user_id FROM mercadolibre_conexion').all();
+  for (const c of conexiones) {
+    try {
+      await revisarStockDeUnUsuario(c.user_id);
+    } catch (e) {
+      console.error('Error en la revision periodica de stock ML para', c.user_id, '-', e.message);
+    }
+  }
+}
+
+setTimeout(function () {
+  revisarStockDeTodasLasConexiones().catch(() => {});
+  setInterval(function () {
+    revisarStockDeTodasLasConexiones().catch(() => {});
+  }, 10 * 60 * 1000);
+}, 30 * 1000);
