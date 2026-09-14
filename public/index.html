@@ -8913,6 +8913,7 @@ async function elegirProductoVincular(productoId) {
     await api('POST', '/mercadolibre/vincular', { productoId: productoId, mlItemId: mlItemIdAVincular });
     avisar('Vinculado');
     $('modalVincularMl').classList.remove('on');
+    await cargarProductos();
     await cargarPublicacionesMl();
   } catch (e) { avisar(e.message, true); }
 }
