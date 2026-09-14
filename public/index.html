@@ -6818,7 +6818,8 @@ function pintarVentaDet() {
   const v = ventaAbierta;
   const medio = v.medio_pago === 'efectivo' ? 'Efectivo'
     : v.medio_pago === 'transferencia' ? 'Transferencia'
-    : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
+    : v.medio_pago === 'cuenta_corriente' ? 'Fiado'
+    : v.medio_pago === 'mercadolibre' ? 'MercadoLibre' : 'Parcial';
 
   $('subVentaDet').textContent = fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' - ' + medio +
     (v.cliente_nombre ? ' - ' + v.cliente_nombre : '') +
@@ -14647,7 +14648,8 @@ async function cargarCaja() {
         const detalle = v.items.map(function (i) { return fmtCant(i.cantidad) + ' x ' + i.nombre; }).join(', ');
         const medio = v.medio_pago === 'efectivo' ? 'Efectivo'
           : v.medio_pago === 'transferencia' ? 'Transferencia'
-          : v.medio_pago === 'cuenta_corriente' ? 'Fiado' : 'Parcial';
+          : v.medio_pago === 'cuenta_corriente' ? 'Fiado'
+    : v.medio_pago === 'mercadolibre' ? 'MercadoLibre' : 'Parcial';
         return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="verVenta(\'' + v.id + '\')">' +
           '<div class="n">' + esc(detalle) + '</div>' +
           '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + ' &middot; ' + medio +
