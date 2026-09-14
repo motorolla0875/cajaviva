@@ -75,9 +75,11 @@ router.get('/estado', (req, res) => {
 // ── resumen de ventas de MercadoLibre, agrupado por producto ──
 router.get('/ventas', (req, res) => {
   const filas = db.prepare(`
-    SELECT vi.nombre, SUM(vi.cantidad) AS cantidad, COUNT(DISTINCT v.id) AS pedidos, SUM(vi.cantidad * vi.precio_unitario) AS total
+    SELECT vi.nombre, SUM(vi.cantidad) AS cantidad, COUNT(DISTINCT v.id) AS pedidos, SUM(vi.cantidad * vi.precio_unitario) AS total,
+      MAX(p.foto_mini) AS foto_mini, MAX(p.foto_url) AS foto_url
     FROM venta_items vi
     JOIN ventas v ON v.id = vi.venta_id
+    LEFT JOIN productos p ON p.id = vi.producto_id
     WHERE v.user_id = ? AND v.medio_pago = 'mercadolibre'
     GROUP BY vi.nombre
     ORDER BY cantidad DESC
@@ -95,11 +97,15 @@ router.get('/ventas', (req, res) => {
     ORDER BY created_at DESC LIMIT 200
   `).all(req.userId);
   ventas.forEach((v) => {
-    v.items = db.prepare('SELECT nombre, cantidad FROM venta_items WHERE venta_id = ?').all(v.id);
+    v.items = db.prepare(`
+      SELECT vi.nombre, vi.cantidad, p.foto_mini, p.foto_url
+      FROM venta_items vi LEFT JOIN productos p ON p.id = vi.producto_id
+      WHERE vi.venta_id = ?
+    `).all(v.id);
   });
 
   res.json({
-    porProducto: filas.map((f) => ({ nombre: f.nombre, cantidad: f.cantidad, pedidos: f.pedidos, total: f.total })),
+    porProducto: filas.map((f) => ({ nombre: f.nombre, cantidad: f.cantidad, pedidos: f.pedidos, total: f.total, foto: f.foto_mini || f.foto_url })),
     totalPedidos: resumen.pedidos,
     totalVendido: resumen.total,
     ventas

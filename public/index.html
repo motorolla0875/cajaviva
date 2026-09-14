@@ -8701,7 +8701,9 @@ async function cargarVentasMl() {
       '<div class="info"><div class="n">Total: ' + r.totalPedidos + ' pedido' + (r.totalPedidos === 1 ? '' : 's') + '</div></div>' +
       '<div class="monto">' + plata(r.totalVendido) + '</div></div>';
     html += r.porProducto.map(function (p) {
-      return '<div class="mov"><div class="info">' +
+      return '<div class="mov">' +
+        (p.foto ? '<img src="' + p.foto + '" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:10px;" loading="lazy">' : '') +
+        '<div class="info">' +
         '<div class="n">' + esc(p.nombre) + '</div>' +
         '<div class="d">Se vendio ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
         '</div><div class="monto">' + plata(p.total) + '</div></div>';
@@ -8710,14 +8712,17 @@ async function cargarVentasMl() {
     html += '<div class="seccion" style="margin-top:16px;">Detalle de pedidos</div>';
     const ETIQUETAS_ENVIO = { pending: 'Envio pendiente', handling: 'Preparando envio', ready_to_ship: 'Listo para despachar', shipped: 'Despachado', delivered: 'Entregado', not_delivered: 'No entregado', cancelled: 'Envio cancelado' };
     html += r.ventas.map(function (v) {
+      const primeraFoto = (v.items.filter(function (i) { return i.foto_mini || i.foto_url; })[0] || {});
+      const foto = primeraFoto.foto_mini || primeraFoto.foto_url;
       const detalle = v.items.map(function (i) { return fmtCant(i.cantidad) + ' x ' + esc(i.nombre); }).join(', ');
       const esNuevo = v.ml_order_id && pedidosMlNuevos.has(v.ml_order_id);
       const extra = (v.ml_comprador ? esc(v.ml_comprador) : '') +
         (v.ml_comprador && v.ml_envio_estado ? ' - ' : '') +
         (v.ml_envio_estado ? (ETIQUETAS_ENVIO[v.ml_envio_estado] || esc(v.ml_envio_estado)) : '');
-      return '<div class="mov"><div class="info" style="cursor:pointer;" onclick="abrirPedidoMl(\'' + v.id + '\', \'' + (v.ml_order_id || '') + '\')">' +
-        '<div class="n">' + (esNuevo ? '<span class="contador" style="position:static; margin-right:6px;">Nuevo</span>' : '') + detalle + '</div>' +
-        '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + (extra ? ' - ' + extra : '') + '</div>' +
+      return '<div class="mov"><div class="info" style="cursor:pointer; display:flex; align-items:center;" onclick="abrirPedidoMl(\'' + v.id + '\', \'' + (v.ml_order_id || '') + '\')">' +
+        (foto ? '<img src="' + foto + '" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right:10px; flex-shrink:0;" loading="lazy">' : '') +
+        '<div><div class="n">' + (esNuevo ? '<span class="contador" style="position:static; margin-right:6px;">Nuevo</span>' : '') + detalle + '</div>' +
+        '<div class="d">' + fechaCorta(v.fecha) + ' ' + horaDe(v.created_at) + (extra ? ' - ' + extra : '') + '</div></div>' +
         '</div><div class="monto">' + plata(v.total) + '</div></div>';
     }).join('');
 
