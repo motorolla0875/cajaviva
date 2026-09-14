@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const mercadolibre = require('./mercadolibre');
 
 const router = express.Router();
 
@@ -83,6 +84,7 @@ router.post('/', (req, res) => {
       db.prepare('UPDATE producto_variantes SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.variante.id);
       const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(l.prod.id);
       db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, l.prod.id);
+      mercadolibre.actualizarStockMl(req.userId, l.prod.id, tot.n).catch(function () {});
     } else if (l.prod.es_servicio) {
       // un servicio no descuenta stock
     } else if (l.prod.tiene_receta && l.prod.descuenta_insumos) {
@@ -94,6 +96,7 @@ router.post('/', (req, res) => {
       });
     } else {
       db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.prod.id);
+      mercadolibre.actualizarStockMl(req.userId, l.prod.id, l.prod.stock - l.cantidad).catch(function () {});
     }
   }
 
@@ -218,6 +221,7 @@ router.delete('/:id', (req, res) => {
       if (it.producto_id) {
         const tot = db.prepare('SELECT COALESCE(SUM(stock),0) AS n FROM producto_variantes WHERE producto_id = ? AND activa = 1').get(it.producto_id);
         db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(tot.n, it.producto_id);
+        mercadolibre.actualizarStockMl(req.userId, it.producto_id, tot.n).catch(function () {});
       }
     } else if (it.producto_id) {
       const prod = db.prepare('SELECT tiene_receta, es_servicio, descuenta_insumos FROM productos WHERE id = ?').get(it.producto_id);
@@ -231,6 +235,8 @@ router.delete('/:id', (req, res) => {
         });
       } else {
         db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(it.cantidad, it.producto_id);
+        const nuevo = db.prepare('SELECT stock FROM productos WHERE id = ?').get(it.producto_id);
+        mercadolibre.actualizarStockMl(req.userId, it.producto_id, nuevo.stock).catch(function () {});
       }
     }
   }

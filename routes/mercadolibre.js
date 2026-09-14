@@ -293,4 +293,32 @@ async function manejarCallback(req, res) {
   }
 }
 
+// ── actualiza el stock de una publicacion en MercadoLibre, si el producto esta vinculado ──
+// se llama sola cada vez que el stock de CajaViva cambia por una venta, reposicion, etc.
+async function actualizarStockMl(userId, productoId, nuevoStock) {
+  try {
+    const conexion = db.prepare('SELECT id FROM mercadolibre_conexion WHERE user_id = ?').get(userId);
+    if (!conexion) return; // este comerciante no tiene MercadoLibre conectado
+
+    const prod = db.prepare('SELECT ml_item_id FROM productos WHERE id = ?').get(productoId);
+    if (!prod || !prod.ml_item_id) return; // este producto no esta vinculado a ninguna publicacion
+
+    const token = await obtenerTokenValido(userId);
+    if (!token) return;
+
+    const r = await fetch('https://api.mercadolibre.com/items/' + prod.ml_item_id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ available_quantity: Math.max(0, Math.round(nuevoStock)) })
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      console.error('MercadoLibre rechazo la actualizacion de stock:', JSON.stringify(d));
+    }
+  } catch (e) {
+    console.error('No se pudo actualizar el stock en MercadoLibre:', e.message);
+  }
+}
+
 module.exports.manejarCallback = manejarCallback;
+module.exports.actualizarStockMl = actualizarStockMl;
