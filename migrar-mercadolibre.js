@@ -16,5 +16,6 @@ db.exec(`
 `);
 
 try { db.exec('ALTER TABLE productos ADD COLUMN ml_item_id TEXT;'); } catch (e) {}
+try { db.exec('ALTER TABLE ventas ADD COLUMN ml_order_id TEXT;'); } catch (e) {}
 
-console.log('Tabla mercadolibre_conexion y columna ml_item_id listas.');
+console.log('Tabla mercadolibre_conexion, columna ml_item_id y ml_order_id listas.');

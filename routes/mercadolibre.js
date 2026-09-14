@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 
 const router = express.Router();
@@ -132,9 +133,80 @@ router.post('/desconectar', (req, res) => {
 
 // ── MercadoLibre nos avisa cosas aca (venta nueva, cambio en una publicacion, etc.) ──
 router.post('/webhook', (req, res) => {
-  console.log('Aviso de MercadoLibre:', JSON.stringify(req.body));
+  // hay que responder rapido (MercadoLibre reintenta si tardamos), el procesamiento real sigue despues
   res.sendStatus(200);
+  procesarNotificacion(req.body).catch((e) => console.error('Error procesando aviso de MercadoLibre:', e.message));
 });
+
+async function procesarNotificacion(payload) {
+  if (!payload || payload.topic !== 'orders_v2') return; // por ahora solo nos interesan las ventas
+
+  const conexion = db.prepare('SELECT user_id FROM mercadolibre_conexion WHERE ml_user_id = ?').get(String(payload.user_id));
+  if (!conexion) return; // no es de ningun comerciante nuestro
+  const userId = conexion.user_id;
+
+  const token = await obtenerTokenValido(userId);
+  if (!token) return;
+
+  const orderId = String(payload.resource || '').split('/').pop();
+  if (!orderId) return;
+
+  const rOrden = await fetch('https://api.mercadolibre.com/orders/' + orderId, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  const orden = await rOrden.json();
+  if (!rOrden.ok) { console.error('No se pudo traer la orden', orderId, orden); return; }
+
+  if (orden.status !== 'paid') return; // solo procesamos ordenes ya pagas
+
+  // evitar procesar la misma orden dos veces (MercadoLibre puede reenviar el aviso)
+  const yaExiste = db.prepare('SELECT id FROM ventas WHERE ml_order_id = ?').get(String(orden.id));
+  if (yaExiste) return;
+
+  const lineas = [];
+  let total = 0;
+  let costoTotal = 0;
+  let huboSinVincular = false;
+
+  for (const oi of (orden.order_items || [])) {
+    const prod = db.prepare('SELECT * FROM productos WHERE user_id = ? AND ml_item_id = ?').get(userId, oi.item.id);
+    if (!prod) { huboSinVincular = true; continue; }
+    const cantidad = oi.quantity;
+    const precio = oi.unit_price;
+    lineas.push({ prod, cantidad, precio, costo: prod.precio_costo || 0 });
+    total += precio * cantidad;
+    costoTotal += (prod.precio_costo || 0) * cantidad;
+  }
+
+  if (lineas.length === 0) {
+    console.log('Orden de MercadoLibre', orden.id, 'no tenia ningun producto vinculado, se ignoro.');
+    return;
+  }
+
+  const ventaId = uuidv4();
+  const fechaVenta = new Date().toISOString().slice(0, 10);
+
+  db.prepare(`
+    INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
+      costo_total, medio_pago, monto_pagado, descuento_pct, notas, ml_order_id)
+    VALUES (?, ?, NULL, 'mostrador', ?, 'cobrada', ?, ?, 'mercadolibre', ?, 0, ?, ?)
+  `).run(ventaId, userId, fechaVenta, total, costoTotal, total, 'Venta MercadoLibre #' + orden.id, String(orden.id));
+
+  for (const l of lineas) {
+    db.prepare(`
+      INSERT INTO venta_items (id, venta_id, producto_id, variante_id, nombre, cantidad, precio_unitario, costo_unitario)
+      VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
+    `).run(uuidv4(), ventaId, l.prod.id, l.prod.nombre, l.cantidad, l.precio, l.costo);
+
+    if (!l.prod.es_servicio) {
+      db.prepare('UPDATE productos SET stock = stock - ? WHERE id = ?').run(l.cantidad, l.prod.id);
+    }
+  }
+
+  if (db.avisar) db.avisar(userId, 'productos');
+  console.log('Venta creada desde MercadoLibre:', ventaId, '- orden', orden.id);
+  if (huboSinVincular) console.log('Aviso: la orden', orden.id, 'tenia productos sin vincular, se omitieron de la venta.');
+}
 
 // ── vincular un producto de CajaViva con una publicacion de MercadoLibre ──
 router.post('/vincular', (req, res) => {
