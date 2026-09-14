@@ -98,6 +98,39 @@ router.get('/ventas', (req, res) => {
 // ── reportes: tendencia, lo mas vendido, que comprar, que no se vende - todo solo de MercadoLibre ──
 router.get('/reportes', (req, res) => {
   const dias = parseInt(req.query.dias) || 30;
+  const hastaISO = new Date().toISOString().slice(0, 10);
+  const desdeISO = new Date(Date.now() - (dias - 1) * 86400000).toISOString().slice(0, 10);
+  const hastaAntISO = new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
+  const desdeAntISO = new Date(Date.now() - (dias * 2 - 1) * 86400000).toISOString().slice(0, 10);
+
+  function resumenPeriodo(d, h) {
+    const r = db.prepare(`
+      SELECT COUNT(*) AS ventas, COALESCE(SUM(total), 0) AS facturado, COALESCE(SUM(total - costo_total), 0) AS ganancia
+      FROM ventas WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= ? AND fecha <= ?
+    `).get(req.userId, d, h);
+    return { ventas: r.ventas, facturado: r.facturado, ganancia: r.ganancia, ticketProm: r.ventas > 0 ? r.facturado / r.ventas : 0 };
+  }
+  function variacion(a, b) {
+    if (b === 0) return a > 0 ? 100 : 0;
+    return Math.round(((a - b) / b) * 100);
+  }
+  const actual = resumenPeriodo(desdeISO, hastaISO);
+  const anterior = resumenPeriodo(desdeAntISO, hastaAntISO);
+
+  const porDiaFacturado = db.prepare(`
+    SELECT fecha, COALESCE(SUM(total), 0) AS facturado FROM ventas
+    WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= ? AND fecha <= ?
+    ORDER BY facturado DESC
+  `).all(req.userId, desdeISO, hastaISO);
+  const mejorDia = porDiaFacturado.length > 0 && porDiaFacturado[0].facturado > 0 ? porDiaFacturado[0] : null;
+
+  const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+  const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+  db.prepare(`
+    SELECT fecha, total FROM ventas WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= ? AND fecha <= ?
+  `).all(req.userId, desdeISO, hastaISO).forEach((f) => { porDiaSemana[new Date(f.fecha + 'T12:00:00').getDay()] += f.total; });
+  const diaSemanaTop = porDiaSemana.indexOf(Math.max.apply(null, porDiaSemana));
+  const totalSemana = porDiaSemana.reduce((a, b) => a + b, 0);
 
   // serie completa dia por dia (con ceros en los dias sin venta), para el grafico de barras
   const porDiaRaw = db.prepare(`
@@ -150,7 +183,12 @@ router.get('/reportes', (req, res) => {
       )
   `).all(req.userId);
 
-  res.json({ porDia, totalPeriodo, masVendido, queComprar, noSeVende });
+  res.json({
+    porDia, totalPeriodo, masVendido, queComprar, noSeVende,
+    actual, variacion: { facturado: variacion(actual.facturado, anterior.facturado), ganancia: variacion(actual.ganancia, anterior.ganancia), ventas: variacion(actual.ventas, anterior.ventas) },
+    mejorDia,
+    diaSemanaTop: totalSemana > 0 ? { nombre: NOMBRES_DIA[diaSemanaTop], facturado: porDiaSemana[diaSemanaTop] } : null
+  });
 });
 
 // ── trae las publicaciones activas del vendedor, para elegir cual vincular a que producto ──

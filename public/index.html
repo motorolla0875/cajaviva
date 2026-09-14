@@ -8689,6 +8689,11 @@ async function cargarReportesMl() {
 
     if (mlRepTab === 'tendencia') {
       const porDia = r.porDia;
+      function flechaVar(v) {
+        if (v > 0) return '<span style="color:var(--accent-dark);">&#9650; ' + v + '%</span>';
+        if (v < 0) return '<span style="color:var(--danger);">&#9660; ' + Math.abs(v) + '%</span>';
+        return '<span style="color:var(--muted);">Igual</span>';
+      }
       let barrasGrid = '', ejeValores = '', etiquetasDias = '', leyendaPeriodo = '';
       const NOMBRES_DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
       const altoChart = 110;
@@ -8736,7 +8741,28 @@ async function cargarReportesMl() {
         '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 10px 8px 14px; margin-bottom:14px;">' +
         '<div style="display:flex; align-items:stretch;">' + ejeValores +
         '<div style="flex:1; min-width:0; overflow-x:auto;">' + barrasGrid + etiquetasDias + '</div></div>' +
-        leyendaPeriodo + '</div>';
+        leyendaPeriodo + '</div>' +
+
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">' +
+          '<div class="rep-resumen" style="margin:0;"><div class="lbl">Ganancia</div>' +
+            '<div class="val" style="font-size:19px;">' + plata(r.actual.ganancia) + '</div>' +
+            '<div style="font-size:12px; margin-top:2px;">' + flechaVar(r.variacion.ganancia) + '</div></div>' +
+          '<div class="rep-resumen" style="margin:0;"><div class="lbl">Ventas</div>' +
+            '<div class="val" style="font-size:19px;">' + r.actual.ventas + '</div>' +
+            '<div style="font-size:12px; margin-top:2px;">' + flechaVar(r.variacion.ventas) + '</div></div>' +
+        '</div>' +
+
+        '<div class="seccion">Ticket promedio</div>' +
+        '<div style="font-size:14px; color:var(--muted); margin-bottom:14px;">' +
+          'Cada venta te deja en promedio <b style="color:var(--text);">' + plata(r.actual.ticketProm) + '</b></div>' +
+
+        (r.mejorDia ? '<div class="seccion">Tu mejor dia</div>' +
+          '<div style="font-size:14px; color:var(--muted); margin-bottom:10px;">' +
+          fechaCorta(r.mejorDia.fecha) + ' - vendiste <b style="color:var(--text);">' + plata(r.mejorDia.facturado) + '</b></div>' : '') +
+
+        (r.diaSemanaTop ? '<div class="seccion">Tu dia mas fuerte de la semana</div>' +
+          '<div style="font-size:14px; color:var(--muted);">' +
+          '<b style="color:var(--text);">' + r.diaSemanaTop.nombre + '</b> es cuando mas vendes por MercadoLibre</div>' : '');
 
     } else if (mlRepTab === 'vendidos') {
       const d = r.masVendido;
