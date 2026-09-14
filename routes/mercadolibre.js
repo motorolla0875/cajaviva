@@ -97,37 +97,51 @@ router.get('/ventas', (req, res) => {
 
 // ── reportes: tendencia, lo mas vendido, que comprar, que no se vende - todo solo de MercadoLibre ──
 router.get('/reportes', (req, res) => {
-  const tendencia = db.prepare(`
+  const dias = parseInt(req.query.dias) || 30;
+
+  // serie completa dia por dia (con ceros en los dias sin venta), para el grafico de barras
+  const porDiaRaw = db.prepare(`
     SELECT fecha, COUNT(*) AS pedidos, SUM(total) AS total
     FROM ventas
-    WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= date('now', '-30 days')
-    GROUP BY fecha ORDER BY fecha ASC
-  `).all(req.userId);
+    WHERE user_id = ? AND medio_pago = 'mercadolibre' AND fecha >= date('now', '-' || ? || ' days')
+    GROUP BY fecha
+  `).all(req.userId, dias);
+  const porFecha = {};
+  porDiaRaw.forEach((f) => { porFecha[f.fecha] = f; });
+  const porDia = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const fecha = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    porDia.push({ fecha, pedidos: (porFecha[fecha] && porFecha[fecha].pedidos) || 0, total: (porFecha[fecha] && porFecha[fecha].total) || 0 });
+  }
+  const totalPeriodo = porDia.reduce((s, d) => s + d.total, 0);
 
   const masVendido = db.prepare(`
-    SELECT vi.nombre, SUM(vi.cantidad) AS cantidad
+    SELECT vi.nombre, SUM(vi.cantidad) AS unidades, COUNT(DISTINCT v.id) AS veces,
+      SUM(vi.cantidad * vi.precio_unitario) AS facturado,
+      SUM(vi.cantidad * (vi.precio_unitario - vi.costo_unitario)) AS ganancia
     FROM venta_items vi
     JOIN ventas v ON v.id = vi.venta_id
-    WHERE v.user_id = ? AND v.medio_pago = 'mercadolibre'
-    GROUP BY vi.nombre ORDER BY cantidad DESC LIMIT 8
-  `).all(req.userId);
+    WHERE v.user_id = ? AND v.medio_pago = 'mercadolibre' AND v.fecha >= date('now', '-' || ? || ' days')
+    GROUP BY vi.nombre ORDER BY unidades DESC LIMIT 15
+  `).all(req.userId, dias);
 
-  // vinculados a MercadoLibre, con ventas recientes (ultimos 30 dias) y poco stock
+  // vinculados a MercadoLibre, con ventas en el periodo elegido y poco stock
   const queComprar = db.prepare(`
-    SELECT p.nombre, p.stock,
+    SELECT p.nombre, p.stock, p.precio_costo,
       COALESCE((
         SELECT SUM(vi.cantidad) FROM venta_items vi
         JOIN ventas v ON v.id = vi.venta_id
-        WHERE v.medio_pago = 'mercadolibre' AND vi.producto_id = p.id AND v.fecha >= date('now', '-30 days')
-      ), 0) AS vendidoUltimoMes
+        WHERE v.medio_pago = 'mercadolibre' AND vi.producto_id = p.id AND v.fecha >= date('now', '-' || ? || ' days')
+      ), 0) AS vendidas
     FROM productos p
     WHERE p.user_id = ? AND p.ml_item_id IS NOT NULL AND p.activo = 1
-    ORDER BY vendidoUltimoMes DESC, p.stock ASC
-  `).all(req.userId).filter((p) => p.vendidoUltimoMes > 0 && p.stock <= Math.max(3, p.vendidoUltimoMes));
+    ORDER BY vendidas DESC, p.stock ASC
+  `).all(dias, req.userId).filter((p) => p.vendidas > 0 && p.stock <= Math.max(3, p.vendidas))
+    .map((p) => ({ nombre: p.nombre, stock: p.stock, vendidas: p.vendidas, sugerido: Math.max(1, p.vendidas * 2 - p.stock), costoEstimado: Math.max(1, p.vendidas * 2 - p.stock) * (p.precio_costo || 0) }));
 
   // vinculados a MercadoLibre que nunca tuvieron ninguna venta por ese canal
   const noSeVende = db.prepare(`
-    SELECT p.nombre, p.stock FROM productos p
+    SELECT p.nombre, p.stock, p.precio_venta FROM productos p
     WHERE p.user_id = ? AND p.ml_item_id IS NOT NULL AND p.activo = 1
       AND p.id NOT IN (
         SELECT vi.producto_id FROM venta_items vi
@@ -136,7 +150,7 @@ router.get('/reportes', (req, res) => {
       )
   `).all(req.userId);
 
-  res.json({ tendencia, masVendido, queComprar, noSeVende });
+  res.json({ porDia, totalPeriodo, masVendido, queComprar, noSeVende });
 });
 
 // ── trae las publicaciones activas del vendedor, para elegir cual vincular a que producto ──

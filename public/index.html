@@ -2332,6 +2332,17 @@
 
         <div id="mlPanelReportes" style="display:none;">
           <p class="hint" style="margin:12px 0;">Estos datos son solo de tus ventas por MercadoLibre. Para ver todo tu negocio junto, anda a la pestana Reportes.</p>
+          <div class="periodos" id="mlRepPeriodos">
+            <button data-dias="7">7 dias</button>
+            <button data-dias="30" class="on">30 dias</button>
+            <button data-dias="90">90 dias</button>
+          </div>
+          <div class="chips" id="mlRepTabs">
+            <button class="on" data-mltab="tendencia">Tendencia</button>
+            <button data-mltab="vendidos">Mas vendidos</button>
+            <button data-mltab="reponer">Que comprar</button>
+            <button data-mltab="quietos">No se venden</button>
+          </div>
           <div id="reportesMl"><div class="vacio">Cargando...</div></div>
         </div>
       </div>
@@ -8651,57 +8662,128 @@ async function cargarVentasMl() {
   }
 }
 
+let mlRepDias = 30;
+let mlRepTab = 'tendencia';
+
+$('mlRepPeriodos').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  mlRepDias = parseInt(b.dataset.dias);
+  Array.prototype.forEach.call($('mlRepPeriodos').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarReportesMl();
+});
+
+$('mlRepTabs').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  mlRepTab = b.dataset.mltab;
+  Array.prototype.forEach.call($('mlRepTabs').children, function (x) { x.classList.toggle('on', x === b); });
+  cargarReportesMl();
+});
+
 async function cargarReportesMl() {
-  $('reportesMl').innerHTML = '<div class="vacio">Cargando...</div>';
+  const cont = $('reportesMl');
+  cont.innerHTML = '<div class="vacio">Cargando...</div>';
   try {
-    const r = await api('GET', '/mercadolibre/reportes');
-    let html = '';
+    const r = await api('GET', '/mercadolibre/reportes?dias=' + mlRepDias);
 
-    html += '<div class="seccion">Tendencia (ultimos 30 dias)</div>';
-    if (r.tendencia.length === 0) {
-      html += '<div class="vacio">Todavia no hay ventas para mostrar tendencia.</div>';
+    if (mlRepTab === 'tendencia') {
+      const porDia = r.porDia;
+      let barrasGrid = '', ejeValores = '', etiquetasDias = '', leyendaPeriodo = '';
+      const NOMBRES_DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+      const altoChart = 110;
+
+      if (porDia.length > 0) {
+        const max = Math.max.apply(null, porDia.map(function (d) { return d.total; })) || 1;
+        const NIVELES = 7;
+        const gridCols = 'repeat(' + porDia.length + ', minmax(10px, 1fr))';
+
+        const barras = porDia.map(function (d) {
+          const pct = Math.max(2, Math.round((d.total / max) * 100));
+          const esHoy = d.fecha === hoyISO();
+          return '<div style="position:relative; height:100%;" title="' + fechaCorta(d.fecha) + ': ' + plata(d.total) + '">' +
+            '<div style="position:absolute; left:0; right:0; bottom:0; height:' + pct + '%; min-height:2px; border-radius:3px 3px 0 0; background:' +
+            (esHoy ? 'var(--accent-dark)' : 'var(--accent)') + '; opacity:' + (d.total > 0 ? '1' : '.18') + ';"></div></div>';
+        }).join('');
+
+        barrasGrid = '<div style="position:relative; height:' + altoChart + 'px;">' +
+          Array.from({ length: NIVELES }, function (_, i) {
+            return '<div style="position:absolute; top:' + (i * 100 / (NIVELES - 1)) + '%; left:0; right:0; border-top:1px dashed var(--line);"></div>';
+          }).join('') +
+          '<div style="display:grid; grid-template-columns:' + gridCols + '; gap:4px; height:100%;">' + barras + '</div></div>';
+
+        ejeValores = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:' + altoChart + 'px; padding-right:6px; flex-shrink:0;">' +
+          Array.from({ length: NIVELES }, function (_, i) {
+            const valor = max * (NIVELES - 1 - i) / (NIVELES - 1);
+            return '<div style="font-size:10px; color:var(--muted); text-align:right; line-height:1;">' + plata(valor) + '</div>';
+          }).join('') + '</div>';
+
+        if (porDia.length <= 10) {
+          etiquetasDias = '<div style="display:grid; grid-template-columns:' + gridCols + '; gap:4px; margin-top:4px;">' +
+            porDia.map(function (d) {
+              const dia = new Date(d.fecha + 'T12:00:00').getDay();
+              return '<div style="text-align:center; font-size:10.5px; color:var(--muted);">' + NOMBRES_DIA_CORTO[dia] + '</div>';
+            }).join('') + '</div>';
+        } else {
+          leyendaPeriodo = '<div style="text-align:center; font-size:11.5px; color:var(--muted); margin-top:4px;">' +
+            'Del ' + fechaCorta(porDia[0].fecha) + ' al ' + fechaCorta(porDia[porDia.length - 1].fecha) + '</div>';
+        }
+      }
+
+      cont.innerHTML =
+        '<div class="rep-resumen" style="margin-bottom:10px;"><div class="lbl">Vendido por MercadoLibre en el periodo</div>' +
+        '<div class="val">' + plata(r.totalPeriodo) + '</div></div>' +
+        '<div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 10px 8px 14px; margin-bottom:14px;">' +
+        '<div style="display:flex; align-items:stretch;">' + ejeValores +
+        '<div style="flex:1; min-width:0; overflow-x:auto;">' + barrasGrid + etiquetasDias + '</div></div>' +
+        leyendaPeriodo + '</div>';
+
+    } else if (mlRepTab === 'vendidos') {
+      const d = r.masVendido;
+      if (d.length === 0) { cont.innerHTML = '<div class="vacio">No hay ventas de MercadoLibre en este periodo.</div>'; return; }
+      const totalG = d.reduce(function (s, i) { return s + i.ganancia; }, 0);
+      cont.innerHTML =
+        '<div class="rep-resumen"><div class="lbl">Ganancia del periodo (MercadoLibre)</div>' +
+        '<div class="val">' + plata(totalG) + '</div></div>' +
+        d.map(function (i, n) {
+          return '<div class="rep-item">' +
+            '<div class="rep-pos' + (n < 3 ? ' top' : '') + '">' + (n + 1) + '</div>' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">' + plata(i.facturado) + ' en ' + i.veces + (i.veces === 1 ? ' pedido' : ' pedidos') + '</div>' +
+            '<div class="g">Ganaste ' + plata(i.ganancia) + '</div></div>' +
+            '<div class="cifra"><b>' + fmtCant(i.unidades) + '</b><span>vendidas</span></div></div>';
+        }).join('');
+
+    } else if (mlRepTab === 'reponer') {
+      const d = r.queComprar;
+      if (d.length === 0) { cont.innerHTML = '<div class="vacio">No hay nada urgente para reponer.</div>'; return; }
+      const totalEstimado = d.reduce(function (s, i) { return s + i.costoEstimado; }, 0);
+      cont.innerHTML =
+        '<div class="rep-resumen alerta"><div class="lbl">' + d.length + ' productos para comprar - costo estimado</div>' +
+        '<div class="val">' + plata(totalEstimado) + '</div></div>' +
+        d.map(function (i) {
+          return '<div class="rep-item">' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">Hay ' + fmtCant(i.stock) + ' - vendiste ' + fmtCant(i.vendidas) + ' en ' + mlRepDias + ' dias</div>' +
+            (i.costoEstimado > 0 ? '<div class="g">Costaria ' + plata(i.costoEstimado) + '</div>' : '') + '</div>' +
+            '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
+        }).join('');
+
     } else {
-      html += r.tendencia.map(function (t) {
-        return '<div class="mov"><div class="info"><div class="n">' + fechaCorta(t.fecha) + '</div>' +
-          '<div class="d">' + t.pedidos + ' pedido' + (t.pedidos === 1 ? '' : 's') + '</div></div>' +
-          '<div class="monto">' + plata(t.total) + '</div></div>';
-      }).join('');
+      const d = r.noSeVende;
+      if (d.length === 0) { cont.innerHTML = '<div class="vacio">Todos tus productos vinculados tuvieron alguna venta.</div>'; return; }
+      cont.innerHTML =
+        '<div class="rep-resumen alerta"><div class="lbl">Vinculados a MercadoLibre sin ninguna venta</div>' +
+        '<div class="val">' + d.length + '</div></div>' +
+        d.map(function (i) {
+          return '<div class="rep-item">' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d">' + plata(i.precio_venta) + '</div></div>' +
+            '<div class="cifra"><b>' + fmtCant(i.stock) + '</b><span>sin vender</span></div></div>';
+        }).join('');
     }
-
-    html += '<div class="seccion" style="margin-top:16px;">Lo mas vendido</div>';
-    if (r.masVendido.length === 0) {
-      html += '<div class="vacio">Sin datos todavia.</div>';
-    } else {
-      html += r.masVendido.map(function (m, i) {
-        return '<div class="mov"><div class="info"><div class="n">' + (i + 1) + '. ' + esc(m.nombre) + '</div></div>' +
-          '<div class="monto">' + fmtCant(m.cantidad) + ' u.</div></div>';
-      }).join('');
-    }
-
-    html += '<div class="seccion" style="margin-top:16px;">Que comprar (se vende pero queda poco)</div>';
-    if (r.queComprar.length === 0) {
-      html += '<div class="vacio">Nada urgente por ahora.</div>';
-    } else {
-      html += r.queComprar.map(function (q) {
-        return '<div class="mov"><div class="info"><div class="n">' + esc(q.nombre) + '</div>' +
-          '<div class="d">Vendiste ' + fmtCant(q.vendidoUltimoMes) + ' este mes</div></div>' +
-          '<div class="monto" style="color:var(--danger);">Quedan ' + fmtCant(q.stock) + '</div></div>';
-      }).join('');
-    }
-
-    html += '<div class="seccion" style="margin-top:16px;">Vinculados que no se venden</div>';
-    if (r.noSeVende.length === 0) {
-      html += '<div class="vacio">Todos tus productos vinculados tuvieron alguna venta.</div>';
-    } else {
-      html += r.noSeVende.map(function (n) {
-        return '<div class="mov"><div class="info"><div class="n">' + esc(n.nombre) + '</div>' +
-          '<div class="d">Sin ninguna venta por MercadoLibre todavia</div></div></div>';
-      }).join('');
-    }
-
-    $('reportesMl').innerHTML = html;
   } catch (e) {
-    $('reportesMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+    cont.innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
   }
 }
 
