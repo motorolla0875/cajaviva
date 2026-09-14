@@ -9,7 +9,9 @@ async function main() {
 
   // 1) buscamos "Otras categorias" recorriendo el arbol, hasta llegar a una hoja (sin hijos)
   let categoryId = null;
-  const rNivel = await fetch('https://api.mercadolibre.com/sites/MLA/categories');
+  const rNivel = await fetch('https://api.mercadolibre.com/sites/MLA/categories', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
   let nivel = await rNivel.json();
   if (!Array.isArray(nivel)) {
     console.log('No se pudo traer la lista de categorias. Respuesta:', JSON.stringify(nivel));
@@ -17,7 +19,9 @@ async function main() {
   }
   let actual = nivel.find((cat) => /otra/i.test(cat.name)) || nivel[0];
   for (let vueltas = 0; vueltas < 6; vueltas++) {
-    const info = await (await fetch('https://api.mercadolibre.com/categories/' + actual.id)).json();
+    const info = await (await fetch('https://api.mercadolibre.com/categories/' + actual.id, {
+      headers: { Authorization: 'Bearer ' + token }
+    })).json();
     if (!info.children_categories || info.children_categories.length === 0) { categoryId = actual.id; break; }
     actual = info.children_categories.find((cat) => /otra/i.test(cat.name)) || info.children_categories[0];
   }
@@ -26,7 +30,9 @@ async function main() {
   console.log('Usando categoria:', categoryId);
 
   // 2) vemos que atributos son obligatorios en esa categoria, para no chocar con la validacion
-  const rAttrs = await fetch('https://api.mercadolibre.com/categories/' + categoryId + '/attributes');
+  const rAttrs = await fetch('https://api.mercadolibre.com/categories/' + categoryId + '/attributes', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
   const attrs = await rAttrs.json();
   const obligatorios = (attrs || []).filter((a) => (a.tags && a.tags.required));
   const attributes = obligatorios.map((a) => {
