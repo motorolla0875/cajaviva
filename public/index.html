@@ -3259,6 +3259,19 @@
       </div>
     </div>
 
+    <div class="cap-item">
+      <div class="txt"><div class="n">MercadoLibre</div>
+        <div class="d">Sincroniza tu stock y trae tus pedidos de MercadoLibre a CajaViva</div></div>
+    </div>
+    <div id="mlNoConectado">
+      <p class="hint" style="margin-top:0;">Conecta tu cuenta de MercadoLibre para empezar a sincronizar.</p>
+      <button type="button" class="btn-foto" id="btnConectarMl">Conectar MercadoLibre</button>
+    </div>
+    <div id="mlConectado" style="display:none;">
+      <p class="hint ok" style="margin-top:0;">MercadoLibre conectado como <b id="mlNickname"></b>.</p>
+      <button type="button" class="btn-foto borrar" id="btnDesconectarMl">Desconectar</button>
+    </div>
+
     <div class="seccion">Tu dominio propio</div>
     <p class="hint" style="margin:-4px 0 10px;">Si ya tenes un dominio, tu catalogo puede vivir ahi.</p>
 
@@ -5086,6 +5099,10 @@ async function arrancarApp() {
   pintarContadorCola();
   subirCola();
   conectarTiempoReal();
+  if (new URLSearchParams(window.location.search).get('ml') === 'conectado') {
+    avisar('MercadoLibre conectado con éxito');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
   if (document.querySelector('nav button[data-vista="vender"]').classList.contains('on') && window.innerWidth >= 900) {
     setTimeout(function () { $('buscar').focus(); }, 100);
   }
@@ -8525,6 +8542,36 @@ $('swMercadopago').onclick = function () {
   pintarMp();
 };
 
+async function cargarEstadoMl() {
+  try {
+    const e = await api('GET', '/mercadolibre/estado');
+    $('mlNoConectado').style.display = e.conectado ? 'none' : 'block';
+    $('mlConectado').style.display = e.conectado ? 'block' : 'none';
+    if (e.conectado) $('mlNickname').textContent = e.nickname || '';
+  } catch (err) {}
+}
+
+$('btnConectarMl').onclick = async function () {
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Conectando...';
+  try {
+    const r = await api('GET', '/mercadolibre/conectar');
+    window.location.href = r.url;
+  } catch (e) {
+    avisar(e.message, true);
+    btn.disabled = false; btn.textContent = 'Conectar MercadoLibre';
+  }
+};
+
+$('btnDesconectarMl').onclick = async function () {
+  if (!confirm('¿Desconectar tu cuenta de MercadoLibre?')) return;
+  try {
+    await api('POST', '/mercadolibre/desconectar');
+    avisar('MercadoLibre desconectado');
+    await cargarEstadoMl();
+  } catch (e) { avisar(e.message, true); }
+};
+
 $('btnConectarMp').onclick = function () {
   if (!$('mpToken').value.trim()) {
     $('msgCat2').innerHTML = '<div class="msg">Pega tu Access Token de Mercado Pago.</div>';
@@ -8606,6 +8653,7 @@ async function abrirConfigCatalogo() {
     mpConectado = !!c.mp_conectado;
     $('mpToken').value = '';
     pintarMp();
+    await cargarEstadoMl();
     await cargarTurnosWeb();
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';

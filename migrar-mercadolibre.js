@@ -1,0 +1,18 @@
+const { DatabaseSync } = require('node:sqlite');
+const path = require('path');
+const db = new DatabaseSync(path.join(__dirname, 'cajaviva.db'));
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS mercadolibre_conexion (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    ml_user_id TEXT NOT NULL,
+    ml_nickname TEXT,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expira_en TEXT NOT NULL,
+    conectado_en TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+console.log('Tabla mercadolibre_conexion lista.');

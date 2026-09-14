@@ -108,6 +108,11 @@ app.use('/api/fotos', function (req, res, next) {
   if (req.path.indexOf('/comprobante/') === 0 || req.path.indexOf('/sena/') === 0 || req.path.indexOf('/reserva/') === 0) return next();
   return requiereAuth(req, res, next);
 }, require('./routes/fotos'));
+app.use('/api/mercadolibre', function (req, res, next) {
+  if (req.path === '/webhook') return next();
+  return requiereAuth(req, res, next);
+}, require('./routes/mercadolibre'));
+app.get('/mercadolibre/callback', require('./routes/mercadolibre').manejarCallback);
 app.use('/api/pedidos', function (req, res, next) {
   if (req.path.indexOf('/publico/') === 0 || req.path.indexOf('/mp-webhook/') === 0) return next();
   return requiereAuth(req, res, next);
