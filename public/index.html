@@ -2068,6 +2068,7 @@
     <button data-vista="pedidos" id="tabPedidos">Pedidos</button>
     <button data-vista="caja">Caja</button>
     <button data-vista="reportes">Reportes</button>
+    <button data-vista="mercadolibre" id="tabMercadolibre">MercadoLibre</button>
     <button data-vista="tienda" id="tabTienda">Mi tienda</button>
   </nav>
 
@@ -2273,6 +2274,20 @@
   <div class="vista" id="v-tienda">
     <div class="lista-wrap">
       <div id="resumenTienda"></div>
+    </div>
+  </div>
+
+  <div class="vista" id="v-mercadolibre">
+    <div class="lista-wrap">
+      <h2 style="margin:0 0 6px;">MercadoLibre</h2>
+      <p class="hint" style="margin:0 0 16px;">Conecta tu cuenta de MercadoLibre para sincronizar el stock y traer tus pedidos a CajaViva, todo en un solo lugar.</p>
+      <div id="mlNoConectado">
+        <button type="button" class="btn-ppal" id="btnConectarMl">Conectar MercadoLibre</button>
+      </div>
+      <div id="mlConectado" style="display:none;">
+        <p class="hint ok" style="margin-top:0;">Conectado como <b id="mlNickname"></b>.</p>
+        <button type="button" class="btn-sec" id="btnDesconectarMl">Desconectar</button>
+      </div>
     </div>
   </div>
 
@@ -3257,19 +3272,6 @@
         <p class="hint ok" style="margin-top:0;">Mercado Pago conectado. Los pagos te llegan directo a tu cuenta.</p>
         <button type="button" class="btn-foto borrar" id="btnDesconectarMp">Desconectar</button>
       </div>
-    </div>
-
-    <div class="cap-item">
-      <div class="txt"><div class="n">MercadoLibre</div>
-        <div class="d">Sincroniza tu stock y trae tus pedidos de MercadoLibre a CajaViva</div></div>
-    </div>
-    <div id="mlNoConectado">
-      <p class="hint" style="margin-top:0;">Conecta tu cuenta de MercadoLibre para empezar a sincronizar.</p>
-      <button type="button" class="btn-foto" id="btnConectarMl">Conectar MercadoLibre</button>
-    </div>
-    <div id="mlConectado" style="display:none;">
-      <p class="hint ok" style="margin-top:0;">MercadoLibre conectado como <b id="mlNickname"></b>.</p>
-      <button type="button" class="btn-foto borrar" id="btnDesconectarMl">Desconectar</button>
     </div>
 
     <div class="seccion">Tu dominio propio</div>
@@ -5301,6 +5303,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
     acomodarBuscadorGlobal();
     if (b.dataset.vista === 'canchas') cargarGrillaCanchas();
     if (b.dataset.vista === 'tienda') cargarVistaTienda();
+    if (b.dataset.vista === 'mercadolibre') cargarEstadoMl();
     if (b.dataset.vista === 'mesas') cargarMesas();
     if (b.dataset.vista === 'vender' && window.innerWidth >= 900) setTimeout(function () { $('buscar').focus(); }, 50);
   };
@@ -8653,7 +8656,6 @@ async function abrirConfigCatalogo() {
     mpConectado = !!c.mp_conectado;
     $('mpToken').value = '';
     pintarMp();
-    await cargarEstadoMl();
     await cargarTurnosWeb();
   } catch (e) {
     $('msgCat2').innerHTML = '<div class="msg">' + esc(e.message) + '</div>';
