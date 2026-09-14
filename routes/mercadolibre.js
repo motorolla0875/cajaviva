@@ -72,6 +72,29 @@ router.get('/estado', (req, res) => {
   });
 });
 
+// ── resumen de ventas de MercadoLibre, agrupado por producto ──
+router.get('/ventas', (req, res) => {
+  const filas = db.prepare(`
+    SELECT vi.nombre, SUM(vi.cantidad) AS cantidad, COUNT(DISTINCT v.id) AS pedidos, SUM(vi.cantidad * vi.precio_unitario) AS total
+    FROM venta_items vi
+    JOIN ventas v ON v.id = vi.venta_id
+    WHERE v.user_id = ? AND v.medio_pago = 'mercadolibre'
+    GROUP BY vi.nombre
+    ORDER BY cantidad DESC
+  `).all(req.userId);
+
+  const resumen = db.prepare(`
+    SELECT COUNT(*) AS pedidos, COALESCE(SUM(total), 0) AS total
+    FROM ventas WHERE user_id = ? AND medio_pago = 'mercadolibre'
+  `).get(req.userId);
+
+  res.json({
+    porProducto: filas.map((f) => ({ nombre: f.nombre, cantidad: f.cantidad, pedidos: f.pedidos, total: f.total })),
+    totalPedidos: resumen.pedidos,
+    totalVendido: resumen.total
+  });
+});
+
 // ── trae las publicaciones activas del vendedor, para elegir cual vincular a que producto ──
 router.get('/publicaciones', async (req, res) => {
   try {

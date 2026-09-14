@@ -2318,6 +2318,9 @@
         <div class="seccion" style="margin-top:20px;">Vincular publicaciones</div>
         <p class="hint" style="margin:0 0 12px;">Elegi que producto de CajaViva es cada publicacion, para que el stock se mantenga sincronizado.</p>
         <div id="listaPublicacionesMl"><div class="vacio">Cargando...</div></div>
+
+        <div class="seccion" style="margin-top:20px;">Mis ventas de MercadoLibre</div>
+        <div id="resumenVentasMl"><div class="vacio">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -8596,8 +8599,32 @@ async function cargarEstadoMl() {
     if (e.conectado) {
       $('mlNickname').textContent = e.nickname || '';
       cargarPublicacionesMl();
+      cargarVentasMl();
     }
   } catch (err) {}
+}
+
+async function cargarVentasMl() {
+  $('resumenVentasMl').innerHTML = '<div class="vacio">Cargando...</div>';
+  try {
+    const r = await api('GET', '/mercadolibre/ventas');
+    if (r.porProducto.length === 0) {
+      $('resumenVentasMl').innerHTML = '<div class="vacio">Todavia no tenes ventas de MercadoLibre.</div>';
+      return;
+    }
+    let html = '<div class="mov" style="background:var(--panel-2);">' +
+      '<div class="info"><div class="n">Total: ' + r.totalPedidos + ' pedido' + (r.totalPedidos === 1 ? '' : 's') + '</div></div>' +
+      '<div class="monto">' + plata(r.totalVendido) + '</div></div>';
+    html += r.porProducto.map(function (p) {
+      return '<div class="mov"><div class="info">' +
+        '<div class="n">' + esc(p.nombre) + '</div>' +
+        '<div class="d">Se vendio ' + fmtCant(p.cantidad) + ' veces en ' + p.pedidos + ' pedido' + (p.pedidos === 1 ? '' : 's') + '</div>' +
+        '</div><div class="monto">' + plata(p.total) + '</div></div>';
+    }).join('');
+    $('resumenVentasMl').innerHTML = html;
+  } catch (e) {
+    $('resumenVentasMl').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>';
+  }
 }
 
 async function cargarPublicacionesMl() {
@@ -9400,6 +9427,7 @@ function mostrarAlertaVentaMl(datos) {
   $('alertaVentaMl').classList.add('ver');
   if (temporizadorAlertaMl) clearTimeout(temporizadorAlertaMl);
   temporizadorAlertaMl = setTimeout(function () { $('alertaVentaMl').classList.remove('ver'); }, 9000);
+  cargarVentasMl();
 }
 
 $('btnCerrarAlertaMl').onclick = function () {
