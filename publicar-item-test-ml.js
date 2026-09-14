@@ -12,11 +12,21 @@ async function main() {
     headers: { Authorization: 'Bearer ' + token }
   });
   const categorias = await rCat.json();
-  const categoryId = (categorias && categorias[0] && categorias[0].category_id) || 'MLA1574'; // "Otras categorias" como respaldo
+  const categoryId = (categorias && categorias[0] && categorias[0].category_id) || 'MLA1574';
 
   console.log('Usando categoria:', categoryId);
 
-  // 2) creamos la publicacion
+  // 2) vemos que atributos son obligatorios en esa categoria, para no chocar con la validacion
+  const rAttrs = await fetch('https://api.mercadolibre.com/categories/' + categoryId + '/attributes');
+  const attrs = await rAttrs.json();
+  const obligatorios = (attrs || []).filter((a) => (a.tags && a.tags.required));
+  const attributes = obligatorios.map((a) => {
+    if (a.value_type === 'number_unit' || a.value_type === 'number') return { id: a.id, value_name: '1' };
+    return { id: a.id, value_name: (a.values && a.values[0] && a.values[0].name) || 'Generico' };
+  });
+  console.log('Atributos obligatorios completados:', attributes.map((a) => a.id).join(', ') || '(ninguno)');
+
+  // 3) creamos la publicacion
   const body = {
     title: 'Item de Prueba - Por favor, NO OFERTAR',
     category_id: categoryId,
@@ -27,7 +37,8 @@ async function main() {
     listing_type_id: 'gold_special',
     condition: 'new',
     description: { plain_text: 'Esta es una publicacion de prueba para probar una integracion. No comprar en serio.' },
-    pictures: [{ source: 'https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/6210014/logo-ML-notification.png' }]
+    pictures: [{ source: 'https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/6210014/logo-ML-notification.png' }],
+    attributes: attributes
   };
 
   const r = await fetch('https://api.mercadolibre.com/items', {
