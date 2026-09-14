@@ -19,5 +19,11 @@ try { db.exec('ALTER TABLE productos ADD COLUMN ml_item_id TEXT;'); } catch (e) 
 try { db.exec('ALTER TABLE ventas ADD COLUMN ml_order_id TEXT;'); } catch (e) {}
 try { db.exec('ALTER TABLE ventas ADD COLUMN ml_comprador TEXT;'); } catch (e) {}
 try { db.exec('ALTER TABLE ventas ADD COLUMN ml_envio_estado TEXT;'); } catch (e) {}
+try {
+  db.exec('ALTER TABLE ventas ADD COLUMN ml_visto INTEGER NOT NULL DEFAULT 0;');
+  // las ventas de MercadoLibre que ya existian antes de este cambio se marcan como ya vistas,
+  // para no inflar el contador con pedidos viejos que el usuario ya conoce
+  db.exec("UPDATE ventas SET ml_visto = 1 WHERE medio_pago = 'mercadolibre';");
+} catch (e) {}
 
-console.log('Tabla mercadolibre_conexion, columna ml_item_id, ml_order_id, ml_comprador y ml_envio_estado listas.');
+console.log('Tabla mercadolibre_conexion, columna ml_item_id, ml_order_id, ml_comprador, ml_envio_estado y ml_visto listas.');

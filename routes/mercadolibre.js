@@ -72,6 +72,18 @@ router.get('/estado', (req, res) => {
   });
 });
 
+// ── cuantas ventas de MercadoLibre todavia no se vieron (para el contador, persiste aunque se pierda la conexion en vivo) ──
+router.get('/no-vistas', (req, res) => {
+  const r = db.prepare("SELECT COUNT(*) AS n FROM ventas WHERE user_id = ? AND medio_pago = 'mercadolibre' AND ml_visto = 0").get(req.userId);
+  res.json({ noVistas: r.n });
+});
+
+// ── marcar todas como vistas (se llama al entrar a la pestana) ──
+router.post('/marcar-vistas', (req, res) => {
+  db.prepare("UPDATE ventas SET ml_visto = 1 WHERE user_id = ? AND medio_pago = 'mercadolibre' AND ml_visto = 0").run(req.userId);
+  res.json({ ok: true });
+});
+
 // ── resumen de ventas de MercadoLibre, agrupado por producto ──
 router.get('/ventas', (req, res) => {
   const filas = db.prepare(`

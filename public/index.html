@@ -5200,6 +5200,7 @@ async function arrancarApp() {
   pintarContadorCola();
   subirCola();
   conectarTiempoReal();
+  revisarVentasMlPendientes();
   if (new URLSearchParams(window.location.search).get('ml') === 'conectado') {
     avisar('MercadoLibre conectado con éxito');
     window.history.replaceState({}, '', window.location.pathname);
@@ -5406,6 +5407,7 @@ document.querySelectorAll('nav button').forEach(function (b) {
       cargarEstadoMl();
       contadorVentasMl = 0;
       pintarContadorMl();
+      api('POST', '/mercadolibre/marcar-vistas').catch(function () {});
     }
     if (b.dataset.vista === 'mesas') cargarMesas();
     if (b.dataset.vista === 'vender' && window.innerWidth >= 900) setTimeout(function () { $('buscar').focus(); }, 50);
@@ -9757,6 +9759,17 @@ function pintarContadorMl() {
   const b = document.getElementById('tabMercadolibre');
   if (!b) return;
   b.innerHTML = 'MercadoLibre' + (contadorVentasMl > 0 ? '<span class="contador">' + contadorVentasMl + '</span>' : '');
+}
+
+async function revisarVentasMlPendientes() {
+  try {
+    const r = await api('GET', '/mercadolibre/no-vistas');
+    if (r.noVistas > 0) {
+      contadorVentasMl = r.noVistas;
+      pintarContadorMl();
+      avisar('Tenés ' + r.noVistas + ' venta' + (r.noVistas === 1 ? '' : 's') + ' nueva' + (r.noVistas === 1 ? '' : 's') + ' de MercadoLibre');
+    }
+  } catch (e) {}
 }
 
 function mostrarAlertaVentaMl(datos) {
