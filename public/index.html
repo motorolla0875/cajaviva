@@ -15260,8 +15260,9 @@ $('btnGuardarPass').onclick = async function () {
     }
   }
 
-  // sin sesion: la cuenta se crea desde la pagina de presentacion
-  if (localStorage.getItem('cajaviva_ya_uso') === '1') { mostrar('login'); return; }
+  // sin sesion: la cuenta se crea desde la pagina de presentacion (excepto en la app instalada,
+  // que no pasa por ahi - Capacitor marca la ventana con window.Capacitor)
+  if (localStorage.getItem('cajaviva_ya_uso') === '1' || window.Capacitor) { mostrar('login'); return; }
   location.replace('/');
 })();
 </script>
