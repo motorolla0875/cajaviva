@@ -263,7 +263,7 @@ router.get('/publicaciones', async (req, res) => {
         titulo: p.title,
         precio: p.price,
         stock: p.available_quantity,
-        foto: p.thumbnail,
+        foto: p.thumbnail ? p.thumbnail.replace('http://', 'https://') : p.thumbnail,
         tieneVariantes: (p.variations || []).length > 0,
         productoVinculado: vinculadosPorItem[p.id] || null
       }))
