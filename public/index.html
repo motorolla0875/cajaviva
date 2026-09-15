@@ -4826,6 +4826,7 @@ function cerrarSesion() {
   localStorage.removeItem('cajaviva_token');
   localStorage.removeItem('cajaviva_empleado');
   token = null; usuario = null;
+  if (window.Capacitor) { mostrar('login'); return; }
   location.replace('/');
 }
 
@@ -5244,18 +5245,22 @@ $('btnEntrar').onclick = async function () {
   btn.disabled = false; btn.textContent = 'Entrar';
 };
 
+async function crearCuentaAutomatica() {
+  const d = await api('POST', '/auth/nueva');
+  token = d.token; localStorage.setItem('cajaviva_token', token);
+  localStorage.setItem('cajaviva_ya_uso', '1');
+  localStorage.removeItem('cajaviva_config');
+  aplicarUsuario(d);
+  pintarRubros();
+  mostrar('bienvenida');
+  pintarPaises();
+}
+
 $('btnCuentaNueva').onclick = async function () {
   const btn = $('btnCuentaNueva');
   btn.disabled = true; btn.textContent = 'Creando...';
   try {
-    const d = await api('POST', '/auth/nueva');
-    token = d.token; localStorage.setItem('cajaviva_token', token);
-    localStorage.setItem('cajaviva_ya_uso', '1');
-    localStorage.removeItem('cajaviva_config');
-    aplicarUsuario(d);
-    pintarRubros();
-    mostrar('bienvenida');
-    pintarPaises();
+    await crearCuentaAutomatica();
   } catch (e) { $('msgLogin').innerHTML = '<div class="msg">' + esc(e.message) + '</div>'; }
   btn.disabled = false; btn.textContent = 'Empezar con una cuenta nueva';
 };
@@ -15260,8 +15265,13 @@ $('btnGuardarPass').onclick = async function () {
     }
   }
 
-  // sin sesion: la cuenta se crea desde la pagina de presentacion (excepto en la app instalada,
-  // que no pasa por ahi - Capacitor marca la ventana con window.Capacitor)
+  // sin sesion: la cuenta se crea desde la pagina de presentacion (web), pero en la app
+  // instalada (Capacitor) se crea sola y se pasa directo a elegir el negocio - nunca
+  // debe ir a la landing de marketing ni pedir login en el primer uso
+  if (window.Capacitor && localStorage.getItem('cajaviva_ya_uso') !== '1') {
+    try { await crearCuentaAutomatica(); } catch (e) { mostrar('login'); }
+    return;
+  }
   if (localStorage.getItem('cajaviva_ya_uso') === '1' || window.Capacitor) { mostrar('login'); return; }
   location.replace('/');
 })();
