@@ -5689,7 +5689,7 @@ document.addEventListener('keydown', function (e) {
   if (activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA')) { bufferEscanerGlobal = ''; return; }
 
   const ahora = Date.now();
-  const esRapido = (ahora - ultimaTeclaEscanerGlobal) < 40;
+  const esRapido = (ahora - ultimaTeclaEscanerGlobal) < 100;
   ultimaTeclaEscanerGlobal = ahora;
 
   if (e.key === 'Enter') {
@@ -5699,6 +5699,12 @@ document.addEventListener('keydown', function (e) {
       const codigo = bufferEscanerGlobal;
       bufferEscanerGlobal = '';
       procesarCodigoDeBarras(codigo);
+    } else if (bufferEscanerGlobal.length > 0 && esRapido) {
+      // algo se estaba tipeando rapido pero no llego a completar un codigo valido -
+      // mejor ignorar el Enter que arriesgarse a que dispare "Cobrar" por error
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      bufferEscanerGlobal = '';
     } else {
       bufferEscanerGlobal = '';
     }
