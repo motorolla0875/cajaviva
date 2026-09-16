@@ -5626,7 +5626,7 @@ function pintarGrilla() {
 $('buscar').addEventListener('input', pintarGrilla);
 
 // lector de codigo de barras fisico (USB/Bluetooth): escribe el codigo solo y aprieta Enter
-function procesarCodigoDeBarras(crudo) {
+async function procesarCodigoDeBarras(crudo) {
   const codigo = norm(crudo);
   if (!codigo) return;
 
@@ -5640,12 +5640,36 @@ function procesarCodigoDeBarras(crudo) {
     $('pBarras').value = crudo;
     $('msgProd').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Codigo ' + esc(crudo) + ' - completa el producto y guardalo.</div>';
     setTimeout(function () { $('pNombre').focus(); }, 150);
+    buscarProductoPorCodigoExterno(crudo);
     return;
   }
 
   sonidoOk(); vibrar(40);
   agregar(p.id);
   avisar(p.nombre + ' agregado');
+}
+
+async function buscarProductoPorCodigoExterno(codigo) {
+  try {
+    const d = await api('GET', '/productos/buscar-codigo/' + encodeURIComponent(codigo));
+    if (!d.encontrado) return;
+    if (!editandoId && !$('pNombre').value.trim()) {
+      $('pNombre').value = d.nombre;
+      $('msgProd').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Encontramos este producto - revisa el nombre, y completa precio y categoria.</div>';
+    }
+    if (d.fotoUrl && !editandoId && !fotoPendiente) {
+      try {
+        const rf = await fetch(d.fotoUrl);
+        const blob = await rf.blob();
+        const grande = await comprimirImagen(blob, 800, 0.7);
+        const mini = await comprimirImagen(blob, 240, 0.75);
+        fotoPendiente = { grande: grande, mini: mini };
+        $('previewFoto').innerHTML = '<img src="' + URL.createObjectURL(grande) + '">';
+        $('btnSubirFoto').textContent = 'Cambiar foto';
+        $('btnBorrarFoto').style.display = 'block';
+      } catch (e) {}
+    }
+  } catch (e) {}
 }
 
 // deteccion de escaner sin depender de donde este el foco: los lectores de codigo de

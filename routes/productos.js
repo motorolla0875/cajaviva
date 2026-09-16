@@ -21,6 +21,32 @@ function hoyISO(userId) {
   return new Date().toISOString().slice(0, 10);
 }
 
+// ── buscar un producto por su codigo de barras en Open Food Facts (base publica y
+//    gratuita, cubre bien comida, bebida y almacen en general) ──
+router.get('/buscar-codigo/:codigo', async (req, res) => {
+  try {
+    const r = await fetch(
+      'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(req.params.codigo) +
+      '.json?fields=product_name,brands,image_front_url,image_url',
+      { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } }
+    );
+    const d = await r.json();
+    if (!r.ok || d.status !== 1 || !d.product || !d.product.product_name) {
+      return res.json({ encontrado: false });
+    }
+    const nombre = d.product.brands
+      ? (d.product.brands.split(',')[0].trim() + ' ' + d.product.product_name)
+      : d.product.product_name;
+    res.json({
+      encontrado: true,
+      nombre: nombre,
+      fotoUrl: d.product.image_front_url || d.product.image_url || null
+    });
+  } catch (e) {
+    res.json({ encontrado: false });
+  }
+});
+
 // ── listar productos activos ──
 router.get('/', (req, res) => {
   const rows = db.prepare(`
