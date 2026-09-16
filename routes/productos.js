@@ -129,10 +129,10 @@ router.post('/', (req, res) => {
   // gasto automático por la carga inicial de stock
   if (stock > 0 && pc > 0) {
     db.prepare(`
-      INSERT INTO gastos (id, user_id, descripcion, monto, fecha, categoria, automatico, proveedor_id)
-      VALUES (?, ?, ?, ?, ?, 'stock', 1, ?)
+      INSERT INTO gastos (id, user_id, descripcion, monto, fecha, categoria, automatico, proveedor_id, producto_id, cantidad)
+      VALUES (?, ?, ?, ?, ?, 'stock', 1, ?, ?, ?)
     `).run(uuidv4(), req.userId, `Stock inicial - ${nombre.trim()}`, stock * pc, hoyISO(req.userId),
-           proveedorId || null);
+           proveedorId || null, id, stock);
   }
 
   if (db.avisar) db.avisar(req.userId, 'productos');
@@ -239,10 +239,11 @@ router.post('/:id/reponer', (req, res) => {
 
   if (costoUnitario > 0) {
     db.prepare(`
-      INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, categoria, automatico)
-      VALUES (?, ?, ?, ?, ?, ?, 'stock', 1)
+      INSERT INTO gastos (id, user_id, proveedor_id, descripcion, monto, fecha, categoria, automatico, producto_id, cantidad)
+      VALUES (?, ?, ?, ?, ?, ?, 'stock', 1, ?, ?)
     `).run(uuidv4(), req.userId, req.body?.proveedorId || null,
-           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO(req.userId));
+           `Reposición - ${prod.nombre}`, cantidad * costoUnitario, req.body?.fecha || hoyISO(req.userId),
+           prod.id, cantidad);
   }
 
   if (db.avisar) db.avisar(req.userId, 'productos');

@@ -1,8 +1,12 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const mercadolibre = require('./mercadolibre');
 
 const router = express.Router();
+
+try { db.exec('ALTER TABLE gastos ADD COLUMN producto_id TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE gastos ADD COLUMN cantidad REAL'); } catch (e) {}
 
 function hoyISO(userId) {
   if (userId && db.hoyEn) return db.hoyEn(userId);
@@ -39,6 +43,20 @@ router.post('/', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   if (req.esEmpleado && !db.tienePermiso(req, 'perm_gastos')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
+
+  const g = db.prepare('SELECT * FROM gastos WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+  if (!g) return res.status(404).json({ error: 'Gasto no encontrado.' });
+
+  if (g.categoria === 'stock' && g.producto_id && g.cantidad) {
+    const prod = db.prepare('SELECT id, stock FROM productos WHERE id = ? AND user_id = ?').get(g.producto_id, req.userId);
+    if (prod) {
+      const nuevoStock = prod.stock - g.cantidad;
+      db.prepare('UPDATE productos SET stock = ? WHERE id = ?').run(nuevoStock, prod.id);
+      if (db.avisar) db.avisar(req.userId, 'productos');
+      mercadolibre.actualizarStockMl(req.userId, prod.id, nuevoStock).catch(function () {});
+    }
+  }
+
   db.prepare('DELETE FROM gastos WHERE id = ? AND user_id = ?').run(req.params.id, req.userId);
   res.json({ ok: true });
 });

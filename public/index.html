@@ -15461,7 +15461,7 @@ async function cargarCaja() {
         return '<div class="mov"><div class="info"><div class="n">' + esc(g.descripcion) + '</div>' +
           '<div class="d">' + fechaCorta(g.fecha) + (g.automatico ? ' &middot; automatico' : '') + '</div></div>' +
           '<div class="monto gasto">-' + plata(g.monto) + '</div>' +
-          (g.automatico ? '' : '<button class="x" onclick="borrarGasto(\'' + g.id + '\')">&#10005;</button>') +
+          '<button class="x" onclick="borrarGasto(\'' + g.id + '\', ' + (g.categoria === 'stock' && g.producto_id ? 'true' : 'false') + ')">&#10005;</button>' +
           '</div>';
       }).join('');
     }
@@ -15480,11 +15480,15 @@ async function anularVenta(id) {
   } catch (e) { avisar(e.message, true); }
 }
 
-async function borrarGasto(id) {
-  if (!confirm('Borrar este gasto?')) return;
+async function borrarGasto(id, esDeStock) {
+  const msg = esDeStock
+    ? 'Borrar este gasto? Como es de una reposicion de stock, el stock de ese producto tambien va a bajar para que quede acorde.'
+    : 'Borrar este gasto?';
+  if (!confirm(msg)) return;
   try {
     await api('DELETE', '/gastos/' + id);
     await cargarCaja();
+    if (esDeStock) await cargarProductos();
     avisar('Gasto borrado');
   } catch (e) { avisar(e.message, true); }
 }
