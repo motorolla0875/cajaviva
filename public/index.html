@@ -5753,6 +5753,7 @@ document.addEventListener('keydown', function (e) {
 
   if (e.key === 'Escape') {
     e.preventDefault();
+    if (carrito.length > 0) $('btnLimpiar').click();
     resetearNavTeclado();
     return;
   }
