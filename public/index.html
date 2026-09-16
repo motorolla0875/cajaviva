@@ -5737,6 +5737,24 @@ function resetearNavTeclado() {
   limpiarResaltadosTeclado();
 }
 
+// Ctrl solo (tocado y soltado, sin combinar con otra tecla) salta directo al
+// buscador, como si le hubieras hecho clic. Si se usa como parte de una
+// combinacion (Ctrl+C, Ctrl+V, etc.) no hace nada, para no interferir.
+let ctrlTocadoSolo = false;
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Control') { ctrlTocadoSolo = true; return; }
+  if (e.ctrlKey || e.metaKey) ctrlTocadoSolo = false;
+});
+document.addEventListener('keyup', function (e) {
+  if (e.key !== 'Control' || !ctrlTocadoSolo) return;
+  ctrlTocadoSolo = false;
+  const v = document.querySelector('.vista.on');
+  if (!v || v.id !== 'v-vender') return;
+  resetearNavTeclado();
+  $('buscar').focus();
+  $('buscar').select();
+});
+
 document.addEventListener('keydown', function (e) {
   const v = document.querySelector('.vista.on');
   if (!v || v.id !== 'v-vender') return;
