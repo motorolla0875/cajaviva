@@ -21,39 +21,53 @@ function hoyISO(userId) {
   return new Date().toISOString().slice(0, 10);
 }
 
-// ── buscar un producto por su codigo de barras en Open Food Facts (base publica y
-//    gratuita, cubre bien comida, bebida y almacen en general) ──
+// ── descarga una imagen y la devuelve en base64, porque el navegador no puede
+//    bajar imagenes de otros sitios directo (CORS), aunque si mostrarlas ──
+async function descargarFotoBase64(url) {
+  try {
+    const rf = await fetch(url, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
+    if (!rf.ok) return null;
+    const buf = Buffer.from(await rf.arrayBuffer());
+    const tipo = rf.headers.get('content-type') || 'image/jpeg';
+    return 'data:' + tipo + ';base64,' + buf.toString('base64');
+  } catch (e) { return null; }
+}
+
+// ── Open Food Facts: base publica y gratuita, cubre muy bien comida/bebida/almacen ──
+async function buscarEnOpenFoodFacts(codigo) {
+  const r = await fetch(
+    'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(codigo) +
+    '.json?fields=product_name,brands,image_front_url,image_url',
+    { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } }
+  );
+  const d = await r.json();
+  if (!r.ok || d.status !== 1 || !d.product || !d.product.product_name) return null;
+  const nombre = d.product.brands
+    ? (d.product.brands.split(',')[0].trim() + ' ' + d.product.product_name)
+    : d.product.product_name;
+  const urlFoto = d.product.image_front_url || d.product.image_url || null;
+  return { nombre: nombre, fotoBase64: urlFoto ? await descargarFotoBase64(urlFoto) : null };
+}
+
+// ── UPCitemdb: base publica y gratuita (sin necesidad de clave), cubre cualquier
+//    tipo de producto (no solo comida) - respaldo cuando Open Food Facts no tiene nada ──
+async function buscarEnUpcItemDb(codigo) {
+  const r = await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc=' + encodeURIComponent(codigo));
+  const d = await r.json();
+  if (!r.ok || d.code !== 'OK' || !d.items || !d.items[0] || !d.items[0].title) return null;
+  const item = d.items[0];
+  const urlFoto = item.images && item.images[0] ? item.images[0] : null;
+  return { nombre: item.title, fotoBase64: urlFoto ? await descargarFotoBase64(urlFoto) : null };
+}
+
+// ── buscar un producto por su codigo de barras: primero en Open Food Facts,
+//    y si no aparece nada, en UPCitemdb como respaldo ──
 router.get('/buscar-codigo/:codigo', async (req, res) => {
   try {
-    const r = await fetch(
-      'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(req.params.codigo) +
-      '.json?fields=product_name,brands,image_front_url,image_url',
-      { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } }
-    );
-    const d = await r.json();
-    if (!r.ok || d.status !== 1 || !d.product || !d.product.product_name) {
-      return res.json({ encontrado: false });
-    }
-    const nombre = d.product.brands
-      ? (d.product.brands.split(',')[0].trim() + ' ' + d.product.product_name)
-      : d.product.product_name;
-
-    // la foto se trae desde el servidor y se manda como base64, porque el navegador
-    // no puede descargar imagenes de otros sitios directo (CORS), aunque si mostrarlas
-    let fotoBase64 = null;
-    const urlFoto = d.product.image_front_url || d.product.image_url || null;
-    if (urlFoto) {
-      try {
-        const rf = await fetch(urlFoto, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
-        if (rf.ok) {
-          const buf = Buffer.from(await rf.arrayBuffer());
-          const tipo = rf.headers.get('content-type') || 'image/jpeg';
-          fotoBase64 = 'data:' + tipo + ';base64,' + buf.toString('base64');
-        }
-      } catch (e) {}
-    }
-
-    res.json({ encontrado: true, nombre: nombre, fotoBase64: fotoBase64 });
+    let hallazgo = await buscarEnOpenFoodFacts(req.params.codigo).catch(function () { return null; });
+    if (!hallazgo) hallazgo = await buscarEnUpcItemDb(req.params.codigo).catch(function () { return null; });
+    if (!hallazgo) return res.json({ encontrado: false });
+    res.json({ encontrado: true, nombre: hallazgo.nombre, fotoBase64: hallazgo.fotoBase64 });
   } catch (e) {
     res.json({ encontrado: false });
   }
