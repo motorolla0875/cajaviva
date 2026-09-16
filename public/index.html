@@ -8233,6 +8233,13 @@ async function cargarReportes() {
       const d = await api('GET', '/reportes/comparativa?dias=' + repDias);
       if (d.items.length === 0) { cont.innerHTML = '<div class="vacio">Todavia no hay suficientes ventas para comparar.</div>'; return; }
 
+      const hayHistorialPrevio = d.items.some(function (i) { return i.unidadesAnterior > 0; });
+      if (!hayHistorialPrevio) {
+        cont.innerHTML = '<div class="vacio">Todavia no hay ventas registradas de hace ' + (d.dias * 2) +
+          ' a ' + d.dias + ' dias, asi que no hay con que comparar todavia. En unos dias vas a poder ver aca como le va a cada producto respecto al periodo anterior.</div>';
+        return;
+      }
+
       function consejo(i) {
         if (i.cambio === null) return { icono: '&#128640;', texto: 'Nuevo en tus ventas este periodo', color: 'var(--accent-dark)' };
         if (i.unidadesActual === 0) return { icono: '&#9888;&#65039;', texto: 'Dejo de venderse (antes vendias ' + fmtCant(i.unidadesAnterior) + ')', color: 'var(--danger)' };
