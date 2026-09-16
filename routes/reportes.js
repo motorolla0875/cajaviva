@@ -291,6 +291,53 @@ router.get('/vencimientos', (req, res) => {
 });
 
 
+// ── comparativa: como le fue a cada producto contra el periodo anterior ──
+router.get('/comparativa', (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
+
+  const dias = parseInt(req.query.dias) || 30;
+  const finActual = hoyISO(req.userId);
+  const inicioActual = menosDias(dias);
+  const inicioAnterior = menosDias(dias * 2);
+
+  const actual = db.prepare(`
+    SELECT i.nombre, SUM(i.cantidad) AS unidades, SUM(i.cantidad * i.precio_unitario) AS facturado
+    FROM venta_items i JOIN ventas v ON v.id = i.venta_id
+    WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
+    GROUP BY i.nombre
+  `).all(req.userId, inicioActual, finActual);
+
+  const anterior = db.prepare(`
+    SELECT i.nombre, SUM(i.cantidad) AS unidades
+    FROM venta_items i JOIN ventas v ON v.id = i.venta_id
+    WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha < ?
+    GROUP BY i.nombre
+  `).all(req.userId, inicioAnterior, inicioActual);
+
+  const mapaAnterior = {};
+  anterior.forEach(function (a) { mapaAnterior[a.nombre] = a.unidades; });
+
+  const items = actual.map(function (a) {
+    const prev = mapaAnterior[a.nombre] || 0;
+    delete mapaAnterior[a.nombre];
+    const cambio = prev > 0 ? Math.round(((a.unidades - prev) / prev) * 100) : null;
+    return { nombre: a.nombre, unidadesActual: a.unidades, unidadesAnterior: prev, facturado: a.facturado, cambio: cambio };
+  });
+
+  // productos que se vendian antes y en este periodo no se vendieron nada
+  Object.keys(mapaAnterior).forEach(function (nombre) {
+    items.push({ nombre: nombre, unidadesActual: 0, unidadesAnterior: mapaAnterior[nombre], facturado: 0, cambio: -100 });
+  });
+
+  items.sort(function (a, b) {
+    const magA = a.cambio === null ? -1 : Math.abs(a.cambio);
+    const magB = b.cambio === null ? -1 : Math.abs(b.cambio);
+    return magB - magA;
+  });
+
+  res.json({ items: items.slice(0, 40), dias: dias });
+});
+
 // ── unidades mas alquiladas ──
 router.get('/unidades', (req, res) => {
   if (req.esEmpleado && !db.tienePermiso(req, 'perm_reportes')) return res.status(403).json({ error: 'No tenés permiso para esto.' });

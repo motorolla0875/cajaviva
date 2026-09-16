@@ -2370,6 +2370,7 @@
         <button data-tab="vendidos">Mas vendidos</button>
         <button data-tab="reponer">Que comprar</button>
         <button data-tab="quietos">No se venden</button>
+        <button data-tab="comparativa">Comparativa</button>
         <button data-tab="empleados">Por empleado</button>
         <button data-tab="vencen" id="tabVencen">Vencimientos</button>
       </div>
@@ -8227,6 +8228,28 @@ async function cargarReportes() {
             '<div class="cifra"><b>' + fmtCant(i.sugerido) + '</b><span>comprar</span></div></div>';
         }).join('');
       window._listaReponer = d.items;
+
+    } else if (repTab === 'comparativa') {
+      const d = await api('GET', '/reportes/comparativa?dias=' + repDias);
+      if (d.items.length === 0) { cont.innerHTML = '<div class="vacio">Todavia no hay suficientes ventas para comparar.</div>'; return; }
+
+      function consejo(i) {
+        if (i.cambio === null) return { icono: '&#128640;', texto: 'Nuevo en tus ventas este periodo', color: 'var(--accent-dark)' };
+        if (i.unidadesActual === 0) return { icono: '&#9888;&#65039;', texto: 'Dejo de venderse (antes vendias ' + fmtCant(i.unidadesAnterior) + ')', color: 'var(--danger)' };
+        if (i.cambio > 15) return { icono: '&#128200;', texto: 'Subieron tus ventas un ' + i.cambio + '%', color: 'var(--accent-dark)' };
+        if (i.cambio < -15) return { icono: '&#128201;', texto: 'Bajaron tus ventas un ' + Math.abs(i.cambio) + '%', color: 'var(--danger)' };
+        return { icono: '&#8212;', texto: 'Se mantiene estable', color: 'var(--muted)' };
+      }
+
+      cont.innerHTML =
+        '<div class="hint" style="margin:0 0 12px;">Comparado con los ' + d.dias + ' dias anteriores.</div>' +
+        d.items.map(function (i) {
+          const c = consejo(i);
+          return '<div class="rep-item">' +
+            '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
+            '<div class="d" style="color:' + c.color + ';">' + c.icono + ' ' + c.texto + '</div></div>' +
+            '<div class="cifra"><b>' + fmtCant(i.unidadesActual) + '</b><span>vendidos</span></div></div>';
+        }).join('');
 
     } else if (repTab === 'unidades') {
       const d = await api('GET', '/reportes/unidades' + qs);
