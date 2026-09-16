@@ -5678,23 +5678,63 @@ document.addEventListener('keydown', function (e) {
   }
 });
 
-// navegacion de la grilla de Vender con el teclado: flechas para moverse, barra
-// espaciadora para agregar el resaltado, Enter para cobrar (y de nuevo Enter para
-// seguir vendiendo una vez que la venta ya se cobro)
+// navegacion de Vender con el teclado: flechas para moverse entre categorias, la
+// grilla de productos y los medios de pago; barra espaciadora para agregar el
+// resaltado; Enter para cobrar (y de nuevo Enter para seguir vendiendo); Escape
+// para cancelar la seleccion actual
+let zonaTeclado = 'grilla'; // 'categorias' | 'grilla' | 'medios'
 let indiceGrillaTeclado = -1;
+let indiceCategoriaTeclado = -1;
+let indiceMedioTeclado = -1;
 
 function listaGrillaTeclado() {
   return Array.prototype.slice.call(document.querySelectorAll('#grilla .prod'));
 }
+function listaCategoriasTeclado() {
+  return Array.prototype.slice.call(document.querySelectorAll('#chipsCat button'));
+}
+function listaMediosTeclado() {
+  return Array.prototype.slice.call(document.querySelectorAll('#medios button'));
+}
+
+function limpiarResaltadosTeclado() {
+  listaGrillaTeclado().forEach(function (el) { el.classList.remove('resaltado-teclado'); });
+  listaCategoriasTeclado().forEach(function (el) { el.classList.remove('resaltado-teclado'); });
+  listaMediosTeclado().forEach(function (el) { el.classList.remove('resaltado-teclado'); });
+}
 
 function resaltarGrillaTeclado() {
   const items = listaGrillaTeclado();
-  items.forEach(function (el, i) {
-    el.classList.toggle('resaltado-teclado', i === indiceGrillaTeclado);
-  });
+  limpiarResaltadosTeclado();
   if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
+    items[indiceGrillaTeclado].classList.add('resaltado-teclado');
     items[indiceGrillaTeclado].scrollIntoView({ block: 'nearest' });
   }
+}
+
+function resaltarCategoriaTeclado() {
+  const items = listaCategoriasTeclado();
+  limpiarResaltadosTeclado();
+  if (indiceCategoriaTeclado >= 0 && items[indiceCategoriaTeclado]) {
+    items[indiceCategoriaTeclado].classList.add('resaltado-teclado');
+    items[indiceCategoriaTeclado].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+
+function resaltarMedioTeclado() {
+  const items = listaMediosTeclado();
+  limpiarResaltadosTeclado();
+  if (indiceMedioTeclado >= 0 && items[indiceMedioTeclado]) {
+    items[indiceMedioTeclado].classList.add('resaltado-teclado');
+  }
+}
+
+function resetearNavTeclado() {
+  zonaTeclado = 'grilla';
+  indiceGrillaTeclado = -1;
+  indiceCategoriaTeclado = -1;
+  indiceMedioTeclado = -1;
+  limpiarResaltadosTeclado();
 }
 
 document.addEventListener('keydown', function (e) {
@@ -5711,9 +5751,24 @@ document.addEventListener('keydown', function (e) {
   const enOtroCampo = activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA') && !enBuscador;
   if (enOtroCampo) return;
 
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    resetearNavTeclado();
+    return;
+  }
+
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    if (enBuscador) activo.blur();
+    if (enBuscador) { activo.blur(); zonaTeclado = 'categorias'; indiceCategoriaTeclado = 0; resaltarCategoriaTeclado(); return; }
+    if (zonaTeclado === 'categorias') {
+      zonaTeclado = 'grilla';
+      const items = listaGrillaTeclado();
+      if (items.length === 0) return;
+      indiceGrillaTeclado = 0;
+      resaltarGrillaTeclado();
+      return;
+    }
+    zonaTeclado = 'grilla';
     const items = listaGrillaTeclado();
     if (items.length === 0) return;
     indiceGrillaTeclado = Math.min(indiceGrillaTeclado + 1, items.length - 1);
@@ -5723,22 +5778,56 @@ document.addEventListener('keydown', function (e) {
 
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    if (indiceGrillaTeclado <= 0) {
-      indiceGrillaTeclado = -1;
-      resaltarGrillaTeclado();
+    if (zonaTeclado === 'categorias') {
+      resetearNavTeclado();
       $('buscar').focus();
       return;
     }
-    indiceGrillaTeclado--;
-    resaltarGrillaTeclado();
+    if (zonaTeclado === 'grilla' && indiceGrillaTeclado <= 0) {
+      zonaTeclado = 'categorias';
+      indiceGrillaTeclado = -1;
+      if (indiceCategoriaTeclado < 0) indiceCategoriaTeclado = 0;
+      resaltarCategoriaTeclado();
+      return;
+    }
+    if (zonaTeclado === 'grilla') {
+      indiceGrillaTeclado--;
+      resaltarGrillaTeclado();
+    }
+    return;
+  }
+
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const dir = e.key === 'ArrowLeft' ? -1 : 1;
+    if (zonaTeclado === 'categorias') {
+      e.preventDefault();
+      const cats = listaCategoriasTeclado();
+      if (cats.length === 0) return;
+      indiceCategoriaTeclado = Math.max(0, Math.min(indiceCategoriaTeclado + dir, cats.length - 1));
+      resaltarCategoriaTeclado();
+      cats[indiceCategoriaTeclado].click();
+      return;
+    }
+    if (!enBuscador) {
+      e.preventDefault();
+      const medios = listaMediosTeclado();
+      if (medios.length === 0) return;
+      zonaTeclado = 'medios';
+      indiceMedioTeclado = Math.max(0, Math.min((indiceMedioTeclado < 0 ? 0 : indiceMedioTeclado + dir), medios.length - 1));
+      resaltarMedioTeclado();
+      medios[indiceMedioTeclado].click();
+      return;
+    }
     return;
   }
 
   if (e.key === ' ' && !enBuscador) {
-    const items = listaGrillaTeclado();
-    if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
-      e.preventDefault();
-      agregar(items[indiceGrillaTeclado].dataset.id);
+    if (zonaTeclado === 'grilla') {
+      const items = listaGrillaTeclado();
+      if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
+        e.preventDefault();
+        agregar(items[indiceGrillaTeclado].dataset.id);
+      }
     }
     return;
   }
@@ -5749,6 +5838,7 @@ document.addEventListener('keydown', function (e) {
     return;
   }
 });
+
 
 $('buscar').addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
