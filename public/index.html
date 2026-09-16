@@ -490,6 +490,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .prod.en-venta { border-color: var(--accent); background: var(--accent-soft); }
+  .prod.resaltado-teclado { outline: 3px solid var(--accent-dark); outline-offset: -3px; }
 
 
   .barra-fija { display: none; }
@@ -5611,6 +5612,7 @@ function pintarGrilla() {
       (sin && !esServ ? '<span class="reponer-rapido" onclick="event.stopPropagation(); abrirStock(\'' + p.id + '\', \'reponer\');">+</span>' : '') +
       '</button>';
   }).join('');
+  indiceGrillaTeclado = -1;
 }
 $('buscar').addEventListener('input', pintarGrilla);
 
@@ -5660,6 +5662,7 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
     if (bufferEscanerGlobal.length >= 6 && esRapido) {
       e.preventDefault();
+      e.stopImmediatePropagation();
       const codigo = bufferEscanerGlobal;
       bufferEscanerGlobal = '';
       procesarCodigoDeBarras(codigo);
@@ -5672,6 +5675,78 @@ document.addEventListener('keydown', function (e) {
   if (e.key.length === 1) {
     if (!esRapido) bufferEscanerGlobal = '';
     bufferEscanerGlobal += e.key;
+  }
+});
+
+// navegacion de la grilla de Vender con el teclado: flechas para moverse, barra
+// espaciadora para agregar el resaltado, Enter para cobrar (y de nuevo Enter para
+// seguir vendiendo una vez que la venta ya se cobro)
+let indiceGrillaTeclado = -1;
+
+function listaGrillaTeclado() {
+  return Array.prototype.slice.call(document.querySelectorAll('#grilla .prod'));
+}
+
+function resaltarGrillaTeclado() {
+  const items = listaGrillaTeclado();
+  items.forEach(function (el, i) {
+    el.classList.toggle('resaltado-teclado', i === indiceGrillaTeclado);
+  });
+  if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
+    items[indiceGrillaTeclado].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+document.addEventListener('keydown', function (e) {
+  const v = document.querySelector('.vista.on');
+  if (!v || v.id !== 'v-vender') return;
+
+  if ($('modalHecho').classList.contains('on')) {
+    if (e.key === 'Enter') { e.preventDefault(); $('btnSeguir').click(); }
+    return;
+  }
+
+  const activo = document.activeElement;
+  const enBuscador = activo && (activo.id === 'buscar' || activo.id === 'buscarGlobal');
+  const enOtroCampo = activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA') && !enBuscador;
+  if (enOtroCampo) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (enBuscador) activo.blur();
+    const items = listaGrillaTeclado();
+    if (items.length === 0) return;
+    indiceGrillaTeclado = Math.min(indiceGrillaTeclado + 1, items.length - 1);
+    resaltarGrillaTeclado();
+    return;
+  }
+
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (indiceGrillaTeclado <= 0) {
+      indiceGrillaTeclado = -1;
+      resaltarGrillaTeclado();
+      $('buscar').focus();
+      return;
+    }
+    indiceGrillaTeclado--;
+    resaltarGrillaTeclado();
+    return;
+  }
+
+  if (e.key === ' ' && !enBuscador) {
+    const items = listaGrillaTeclado();
+    if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
+      e.preventDefault();
+      agregar(items[indiceGrillaTeclado].dataset.id);
+    }
+    return;
+  }
+
+  if (e.key === 'Enter' && !enBuscador) {
+    e.preventDefault();
+    if (!$('btnCobrar').disabled) $('btnCobrar').click();
+    return;
   }
 });
 
