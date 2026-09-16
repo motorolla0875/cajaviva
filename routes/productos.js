@@ -37,11 +37,23 @@ router.get('/buscar-codigo/:codigo', async (req, res) => {
     const nombre = d.product.brands
       ? (d.product.brands.split(',')[0].trim() + ' ' + d.product.product_name)
       : d.product.product_name;
-    res.json({
-      encontrado: true,
-      nombre: nombre,
-      fotoUrl: d.product.image_front_url || d.product.image_url || null
-    });
+
+    // la foto se trae desde el servidor y se manda como base64, porque el navegador
+    // no puede descargar imagenes de otros sitios directo (CORS), aunque si mostrarlas
+    let fotoBase64 = null;
+    const urlFoto = d.product.image_front_url || d.product.image_url || null;
+    if (urlFoto) {
+      try {
+        const rf = await fetch(urlFoto, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
+        if (rf.ok) {
+          const buf = Buffer.from(await rf.arrayBuffer());
+          const tipo = rf.headers.get('content-type') || 'image/jpeg';
+          fotoBase64 = 'data:' + tipo + ';base64,' + buf.toString('base64');
+        }
+      } catch (e) {}
+    }
+
+    res.json({ encontrado: true, nombre: nombre, fotoBase64: fotoBase64 });
   } catch (e) {
     res.json({ encontrado: false });
   }

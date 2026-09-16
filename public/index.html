@@ -5657,9 +5657,9 @@ async function buscarProductoPorCodigoExterno(codigo) {
       $('pNombre').value = d.nombre;
       $('msgProd').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Encontramos este producto - revisa el nombre, y completa precio y categoria.</div>';
     }
-    if (d.fotoUrl && !editandoId && !fotoPendiente) {
+    if (d.fotoBase64 && !editandoId && !fotoPendiente) {
       try {
-        const rf = await fetch(d.fotoUrl);
+        const rf = await fetch(d.fotoBase64);
         const blob = await rf.blob();
         const grande = await comprimirImagen(blob, 800, 0.7);
         const mini = await comprimirImagen(blob, 240, 0.75);
