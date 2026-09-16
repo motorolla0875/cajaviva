@@ -5686,6 +5686,13 @@ let zonaTeclado = 'grilla'; // 'categorias' | 'grilla' | 'medios'
 let indiceGrillaTeclado = -1;
 let indiceCategoriaTeclado = -1;
 let indiceMedioTeclado = -1;
+let indiceModalHecho = -1;
+
+function listaModalHechoTeclado() {
+  return ['btnSeguir', 'btnCompartir', 'btnTicketPdf', 'btnImprimir', 'btnAnularUltima']
+    .map(function (id) { return document.getElementById(id); })
+    .filter(function (el) { return el; });
+}
 
 function listaGrillaTeclado() {
   return Array.prototype.slice.call(document.querySelectorAll('#grilla .prod'));
@@ -5760,7 +5767,24 @@ document.addEventListener('keydown', function (e) {
   if (!v || v.id !== 'v-vender') return;
 
   if ($('modalHecho').classList.contains('on')) {
-    if (e.key === 'Enter') { e.preventDefault(); $('btnSeguir').click(); }
+    const items = listaModalHechoTeclado();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      indiceModalHecho = Math.min(indiceModalHecho + 1, items.length - 1);
+      items.forEach(function (el, i) { el.classList.toggle('resaltado-teclado', i === indiceModalHecho); });
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      indiceModalHecho = Math.max(indiceModalHecho - 1, 0);
+      items.forEach(function (el, i) { el.classList.toggle('resaltado-teclado', i === indiceModalHecho); });
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const elegido = indiceModalHecho >= 0 ? items[indiceModalHecho] : $('btnSeguir');
+      if (elegido) elegido.click();
+    }
     return;
   }
 
@@ -5772,10 +5796,6 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     e.preventDefault();
     if (carrito.length > 0) $('btnLimpiar').click();
-    if ($('buscarGlobal').value) {
-      $('buscarGlobal').value = '';
-      $('buscarGlobal').dispatchEvent(new Event('input', { bubbles: true }));
-    }
     resetearNavTeclado();
     return;
   }
@@ -6995,6 +7015,7 @@ function mostrarHecho(datos) {
 
   $('hechoDetalle').innerHTML = html;
   $('modalHecho').classList.add('on');
+  indiceModalHecho = -1;
 }
 
 function textoComprobante() {
