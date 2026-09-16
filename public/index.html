@@ -4969,9 +4969,27 @@ function pintarFamilias() {
 }
 
 let conVencimiento = null;
+let videoAlquilerVisto = false;
 
 function elegirFamilia(f) {
   familiaElegida = f;
+
+  // en alquiler, mostramos primero un video tutorial corto
+  if (f === 'alquiler' && !videoAlquilerVisto) {
+    $('lblRubro').textContent = 'Antes de arrancar';
+    $('familias').innerHTML =
+      '<div style="background:var(--accent-soft); border-radius:14px; padding:18px; text-align:left; grid-column:1/-1;">' +
+      '<div style="font-size:13px; color:var(--accent-dark); line-height:1.55; margin-bottom:14px;">' +
+      'Te muestro este video tutorial corto (7 minutos) donde te explico como usar la app para alquileres por dia.</div>' +
+      '<video src="/videos/tutorial-alquiler.mp4" controls playsinline ' +
+      'style="width:100%; max-width:280px; display:block; margin:0 auto 16px; border-radius:10px; background:#000;"></video>' +
+      '<button class="btn-ppal" onclick="videoAlquilerVisto = true; elegirFamilia(\'alquiler\');" ' +
+      'style="width:100%;">Continuar</button></div>';
+    $('familias').style.display = 'grid';
+    $('rubros').style.display = 'none';
+    $('btnVolverFamilias').style.display = 'block';
+    return;
+  }
 
   // en reparto, ofrecer MiReparto antes de seguir
   if (f === 'reparto' && !saltearAvisoReparto) {
@@ -5082,6 +5100,7 @@ document.getElementById('btnVolverFamilias').onclick = function () {
   rubroElegido = '';
   conVencimiento = null;
   familiaElegida = null;
+  videoAlquilerVisto = false;
   $('btnEmpezar').disabled = true;
   pintarFamilias();
   const ph = document.getElementById('pasoHorarios');
