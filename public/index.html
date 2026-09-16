@@ -5615,15 +5615,12 @@ function pintarGrilla() {
 $('buscar').addEventListener('input', pintarGrilla);
 
 // lector de codigo de barras fisico (USB/Bluetooth): escribe el codigo solo y aprieta Enter
-$('buscar').addEventListener('keydown', function (e) {
-  if (e.key !== 'Enter') return;
-  const crudo = this.value.trim();
+function procesarCodigoDeBarras(crudo) {
   const codigo = norm(crudo);
   if (!codigo) return;
-  e.preventDefault();
 
   const p = productos.filter(function (x) { return norm(x.codigo_barras || '') === codigo; })[0];
-  this.value = '';
+  $('buscar').value = '';
   pintarGrilla();
 
   if (!p) {
@@ -5638,6 +5635,14 @@ $('buscar').addEventListener('keydown', function (e) {
   sonidoOk(); vibrar(40);
   agregar(p.id);
   avisar(p.nombre + ' agregado');
+}
+
+$('buscar').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const crudo = this.value.trim();
+  if (!crudo) return;
+  e.preventDefault();
+  procesarCodigoDeBarras(crudo);
 });
 
 // evita que las fotos parpadeen al repintar
@@ -13634,6 +13639,17 @@ document.getElementById('buscarGlobal').addEventListener('input', function () {
   if (!campo) return;
   campo.value = this.value;
   campo.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+document.getElementById('buscarGlobal').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const v = document.querySelector('.vista.on');
+  if (!v || v.id !== 'v-vender') return;
+  const crudo = this.value.trim();
+  if (!crudo) return;
+  e.preventDefault();
+  this.value = '';
+  procesarCodigoDeBarras(crudo);
 });
 
 document.getElementById('btnScanGlobal').onclick = function () {
