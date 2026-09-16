@@ -301,32 +301,45 @@ router.get('/comparativa', (req, res) => {
   const inicioAnterior = menosDias(dias * 2);
 
   const actual = db.prepare(`
-    SELECT i.nombre, SUM(i.cantidad) AS unidades, SUM(i.cantidad * i.precio_unitario) AS facturado
+    SELECT i.nombre, SUM(i.cantidad) AS unidades, SUM(i.cantidad * i.precio_unitario) AS facturado,
+           SUM(i.cantidad * (i.precio_unitario - i.costo_unitario)) AS ganancia
     FROM venta_items i JOIN ventas v ON v.id = i.venta_id
     WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha <= ?
     GROUP BY i.nombre
   `).all(req.userId, inicioActual, finActual);
 
   const anterior = db.prepare(`
-    SELECT i.nombre, SUM(i.cantidad) AS unidades
+    SELECT i.nombre, SUM(i.cantidad) AS unidades, SUM(i.cantidad * i.precio_unitario) AS facturado,
+           SUM(i.cantidad * (i.precio_unitario - i.costo_unitario)) AS ganancia
     FROM venta_items i JOIN ventas v ON v.id = i.venta_id
     WHERE v.user_id = ? AND v.fecha >= ? AND v.fecha < ?
     GROUP BY i.nombre
   `).all(req.userId, inicioAnterior, inicioActual);
 
   const mapaAnterior = {};
-  anterior.forEach(function (a) { mapaAnterior[a.nombre] = a.unidades; });
+  anterior.forEach(function (a) { mapaAnterior[a.nombre] = a; });
 
   const items = actual.map(function (a) {
-    const prev = mapaAnterior[a.nombre] || 0;
+    const prev = mapaAnterior[a.nombre] || { unidades: 0, facturado: 0, ganancia: 0 };
     delete mapaAnterior[a.nombre];
-    const cambio = prev > 0 ? Math.round(((a.unidades - prev) / prev) * 100) : null;
-    return { nombre: a.nombre, unidadesActual: a.unidades, unidadesAnterior: prev, facturado: a.facturado, cambio: cambio };
+    const cambio = prev.unidades > 0 ? Math.round(((a.unidades - prev.unidades) / prev.unidades) * 100) : null;
+    return {
+      nombre: a.nombre, unidadesActual: a.unidades, unidadesAnterior: prev.unidades,
+      facturado: a.facturado, facturadoAnterior: prev.facturado,
+      ganancia: a.ganancia, gananciaAnterior: prev.ganancia,
+      cambio: cambio
+    };
   });
 
   // productos que se vendian antes y en este periodo no se vendieron nada
   Object.keys(mapaAnterior).forEach(function (nombre) {
-    items.push({ nombre: nombre, unidadesActual: 0, unidadesAnterior: mapaAnterior[nombre], facturado: 0, cambio: -100 });
+    const prev = mapaAnterior[nombre];
+    items.push({
+      nombre: nombre, unidadesActual: 0, unidadesAnterior: prev.unidades,
+      facturado: 0, facturadoAnterior: prev.facturado,
+      ganancia: 0, gananciaAnterior: prev.ganancia,
+      cambio: -100
+    });
   });
 
   items.sort(function (a, b) {

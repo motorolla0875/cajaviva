@@ -2850,6 +2850,14 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalComparativaDet">
+  <div class="modal">
+    <h3 id="tituloComparativaDet">Producto</h3>
+    <div id="cuerpoComparativaDet"></div>
+    <button class="btn-sec" id="btnCerrarComparativaDet">Cerrar</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalProd">
   <div class="modal">
     <h3 id="tituloProd">Nuevo producto</h3>
@@ -8250,13 +8258,14 @@ async function cargarReportes() {
 
       cont.innerHTML =
         '<div class="hint" style="margin:0 0 12px;">Comparado con los ' + d.dias + ' dias anteriores.</div>' +
-        d.items.map(function (i) {
+        d.items.map(function (i, n) {
           const c = consejo(i);
-          return '<div class="rep-item">' +
+          return '<div class="rep-item" style="cursor:pointer;" onclick="abrirComparativaDet(' + n + ')">' +
             '<div class="datos"><div class="n">' + esc(i.nombre) + '</div>' +
             '<div class="d" style="color:' + c.color + ';">' + c.icono + ' ' + c.texto + '</div></div>' +
             '<div class="cifra"><b>' + fmtCant(i.unidadesActual) + '</b><span>vendidos</span></div></div>';
         }).join('');
+      window._comparativaItems = d.items;
 
     } else if (repTab === 'unidades') {
       const d = await api('GET', '/reportes/unidades' + qs);
@@ -9027,6 +9036,25 @@ $('mlRepTabs').addEventListener('click', function (e) {
   Array.prototype.forEach.call($('mlRepTabs').children, function (x) { x.classList.toggle('on', x === b); });
   cargarReportesMl();
 });
+
+function abrirComparativaDet(n) {
+  const i = (window._comparativaItems || [])[n];
+  if (!i) return;
+  $('tituloComparativaDet').textContent = i.nombre;
+  $('cuerpoComparativaDet').innerHTML =
+    '<table class="tabla-comparativa" style="width:100%; border-collapse:collapse;">' +
+    '<tr><td></td><td style="text-align:right; color:var(--muted); font-size:13px;">Este periodo</td>' +
+    '<td style="text-align:right; color:var(--muted); font-size:13px;">Periodo anterior</td></tr>' +
+    '<tr><td>Facturado</td><td style="text-align:right;"><b>' + plata(i.facturado) + '</b></td>' +
+    '<td style="text-align:right;">' + plata(i.facturadoAnterior) + '</td></tr>' +
+    '<tr><td>Ganancia</td><td style="text-align:right;"><b>' + plata(i.ganancia) + '</b></td>' +
+    '<td style="text-align:right;">' + plata(i.gananciaAnterior) + '</td></tr>' +
+    '<tr><td>Promedio por dia</td><td style="text-align:right;"><b>' + fmtCant(i.unidadesActual / repDias) + '</b></td>' +
+    '<td style="text-align:right;">' + fmtCant(i.unidadesAnterior / repDias) + '</td></tr>' +
+    '</table>';
+  $('modalComparativaDet').classList.add('on');
+}
+$('btnCerrarComparativaDet').onclick = function () { $('modalComparativaDet').classList.remove('on'); };
 
 async function abrirPedidoMl(ventaId, ordenId) {
   await verVenta(ventaId);
