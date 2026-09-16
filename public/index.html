@@ -5894,18 +5894,13 @@ document.addEventListener('keydown', function (e) {
     }
     if (!enBuscador) {
       e.preventDefault();
-      if (e.key === 'ArrowRight') {
-        // derecha: agrega el producto resaltado
-        if (zonaTeclado === 'grilla') {
-          const items = listaGrillaTeclado();
-          if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) agregar(items[indiceGrillaTeclado].dataset.id);
+      if (zonaTeclado === 'grilla') {
+        const items = listaGrillaTeclado();
+        if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
+          const id = items[indiceGrillaTeclado].dataset.id;
+          if (e.key === 'ArrowRight') agregar(id);
+          else cambiarCantidad(id, -1);
         }
-      } else {
-        // izquierda: asegura volver al modo de seleccionar productos
-        zonaTeclado = 'grilla';
-        indiceMedioTeclado = -1;
-        limpiarResaltadosTeclado();
-        if (indiceGrillaTeclado >= 0) resaltarGrillaTeclado();
       }
       return;
     }
