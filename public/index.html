@@ -5882,9 +5882,9 @@ document.addEventListener('keydown', function (e) {
   }
 
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-    const dir = e.key === 'ArrowLeft' ? -1 : 1;
     if (zonaTeclado === 'categorias') {
       e.preventDefault();
+      const dir = e.key === 'ArrowLeft' ? -1 : 1;
       const cats = listaCategoriasTeclado();
       if (cats.length === 0) return;
       indiceCategoriaTeclado = Math.max(0, Math.min(indiceCategoriaTeclado + dir, cats.length - 1));
@@ -5894,32 +5894,27 @@ document.addEventListener('keydown', function (e) {
     }
     if (!enBuscador) {
       e.preventDefault();
-      const medios = listaMediosTeclado();
-      if (medios.length === 0) return;
-      zonaTeclado = 'medios';
-      indiceMedioTeclado = Math.max(0, Math.min((indiceMedioTeclado < 0 ? 0 : indiceMedioTeclado + dir), medios.length - 1));
-      resaltarMedioTeclado();
-      medios[indiceMedioTeclado].click();
+      if (e.key === 'ArrowRight') {
+        // derecha: agrega el producto resaltado
+        if (zonaTeclado === 'grilla') {
+          const items = listaGrillaTeclado();
+          if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) agregar(items[indiceGrillaTeclado].dataset.id);
+        }
+      } else {
+        // izquierda: asegura volver al modo de seleccionar productos
+        zonaTeclado = 'grilla';
+        indiceMedioTeclado = -1;
+        limpiarResaltadosTeclado();
+        if (indiceGrillaTeclado >= 0) resaltarGrillaTeclado();
+      }
       return;
     }
     return;
   }
 
   if (e.key === ' ' && !enBuscador) {
-    if (zonaTeclado === 'grilla') {
-      const items = listaGrillaTeclado();
-      if (indiceGrillaTeclado >= 0 && items[indiceGrillaTeclado]) {
-        e.preventDefault();
-        agregar(items[indiceGrillaTeclado].dataset.id);
-      }
-    }
-    return;
-  }
-
-  if (e.key === 'Enter' && !enBuscador) {
+    // barra espaciadora: cobra la venta
     e.preventDefault();
-    // si se agrego algo por escaneo hace menos de un segundo, este Enter probablemente
-    // es la cola de ese mismo escaneo mal interpretada - se ignora, para no cobrar sin querer
     if (Date.now() - ultimoEscaneoExitoso < 1000) return;
     if (!$('btnCobrar').disabled) $('btnCobrar').click();
     return;
