@@ -5637,6 +5637,44 @@ function procesarCodigoDeBarras(crudo) {
   avisar(p.nombre + ' agregado');
 }
 
+// deteccion de escaner sin depender de donde este el foco: los lectores de codigo de
+// barra "tipean" muchisimo mas rapido que una persona (unos pocos milisegundos entre
+// letra y letra). Si detectamos esa racha rapida terminada en Enter, la tratamos como
+// un escaneo, sin importar si el buscador tenia el foco o no.
+let bufferEscanerGlobal = '';
+let ultimaTeclaEscanerGlobal = 0;
+document.addEventListener('keydown', function (e) {
+  const v = document.querySelector('.vista.on');
+  if (!v || v.id !== 'v-vender') { bufferEscanerGlobal = ''; return; }
+
+  const activo = document.activeElement;
+  // si el foco esta en el buscador (local o global), ya lo manejan sus propios handlers
+  if (activo && (activo.id === 'buscar' || activo.id === 'buscarGlobal')) { bufferEscanerGlobal = ''; return; }
+  // si esta escribiendo en otro campo de texto (un modal abierto, etc.), no interferir
+  if (activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA')) { bufferEscanerGlobal = ''; return; }
+
+  const ahora = Date.now();
+  const esRapido = (ahora - ultimaTeclaEscanerGlobal) < 40;
+  ultimaTeclaEscanerGlobal = ahora;
+
+  if (e.key === 'Enter') {
+    if (bufferEscanerGlobal.length >= 6 && esRapido) {
+      e.preventDefault();
+      const codigo = bufferEscanerGlobal;
+      bufferEscanerGlobal = '';
+      procesarCodigoDeBarras(codigo);
+    } else {
+      bufferEscanerGlobal = '';
+    }
+    return;
+  }
+
+  if (e.key.length === 1) {
+    if (!esRapido) bufferEscanerGlobal = '';
+    bufferEscanerGlobal += e.key;
+  }
+});
+
 $('buscar').addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
   const crudo = this.value.trim();
