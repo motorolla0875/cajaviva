@@ -6983,6 +6983,7 @@ function encontroCodigo(codigo) {
     $('pBarras').value = limpio;
     $('msgProd').innerHTML = '<div class="msg" style="background:var(--accent-soft); color:var(--accent-dark);">Codigo ' + esc(limpio) + ' - completa el producto y guardalo.</div>';
     setTimeout(function () { $('pNombre').focus(); }, 150);
+    buscarProductoPorCodigoExterno(limpio);
     return;
   }
 
