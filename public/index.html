@@ -5751,8 +5751,8 @@ document.addEventListener('keyup', function (e) {
   const v = document.querySelector('.vista.on');
   if (!v || v.id !== 'v-vender') return;
   resetearNavTeclado();
-  $('buscar').focus();
-  $('buscar').select();
+  $('buscarGlobal').focus();
+  $('buscarGlobal').select();
 });
 
 document.addEventListener('keydown', function (e) {
@@ -5799,7 +5799,7 @@ document.addEventListener('keydown', function (e) {
     e.preventDefault();
     if (zonaTeclado === 'categorias') {
       resetearNavTeclado();
-      $('buscar').focus();
+      $('buscarGlobal').focus();
       return;
     }
     if (zonaTeclado === 'grilla' && indiceGrillaTeclado <= 0) {
