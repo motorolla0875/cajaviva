@@ -5647,6 +5647,7 @@ async function procesarCodigoDeBarras(crudo) {
   sonidoOk(); vibrar(40);
   agregar(p.id);
   avisar(p.nombre + ' agregado');
+  ultimoEscaneoExitoso = Date.now();
 }
 
 async function buscarProductoPorCodigoExterno(codigo) {
@@ -5677,6 +5678,7 @@ async function buscarProductoPorCodigoExterno(codigo) {
 // letra y letra). Si detectamos esa racha rapida terminada en Enter, la tratamos como
 // un escaneo, sin importar si el buscador tenia el foco o no.
 let bufferEscanerGlobal = '';
+let ultimoEscaneoExitoso = 0;
 let ultimaTeclaEscanerGlobal = 0;
 document.addEventListener('keydown', function (e) {
   const v = document.querySelector('.vista.on');
@@ -5916,6 +5918,9 @@ document.addEventListener('keydown', function (e) {
 
   if (e.key === 'Enter' && !enBuscador) {
     e.preventDefault();
+    // si se agrego algo por escaneo hace menos de un segundo, este Enter probablemente
+    // es la cola de ese mismo escaneo mal interpretada - se ignora, para no cobrar sin querer
+    if (Date.now() - ultimoEscaneoExitoso < 1000) return;
     if (!$('btnCobrar').disabled) $('btnCobrar').click();
     return;
   }
