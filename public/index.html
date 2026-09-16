@@ -5772,6 +5772,10 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     e.preventDefault();
     if (carrito.length > 0) $('btnLimpiar').click();
+    if ($('buscarGlobal').value) {
+      $('buscarGlobal').value = '';
+      $('buscarGlobal').dispatchEvent(new Event('input', { bubbles: true }));
+    }
     resetearNavTeclado();
     return;
   }
