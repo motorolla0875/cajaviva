@@ -25,8 +25,11 @@ const { execFile } = require('child_process');
 
 function ejecutarCurl(args) {
   return new Promise(function (resolve, reject) {
-    execFile('curl', args, { encoding: 'buffer', maxBuffer: 20 * 1024 * 1024, timeout: 10000 }, function (err, stdout) {
-      if (err) return reject(err);
+    execFile('curl', args, { encoding: 'buffer', maxBuffer: 20 * 1024 * 1024, timeout: 10000 }, function (err, stdout, stderr) {
+      if (err) {
+        err.stderrTexto = stderr ? stderr.toString() : '';
+        return reject(err);
+      }
       resolve(stdout);
     });
   });
@@ -37,12 +40,12 @@ function ejecutarCurl(args) {
 //    fetch/undici no respeta la preferencia de IPv4 de Node), mientras que curl si anda ──
 async function descargarFotoBase64(url) {
   try {
-    const buf = await ejecutarCurl(['-sSL', '--max-time', '10', '-A', 'CajaViva/1.0 (contacto@cajaviva.app)', url]);
+    const buf = await ejecutarCurl(['-sS', '-L', '--max-time', '10', url]);
     if (!buf || buf.length === 0) { console.error('buscar-codigo: curl trajo la foto vacia', url); return null; }
     const tipo = url.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
     return 'data:' + tipo + ';base64,' + buf.toString('base64');
   } catch (e) {
-    console.error('buscar-codigo: error descargando la foto con curl:', e.message, url);
+    console.error('buscar-codigo: error descargando la foto con curl:', e.code, e.stderrTexto || e.message, url);
     return null;
   }
 }
