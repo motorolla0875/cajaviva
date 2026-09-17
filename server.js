@@ -1,4 +1,8 @@
 require('dotenv').config();
+// preferir IPv4 al resolver nombres de dominio: en este servidor, IPv6 esta mal
+// configurado y hace que fetch() falle contra ciertos sitios (ej: descargar fotos
+// de Open Food Facts), aunque curl si funciona bien
+require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
 const jwt = require('jsonwebtoken');
