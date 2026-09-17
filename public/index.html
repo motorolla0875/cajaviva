@@ -14831,7 +14831,7 @@ function abrirAyuda() {
   const items = AYUDA.filter(function (a) { return !a.cap || cap(a.cap); });
 
   cont.innerHTML = items.map(function (a, i) {
-    return '<div class="ayuda-item" onclick="this.classList.toggle(\'abierto\')">' +
+    return '<div class="ayuda-item" onclick="this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();});">' +
       '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
       '<div class="ayuda-r">' + (a.video
         ? '<video src="' + esc(a.video) + '" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
