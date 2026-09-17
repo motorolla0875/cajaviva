@@ -15036,6 +15036,16 @@ let saltearAvisoReparto = false;
 })();
 
 // cerrar cualquier ventana deslizando el dedo
+// pausa cualquier video que quede sonando de fondo cuando se cierra el modal que lo contiene
+new MutationObserver(function (mutaciones) {
+  mutaciones.forEach(function (m) {
+    const el = m.target;
+    if (el.classList.contains('modal-bg') && !el.classList.contains('on')) {
+      el.querySelectorAll('video').forEach(function (v) { v.pause(); });
+    }
+  });
+}).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+
 function activarDeslizar(m) {
   if (!m || m.dataset.deslizar) return;
   m.dataset.deslizar = '1';
