@@ -5159,7 +5159,10 @@ $('btnEmpezar').onclick = async function () {
 
 $('btnCerrarVideoAlquiler').onclick = function () {
   localStorage.setItem('cajaviva_video_alquiler_visto', '1');
+  const v = $('modalVideoAlquiler').querySelector('video');
+  if (v) v.pause();
   $('modalVideoAlquiler').classList.remove('on');
+  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.');
 };
 
 $('btnListoInicio').onclick = async function () {
@@ -14670,6 +14673,8 @@ document.getElementById('btnCerrarPlan').onclick = function () {
 /* ══ Ayuda ══ */
 
 const AYUDA = [
+  { cap: 'cap_alquiler', p: 'Video tutorial de alquileres', video: '/videos/tutorial-alquiler.mp4' },
+
   { cap: null, p: 'Es gratis?',
     r: 'Tenes 2 meses de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: 9,99 dolares por mes, o 7,99 por mes si pagas el año. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
 
@@ -14828,7 +14833,9 @@ function abrirAyuda() {
   cont.innerHTML = items.map(function (a, i) {
     return '<div class="ayuda-item" onclick="this.classList.toggle(\'abierto\')">' +
       '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
-      '<div class="ayuda-r">' + esc(a.r) + '</div>' +
+      '<div class="ayuda-r">' + (a.video
+        ? '<video src="' + esc(a.video) + '" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
+        : esc(a.r)) + '</div>' +
       '</div>';
   }).join('');
 
