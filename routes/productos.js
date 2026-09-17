@@ -39,15 +39,19 @@ function ejecutarCurl(args) {
 //    en este servidor fetch() falla contra algunos sitios (IPv6 mal configurado y
 //    fetch/undici no respeta la preferencia de IPv4 de Node), mientras que curl si anda ──
 async function descargarFotoBase64(url) {
-  try {
-    const buf = await ejecutarCurl(['-sS', '-4', '-L', '--noproxy', '*', '--max-time', '15', url]);
-    if (!buf || buf.length === 0) { console.error('buscar-codigo: curl trajo la foto vacia', url); return null; }
-    const tipo = url.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-    return 'data:' + tipo + ';base64,' + buf.toString('base64');
-  } catch (e) {
-    console.error('buscar-codigo: error descargando la foto con curl -', 'killed:', e.killed, 'signal:', e.signal, 'code:', e.code, 'stderr:', e.stderrTexto, '-', url);
-    return null;
+  for (let intento = 1; intento <= 4; intento++) {
+    try {
+      const buf = await ejecutarCurl(['-sS', '-4', '-L', '--noproxy', '*', '--connect-timeout', '5', '--max-time', '8', url]);
+      if (buf && buf.length > 0) {
+        const tipo = url.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+        return 'data:' + tipo + ';base64,' + buf.toString('base64');
+      }
+    } catch (e) {
+      console.error('buscar-codigo: error descargando la foto con curl (intento ' + intento + ') -', 'code:', e.code, 'stderr:', e.stderrTexto, '-', url);
+    }
+    if (intento < 4) await new Promise(function (r) { setTimeout(r, 300); });
   }
+  return null;
 }
 
 // ── Open Food Facts: base publica y gratuita, cubre muy bien comida/bebida/almacen ──
