@@ -24,13 +24,19 @@ function hoyISO(userId) {
 // ── descarga una imagen y la devuelve en base64, porque el navegador no puede
 //    bajar imagenes de otros sitios directo (CORS), aunque si mostrarlas ──
 async function descargarFotoBase64(url) {
-  try {
-    const rf = await fetch(url, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
-    if (!rf.ok) { console.error('buscar-codigo: fallo descargar la foto,', rf.status, url); return null; }
-    const buf = Buffer.from(await rf.arrayBuffer());
-    const tipo = rf.headers.get('content-type') || 'image/jpeg';
-    return 'data:' + tipo + ';base64,' + buf.toString('base64');
-  } catch (e) { console.error('buscar-codigo: error descargando la foto:', e.message, url); return null; }
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const rf = await fetch(url, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
+      if (!rf.ok) { console.error('buscar-codigo: fallo descargar la foto,', rf.status, url); return null; }
+      const buf = Buffer.from(await rf.arrayBuffer());
+      const tipo = rf.headers.get('content-type') || 'image/jpeg';
+      return 'data:' + tipo + ';base64,' + buf.toString('base64');
+    } catch (e) {
+      console.error('buscar-codigo: error descargando la foto (intento ' + intento + '):', e.message, url);
+      if (intento === 2) return null;
+      await new Promise(function (r) { setTimeout(r, 400); });
+    }
+  }
 }
 
 // ── Open Food Facts: base publica y gratuita, cubre muy bien comida/bebida/almacen ──
