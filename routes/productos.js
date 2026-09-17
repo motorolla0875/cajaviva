@@ -26,11 +26,11 @@ function hoyISO(userId) {
 async function descargarFotoBase64(url) {
   try {
     const rf = await fetch(url, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
-    if (!rf.ok) return null;
+    if (!rf.ok) { console.error('buscar-codigo: fallo descargar la foto,', rf.status, url); return null; }
     const buf = Buffer.from(await rf.arrayBuffer());
     const tipo = rf.headers.get('content-type') || 'image/jpeg';
     return 'data:' + tipo + ';base64,' + buf.toString('base64');
-  } catch (e) { return null; }
+  } catch (e) { console.error('buscar-codigo: error descargando la foto:', e.message, url); return null; }
 }
 
 // ── Open Food Facts: base publica y gratuita, cubre muy bien comida/bebida/almacen ──
@@ -41,6 +41,8 @@ async function buscarEnOpenFoodFacts(codigo) {
     { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } }
   );
   const d = await r.json();
+  console.log('buscar-codigo OFF', codigo, '-> status http', r.status, 'status producto', d.status,
+    d.product ? { nombre: d.product.product_name, foto_front: d.product.image_front_url, foto: d.product.image_url } : '(sin producto)');
   if (!r.ok || d.status !== 1 || !d.product || !d.product.product_name) return null;
   const nombre = d.product.brands
     ? (d.product.brands.split(',')[0].trim() + ' ' + d.product.product_name)
@@ -54,6 +56,8 @@ async function buscarEnOpenFoodFacts(codigo) {
 async function buscarEnUpcItemDb(codigo) {
   const r = await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc=' + encodeURIComponent(codigo));
   const d = await r.json();
+  console.log('buscar-codigo UPCitemdb', codigo, '-> status http', r.status, 'code', d.code,
+    d.items && d.items[0] ? { nombre: d.items[0].title, fotos: d.items[0].images } : '(sin items)');
   if (!r.ok || d.code !== 'OK' || !d.items || !d.items[0] || !d.items[0].title) return null;
   const item = d.items[0];
   const urlFoto = item.images && item.images[0] ? item.images[0] : null;
@@ -64,11 +68,12 @@ async function buscarEnUpcItemDb(codigo) {
 //    y si no aparece nada, en UPCitemdb como respaldo ──
 router.get('/buscar-codigo/:codigo', async (req, res) => {
   try {
-    let hallazgo = await buscarEnOpenFoodFacts(req.params.codigo).catch(function () { return null; });
-    if (!hallazgo) hallazgo = await buscarEnUpcItemDb(req.params.codigo).catch(function () { return null; });
+    let hallazgo = await buscarEnOpenFoodFacts(req.params.codigo).catch(function (e) { console.error('buscar-codigo: error OFF:', e.message); return null; });
+    if (!hallazgo) hallazgo = await buscarEnUpcItemDb(req.params.codigo).catch(function (e) { console.error('buscar-codigo: error UPCitemdb:', e.message); return null; });
     if (!hallazgo) return res.json({ encontrado: false });
     res.json({ encontrado: true, nombre: hallazgo.nombre, fotoBase64: hallazgo.fotoBase64 });
   } catch (e) {
+    console.error('buscar-codigo: error general:', e.message);
     res.json({ encontrado: false });
   }
 });
