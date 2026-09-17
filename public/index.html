@@ -2858,13 +2858,13 @@
   </div>
 </div>
 
-<div class="modal-bg" id="modalVideoAlquiler">
+<div class="modal-bg" id="modalVideoTutorial">
   <div class="modal">
-    <h3 style="margin:0 0 10px;">Como usar CajaViva para alquileres</h3>
-    <p class="hint" style="margin:0 0 14px;">Un video corto (7 minutos) explicando lo basico.</p>
-    <video src="/videos/tutorial-alquiler.mp4" poster="/videos/tutorial-alquiler-poster.jpg" controls playsinline
+    <h3 id="tituloVideoTutorial" style="margin:0 0 10px;">Como usar CajaViva</h3>
+    <p class="hint" id="txtVideoTutorial" style="margin:0 0 14px;"></p>
+    <video id="videoTutorial" controls playsinline
       style="width:100%; max-width:280px; display:block; margin:0 auto 16px; border-radius:10px; background:#000;"></video>
-    <button class="btn-ppal" id="btnCerrarVideoAlquiler" style="width:100%;">Listo, entendido</button>
+    <button class="btn-ppal" id="btnCerrarVideoTutorial" style="width:100%;">Listo, entendido</button>
   </div>
 </div>
 
@@ -4470,6 +4470,49 @@ const RUBROS_POR_FAMILIA = {
   otro: ['otro']
 };
 
+// videos tutoriales por tipo de negocio: se muestran solos la primera vez que se entra
+// a la app con un rubro de esa lista, y quedan disponibles despues en Ayuda
+const VIDEOS_TUTORIAL = [
+  {
+    id: 'alquiler',
+    rubros: RUBROS_POR_FAMILIA.alquiler,
+    cap: 'cap_alquiler',
+    titulo: 'Como usar CajaViva para alquileres',
+    texto: 'Un video corto (7 minutos) explicando lo basico.',
+    video: '/videos/tutorial-alquiler.mp4',
+    poster: '/videos/tutorial-alquiler-poster.jpg',
+    ayudaP: 'Video tutorial de alquileres'
+  },
+  {
+    id: 'ropa',
+    rubros: RUBROS_POR_FAMILIA.ropa,
+    cap: 'cap_variantes',
+    titulo: 'Como usar CajaViva para ropa y calzado',
+    texto: 'Un video corto explicando lo basico.',
+    video: '/videos/tutorial-ropa.mp4',
+    poster: '/videos/tutorial-ropa-poster.jpg',
+    ayudaP: 'Video tutorial de ropa y calzado'
+  }
+];
+
+let videoTutorialActual = null;
+function abrirVideoTutorial(v) {
+  videoTutorialActual = v;
+  $('tituloVideoTutorial').textContent = v.titulo;
+  $('txtVideoTutorial').textContent = v.texto;
+  const el = $('videoTutorial');
+  el.src = v.video;
+  el.poster = v.poster;
+  $('modalVideoTutorial').classList.add('on');
+}
+$('btnCerrarVideoTutorial').onclick = function () {
+  if (videoTutorialActual) localStorage.setItem('cajaviva_video_visto_' + videoTutorialActual.id, '1');
+  const v = $('videoTutorial');
+  v.pause();
+  $('modalVideoTutorial').classList.remove('on');
+  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.', false, 6200);
+};
+
 let familiaElegida = null;
 
 const RUBROS = [
@@ -5157,14 +5200,6 @@ $('btnEmpezar').onclick = async function () {
   }
 };
 
-$('btnCerrarVideoAlquiler').onclick = function () {
-  localStorage.setItem('cajaviva_video_alquiler_visto', '1');
-  const v = $('modalVideoAlquiler').querySelector('video');
-  if (v) v.pause();
-  $('modalVideoAlquiler').classList.remove('on');
-  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.', false, 6200);
-};
-
 $('btnListoInicio').onclick = async function () {
   const btn = this;
   btn.disabled = true; btn.textContent = 'Entrando...';
@@ -5220,9 +5255,11 @@ function conectarTiempoReal() {
 
 async function arrancarApp() {
   mostrar('app');
-  const RUBROS_ALQUILER_VIDEO = ['cabanas', 'hotel', 'salon', 'equipos', 'vehiculos', 'eventos'];
-  if (negocio && RUBROS_ALQUILER_VIDEO.indexOf(negocio.rubro) !== -1 && !localStorage.getItem('cajaviva_video_alquiler_visto')) {
-    $('modalVideoAlquiler').classList.add('on');
+  if (negocio) {
+    const videoQueAplica = VIDEOS_TUTORIAL.filter(function (v) {
+      return v.rubros.indexOf(negocio.rubro) !== -1 && !localStorage.getItem('cajaviva_video_visto_' + v.id);
+    })[0];
+    if (videoQueAplica) abrirVideoTutorial(videoQueAplica);
   }
   try { acomodarBuscadorGlobal(); } catch (e) {}
   aplicarCapacidades();
@@ -14673,8 +14710,6 @@ document.getElementById('btnCerrarPlan').onclick = function () {
 /* ══ Ayuda ══ */
 
 const AYUDA = [
-  { cap: 'cap_alquiler', p: 'Video tutorial de alquileres', video: '/videos/tutorial-alquiler.mp4' },
-
   { cap: null, p: 'Es gratis?',
     r: 'Tenes 2 meses de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: 9,99 dolares por mes, o 7,99 por mes si pagas el año. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
 
@@ -14828,13 +14863,15 @@ function abrirAyuda() {
   const my = document.getElementById('modalCuentaUsuario');
   if (my) my.classList.remove('on');
 
-  const items = AYUDA.filter(function (a) { return !a.cap || cap(a.cap); });
+  const itemsVideo = VIDEOS_TUTORIAL.filter(function (v) { return !v.cap || cap(v.cap); })
+    .map(function (v) { return { p: v.ayudaP, video: v.video, poster: v.poster }; });
+  const items = itemsVideo.concat(AYUDA.filter(function (a) { return !a.cap || cap(a.cap); }));
 
   cont.innerHTML = items.map(function (a, i) {
     return '<div class="ayuda-item" onclick="this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();});">' +
       '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
       '<div class="ayuda-r">' + (a.video
-        ? '<video src="' + esc(a.video) + '" poster="/videos/tutorial-alquiler-poster.jpg" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
+        ? '<video src="' + esc(a.video) + '" poster="' + esc(a.poster) + '" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
         : esc(a.r)) + '</div>' +
       '</div>';
   }).join('');
