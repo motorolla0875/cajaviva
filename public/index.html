@@ -4495,23 +4495,6 @@ const VIDEOS_TUTORIAL = [
   }
 ];
 
-let videoTutorialActual = null;
-function abrirVideoTutorial(v) {
-  videoTutorialActual = v;
-  $('tituloVideoTutorial').textContent = v.titulo;
-  $('txtVideoTutorial').textContent = v.texto;
-  const el = $('videoTutorial');
-  el.src = v.video;
-  el.poster = v.poster;
-  $('modalVideoTutorial').classList.add('on');
-}
-$('btnCerrarVideoTutorial').onclick = function () {
-  if (videoTutorialActual) localStorage.setItem('cajaviva_video_visto_' + videoTutorialActual.id, '1');
-  const v = $('videoTutorial');
-  v.pause();
-  $('modalVideoTutorial').classList.remove('on');
-  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.', false, 6200);
-};
 
 let familiaElegida = null;
 
@@ -5198,6 +5181,24 @@ $('btnEmpezar').onclick = async function () {
     avisar(e.message, true);
     btn.disabled = false; btn.textContent = 'Empezar';
   }
+};
+
+let videoTutorialActual = null;
+function abrirVideoTutorial(v) {
+  videoTutorialActual = v;
+  $('tituloVideoTutorial').textContent = v.titulo;
+  $('txtVideoTutorial').textContent = v.texto;
+  const el = $('videoTutorial');
+  el.src = v.video;
+  el.poster = v.poster;
+  $('modalVideoTutorial').classList.add('on');
+}
+$('btnCerrarVideoTutorial').onclick = function () {
+  if (videoTutorialActual) localStorage.setItem('cajaviva_video_visto_' + videoTutorialActual.id, '1');
+  const v = $('videoTutorial');
+  v.pause();
+  $('modalVideoTutorial').classList.remove('on');
+  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.', false, 6200);
 };
 
 $('btnListoInicio').onclick = async function () {
