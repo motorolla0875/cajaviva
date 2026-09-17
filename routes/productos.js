@@ -40,7 +40,7 @@ function ejecutarCurl(args) {
 //    fetch/undici no respeta la preferencia de IPv4 de Node), mientras que curl si anda ──
 async function descargarFotoBase64(url) {
   try {
-    const buf = await ejecutarCurl(['-sS', '-4', '-L', '--max-time', '15', url]);
+    const buf = await ejecutarCurl(['-sS', '-4', '-L', '--noproxy', '*', '--max-time', '15', url]);
     if (!buf || buf.length === 0) { console.error('buscar-codigo: curl trajo la foto vacia', url); return null; }
     const tipo = url.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
     return 'data:' + tipo + ';base64,' + buf.toString('base64');
