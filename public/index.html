@@ -4642,11 +4642,11 @@ async function api(metodo, ruta, cuerpo) {
   return data;
 }
 
-function avisar(texto, esError) {
+function avisar(texto, esError, duracionMs) {
   const el = $('aviso');
   el.textContent = texto;
   el.className = 'aviso ver' + (esError ? ' err' : '');
-  setTimeout(function () { el.className = 'aviso'; }, 2200);
+  setTimeout(function () { el.className = 'aviso'; }, duracionMs || 2200);
 }
 
 /* ══ Guardado local (offline) ══ */
@@ -5162,7 +5162,7 @@ $('btnCerrarVideoAlquiler').onclick = function () {
   const v = $('modalVideoAlquiler').querySelector('video');
   if (v) v.pause();
   $('modalVideoAlquiler').classList.remove('on');
-  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.');
+  avisar('Lo volves a encontrar cuando quieras: toca tu foto arriba y despues Ayuda.', false, 6200);
 };
 
 $('btnListoInicio').onclick = async function () {
