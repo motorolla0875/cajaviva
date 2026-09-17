@@ -2765,6 +2765,7 @@
     <div class="medios" style="margin-bottom:14px;">
       <button class="on" id="modoImporte">Por importe</button>
       <button id="modoPeso">Por peso</button>
+      <button id="modoEntero" style="display:none;">Entero</button>
     </div>
 
     <div id="wrapImporte">
@@ -6856,7 +6857,8 @@ function abrirPeso(id) {
   $('lblCantPeso').textContent = 'Cuanto lleva (' + p.unidad + ')';
   $('msgPeso').innerHTML = '';
   $('pesoImporte').value = ''; $('pesoCantidad').value = '';
-  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on');
+  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on'); $('modoEntero').classList.remove('on');
+  $('modoEntero').style.display = (p.vende_pieza && p.precio_pieza > 0) ? 'inline-block' : 'none';
   $('wrapImporte').style.display = 'block'; $('wrapCantidad').style.display = 'none';
   $('hintPeso').textContent = '';
   $('modalPeso').classList.add('on');
@@ -6865,14 +6867,20 @@ function abrirPeso(id) {
 
 $('modoImporte').onclick = function () {
   pesoModo = 'importe';
-  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on');
+  $('modoImporte').classList.add('on'); $('modoPeso').classList.remove('on'); $('modoEntero').classList.remove('on');
   $('wrapImporte').style.display = 'block'; $('wrapCantidad').style.display = 'none';
   calcularPeso();
 };
 $('modoPeso').onclick = function () {
   pesoModo = 'peso';
-  $('modoPeso').classList.add('on'); $('modoImporte').classList.remove('on');
+  $('modoPeso').classList.add('on'); $('modoImporte').classList.remove('on'); $('modoEntero').classList.remove('on');
   $('wrapCantidad').style.display = 'block'; $('wrapImporte').style.display = 'none';
+  calcularPeso();
+};
+$('modoEntero').onclick = function () {
+  pesoModo = 'entero';
+  $('modoEntero').classList.add('on'); $('modoImporte').classList.remove('on'); $('modoPeso').classList.remove('on');
+  $('wrapCantidad').style.display = 'none'; $('wrapImporte').style.display = 'none';
   calcularPeso();
 };
 
@@ -6885,10 +6893,12 @@ function calcularPeso() {
     if (imp <= 0 || p.precio_venta <= 0) { el.textContent = ''; return; }
     const cant = imp / p.precio_venta;
     el.textContent = 'Son ' + fmtCant(cant) + ' ' + p.unidad;
-  } else {
+  } else if (pesoModo === 'peso') {
     const cant = num($('pesoCantidad').value);
     if (cant <= 0) { el.textContent = ''; return; }
     el.textContent = 'Son ' + plata(cant * p.precio_venta);
+  } else {
+    el.textContent = 'Se agrega la pieza entera (aprox ' + fmtCant(p.peso_pieza) + ' ' + p.unidad + ') por ' + plata(p.precio_pieza);
   }
 }
 $('pesoImporte').addEventListener('input', calcularPeso);
@@ -6900,22 +6910,32 @@ $('btnConfirmarPeso').onclick = function () {
   const p = productos.filter(function (x) { return x.id === pesoProdId; })[0];
   if (!p) return;
 
-  let cantidad;
+  let cantidad, precioUnitario, nombreLinea;
   if (pesoModo === 'importe') {
     const imp = num($('pesoImporte').value);
     if (imp <= 0) { $('msgPeso').innerHTML = '<div class="msg">Pone un importe mayor a 0.</div>'; return; }
     cantidad = Math.round((imp / p.precio_venta) * 1000) / 1000;
-  } else {
+    precioUnitario = p.precio_venta;
+    nombreLinea = p.nombre;
+  } else if (pesoModo === 'peso') {
     cantidad = num($('pesoCantidad').value);
     if (cantidad <= 0) { $('msgPeso').innerHTML = '<div class="msg">Pone una cantidad mayor a 0.</div>'; return; }
+    precioUnitario = p.precio_venta;
+    nombreLinea = p.nombre;
+  } else {
+    // entero: se cobra el precio fijo de la pieza, y se descuenta del stock el peso aproximado
+    cantidad = p.peso_pieza;
+    precioUnitario = p.precio_pieza / p.peso_pieza;
+    nombreLinea = p.nombre + ' (entera)';
   }
 
-  const yaHay = carrito.filter(function (x) { return x.productoId === pesoProdId; })[0];
-  const total = (yaHay ? yaHay.cantidad : 0) + cantidad;
-  if (total > p.stock) { $('msgPeso').innerHTML = '<div class="msg">Solo hay ' + fmtCant(p.stock) + ' ' + p.unidad + '.</div>'; return; }
+  const yaHay = carrito.filter(function (x) { return x.productoId === pesoProdId && x.nombre === nombreLinea; })[0];
+  const totalEnStock = carrito.filter(function (x) { return x.productoId === pesoProdId; })
+    .reduce(function (a, x) { return a + x.cantidad; }, 0) + cantidad;
+  if (totalEnStock > p.stock) { $('msgPeso').innerHTML = '<div class="msg">Solo hay ' + fmtCant(p.stock) + ' ' + p.unidad + '.</div>'; return; }
 
-  if (yaHay) yaHay.cantidad = total;
-  else carrito.push({ productoId: pesoProdId, nombre: p.nombre, precio: p.precio_venta, cantidad: cantidad, unidad: p.unidad });
+  if (yaHay) yaHay.cantidad += cantidad;
+  else carrito.push({ productoId: pesoProdId, nombre: nombreLinea, precio: precioUnitario, cantidad: cantidad, unidad: p.unidad });
 
   pintarCarrito();
   $('modalPeso').classList.remove('on');
