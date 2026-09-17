@@ -21,21 +21,29 @@ function hoyISO(userId) {
   return new Date().toISOString().slice(0, 10);
 }
 
-// ── descarga una imagen y la devuelve en base64, porque el navegador no puede
-//    bajar imagenes de otros sitios directo (CORS), aunque si mostrarlas ──
+const { execFile } = require('child_process');
+
+function ejecutarCurl(args) {
+  return new Promise(function (resolve, reject) {
+    execFile('curl', args, { encoding: 'buffer', maxBuffer: 20 * 1024 * 1024, timeout: 10000 }, function (err, stdout) {
+      if (err) return reject(err);
+      resolve(stdout);
+    });
+  });
+}
+
+// ── descarga una imagen y la devuelve en base64. Se usa curl en vez de fetch() porque
+//    en este servidor fetch() falla contra algunos sitios (IPv6 mal configurado y
+//    fetch/undici no respeta la preferencia de IPv4 de Node), mientras que curl si anda ──
 async function descargarFotoBase64(url) {
-  for (let intento = 1; intento <= 2; intento++) {
-    try {
-      const rf = await fetch(url, { headers: { 'User-Agent': 'CajaViva/1.0 (contacto@cajaviva.app)' } });
-      if (!rf.ok) { console.error('buscar-codigo: fallo descargar la foto,', rf.status, url); return null; }
-      const buf = Buffer.from(await rf.arrayBuffer());
-      const tipo = rf.headers.get('content-type') || 'image/jpeg';
-      return 'data:' + tipo + ';base64,' + buf.toString('base64');
-    } catch (e) {
-      console.error('buscar-codigo: error descargando la foto (intento ' + intento + '):', e.message, url);
-      if (intento === 2) return null;
-      await new Promise(function (r) { setTimeout(r, 400); });
-    }
+  try {
+    const buf = await ejecutarCurl(['-sSL', '--max-time', '10', '-A', 'CajaViva/1.0 (contacto@cajaviva.app)', url]);
+    if (!buf || buf.length === 0) { console.error('buscar-codigo: curl trajo la foto vacia', url); return null; }
+    const tipo = url.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+    return 'data:' + tipo + ';base64,' + buf.toString('base64');
+  } catch (e) {
+    console.error('buscar-codigo: error descargando la foto con curl:', e.message, url);
+    return null;
   }
 }
 
