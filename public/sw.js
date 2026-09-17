@@ -1,4 +1,4 @@
-const CACHE = 'cajaviva-v4';
+const CACHE = 'cajaviva-v5';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -21,13 +21,14 @@ self.addEventListener('fetch', function (e) {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf('/api/') === 0) return;
+  if (url.pathname.indexOf('/videos/') === 0) return;
 
   // navegacion (abrir la app): red primero, si falla la copia guardada
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).then(function (r) {
         const copia = r.clone();
-        caches.open(CACHE).then(function (c) { c.put('/', copia); });
+        if (r.status === 200) caches.open(CACHE).then(function (c) { c.put('/', copia); });
         return r;
       }).catch(function () {
         return caches.match('/');
@@ -40,7 +41,7 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(
     fetch(e.request).then(function (r) {
       const copia = r.clone();
-      caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
+      if (r.status === 200) caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
       return r;
     }).catch(function () {
       return caches.match(e.request);
