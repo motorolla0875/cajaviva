@@ -5664,10 +5664,15 @@ async function cargarClientes() {
 }
 
 async function cargarResumen() {
+  // mientras se puede conectar, mostrar el ultimo total conocido (guardado localmente)
+  // en vez de dejar la pantalla en $0
+  const cache = LOCAL.leer('vendidoHoy_' + hoyISO(), null);
+  if (cache != null) $('hVendido').textContent = plata(cache);
   try {
     const hoy = hoyISO();
     const r = await api('GET', '/ventas/resumen?desde=' + hoy + '&hasta=' + hoy);
     $('hVendido').textContent = plata(r.vendido);
+    LOCAL.guardar('vendidoHoy_' + hoy, r.vendido);
   } catch (e) {}
 }
 
@@ -6233,7 +6238,10 @@ $('btnCobrar').onclick = async function () {
       fecha: hoyISO(),
       medioPago: medioPago, clienteId: clienteId,
       totalFinal: total,
-      montoPagado: esFiado ? 0 : total
+      montoPagado: esFiado ? 0 : total,
+      // marca unica para esta venta puntual: si por un corte de conexion el navegador
+      // reintenta el mismo envio, el servidor reconoce que ya la proceso y no la duplica
+      idempotencyKey: 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10)
     };
 
     try {

@@ -5,6 +5,9 @@ const mercadolibre = require('./mercadolibre');
 
 const router = express.Router();
 
+try { db.exec('ALTER TABLE ventas ADD COLUMN idempotency_key TEXT'); } catch (e) {}
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ventas_idem ON ventas(user_id, idempotency_key)'); } catch (e) {}
+
 function hoyISO(userId) {
   if (userId && db.hoyEn) return db.hoyEn(userId);
   return new Date().toISOString().slice(0, 10);
@@ -12,7 +15,15 @@ function hoyISO(userId) {
 
 // ── registrar una venta ──
 router.post('/', (req, res) => {
-  const { clienteId, items, medioPago, montoPagado, descuentoPct, notas, deviceId } = req.body || {};
+  const { clienteId, items, medioPago, montoPagado, descuentoPct, notas, deviceId, idempotencyKey } = req.body || {};
+
+  // si esta venta ya se proceso antes (reintento tras un corte de conexion en el medio,
+  // donde el servidor la guardo pero la respuesta nunca llego al navegador), no crear otra -
+  // devolver la que ya existe, para no duplicar la venta ni descontar el stock dos veces
+  if (idempotencyKey) {
+    const existente = db.prepare('SELECT id FROM ventas WHERE user_id = ? AND idempotency_key = ?').get(req.userId, idempotencyKey);
+    if (existente) return res.json({ id: existente.id, yaExistia: true });
+  }
 
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'La venta no tiene productos.' });
@@ -63,13 +74,23 @@ router.post('/', (req, res) => {
   // la fecha la manda el navegador: vale la del negocio, no la del servidor
   const fechaVenta = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || '') ? req.body.fecha : hoyISO(req.userId);
 
-  db.prepare(`
-    INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
-      costo_total, medio_pago, monto_pagado, descuento_pct, notas, device_id, empleado_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(ventaId, req.userId, clienteId || null, clienteId ? 'reparto' : 'mostrador',
-         fechaVenta, estado, total, costoTotal, medioPago || 'efectivo',
-         pagado, pct, notas || null, deviceId || null, req.empleadoId || null);
+  try {
+    db.prepare(`
+      INSERT INTO ventas (id, user_id, cliente_id, tipo, fecha, estado, total,
+        costo_total, medio_pago, monto_pagado, descuento_pct, notas, device_id, empleado_id, idempotency_key)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(ventaId, req.userId, clienteId || null, clienteId ? 'reparto' : 'mostrador',
+           fechaVenta, estado, total, costoTotal, medioPago || 'efectivo',
+           pagado, pct, notas || null, deviceId || null, req.empleadoId || null, idempotencyKey || null);
+  } catch (e) {
+    // si dos intentos de la misma venta llegaron casi juntos, el indice unico frena el segundo -
+    // en ese caso, devolver la que ya quedo guardada en vez de fallar
+    if (idempotencyKey) {
+      const existente = db.prepare('SELECT id FROM ventas WHERE user_id = ? AND idempotency_key = ?').get(req.userId, idempotencyKey);
+      if (existente) return res.json({ id: existente.id, yaExistia: true });
+    }
+    throw e;
+  }
 
   for (const l of lineas) {
     const nombreItem = l.variante ? l.prod.nombre + ' (' + l.variante.nombre + ')' : l.prod.nombre;
