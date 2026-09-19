@@ -3262,15 +3262,6 @@
       </div>
     </div>
 
-    <label>Logo (opcional)</label>
-    <div class="banner-prev" id="logoPrev" style="max-width:110px;"><span>Sin logo</span></div>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button type="button" class="btn-foto" id="btnSubirLogo" style="flex:1;">Subir imagen</button>
-      <button type="button" class="btn-foto borrar" id="btnBorrarLogo" style="display:none; flex:0 0 auto; padding:10px 16px;">Quitar</button>
-    </div>
-    <input type="file" id="archLogo" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none;">
-    <p class="hint">Ideal cuadrado, minimo 200 x 200 pixeles.</p>
-
     <label>Banner de portada (opcional)</label>
     <div class="banner-prev" id="bannerPrev"><span>Sin banner</span></div>
     <div style="display:flex; gap:8px; margin-top:8px;">
@@ -9572,7 +9563,6 @@ async function abrirConfigCatalogo() {
     temaCat = c.tema || 'verde';
     pintarTemas();
     mostrarBanner(c.banner || null);
-    mostrarLogo(c.logo || null);
     $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
     colorPerActivo = !!c.color_personalizado;
     $('swColorPer').classList.toggle('on', colorPerActivo);
@@ -9681,60 +9671,6 @@ $('swColorPer').onclick = function () {
     colorFondoActivo = false;
     $('swColorFondo').classList.remove('on');
   }
-};
-
-function mostrarLogo(url) {
-  const p = document.getElementById('logoPrev');
-  if (url) {
-    p.innerHTML = '<img src="' + url + '?t=' + Date.now() + '">';
-    document.getElementById('btnBorrarLogo').style.display = 'block';
-    document.getElementById('btnSubirLogo').textContent = 'Cambiar imagen';
-  } else {
-    p.innerHTML = '<span>Sin logo</span>';
-    document.getElementById('btnBorrarLogo').style.display = 'none';
-    document.getElementById('btnSubirLogo').textContent = 'Subir imagen';
-  }
-}
-
-document.getElementById('btnSubirLogo').onclick = function () {
-  document.getElementById('archLogo').click();
-};
-
-document.getElementById('archLogo').onchange = async function (e) {
-  const f = e.target.files[0];
-  if (!f) return;
-
-  const btn = document.getElementById('btnSubirLogo');
-  btn.disabled = true; btn.textContent = 'Subiendo...';
-
-  try {
-    const img = await comprimirImagen(f, 400, 0.85);
-    const fd = new FormData();
-    fd.append('foto', img, 'logo.webp');
-
-    const r = await fetch(API + '/fotos/logo', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + token },
-      body: fd
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
-
-    mostrarLogo(d.logo);
-    avisar('Logo guardado');
-  } catch (err) { avisar(err.message, true); }
-
-  btn.disabled = false;
-  e.target.value = '';
-};
-
-document.getElementById('btnBorrarLogo').onclick = async function () {
-  if (!confirm('Quitar el logo?')) return;
-  try {
-    await api('DELETE', '/fotos/logo');
-    mostrarLogo(null);
-    avisar('Logo quitado');
-  } catch (e) { avisar(e.message, true); }
 };
 
 $('btnGuardarCatalogo').onclick = async function () {
