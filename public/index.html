@@ -3206,6 +3206,13 @@
 
     <div class="seccion">Como se ve</div>
 
+    <label>Plantilla</label>
+    <div class="chips" id="chipsPlantilla" style="margin-bottom:6px;">
+      <button data-plantilla="personalizado" class="on">Personalizado</button>
+      <button data-plantilla="mostrador1">Mostrador Clásico</button>
+    </div>
+    <p class="hint" id="hintPlantilla" style="margin:0 0 14px;">Elegí los colores y el estilo vos mismo, mas abajo.</p>
+
     <div class="cap-item">
       <div class="txt"><div class="n">Mostrar todas las fotos en la portada</div>
         <div class="d">Los productos con varias fotos las muestran todas juntas, arriba de los datos</div></div>
@@ -9571,6 +9578,8 @@ async function abrirConfigCatalogo() {
     cargarDominio();
     temaCat = c.tema || 'verde';
     pintarTemas();
+    plantillaCat = c.plantilla_catalogo || 'personalizado';
+    pintarPlantilla();
     mostrarBanner(c.banner || null);
     mostrarLogo(c.logo || null);
     $('catColorPersonalizado').value = c.color_personalizado || '#1D9E75';
@@ -11649,6 +11658,23 @@ const TEMAS = [
 ];
 
 let temaCat = 'verde';
+let plantillaCat = 'personalizado';
+
+function pintarPlantilla() {
+  $('chipsPlantilla').querySelectorAll('button').forEach(function (b) {
+    b.classList.toggle('on', b.dataset.plantilla === plantillaCat);
+  });
+  $('hintPlantilla').textContent = plantillaCat === 'mostrador1'
+    ? 'Un diseño ya armado, pensado para kioscos y almacenes. Los colores de mas abajo no se usan con esta plantilla.'
+    : 'Elegí los colores y el estilo vos mismo, mas abajo.';
+}
+$('chipsPlantilla').addEventListener('click', async function (e) {
+  const b = e.target.closest('button[data-plantilla]');
+  if (!b) return;
+  plantillaCat = b.dataset.plantilla;
+  pintarPlantilla();
+  try { await api('PUT', '/catalogo/plantilla', { plantilla: plantillaCat }); } catch (e) {}
+});
 
 function pintarTemas() {
   const el = document.getElementById('temasCat');

@@ -31,6 +31,7 @@ try { db.exec("ALTER TABLE negocio ADD COLUMN mp_access_token TEXT"); } catch (e
 try { db.exec("ALTER TABLE negocio ADD COLUMN acepta_mercadopago INTEGER NOT NULL DEFAULT 0"); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN dominio TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN dominio_ok INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec("ALTER TABLE negocio ADD COLUMN plantilla_catalogo TEXT NOT NULL DEFAULT 'personalizado'"); } catch (e) {}
 try { db.exec("ALTER TABLE negocio ADD COLUMN fondo TEXT NOT NULL DEFAULT 'claro'"); } catch (e) {}
 
 function armarSlug(t) {
@@ -45,7 +46,7 @@ router.get('/config', (req, res) => {
   if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
   const n = db.prepare(`SELECT slug, catalogo_activo, whatsapp, catalogo_mensaje, nombre,
     alias_pago, titular_pago, acepta_efectivo, acepta_transferencia, tema, banner, fondo, fuente,
-    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, fotos_portada, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago
+    color_personalizado, color_personalizado_2, color_fondo, color_fondo_2, color_texto, color_fondo_quienes, fotos_portada, logo, instagram, facebook, twitter, tiktok, descripcion, mp_access_token, acepta_mercadopago, plantilla_catalogo
     FROM negocio WHERE user_id = ?`).get(req.userId);
   const cuantos = db.prepare('SELECT COUNT(*) AS n FROM productos WHERE user_id = ? AND activo = 1 AND en_catalogo = 1').get(req.userId);
 
@@ -250,6 +251,15 @@ router.get('/publico/:slug', (req, res) => {
 
 
 // ── dominio propio ──
+// ── elegir la plantilla del catalogo (personalizado, o una de las prearmadas) ──
+router.put('/plantilla', (req, res) => {
+  if (req.esEmpleado && !db.tienePermiso(req, 'perm_catalogo')) return res.status(403).json({ error: 'No tenés permiso para esto.' });
+  const permitidas = ['personalizado', 'mostrador1'];
+  const p = permitidas.indexOf(req.body?.plantilla) !== -1 ? req.body.plantilla : 'personalizado';
+  db.prepare('UPDATE negocio SET plantilla_catalogo = ? WHERE user_id = ?').run(p, req.userId);
+  res.json({ plantilla: p });
+});
+
 router.get('/dominio', (req, res) => {
   const n = db.prepare('SELECT dominio, dominio_ok, slug FROM negocio WHERE user_id = ?').get(req.userId);
   res.json(n || {});
