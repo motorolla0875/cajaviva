@@ -28,8 +28,8 @@ app.use(function (req, res, next) {
   if (req.path !== '/' && req.path !== '/index.html') return next();
 
   try {
-    const n = db.prepare('SELECT slug, plantilla_catalogo FROM negocio WHERE dominio = ? AND catalogo_activo = 1').get(host);
-    if (n) return res.sendFile(path.join(__dirname, 'public', n.plantilla_catalogo === 'mostrador1' ? 'catalogo-mostrador1.html' : 'catalogo.html'));
+    const n = db.prepare('SELECT slug FROM negocio WHERE dominio = ? AND catalogo_activo = 1').get(host);
+    if (n) return res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
 
     // el dominio llega aca pero no tiene negocio: avisar
     return res.status(404).send(
@@ -70,9 +70,7 @@ app.get('/tiendas', (req, res) => {
 });
 
 app.get('/c/:slug', (req, res) => {
-  const n = db.prepare('SELECT plantilla_catalogo FROM negocio WHERE slug = ?').get(req.params.slug);
-  const archivo = (n && n.plantilla_catalogo === 'mostrador1') ? 'catalogo-mostrador1.html' : 'catalogo.html';
-  res.sendFile(path.join(__dirname, 'public', archivo));
+  res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
 });
 
 app.get('/api/ping', (req, res) => {
