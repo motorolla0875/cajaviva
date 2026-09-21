@@ -14901,7 +14901,7 @@ function abrirAyuda() {
 
   const itemsVideo = VIDEOS_TUTORIAL.filter(function (v) { return !v.cap || cap(v.cap); })
     .map(function (v) { return { p: v.ayudaP, video: v.video, poster: v.poster }; });
-  const items = itemsVideo.concat(AYUDA.filter(function (a) { return !a.cap || cap(a.cap); }));
+  const itemsFaq = AYUDA.filter(function (a) { return !a.cap || cap(a.cap); });
 
   function itemVideoHtml(a) {
     return '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
@@ -14909,12 +14909,13 @@ function abrirAyuda() {
         ? '<video src="' + esc(a.video) + '" poster="' + esc(a.poster) + '" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
         : esc(a.r)) + '</div>';
   }
-
-  cont.innerHTML = items.map(function (a, i) {
+  function itemAyudaHtml(a) {
     return '<div class="ayuda-item" onclick="if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
       itemVideoHtml(a) +
       '</div>';
-  }).join('') +
+  }
+
+  cont.innerHTML = itemsVideo.map(itemAyudaHtml).join('') +
   '<div class="ayuda-item" onclick="if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
     '<div class="ayuda-p">Mas videos<span>+</span></div>' +
     '<div class="ayuda-r">' +
@@ -14924,7 +14925,8 @@ function abrirAyuda() {
           '</div>';
       }).join('') +
     '</div>' +
-  '</div>';
+  '</div>' +
+  itemsFaq.map(itemAyudaHtml).join('');
 
   try { pintarSwChat(); } catch (e) {}
   document.getElementById('modalAyuda').classList.add('on');
