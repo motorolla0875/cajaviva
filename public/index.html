@@ -861,12 +861,14 @@
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
   }
   .ayuda-p span { color: var(--accent); font-size: 18px; flex-shrink: 0; }
-  .ayuda-item.abierto .ayuda-p span { transform: rotate(45deg); }
+  .ayuda-item.abierto > .ayuda-p span { transform: rotate(45deg); }
   .ayuda-r {
     display: none; padding: 0 14px 13px;
     font-size: 13.5px; color: var(--muted); line-height: 1.55;
   }
-  .ayuda-item.abierto .ayuda-r { display: block; }
+  .ayuda-item.abierto > .ayuda-r { display: block; }
+  .ayuda-sub { margin: 8px 0 0; background: var(--bg); }
+  .ayuda-sub .ayuda-p { padding: 10px 12px; font-size: 13.5px; }
 
   .modal-bg {
     display: none; position: fixed; inset: 0;
@@ -4545,6 +4547,15 @@ const VIDEOS_TUTORIAL = [
     poster: '/videos/tutorial-canchas-poster.jpg',
     ayudaP: 'Video tutorial de alquiler por hora'
   }
+];
+
+// videos generales, no atados a ningun rubro - se muestran para cualquier negocio,
+// agrupados adentro de "Mas videos" en Ayuda
+const VIDEOS_GLOBALES = [
+  { p: 'Tutorial MercadoLibre', video: '/videos/tutorial-global-mercadolibre.mp4', poster: '/videos/tutorial-global-mercadolibre-poster.jpg' },
+  { p: 'Mi tienda online', video: '/videos/tutorial-global-tienda.mp4', poster: '/videos/tutorial-global-tienda-poster.jpg' },
+  { p: 'Fiado', video: '/videos/tutorial-global-fiado.mp4', poster: '/videos/tutorial-global-fiado-poster.jpg' },
+  { p: 'Empleados', video: '/videos/tutorial-global-empleados.mp4', poster: '/videos/tutorial-global-empleados-poster.jpg' }
 ];
 
 
@@ -14892,14 +14903,28 @@ function abrirAyuda() {
     .map(function (v) { return { p: v.ayudaP, video: v.video, poster: v.poster }; });
   const items = itemsVideo.concat(AYUDA.filter(function (a) { return !a.cap || cap(a.cap); }));
 
-  cont.innerHTML = items.map(function (a, i) {
-    return '<div class="ayuda-item" onclick="if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
-      '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
+  function itemVideoHtml(a) {
+    return '<div class="ayuda-p">' + esc(a.p) + '<span>+</span></div>' +
       '<div class="ayuda-r">' + (a.video
         ? '<video src="' + esc(a.video) + '" poster="' + esc(a.poster) + '" controls playsinline style="width:100%; max-width:280px; display:block; margin:8px auto; border-radius:10px; background:#000;"></video>'
-        : esc(a.r)) + '</div>' +
+        : esc(a.r)) + '</div>';
+  }
+
+  cont.innerHTML = items.map(function (a, i) {
+    return '<div class="ayuda-item" onclick="if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
+      itemVideoHtml(a) +
       '</div>';
-  }).join('');
+  }).join('') +
+  '<div class="ayuda-item" onclick="if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
+    '<div class="ayuda-p">Mas videos<span>+</span></div>' +
+    '<div class="ayuda-r">' +
+      VIDEOS_GLOBALES.map(function (a) {
+        return '<div class="ayuda-item ayuda-sub" onclick="event.stopPropagation(); if (event.target.tagName !== \'VIDEO\') { this.classList.toggle(\'abierto\'); if (!this.classList.contains(\'abierto\')) this.querySelectorAll(\'video\').forEach(function(v){v.pause();}); }">' +
+          itemVideoHtml(a) +
+          '</div>';
+      }).join('') +
+    '</div>' +
+  '</div>';
 
   try { pintarSwChat(); } catch (e) {}
   document.getElementById('modalAyuda').classList.add('on');
