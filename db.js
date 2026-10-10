@@ -229,3 +229,33 @@ function tienePermiso(req, campo) {
   return !!(req.permisos && req.permisos[campo]);
 }
 module.exports.tienePermiso = tienePermiso;
+
+// ── Planes ──
+// libre:  cuentas creadas antes de que existiera la prueba; quedan gratis para siempre
+// prueba: cuentas nuevas; 20 dias con todo y despues hay que suscribirse
+// pro:    suscripcion paga (Google Play / App Store)
+// Toda cuenta que todavia diga 'gratis' (o sin plan) es de antes del cambio: pasa a 'libre'.
+db.exec(`UPDATE users SET plan = 'libre' WHERE plan IS NULL OR plan = 'gratis'`);
+
+const DIAS_PRUEBA = 20;
+// Con CAJAVIVA_BLOQUEO=0 en el .env, la prueba se muestra pero no bloquea a nadie.
+const BLOQUEO_ACTIVO = process.env.CAJAVIVA_BLOQUEO !== '0';
+
+function estadoPlan(userId) {
+  const u = db.prepare('SELECT plan, plan_trial_ends_at FROM users WHERE id = ?').get(userId);
+  if (!u) return null;
+  const plan = u.plan || 'libre';
+  const info = { plan: plan, prueba_hasta: null, dias_restantes: null, bloqueado: false };
+  if (plan === 'prueba') {
+    const fin = u.plan_trial_ends_at ? new Date(u.plan_trial_ends_at.replace(' ', 'T') + 'Z') : null;
+    if (fin) {
+      const ms = fin.getTime() - Date.now();
+      info.prueba_hasta = fin.toISOString();
+      info.dias_restantes = Math.max(0, Math.ceil(ms / 86400000));
+      info.bloqueado = BLOQUEO_ACTIVO && ms <= 0;
+    }
+  }
+  return info;
+}
+module.exports.estadoPlan = estadoPlan;
+module.exports.DIAS_PRUEBA = DIAS_PRUEBA;

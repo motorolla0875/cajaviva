@@ -15,13 +15,16 @@ function firmar(userId) {
 
 function datosUsuario(id) {
   const u = db.prepare('SELECT id, username, email, plan FROM users WHERE id = ?').get(id);
+  if (u) u.plan_info = db.estadoPlan(id);
   const n = db.prepare('SELECT * FROM negocio WHERE user_id = ?').get(id);
   return { user: u, negocio: n || null };
 }
 
 function crearCuenta() {
   const id = uuidv4();
-  db.prepare('INSERT INTO users (id) VALUES (?)').run(id);
+  // cuenta nueva: arranca la prueba con todo desbloqueado
+  db.prepare(`INSERT INTO users (id, plan, plan_trial_ends_at, plan_trial_used)
+              VALUES (?, 'prueba', datetime('now', '+' || ? || ' days'), 1)`).run(id, db.DIAS_PRUEBA);
   db.prepare(`
     INSERT INTO negocio (id, user_id, nombre, rubro, cap_mostrador)
     VALUES (?, ?, 'Mi negocio', 'kiosco', 1)
@@ -178,6 +181,11 @@ function requiereAuth(req, res, next) {
     req.permisos = req.esEmpleado
       ? (db.prepare('SELECT * FROM empleados WHERE id = ?').get(req.empleadoId) || {})
       : null;
+    // prueba vencida sin suscripcion: solo se puede exportar lo cargado
+    const plan = db.estadoPlan(req.userId);
+    if (plan && plan.bloqueado && req.baseUrl !== '/api/exportar') {
+      return res.status(402).json({ error: 'Terminó tu prueba gratis. Suscribite para seguir usando CajaViva.', codigo: 'prueba_vencida', plan_info: plan });
+    }
     next();
   } catch (e) {
     res.status(401).json({ error: 'Sesion invalida.' });

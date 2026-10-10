@@ -27,6 +27,23 @@
     --warn: #B87514;
     --radius: 12px;
   }
+
+  /* ── prueba gratis y fin de prueba ── */
+  .barra-prueba { display: none; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+    padding: 7px 12px; background: var(--accent-soft); color: var(--accent-dark); font-size: 13px; text-align: center; }
+  .barra-prueba.on { display: flex; }
+  .barra-prueba.pocos { background: #FDF1DD; color: var(--warn); }
+  .barra-prueba button { border: 0; background: none; color: inherit; font-weight: 700; text-decoration: underline; padding: 0; font-size: 13px; }
+  .fin-prueba { position: fixed; inset: 0; z-index: 9000; background: var(--bg); display: none; overflow-y: auto; padding: 32px 18px; }
+  .fin-prueba.on { display: block; }
+  .fin-prueba .caja { max-width: 440px; margin: 0 auto; }
+  .fin-prueba h2 { font-size: 24px; margin: 6px 0 8px; line-height: 1.2; }
+  .fin-prueba .p-plan { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+  .fin-prueba .p-plan b { font-size: 20px; }
+  .fin-prueba .p-plan.dest { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .fin-prueba .acc { display: block; width: 100%; padding: 13px; border-radius: var(--radius); font-size: 15px; font-weight: 600; margin-top: 10px; }
+  .fin-prueba .acc.pri { background: var(--accent); color: #fff; border: 0; }
+  .fin-prueba .acc.sec { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { scrollbar-width: none; }
   ::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
@@ -2029,7 +2046,7 @@
          onclick="document.getElementById('avisoGratis').style.display='block'; this.style.display='none';">
         Como funciona mi plan</p>
       <p id="avisoGratis" style="display:none; font-size:11.5px; color:var(--muted); text-align:center; line-height:1.5; margin:8px 4px 0;">
-        3 meses gratis con todo. Despues seguis vendiendo, con tus productos y tu caja, siempre gratis.</p>
+        20 dias gratis con todo, sin tarjeta. Despues elegis el plan mensual (US$ 9,99) o el anual (US$ 7,99 por mes). Lo que cargaste nunca se pierde.</p>
 
     <div id="pasoImportar" style="display:none;">
       <h1 style="font-size:22px; margin-top:8px;">Como queres ver la app</h1>
@@ -2069,6 +2086,7 @@
     </div>
     <div class="hoy">Vendido hoy<b id="hVendido">$0</b></div>
   </header>
+  <div class="barra-prueba" id="barraPrueba"><span id="txtPrueba"></span><button id="btnVerPlanBarra">Ver planes</button></div>
 
   <div class="chat-wrap" id="chatWrap">
     <button class="chat-cerrar" id="btnOcultarChat" title="Ocultar">&#10005;</button>
@@ -3970,6 +3988,19 @@
   <div class="nota">El stock ya se descontó solo en CajaViva y en MercadoLibre.</div>
 </div>
 
+
+<div class="fin-prueba" id="finPrueba">
+  <div class="caja">
+    <div style="font-size:13px; color:var(--accent-dark); font-weight:600;">CajaViva</div>
+    <h2>Terminó tu prueba gratis de 20 días</h2>
+    <p style="color:var(--muted); margin:0 0 18px;">Para seguir vendiendo y usando todas las funciones, elegí un plan. Lo que cargaste está guardado y no se pierde.</p>
+    <div class="p-plan"><div style="color:var(--muted); font-size:13px;">Mensual</div><b>US$ 9,99</b> por mes</div>
+    <div class="p-plan dest"><div style="color:var(--muted); font-size:13px;">Anual · ahorrás 20%</div><b>US$ 7,99</b> por mes <span style="color:var(--muted); font-size:13px;">(US$ 95,88 al año)</span></div>
+    <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android o iPhone. Muy pronto vas a poder activarla desde acá.</p>
+    <button class="acc sec" id="btnFinExportar">Bajar mis ventas en Excel</button>
+    <button class="acc sec" id="btnFinSalir">Cerrar sesión</button>
+  </div>
+</div>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
@@ -4727,6 +4758,11 @@ async function api(metodo, ruta, cuerpo) {
   }
   const data = await r.json().catch(function () { return {}; });
   if (r.status === 401) { cerrarSesion(); throw new Error('Se cerro la sesion.'); }
+  if (r.status === 402 && data.codigo === 'prueba_vencida') {
+    if (usuario) usuario.plan_info = data.plan_info;
+    pintarPlan();
+    throw new Error(data.error);
+  }
   if (!r.ok) throw new Error(data.error || 'Error de conexion');
   return data;
 }
@@ -4951,6 +4987,7 @@ function aplicarUsuario(d) {
   $('txtAsegurar').textContent = sinAsegurar
     ? 'Tu cuenta se creo sola y hoy solo funciona en este dispositivo. Si le ponés usuario y contrasena, vas a poder entrar desde la compu o desde otro celular.'
     : 'Entraste como ' + usuario.username + '.';
+  pintarPlan();
 }
 
 function aplicarCapacidades() {
@@ -14690,6 +14727,28 @@ function descuentoRapido(paso) {
 
 /* ══ Mi plan ══ */
 
+/* ── estado del plan: prueba de 20 dias, cuenta libre o suscripcion ── */
+function infoPlan() {
+  return (usuario && usuario.plan_info) || { plan: 'libre' };
+}
+
+function pintarPlan() {
+  const p = infoPlan();
+  const barra = document.getElementById('barraPrueba');
+  if (barra) {
+    const enPrueba = p.plan === 'prueba' && !p.bloqueado && p.dias_restantes != null;
+    barra.classList.toggle('on', enPrueba);
+    barra.classList.toggle('pocos', enPrueba && p.dias_restantes <= 5);
+    if (enPrueba) {
+      document.getElementById('txtPrueba').textContent = p.dias_restantes <= 1
+        ? 'Hoy es el último día de tu prueba gratis.'
+        : 'Te quedan ' + p.dias_restantes + ' días de prueba gratis.';
+    }
+  }
+  const fin = document.getElementById('finPrueba');
+  if (fin) fin.classList.toggle('on', !!p.bloqueado);
+}
+
 function abrirPlan() {
   const my = document.getElementById('modalCuentaUsuario');
   if (my) my.classList.remove('on');
@@ -14697,11 +14756,20 @@ function abrirPlan() {
   const cont = document.getElementById('cuerpoPlan');
   if (!cont) return;
 
+  const p = infoPlan();
+  let ahora, detalle;
+  if (p.plan === 'pro') { ahora = 'Suscripción activa'; detalle = 'Tenés todas las funciones.'; }
+  else if (p.plan === 'prueba') {
+    ahora = 'Prueba gratis';
+    detalle = p.bloqueado ? 'Tu prueba terminó.'
+      : (p.dias_restantes <= 1 ? 'Hoy es el último día.' : 'Te quedan ' + p.dias_restantes + ' días con todo desbloqueado.');
+  } else { ahora = 'Todo desbloqueado'; detalle = 'Cuenta de los primeros usuarios: gratis para siempre.'; }
+
   cont.innerHTML =
     '<div class="rep-resumen" style="text-align:left; margin-bottom:14px;">' +
     '<div class="lbl">Tu plan ahora</div>' +
-    '<div class="val" style="font-size:17px;">Todo desbloqueado</div>' +
-    '<div style="font-size:12.5px; color:var(--accent-dark); margin-top:6px;">Promo de bienvenida, sin fecha de vencimiento</div>' +
+    '<div class="val" style="font-size:17px;">' + ahora + '</div>' +
+    '<div style="font-size:12.5px; color:var(--accent-dark); margin-top:6px;">' + detalle + '</div>' +
     '</div>' +
 
     '<div class="seccion">Un solo plan, con todo adentro</div>' +
@@ -14721,23 +14789,39 @@ function abrirPlan() {
     '<div class="seccion">Precios</div>' +
     '<div class="rep-resumen" style="text-align:left; margin-bottom:10px;">' +
       '<div class="lbl">Mensual</div>' +
-      '<div class="val">' +
-        '<span style="font-size:15px; color:var(--muted); text-decoration:line-through;">US$ 9,99 por mes</span> ' +
-        '<span style="font-size:18px; color:var(--accent-dark); font-weight:600;">Gratis</span>' +
-      '</div>' +
+      '<div class="val"><span style="font-size:18px; font-weight:600;">US$ 9,99</span> <span style="font-size:14px; color:var(--muted);">por mes</span></div>' +
     '</div>' +
     '<div class="rep-resumen" style="text-align:left; margin-bottom:16px;">' +
-      '<div class="lbl">Anual</div>' +
-      '<div class="val">' +
-        '<span style="font-size:15px; color:var(--muted); text-decoration:line-through;">US$ 7,99 por mes</span> ' +
-        '<span style="font-size:18px; color:var(--accent-dark); font-weight:600;">Gratis</span>' +
-      '</div>' +
+      '<div class="lbl">Anual · ahorrás 20%</div>' +
+      '<div class="val"><span style="font-size:18px; font-weight:600;">US$ 7,99</span> <span style="font-size:14px; color:var(--muted);">por mes (US$ 95,88 al año)</span></div>' +
     '</div>' +
 
-    '<p class="hint" style="line-height:1.6;"><b>Promo de bienvenida:</b> estamos lanzando la app y por eso, hoy, todo el plan completo es gratis y sin fecha de vencimiento. Cuando decidamos activar el cobro te vamos a avisar con anticipacion, y desde ese aviso vas a tener un mes mas totalmente gratis antes de que se te empiece a cobrar. Lo que cargaste nunca se pierde.</p>';
+    '<p class="hint" style="line-height:1.6;">Las cuentas nuevas tienen <b>20 días de prueba gratis</b> con todas las funciones, sin tarjeta. ' +
+    'Después elegís el plan mensual o el anual. Lo que cargaste nunca se pierde.</p>';
 
   document.getElementById('modalPlan').classList.add('on');
 }
+
+document.getElementById('btnVerPlanBarra').onclick = function () { abrirPlan(); };
+document.getElementById('btnFinSalir').onclick = function () { cerrarSesion(); };
+document.getElementById('btnFinExportar').onclick = async function () {
+  const btn = this;
+  btn.disabled = true;
+  try {
+    const hasta = new Date().toISOString().slice(0, 10);
+    const r = await fetch('/api/exportar/ventas?desde=2000-01-01&hasta=' + hasta, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) throw new Error('No se pudo generar');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'cajaviva-mis-ventas.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) { avisar(e.message, true); }
+  btn.disabled = false;
+};
 
 document.getElementById('btnCerrarPlan').onclick = function () {
   document.getElementById('modalPlan').classList.remove('on');
@@ -14747,7 +14831,7 @@ document.getElementById('btnCerrarPlan').onclick = function () {
 
 const AYUDA = [
   { cap: null, p: 'Es gratis?',
-    r: 'Tenes 2 meses de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: 9,99 dolares por mes, o 7,99 por mes si pagas el año. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
+    r: 'Tenes 20 dias de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: 9,99 dolares por mes, o 7,99 por mes si pagas el año. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
 
   { cap: null, p: 'Como cargo mis productos',
     r: 'Anda a Productos y toca "+ Nuevo producto". Poné el nombre, cuanto lo vendes y cuanto te costo. El stock lo podes cargar ahi mismo. Si tenes muchos productos, podes importarlos desde un Excel con el boton de la planilla.' },
@@ -15732,6 +15816,7 @@ $('btnGuardarPass').onclick = async function () {
         usuario = guardada.user; negocio = guardada.negocio;
         const n = usuario.username || 'Mi negocio';
         $('btnYo').textContent = n.charAt(0);
+        pintarPlan();
         await arrancarApp();
         marcarConexion(false);
         return;
