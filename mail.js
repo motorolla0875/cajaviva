@@ -3,6 +3,8 @@ const { Resend } = require('resend');
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const DE = process.env.MAIL_FROM || 'CajaViva <hola@cajaviva.app>';
 const APP = process.env.APP_URL || 'https://cajaviva.app';
+// las respuestas a los mails de la app llegan a este correo
+const RESPONDER_A = process.env.MAIL_REPLY_TO || 'dmith.builds@gmail.com';
 
 function envolver(titulo, cuerpo) {
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#2C3E37;">' +
@@ -15,7 +17,7 @@ function envolver(titulo, cuerpo) {
 async function mandar(para, asunto, html) {
   if (!resend || !para) return { ok: false, motivo: 'sin configurar' };
   try {
-    const r = await resend.emails.send({ from: DE, to: para, subject: asunto, html: html });
+    const r = await resend.emails.send({ from: DE, to: para, reply_to: RESPONDER_A, subject: asunto, html: html });
     if (r.error) { console.error('Mail error:', r.error); return { ok: false, motivo: r.error.message }; }
     return { ok: true, id: r.data && r.data.id };
   } catch (e) {
