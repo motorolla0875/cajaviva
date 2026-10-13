@@ -5,6 +5,8 @@ const router = express.Router();
 
 // columnas para el catalogo
 try { db.exec('ALTER TABLE negocio ADD COLUMN slug TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN en_directorio INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE negocio ADD COLUMN pide_directorio INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN catalogo_activo INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN whatsapp TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE negocio ADD COLUMN catalogo_mensaje TEXT'); } catch (e) {}
