@@ -14,10 +14,17 @@ function envolver(titulo, cuerpo) {
     'CajaViva - la app para manejar tu negocio</p></div>';
 }
 
+// version en texto plano (Gmail la usa para no mandarlo a Promociones)
+function comoTexto(html) {
+  return html.replace(/<a [^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/g, '$2: $1')
+    .replace(/<\/(p|h1|div)>/g, '\n\n').replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n').trim();
+}
+
 async function mandar(para, asunto, html) {
   if (!resend || !para) return { ok: false, motivo: 'sin configurar' };
   try {
-    const r = await resend.emails.send({ from: DE, to: para, reply_to: RESPONDER_A, subject: asunto, html: html });
+    const r = await resend.emails.send({ from: DE, to: para, reply_to: RESPONDER_A, subject: asunto, html: html, text: comoTexto(html) });
     if (r.error) { console.error('Mail error:', r.error); return { ok: false, motivo: r.error.message }; }
     return { ok: true, id: r.data && r.data.id };
   } catch (e) {
@@ -27,14 +34,12 @@ async function mandar(para, asunto, html) {
 }
 
 function mailBienvenida(para, usuario) {
-  return mandar(para, 'Bienvenido a CajaViva', envolver('Ya tenes tu cuenta lista',
-    '<p style="font-size:15px;line-height:1.55;">Hola! Tu cuenta <b>' + usuario + '</b> quedo creada.</p>' +
-    '<p style="font-size:15px;line-height:1.55;">Desde CajaViva podes vender, controlar el stock, llevar la caja, ' +
-    'anotar el fiado y mucho mas. Todo desde el celular, aunque te quedes sin internet.</p>' +
-    '<p style="margin:24px 0;"><a href="' + APP + '" style="background:#1E7A5A;color:#fff;text-decoration:none;' +
-    'padding:12px 22px;border-radius:10px;font-size:15px;display:inline-block;">Entrar a CajaViva</a></p>' +
-    '<p style="font-size:13.5px;color:#6B7975;">Guarda este mail: si alguna vez te olvidas la contrasena, ' +
-    'la vas a poder recuperar desde esta direccion.</p>'));
+  return mandar(para, 'Tu cuenta de CajaViva', envolver('Bienvenido, ' + usuario,
+    '<p style="font-size:15px;line-height:1.55;">Tu cuenta ya esta lista. Desde la app vas a poder llevar ' +
+    'las ventas, el stock y la caja de tu negocio.</p>' +
+    '<p style="font-size:15px;line-height:1.55;">Si alguna vez te olvidas la contrasena, podes recuperarla ' +
+    'desde la pantalla de inicio con la opcion "Olvide mi contrasena".</p>' +
+    '<p style="font-size:15px;line-height:1.55;">Gracias por usar CajaViva.</p>'));
 }
 
 function mailRecuperar(para, usuario, link) {
