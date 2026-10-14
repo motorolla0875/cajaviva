@@ -31,6 +31,24 @@ OTROS: funciona sin internet y sincroniza despues. Se pueden agregar empleados c
 
 Respondes en español rioplatense, tuteando. Frases cortas y claras, sin tecnicismos. Como si le explicaras a un kiosquero. Maximo 4 o 5 lineas. Si no sabes algo, lo decis.`;
 
+// ── reportar una respuesta del asistente que esté mal o sea ofensiva (lo pide Google Play
+//    para las apps con IA). Queda guardado para revisarlo. ──
+try {
+  require('../db').exec(`CREATE TABLE IF NOT EXISTS reportes_ia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, pregunta TEXT, respuesta TEXT, motivo TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')))`);
+} catch (e) {}
+router.post('/reportar', (req, res) => {
+  const b = req.body || {};
+  const corto = (x, n) => String(x || '').slice(0, n);
+  try {
+    require('../db').prepare('INSERT INTO reportes_ia (user_id, pregunta, respuesta, motivo) VALUES (?, ?, ?, ?)')
+      .run(req.userId || null, corto(b.pregunta, 600), corto(b.respuesta, 3000), corto(b.motivo, 300));
+    console.log('[asistente] Respuesta reportada por', req.userId, '-', corto(b.motivo, 80));
+  } catch (e) { return res.status(500).json({ error: 'No se pudo enviar el reporte.' }); }
+  res.json({ ok: true });
+});
+
 router.post('/preguntar', async (req, res) => {
   const pregunta = (req.body?.pregunta || '').trim();
   if (!pregunta) return res.status(400).json({ error: 'Escribi tu pregunta.' });

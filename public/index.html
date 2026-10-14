@@ -2478,6 +2478,7 @@
     <button class="btn-sec" id="btnCatalogo">Catalogo para compartir</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
     <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
+    <p style="text-align:center; font-size:12px; margin:12px 0 0;"><a href="/privacidad" target="_blank" style="color:var(--muted);">Privacidad</a> · <a href="/terminos" target="_blank" style="color:var(--muted);">Términos</a></p>
     <button class="btn-link" id="btnBorrarCuenta" style="background:none; border:0; color:var(--muted); font-size:12.5px; text-decoration:underline; margin-top:10px; width:100%;">Borrar mi cuenta</button>
   </div>
 </div>
@@ -2680,6 +2681,8 @@
       <button type="button" id="btnPreguntarIA">&#10148;</button>
     </div>
     <div id="respuestaIA"></div>
+    <div id="reportarIA" style="display:none; text-align:right; margin-top:4px;"><button type="button" id="btnReportarIA" style="background:none; border:0; color:var(--muted); font-size:12px; text-decoration:underline; padding:2px 0;">Reportar esta respuesta</button></div>
+    <p style="font-size:11.5px; color:var(--muted); margin:6px 0 0;">Las respuestas las genera una IA y pueden tener errores.</p>
 
     <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;
                   margin-top:18px; padding:12px; border:1px solid var(--line); border-radius:12px;
@@ -15168,6 +15171,17 @@ document.getElementById('btnCerrarAyuda').onclick = function () {
   document.getElementById('modalAyuda').classList.remove('on');
 };
 
+let ultimaIA = null;
+document.getElementById('btnReportarIA').onclick = async function () {
+  if (!ultimaIA) return;
+  const motivo = prompt('¿Qué tiene de malo esta respuesta? (opcional)', '');
+  if (motivo === null) return;
+  try {
+    await api('POST', '/asistente/reportar', { pregunta: ultimaIA.pregunta, respuesta: ultimaIA.respuesta, motivo: motivo });
+    avisar('Gracias, vamos a revisarla.');
+    $('reportarIA').style.display = 'none';
+  } catch (e) { avisar(e.message, true); }
+};
 document.getElementById('btnPreguntarIA').onclick = async function () {
   const campo = document.getElementById('preguntaIA');
   const cont = document.getElementById('respuestaIA');
@@ -15182,6 +15196,8 @@ document.getElementById('btnPreguntarIA').onclick = async function () {
     const d = await api('POST', '/asistente/preguntar', { pregunta: p });
     cont.textContent = d.respuesta;
     campo.value = '';
+    ultimaIA = { pregunta: p, respuesta: d.respuesta };
+    $('reportarIA').style.display = '';
   } catch (e) {
     cont.textContent = e.message;
   }
