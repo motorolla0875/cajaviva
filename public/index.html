@@ -2478,6 +2478,20 @@
     <button class="btn-sec" id="btnCatalogo">Catalogo para compartir</button>
     <button class="btn-del" id="btnSalir">Cerrar sesion</button>
     <button class="btn-sec" id="btnCerrarCuentaUsuario">Cerrar</button>
+    <button class="btn-link" id="btnBorrarCuenta" style="background:none; border:0; color:var(--muted); font-size:12.5px; text-decoration:underline; margin-top:10px; width:100%;">Borrar mi cuenta</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBorrarCuenta">
+  <div class="modal">
+    <h3>Borrar mi cuenta</h3>
+    <p style="color:var(--muted); font-size:13.5px; line-height:1.55; margin:0 0 12px;">Se borran para siempre tu cuenta y todo lo que cargaste: productos, ventas, clientes, fiado, caja, empleados, fotos y tu tienda online. No se puede deshacer. Si querés guardar algo, primero bajá tus datos en Excel.</p>
+    <div id="msgBorrarCuenta"></div>
+    <div id="bcClaveCaja"><label>Tu contraseña</label><input type="password" id="bcClave" autocomplete="current-password"></div>
+    <label>Escribí BORRAR para confirmar</label>
+    <input type="text" id="bcConfirmar" autocomplete="off">
+    <button class="btn-del" id="btnBcConfirmar">Borrar mi cuenta para siempre</button>
+    <button class="btn-sec" id="btnBcCancelar">Cancelar</button>
   </div>
 </div>
 
@@ -3996,7 +4010,8 @@
     <p style="color:var(--muted); margin:0 0 18px;">Para seguir vendiendo y usando todas las funciones, elegí un plan. Lo que cargaste está guardado y no se pierde.</p>
     <div class="p-plan"><div style="color:var(--muted); font-size:13px;">Mensual</div><b>US$ 9,99</b> por mes</div>
     <div class="p-plan dest"><div style="color:var(--muted); font-size:13px;">Anual · ahorrás 20%</div><b>US$ 7,99</b> por mes <span style="color:var(--muted); font-size:13px;">(US$ 95,88 al año)</span></div>
-    <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android o iPhone. Muy pronto vas a poder activarla desde acá.</p>
+    <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android. Bajala de Google Play, entrá con tu usuario y suscribite desde ahí.</p>
+    <div id="finPruebaPagos"></div>
     <button class="acc sec" id="btnFinExportar">Bajar mis ventas en Excel</button>
     <button class="acc sec" id="btnFinSalir">Cerrar sesión</button>
   </div>
@@ -4978,6 +4993,7 @@ function cerrarSesion() {
 function aplicarUsuario(d) {
   usuario = d.user; negocio = d.negocio;
   LOCAL.guardar('sesion', d);
+  setTimeout(function () { iniciarPagos(); pintarPagos('finPruebaPagos'); }, 800);
   const nombre = usuario.username || 'Mi negocio';
   $('btnYo').textContent = nombre.charAt(0);
   const sinAsegurar = !usuario.username;
@@ -14797,9 +14813,11 @@ function abrirPlan() {
     '</div>' +
 
     '<p class="hint" style="line-height:1.6;">Las cuentas nuevas tienen <b>20 días de prueba gratis</b> con todas las funciones, sin tarjeta. ' +
-    'Después elegís el plan mensual o el anual. Lo que cargaste nunca se pierde.</p>';
+    'Después elegís el plan mensual o el anual. Lo que cargaste nunca se pierde.</p>' +
+    '<div id="planPagos"></div>';
 
   document.getElementById('modalPlan').classList.add('on');
+  pintarPagos('planPagos');
 }
 
 document.getElementById('btnVerPlanBarra').onclick = function () { abrirPlan(); };
@@ -14825,6 +14843,136 @@ document.getElementById('btnFinExportar').onclick = async function () {
 
 document.getElementById('btnCerrarPlan').onclick = function () {
   document.getElementById('modalPlan').classList.remove('on');
+};
+
+/* ══ Pagos con Google Play (RevenueCat) — solo dentro de la app ══ */
+// Claves públicas de RevenueCat (proyecto CajaViva). Sin clave, no se muestran botones de pago.
+const RC_CLAVES = { android: '', ios: '' };
+const PAGOS = { listo: false, arrancando: null, paquetes: { mensual: null, anual: null } };
+function plataformaApp() {
+  const C = window.Capacitor;
+  return C && C.isNativePlatform && C.isNativePlatform() && C.getPlatform ? C.getPlatform() : null;
+}
+function rc() { const C = window.Capacitor; return plataformaApp() && C.Plugins && C.Plugins.Purchases && RC_CLAVES[plataformaApp()] ? C.Plugins.Purchases : null; }
+function puedePagarAca() { return !!rc() && !!usuario && !esEmpleado; }
+
+function iniciarPagos() {
+  const P = rc();
+  if (!P || !usuario || esEmpleado) return Promise.resolve(false);
+  if (PAGOS.listo) return Promise.resolve(true);
+  if (PAGOS.arrancando) return PAGOS.arrancando;
+  PAGOS.arrancando = (async function () {
+    try {
+      await P.configure({ apiKey: RC_CLAVES[plataformaApp()], appUserID: usuario.id });
+      PAGOS.listo = true;
+      try {
+        const o = await P.getOfferings();
+        const l = (o && o.current && o.current.availablePackages) || [];
+        PAGOS.paquetes.mensual = l.find(function (x) { return x.packageType === 'MONTHLY'; }) || null;
+        PAGOS.paquetes.anual = l.find(function (x) { return x.packageType === 'ANNUAL'; }) || null;
+      } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+    finally { PAGOS.arrancando = null; }
+  })();
+  return PAGOS.arrancando;
+}
+
+async function refrescarPlan() {
+  try {
+    const d = await api('POST', '/pagos/sincronizar');
+    if (usuario && d.plan_info) { usuario.plan = d.plan; usuario.plan_info = d.plan_info; }
+  } catch (e) {}
+  pintarPlan();
+  const pl = document.getElementById('modalPlan');
+  if (pl && pl.classList.contains('on')) abrirPlan();
+  pintarPagos('finPruebaPagos');
+}
+
+async function comprarPlan(cual, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await iniciarPagos();
+    const pk = PAGOS.paquetes[cual];
+    if (!pk) throw new Error('Los planes todavía no cargaron. Probá de nuevo en un ratito.');
+    await rc().purchasePackage({ aPackage: pk });
+    await refrescarPlan();
+    if (infoPlan().plan === 'pro') avisar('¡Listo! Tu suscripción está activa.');
+    else avisar('La compra se hizo. En unos minutos se activa tu plan.');
+  } catch (e) {
+    if (!(e && (e.userCancelled || e.code === '1' || /cancel/i.test(e.message || '')))) avisar(e.message || 'No se pudo completar la compra.', true);
+  }
+  if (btn) btn.disabled = false;
+}
+
+async function restaurarCompras(btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await iniciarPagos();
+    await rc().restorePurchases();
+    await refrescarPlan();
+    avisar(infoPlan().plan === 'pro' ? 'Recuperamos tu suscripción.' : 'No encontramos una suscripción activa en esta cuenta de Google.');
+  } catch (e) { avisar('No se pudo restaurar. Probá de nuevo.', true); }
+  if (btn) btn.disabled = false;
+}
+
+function precioPaquete(cual, porDefecto) {
+  const pk = PAGOS.paquetes[cual];
+  return (pk && pk.product && pk.product.priceString) || porDefecto;
+}
+
+// dibuja los botones de suscripción (solo en la app) dentro del contenedor indicado
+function pintarPagos(idCont) {
+  const cont = document.getElementById(idCont);
+  if (!cont) return;
+  const como = document.getElementById('finPruebaComo');
+  if (!puedePagarAca()) { cont.innerHTML = ''; if (como) como.style.display = ''; return; }
+  if (como) como.style.display = 'none';
+  const p = infoPlan();
+  if (p.plan === 'pro') {
+    cont.innerHTML = '<button class="btn-sec" style="margin-top:12px;" onclick="window.open(\'https://play.google.com/store/account/subscriptions?package=com.cajaviva.app\', \'_system\')">Administrar suscripción</button>';
+    return;
+  }
+  const dibujar = function () {
+    cont.innerHTML =
+      '<button class="btn-ppal" style="margin-top:12px; width:100%;" id="' + idCont + 'Anual">Suscribirme por año · ' + precioPaquete('anual', 'US$ 95,88') + '</button>' +
+      '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Mensual">Suscribirme por mes · ' + precioPaquete('mensual', 'US$ 9,99') + '</button>' +
+      '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Restaurar">Ya pagué: restaurar compra</button>' +
+      '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">La suscripción se cobra en tu cuenta de Google Play y se renueva sola al mismo precio hasta que la canceles. ' +
+      'Podés cancelarla cuando quieras desde Google Play → Pagos y suscripciones. ' +
+      '<a href="/privacidad" target="_blank">Privacidad</a> · <a href="/terminos" target="_blank">Términos</a></p>';
+    document.getElementById(idCont + 'Anual').onclick = function () { comprarPlan('anual', this); };
+    document.getElementById(idCont + 'Mensual').onclick = function () { comprarPlan('mensual', this); };
+    document.getElementById(idCont + 'Restaurar').onclick = function () { restaurarCompras(this); };
+  };
+  dibujar();
+  iniciarPagos().then(function (ok) { if (ok && document.getElementById(idCont + 'Anual')) dibujar(); });
+}
+
+/* ══ Borrar la cuenta ══ */
+function abrirBorrarCuenta() {
+  const my = document.getElementById('modalCuentaUsuario');
+  if (my) my.classList.remove('on');
+  const conClave = !!(usuario && usuario.username);
+  $('bcClaveCaja').style.display = conClave ? '' : 'none';
+  $('bcClave').value = ''; $('bcConfirmar').value = ''; $('msgBorrarCuenta').innerHTML = '';
+  $('modalBorrarCuenta').classList.add('on');
+}
+$('btnBorrarCuenta').onclick = abrirBorrarCuenta;
+$('btnBcCancelar').onclick = function () { $('modalBorrarCuenta').classList.remove('on'); };
+$('btnBcConfirmar').onclick = async function () {
+  const btn = this;
+  if ($('bcConfirmar').value.trim().toUpperCase() !== 'BORRAR') { $('msgBorrarCuenta').innerHTML = '<div class="msg">Escribí BORRAR para confirmar.</div>'; return; }
+  btn.disabled = true;
+  try {
+    await api('POST', '/cuenta/borrar', { password: $('bcClave').value, confirmar: 'BORRAR' });
+    try { const P = rc(); if (P && PAGOS.listo) await P.logOut(); } catch (e) {}
+    $('modalBorrarCuenta').classList.remove('on');
+    alert('Tu cuenta y todos sus datos se borraron. Si tenías una suscripción en Google Play, acordate de cancelarla desde Google Play → Pagos y suscripciones.');
+    localStorage.clear();
+    cerrarSesion();
+  } catch (e) { $('msgBorrarCuenta').innerHTML = '<div class="msg">' + e.message + '</div>'; }
+  btn.disabled = false;
 };
 
 /* ══ Ayuda ══ */

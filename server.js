@@ -58,6 +58,9 @@ app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+for (const pag of ['privacidad', 'terminos', 'borrar-cuenta']) {
+  app.get('/' + pag, (req, res) => res.sendFile(path.join(__dirname, 'public', pag + '.html')));
+}
 app.use(express.static(path.join(__dirname, 'public')));
 
 // la pagina publica del catalogo
@@ -127,6 +130,11 @@ app.use('/api/asistente', function (req, res, next) {
   return requiereAuth(req, res, next);
 }, require('./routes/asistente'));
 app.use('/api/exportar', requiereAuth, require('./routes/exportar'));
+app.use('/api/pagos', function (req, res, next) {
+  if (req.path === '/revenuecat') return next();
+  return requiereAuth(req, res, next);
+}, require('./routes/pagos'));
+app.use('/api/cuenta', requiereAuth, require('./routes/cuenta'));
 app.use('/api/mesas', requiereAuth, require('./routes/mesas'));
 
 app.use('/api/catalogo', function (req, res, next) {

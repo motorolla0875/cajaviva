@@ -183,7 +183,7 @@ function requiereAuth(req, res, next) {
       : null;
     // prueba vencida sin suscripcion: solo se puede exportar lo cargado
     const plan = db.estadoPlan(req.userId);
-    if (plan && plan.bloqueado && req.baseUrl !== '/api/exportar') {
+    if (plan && plan.bloqueado && ['/api/exportar', '/api/pagos', '/api/cuenta'].indexOf(req.baseUrl) === -1) {
       return res.status(402).json({ error: 'Terminó tu prueba gratis. Suscribite para seguir usando CajaViva.', codigo: 'prueba_vencida', plan_info: plan });
     }
     next();
