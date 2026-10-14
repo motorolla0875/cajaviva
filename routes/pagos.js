@@ -47,7 +47,8 @@ function aplicar(userId, activa) {
 // aviso de RevenueCat
 router.post('/revenuecat', async (req, res) => {
   const secreto = process.env.REVENUECAT_WEBHOOK_SECRET;
-  if (!secreto || req.headers.authorization !== 'Bearer ' + secreto) return res.status(401).json({ error: 'No autorizado.' });
+  const recibido = String(req.headers.authorization || '').trim().replace(/^Bearer\s+/i, '');
+  if (!secreto || recibido !== secreto) return res.status(401).json({ error: 'No autorizado.' });
   const ev = req.body && req.body.event;
   const ids = [ev && ev.app_user_id].concat((ev && ev.aliases) || []).filter(Boolean);
   try {
