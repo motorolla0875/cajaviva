@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>
+// App de iPhone: la pantalla ocupa todo, incluso detrás de la hora y la barra de abajo.
+// Se marca para dejar el espacio justo con env(safe-area-inset-*).
+(function () {
+  var C = window.Capacitor;
+  if (C && C.getPlatform && C.getPlatform() === 'ios') {
+    document.documentElement.classList.add('ios-app');
+    var m = document.querySelector('meta[name=viewport]');
+    if (m && m.content.indexOf('viewport-fit') === -1) m.setAttribute('content', m.content + ', viewport-fit=cover');
+  }
+})();
+</script>
 <title>CajaViva</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="manifest" href="/manifest.json">
@@ -1929,6 +1941,16 @@
     nav button { font-size: 13px; padding: 13px 12px; }
     .rubros { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   }
+
+  /* ── App de iPhone: espacio para la hora/isla arriba y la barra de inicio abajo ── */
+  .ios-app header { padding-top: calc(14px + env(safe-area-inset-top)); }
+  .ios-app .barra-fija { height: calc(52px + env(safe-area-inset-bottom)) !important; padding-bottom: env(safe-area-inset-bottom); }
+  .ios-app #v-vender .izq { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+  .ios-app .modal-bg { padding-top: calc(24px + env(safe-area-inset-top)); padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .ios-app .fin-prueba { padding-top: calc(32px + env(safe-area-inset-top)); padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .ios-app .alerta-ml { top: calc(20px + env(safe-area-inset-top)); }
+  .ios-app .chat-wrap { top: calc(195px + env(safe-area-inset-top)); }
+  .ios-app .pantalla-centro { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 </style>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
