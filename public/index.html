@@ -1950,6 +1950,8 @@
   .ios-app .fin-prueba { padding-top: calc(32px + env(safe-area-inset-top)); padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   .ios-app .alerta-ml { top: calc(20px + env(safe-area-inset-top)); }
   .ios-app .chat-wrap { top: calc(195px + env(safe-area-inset-top)); }
+  /* TEMPORAL (capturas para la App Store): en el iPhone no se muestra la barra de dias de prueba. Sacar antes de publicar. */
+  .ios-app #barraPrueba { display: none !important; }
   .ios-app .pantalla-centro { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 </style>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
