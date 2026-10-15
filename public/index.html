@@ -1950,8 +1950,6 @@
   .ios-app .fin-prueba { padding-top: calc(32px + env(safe-area-inset-top)); padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   .ios-app .alerta-ml { top: calc(20px + env(safe-area-inset-top)); }
   .ios-app .chat-wrap { top: calc(195px + env(safe-area-inset-top)); }
-  /* TEMPORAL (capturas para la App Store): en el iPhone no se muestra la barra de dias de prueba. Sacar antes de publicar. */
-  .ios-app #barraPrueba { display: none !important; }
   .ios-app .pantalla-centro { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 </style>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -4037,7 +4035,7 @@
     <p style="color:var(--muted); margin:0 0 18px;">Para seguir vendiendo y usando todas las funciones, elegí un plan. Lo que cargaste está guardado y no se pierde.</p>
     <div class="p-plan"><div style="color:var(--muted); font-size:13px;">Mensual</div><b>US$ 9,99</b> por mes</div>
     <div class="p-plan dest"><div style="color:var(--muted); font-size:13px;">Anual · ahorrás 20%</div><b>US$ 7,99</b> por mes <span style="color:var(--muted); font-size:13px;">(US$ 95,88 al año)</span></div>
-    <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android. Bajala de Google Play, entrá con tu usuario y suscribite desde ahí.</p>
+    <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android o iPhone. Bajala de Google Play o del App Store, entrá con tu usuario y suscribite desde ahí.</p>
     <div id="finPruebaPagos"></div>
     <button class="acc sec" id="btnFinExportar">Bajar mis ventas en Excel</button>
     <button class="acc sec" id="btnFinSalir">Cerrar sesión</button>
@@ -14872,9 +14870,9 @@ document.getElementById('btnCerrarPlan').onclick = function () {
   document.getElementById('modalPlan').classList.remove('on');
 };
 
-/* ══ Pagos con Google Play (RevenueCat) — solo dentro de la app ══ */
+/* ══ Pagos con Google Play y App Store (RevenueCat) — solo dentro de la app ══ */
 // Claves públicas de RevenueCat (proyecto CajaViva). Sin clave, no se muestran botones de pago.
-const RC_CLAVES = { android: 'goog_WixXPdMWLZICqvteONroFZFGNTv', ios: '' };
+const RC_CLAVES = { android: 'goog_WixXPdMWLZICqvteONroFZFGNTv', ios: 'appl_iCJsUOSvbFvYthrubtDDZpGjpjC' };
 const PAGOS = { listo: false, arrancando: null, paquetes: { mensual: null, anual: null } };
 function plataformaApp() {
   const C = window.Capacitor;
@@ -14938,7 +14936,7 @@ async function restaurarCompras(btn) {
     await iniciarPagos();
     await rc().restorePurchases();
     await refrescarPlan();
-    avisar(infoPlan().plan === 'pro' ? 'Recuperamos tu suscripción.' : 'No encontramos una suscripción activa en esta cuenta de Google.');
+    avisar(infoPlan().plan === 'pro' ? 'Recuperamos tu suscripción.' : (plataformaApp() === 'ios' ? 'No encontramos una suscripción activa en esta cuenta de Apple.' : 'No encontramos una suscripción activa en esta cuenta de Google.'));
   } catch (e) { avisar('No se pudo restaurar. Probá de nuevo.', true); }
   if (btn) btn.disabled = false;
 }
@@ -14957,7 +14955,8 @@ function pintarPagos(idCont) {
   if (como) como.style.display = 'none';
   const p = infoPlan();
   if (p.plan === 'pro') {
-    cont.innerHTML = '<button class="btn-sec" style="margin-top:12px;" onclick="window.open(\'https://play.google.com/store/account/subscriptions?package=com.cajaviva.app\', \'_system\')">Administrar suscripción</button>';
+    const urlGestion = plataformaApp() === 'ios' ? 'https://apps.apple.com/account/subscriptions' : 'https://play.google.com/store/account/subscriptions?package=com.cajaviva.app';
+    cont.innerHTML = '<button class="btn-sec" style="margin-top:12px;" onclick="window.open(\'' + urlGestion + '\', \'_system\')">Administrar suscripción</button>';
     return;
   }
   const dibujar = function () {
@@ -14965,9 +14964,12 @@ function pintarPagos(idCont) {
       '<button class="btn-ppal" style="margin-top:12px; width:100%;" id="' + idCont + 'Anual">Suscribirme por año · ' + precioPaquete('anual', 'US$ 95,88') + '</button>' +
       '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Mensual">Suscribirme por mes · ' + precioPaquete('mensual', 'US$ 9,99') + '</button>' +
       '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Restaurar">Ya pagué: restaurar compra</button>' +
-      '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">La suscripción se cobra en tu cuenta de Google Play y se renueva sola al mismo precio hasta que la canceles. ' +
-      'Podés cancelarla cuando quieras desde Google Play → Pagos y suscripciones. ' +
-      '<a href="/privacidad" target="_blank">Privacidad</a> · <a href="/terminos" target="_blank">Términos</a></p>';
+      (plataformaApp() === 'ios'
+        ? '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">CajaViva Pro: suscripción mensual o anual con todas las funciones. El pago se cobra en tu cuenta de Apple al confirmar la compra. La suscripción se renueva sola al mismo precio, salvo que la canceles al menos 24 horas antes de que termine el período. Podés administrarla o cancelarla en los ajustes de tu cuenta de Apple. ' +
+          '<a href="/privacidad" target="_blank">Privacidad</a> · <a href="/terminos" target="_blank">Términos</a> · <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank">Términos de uso (EULA)</a></p>'
+        : '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">La suscripción se cobra en tu cuenta de Google Play y se renueva sola al mismo precio hasta que la canceles. ' +
+          'Podés cancelarla cuando quieras desde Google Play → Pagos y suscripciones. ' +
+          '<a href="/privacidad" target="_blank">Privacidad</a> · <a href="/terminos" target="_blank">Términos</a></p>');
     document.getElementById(idCont + 'Anual').onclick = function () { comprarPlan('anual', this); };
     document.getElementById(idCont + 'Mensual').onclick = function () { comprarPlan('mensual', this); };
     document.getElementById(idCont + 'Restaurar').onclick = function () { restaurarCompras(this); };
