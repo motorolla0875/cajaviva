@@ -8,6 +8,7 @@
 // Uso (en el servidor, dentro de ~/cajaviva):
 //   node crear-demo-apple.js            crea la cuenta
 //   node crear-demo-apple.js --borrar   la borra para poder crearla de nuevo
+//   node crear-demo-apple.js --renovar  le da 30 dias mas de prueba (correrlo antes de cada envio a Apple)
 require('dotenv').config();
 const db = require('./db');
 
@@ -79,6 +80,17 @@ const CLIENTES = [
   ['Carlos Benitez', '1155554567', 'Mitre 731']
 ];
 
+function renovarPrueba(userId) {
+  db.prepare("UPDATE users SET plan = 'prueba', plan_trial_ends_at = datetime('now', '+30 days') WHERE id = ?").run(userId);
+}
+
+async function renovar() {
+  const u = db.prepare('SELECT id FROM users WHERE username = ?').get(USUARIO);
+  if (!u) { console.log('No existe la cuenta ' + USUARIO + '. Creala con: node crear-demo-apple.js'); return; }
+  renovarPrueba(u.id);
+  console.log('Listo: la cuenta ' + USUARIO + ' tiene 30 dias de prueba con todo desbloqueado.');
+}
+
 async function borrar() {
   const u = db.prepare('SELECT id FROM users WHERE username = ?').get(USUARIO);
   if (!u) { console.log('No existe la cuenta ' + USUARIO + '.'); return; }
@@ -110,8 +122,9 @@ async function crear() {
   TOKEN = (await api('POST', '/auth/nueva', {})).token;
   TOKEN = (await api('POST', '/auth/asegurar', { username: USUARIO, password: CLAVE })).token;
   const userId = (await api('GET', '/auth/yo')).user.id;
-  // cuenta de demostracion: sin vencimiento de prueba
-  db.prepare("UPDATE users SET plan = 'libre' WHERE id = ?").run(userId);
+  // cuenta de demostracion: prueba con todo desbloqueado por 30 dias (como una cuenta
+  // nueva, asi el revisor ve el plan y puede probar la suscripcion)
+  renovarPrueba(userId);
 
   // 2. el negocio
   await api('PUT', '/negocio/rubro', { rubro: 'almacen', nombre: 'Almacen Don Ramon' });
@@ -198,7 +211,7 @@ async function crear() {
   console.log('  Tienda:      https://cajaviva.app/c/' + SLUG);
 }
 
-(process.argv.indexOf('--borrar') >= 0 ? borrar() : crear()).catch(function (e) {
+(process.argv.indexOf('--borrar') >= 0 ? borrar() : process.argv.indexOf('--renovar') >= 0 ? renovar() : crear()).catch(function (e) {
   console.error('Error:', e.message);
   process.exit(1);
 });
