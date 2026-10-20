@@ -15,6 +15,22 @@ const PORT = process.env.PORT || 5200;
 const SECRETO_WS = process.env.JWT_SECRET || 'cajaviva-cambiar-esto-en-produccion';
 
 app.use(express.json());
+
+// la app de iPhone/Android lleva CajaViva adentro y le habla a este servidor desde
+// capacitor://localhost (iOS) o https://localhost (Android): se le permite el acceso
+app.use(function (req, res, next) {
+  const o = req.headers.origin;
+  if (o && (o === 'capacitor://localhost' || o === 'ionic://localhost' || /^https?:\/\/localhost(:\d+)?$/.test(o))) {
+    res.setHeader('Access-Control-Allow-Origin', o);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+  }
+  next();
+});
 // si entra por un dominio propio, se sirve el catalogo de ese negocio
 app.use(function (req, res, next) {
   const host = String(req.hostname || '').toLowerCase().replace(/^www\./, '');

@@ -8,6 +8,11 @@
 // Se marca para dejar el espacio justo con env(safe-area-inset-*).
 (function () {
   var C = window.Capacitor;
+  // App con CajaViva adentro (capacitor://localhost o https://localhost): todo lo que
+  // es del servidor (api, fotos, videos, links) se resuelve contra cajaviva.app
+  window.CV_EMPAQ = !!(C && location.hostname === 'localhost');
+  window.CV_SERVIDOR = window.CV_EMPAQ ? (window.CV_SERVIDOR_PRUEBA || 'https://cajaviva.app') : '';
+  if (window.CV_EMPAQ) document.write('<base href="' + window.CV_SERVIDOR + '/">');
   if (C && C.getPlatform && C.getPlatform() === 'ios') {
     document.documentElement.classList.add('ios-app');
     var m = document.querySelector('meta[name=viewport]');
@@ -4049,6 +4054,81 @@ if ('serviceWorker' in navigator) {
 }
 
 const API = '/api';
+
+/* ══ Funciones nativas (solo en la app instalada) ══ */
+function nativo(nombre) {
+  const C = window.Capacitor;
+  if (!C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins) return null;
+  return C.isPluginAvailable && !C.isPluginAvailable(nombre) ? null : (C.Plugins[nombre] || null);
+}
+
+// compartir con el menu nativo del telefono
+if (nativo('Share')) {
+  navigator.share = function (d) {
+    return nativo('Share').share({ title: d.title, text: d.text, url: d.url, dialogTitle: 'Compartir' });
+  };
+}
+
+// bajar un archivo: en la app se guarda y se abre el menu para compartirlo o imprimirlo
+async function guardarArchivo(blob, nombre) {
+  const FS = nativo('Filesystem'), SH = nativo('Share');
+  if (FS && SH) {
+    const datos = await new Promise(function (ok, mal) {
+      const lr = new FileReader();
+      lr.onload = function () { ok(String(lr.result).split(',')[1]); };
+      lr.onerror = mal;
+      lr.readAsDataURL(blob);
+    });
+    const res = await FS.writeFile({ path: nombre, data: datos, directory: 'CACHE' });
+    await SH.share({ title: nombre, files: [res.uri], dialogTitle: 'Guardar o compartir' });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// aviso diario en el celular: productos por vencer y con poco stock
+let avisoProgramado = '';
+async function programarAvisosDelDia() {
+  const LN = nativo('LocalNotifications');
+  if (!LN || !Array.isArray(productos)) return;
+  try {
+    const hoy = new Date();
+    const vencen = productos.filter(function (p) {
+      if (!p.vence || p.activo === 0) return false;
+      const d = (new Date(p.vence + 'T00:00:00') - hoy) / 86400000;
+      return d <= (p.aviso_dias || 7);
+    });
+    const poco = productos.filter(function (p) {
+      return p.activo !== 0 && !p.es_servicio && !p.es_insumo && p.stock_minimo > 0 && p.stock <= p.stock_minimo;
+    });
+    const partes = [];
+    if (poco.length) partes.push(poco.length + (poco.length === 1 ? ' producto con poco stock' : ' productos con poco stock'));
+    if (vencen.length) partes.push(vencen.length + (vencen.length === 1 ? ' producto por vencer' : ' productos por vencer'));
+    const clave = partes.join('|');
+    if (clave === avisoProgramado) return;
+    avisoProgramado = clave;
+    await LN.cancel({ notifications: [{ id: 7001 }] }).catch(function () {});
+    if (!partes.length) return;
+    let perm = await LN.checkPermissions();
+    if (perm.display === 'prompt') perm = await LN.requestPermissions();
+    if (perm.display !== 'granted') return;
+    const cuando = new Date(); cuando.setHours(9, 0, 0, 0);
+    if (cuando <= new Date()) cuando.setDate(cuando.getDate() + 1);
+    const ejemplo = (poco[0] || vencen[0]).nombre;
+    await LN.schedule({ notifications: [{
+      id: 7001, title: 'CajaViva: revisá tu negocio',
+      body: 'Hoy tenés ' + partes.join(' y ') + ' (por ejemplo ' + ejemplo + ').',
+      schedule: { at: cuando, allowWhileIdle: true }
+    }] });
+  } catch (e) {}
+}
 let token = localStorage.getItem('cajaviva_token') || null;
 let usuario = null, negocio = null;
 let productos = [], clientes = [], categorias = [], proveedores = [];
@@ -5380,8 +5460,9 @@ function conectarTiempoReal() {
   if (!token) return;
   try {
     if (socketVivo) { try { socketVivo.onclose = null; socketVivo.close(); } catch (e) {} }
-    const protocolo = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    socketVivo = new WebSocket(protocolo + '//' + location.host + '/ws?token=' + encodeURIComponent(token));
+    const srv = window.CV_SERVIDOR ? new URL(window.CV_SERVIDOR) : location;
+    const protocolo = srv.protocol === 'https:' ? 'wss:' : 'ws:';
+    socketVivo = new WebSocket(protocolo + '//' + srv.host + '/ws?token=' + encodeURIComponent(token));
     socketVivo.onmessage = function (ev) {
       try {
         const d = JSON.parse(ev.data);
@@ -5740,6 +5821,7 @@ async function cargarProductos() {
   productos = await api('GET', '/productos');
   LOCAL.guardar('productos', productos);
   pintarGrilla(); pintarLista();
+  programarAvisosDelDia();
 
   // traer las recetas para saber para cuantos alcanza
   if (typeof cargarRecetas === 'function') {
@@ -7091,6 +7173,15 @@ function sonidoOk() { pitido(1760, 0.09); }
 function sonidoError() { pitido(220, 0.22, 0.15); }
 
 function vibrar(ms) {
+  const H = nativo('Haptics');
+  if (H) {
+    try {
+      if (Array.isArray(ms)) H.notification({ type: 'ERROR' });
+      else if (ms >= 60) H.notification({ type: 'SUCCESS' });
+      else H.impact({ style: 'LIGHT' });
+    } catch (e) {}
+    return;
+  }
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
 }
 
@@ -7138,6 +7229,17 @@ let escaneando = false;
 let modoScan = 'vender';
 
 async function abrirScan() {
+  const N = nativo('CapacitorBarcodeScanner');
+  if (N) {
+    try {
+      const r = await N.scanBarcode({ hint: 17, scanInstructions: 'Apuntá al código de barras', scanButton: false, scanText: ' ', cameraDirection: 1, scanOrientation: 3 });
+      const c = r && r.ScanResult ? String(r.ScanResult).trim() : '';
+      if (c) { ultimoCodigo = c; vecesCodigo = 1; encontroCodigo(c); }
+    } catch (e) {
+      if (!/cancel/i.test(String(e && (e.message || e.code)))) avisar('No se pudo abrir la cámara. Revisá el permiso en Ajustes.', true);
+    }
+    return;
+  }
   if (typeof Html5Qrcode === 'undefined') {
     avisar('El lector no esta disponible sin conexion', true); return;
   }
@@ -7171,6 +7273,7 @@ $('btnEscanearProd').onclick = function () { modoScan = 'reponer'; abrirScan(); 
 $('btnEscanearCampo').onclick = function () { modoScan = 'campo'; abrirScan(); };
 
 async function cerrarScan() {
+  if (nativo('CapacitorBarcodeScanner')) { $('modalScan').classList.remove('on'); return; }
   if (lector && escaneando) {
     try { await lector.stop(); } catch (e) {}
     escaneando = false;
@@ -8261,14 +8364,7 @@ document.getElementById('btnBajarExcelRep').onclick = async function () {
     if (!r.ok) throw new Error('No se pudo generar');
 
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'cajaviva-' + rg.desde + '-al-' + rg.hasta + '.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    await guardarArchivo(blob, 'cajaviva-' + rg.desde + '-al-' + rg.hasta + '.xlsx');
   } catch (e) {
     avisar(e.message, true);
   }
@@ -9695,7 +9791,7 @@ $('btnCatalogo').onclick = abrirConfigCatalogo;
 function mostrarLink(slug) {
   if (catActivo && slug) {
     $('catLinkBox').style.display = 'block';
-    $('catLink').textContent = location.origin + '/c/' + slug;
+    $('catLink').textContent = (window.CV_SERVIDOR || location.origin) + '/c/' + slug;
   } else {
     $('catLinkBox').style.display = 'none';
   }
@@ -9822,7 +9918,7 @@ async function compartirCatalogo() {
 function abrirCatalogo() {
   const t = ($('catLink').textContent || '').trim();
   const link = t || (negocio && negocio.slug
-    ? location.origin + '/c/' + negocio.slug : '');
+    ? (window.CV_SERVIDOR || location.origin) + '/c/' + negocio.slug : '');
 
   if (!link) { avisar('Primero abri tu tienda', true); return; }
 
@@ -14857,11 +14953,7 @@ document.getElementById('btnFinExportar').onclick = async function () {
     });
     if (!r.ok) throw new Error('No se pudo generar');
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'cajaviva-mis-ventas.xlsx';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    await guardarArchivo(blob, 'cajaviva-mis-ventas.xlsx');
   } catch (e) { avisar(e.message, true); }
   btn.disabled = false;
 };
@@ -15505,14 +15597,7 @@ document.getElementById('btnBajarExcel').onclick = async function () {
     if (!r.ok) throw new Error('No se pudo generar');
 
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'cajaviva-' + rg.desde + '-al-' + rg.hasta + '.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    await guardarArchivo(blob, 'cajaviva-' + rg.desde + '-al-' + rg.hasta + '.xlsx');
 
     avisar('Planilla descargada');
   } catch (e) {
@@ -15534,14 +15619,7 @@ document.getElementById('btnTicketPdf').onclick = async function () {
     });
     if (!r.ok) throw new Error('fallo');
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ticket.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    await guardarArchivo(blob, 'ticket.pdf');
   } catch (e) {
     avisar('No se pudo generar el ticket', true);
   }
@@ -15559,14 +15637,7 @@ document.getElementById('btnBajarPdf').onclick = async function () {
     if (!r.ok) throw new Error('fallo');
 
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'reporte-' + rg.desde + '-al-' + rg.hasta + '.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    await guardarArchivo(blob, 'reporte-' + rg.desde + '-al-' + rg.hasta + '.pdf');
     avisar('Reporte descargado');
   } catch (e) {
     avisar('No se pudo generar el reporte', true);
