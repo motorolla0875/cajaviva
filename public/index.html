@@ -2073,7 +2073,7 @@
          onclick="document.getElementById('avisoGratis').style.display='block'; this.style.display='none';">
         Como funciona mi plan</p>
       <p id="avisoGratis" style="display:none; font-size:11.5px; color:var(--muted); text-align:center; line-height:1.5; margin:8px 4px 0;">
-        20 dias gratis con todo, sin tarjeta. Despues elegis el plan mensual (US$ 9,99) o el anual (US$ 7,99 por mes). Lo que cargaste nunca se pierde.</p>
+        20 dias gratis con todo, sin tarjeta. Despues elegis el plan mensual o el anual (al suscribirte ves el precio exacto en tu moneda). Lo que cargaste nunca se pierde.</p>
 
     <div id="pasoImportar" style="display:none;">
       <h1 style="font-size:22px; margin-top:8px;">Como queres ver la app</h1>
@@ -4038,8 +4038,7 @@
     <div style="font-size:13px; color:var(--accent-dark); font-weight:600;">CajaViva</div>
     <h2>Terminó tu prueba gratis de 20 días</h2>
     <p style="color:var(--muted); margin:0 0 18px;">Para seguir vendiendo y usando todas las funciones, elegí un plan. Lo que cargaste está guardado y no se pierde.</p>
-    <div class="p-plan"><div style="color:var(--muted); font-size:13px;">Mensual</div><b>US$ 9,99</b> por mes</div>
-    <div class="p-plan dest"><div style="color:var(--muted); font-size:13px;">Anual · ahorrás 20%</div><b>US$ 7,99</b> por mes <span style="color:var(--muted); font-size:13px;">(US$ 95,88 al año)</span></div>
+    <div id="finPruebaPrecios"></div>
     <p id="finPruebaComo" style="font-size:14px; line-height:1.55; margin:14px 0 4px;">La suscripción se hace desde la app de CajaViva para Android o iPhone. Bajala de Google Play o del App Store, entrá con tu usuario y suscribite desde ahí.</p>
     <div id="finPruebaPagos"></div>
     <button class="acc sec" id="btnFinExportar">Bajar mis ventas en Excel</button>
@@ -5098,7 +5097,8 @@ function cerrarSesion() {
 function aplicarUsuario(d) {
   usuario = d.user; negocio = d.negocio;
   LOCAL.guardar('sesion', d);
-  setTimeout(function () { iniciarPagos(); pintarPagos('finPruebaPagos'); }, 800);
+  pintarPrecios('finPruebaPrecios', 'plan');
+  setTimeout(function () { iniciarPagos().then(function () { pintarPrecios('finPruebaPrecios', 'plan'); }); pintarPagos('finPruebaPagos'); }, 800);
   const nombre = usuario.username || 'Mi negocio';
   $('btnYo').textContent = nombre.charAt(0);
   const sinAsegurar = !usuario.username;
@@ -14924,20 +14924,14 @@ function abrirPlan() {
     'Ayuda con chat de IA</div>' +
 
     '<div class="seccion">Precios</div>' +
-    '<div class="rep-resumen" style="text-align:left; margin-bottom:10px;">' +
-      '<div class="lbl">Mensual</div>' +
-      '<div class="val"><span style="font-size:18px; font-weight:600;">US$ 9,99</span> <span style="font-size:14px; color:var(--muted);">por mes</span></div>' +
-    '</div>' +
-    '<div class="rep-resumen" style="text-align:left; margin-bottom:16px;">' +
-      '<div class="lbl">Anual · ahorrás 20%</div>' +
-      '<div class="val"><span style="font-size:18px; font-weight:600;">US$ 7,99</span> <span style="font-size:14px; color:var(--muted);">por mes (US$ 95,88 al año)</span></div>' +
-    '</div>' +
+    '<div id="planPrecios"></div>' +
 
     '<p class="hint" style="line-height:1.6;">Las cuentas nuevas tienen <b>20 días de prueba gratis</b> con todas las funciones, sin tarjeta. ' +
     'Después elegís el plan mensual o el anual. Lo que cargaste nunca se pierde.</p>' +
     '<div id="planPagos"></div>';
 
   document.getElementById('modalPlan').classList.add('on');
+  pintarPrecios('planPrecios', 'rep');
   pintarPagos('planPagos');
 }
 
@@ -15038,6 +15032,41 @@ function precioPaquete(cual, porDefecto) {
   return (pk && pk.product && pk.product.priceString) || porDefecto;
 }
 
+// Precios: en la app se muestran SIEMPRE los de la tienda (en la moneda del país del usuario).
+// Lo que se muestra grande es el total que se cobra en cada período (nunca un precio "por mes" del plan anual).
+function pintarPrecios(idCont, estilo) {
+  const cont = document.getElementById(idCont);
+  if (!cont) return;
+  const enApp = !!rc();
+  const dibujar = function () {
+    let mens, anual;
+    if (enApp) {
+      if (!PAGOS.paquetes.mensual && !PAGOS.paquetes.anual) { cont.innerHTML = '<p class="hint">Cargando precios…</p>'; return; }
+      mens = precioPaquete('mensual', '');
+      anual = precioPaquete('anual', '');
+    } else {
+      mens = 'US$ 9,99';
+      anual = 'US$ 95,88';
+    }
+    const caja = function (titulo, precio, periodo, nota, dest) {
+      if (!precio) return '';
+      if (estilo === 'rep') {
+        return '<div class="rep-resumen" style="text-align:left; margin-bottom:10px;">' +
+          '<div class="lbl">' + titulo + '</div>' +
+          '<div class="val"><span style="font-size:18px; font-weight:600;">' + precio + '</span> <span style="font-size:14px; color:var(--muted);">' + periodo + '</span></div>' +
+          '<div style="font-size:12px; color:var(--muted); margin-top:2px;">' + nota + '</div></div>';
+      }
+      return '<div class="p-plan' + (dest ? ' dest' : '') + '"><div style="color:var(--muted); font-size:13px;">' + titulo + '</div><b>' + precio + '</b> ' + periodo +
+        '<div style="color:var(--muted); font-size:12px; margin-top:2px;">' + nota + '</div></div>';
+    };
+    cont.innerHTML =
+      caja('Mensual', mens, 'por mes', 'Se cobra cada mes.', false) +
+      caja('Anual', anual, 'por año', 'Se cobra una vez por año.', true);
+  };
+  dibujar();
+  if (enApp && !PAGOS.paquetes.mensual && !PAGOS.paquetes.anual) iniciarPagos().then(function () { if (document.getElementById(idCont)) dibujar(); });
+}
+
 // dibuja los botones de suscripción (solo en la app) dentro del contenedor indicado
 function pintarPagos(idCont) {
   const cont = document.getElementById(idCont);
@@ -15053,8 +15082,8 @@ function pintarPagos(idCont) {
   }
   const dibujar = function () {
     cont.innerHTML =
-      '<button class="btn-ppal" style="margin-top:12px; width:100%;" id="' + idCont + 'Anual">Suscribirme por año · ' + precioPaquete('anual', 'US$ 95,88') + '</button>' +
-      '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Mensual">Suscribirme por mes · ' + precioPaquete('mensual', 'US$ 9,99') + '</button>' +
+      '<button class="btn-ppal" style="margin-top:12px; width:100%;" id="' + idCont + 'Anual">Suscribirme por año' + (precioPaquete('anual', '') ? ' · ' + precioPaquete('anual', '') : '') + '</button>' +
+      '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Mensual">Suscribirme por mes' + (precioPaquete('mensual', '') ? ' · ' + precioPaquete('mensual', '') : '') + '</button>' +
       '<button class="btn-sec" style="margin-top:8px; width:100%;" id="' + idCont + 'Restaurar">Ya pagué: restaurar compra</button>' +
       (plataformaApp() === 'ios'
         ? '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">CajaViva Pro: suscripción mensual o anual con todas las funciones. El pago se cobra en tu cuenta de Apple al confirmar la compra. La suscripción se renueva sola al mismo precio, salvo que la canceles al menos 24 horas antes de que termine el período. Podés administrarla o cancelarla en los ajustes de tu cuenta de Apple. ' +
@@ -15100,7 +15129,7 @@ $('btnBcConfirmar').onclick = async function () {
 
 const AYUDA = [
   { cap: null, p: 'Es gratis?',
-    r: 'Tenes 20 dias de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: 9,99 dolares por mes, o 7,99 por mes si pagas el año. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
+    r: 'Tenes 20 dias de prueba con todo desbloqueado, sin tarjeta. Despues elegis un plan: mensual o anual (el anual se cobra una vez por año y sale mas barato). En la app ves el precio exacto en tu moneda. Es un solo plan con todo adentro, sin funciones recortadas. Lo que cargaste no se pierde nunca.' },
 
   { cap: null, p: 'Como cargo mis productos',
     r: 'Anda a Productos y toca "+ Nuevo producto". Poné el nombre, cuanto lo vendes y cuanto te costo. El stock lo podes cargar ahi mismo. Si tenes muchos productos, podes importarlos desde un Excel con el boton de la planilla.' },
