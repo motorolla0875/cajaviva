@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CajaViva | Manejá tu negocio desde el celular y la compu</title>
+<meta name="description" content="Ventas, stock, fiado y caja en una sola app. Funciona en el celular y en la compu, con la misma cuenta. Probala 20 días gratis.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cajaviva.app/empezar">
+<meta property="og:title" content="CajaViva | Tu negocio en el celular y en la compu">
+<meta property="og:description" content="Ventas, stock, fiado y caja. Probala 20 días gratis, sin tarjeta.">
+<meta property="og:image" content="https://cajaviva.app/img/empezar-pc.webp">
+<meta name="theme-color" content="#F7F8F6">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<style>
+  :root {
+    --bg: #F7F8F6; --panel: #FFFFFF; --txt: #22302A; --muted: #6B7975; --linea: #E4EAE7;
+    --verde: #1D9E75; --verde-osc: #0F6E56; --verde-suave: #E1F5EE; --marco: #1C2421;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--txt);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .cont { max-width: 1080px; margin: 0 auto;
+    padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
+  a { color: inherit; }
+
+  /* encabezado */
+  header { padding-block: 22px 0; }
+  .logo { font-weight: 600; font-size: 22px; letter-spacing: -0.02em; text-decoration: none; }
+  .logo span { color: var(--verde); }
+
+  /* gancho */
+  .gancho { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding-block: 44px 64px; }
+  .pregunta { font-size: clamp(36px, 6.4vw, 62px); line-height: 1.1; font-weight: 600; letter-spacing: -0.03em;
+    margin: 0; min-height: 3.3em; }
+  .cursor { display: inline-block; width: 0.09em; height: 0.92em; background: var(--verde); vertical-align: -0.1em;
+    margin-left: 0.04em; animation: titila 1s steps(1) infinite; }
+  .escribiendo .cursor { animation: none; }
+  @keyframes titila { 50% { opacity: 0; } }
+  .respuesta { display: inline-block; margin-top: 22px; background: var(--verde); color: #fff; font-weight: 700;
+    font-size: clamp(26px, 4.2vw, 38px); letter-spacing: -0.02em; padding: 10px 30px; border-radius: 999px;
+    transform: scale(0); opacity: 0; }
+  .respuesta.on { animation: pop .42s cubic-bezier(.34,1.7,.5,1) forwards; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .bajada { font-size: 19px; color: var(--muted); margin: 26px 0 30px; max-width: 30em; }
+  .bajada b { color: var(--txt); font-weight: 600; }
+
+  .botones { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 12px; border: 0; border-radius: 16px;
+    min-height: 62px; padding: 12px 22px; font: inherit; font-size: 18px; font-weight: 600; text-decoration: none; cursor: pointer;
+    transition: transform .12s ease, background .15s ease; }
+  .btn:active { transform: scale(.98); }
+  .btn:focus-visible { outline: 3px solid var(--verde-osc); outline-offset: 3px; }
+  .btn-web { background: var(--verde); color: #fff; box-shadow: 0 10px 24px -10px rgba(29,158,117,.7); }
+  .btn-web:hover { background: #18906A; }
+  .btn-play { background: var(--marco); color: #fff; }
+  .btn-play:hover { background: #2A3430; }
+  .btn small { display: block; font-size: 12.5px; font-weight: 500; opacity: .75; line-height: 1.2; }
+  .btn .txt { text-align: left; line-height: 1.2; }
+  .btn svg { flex: none; }
+  .nota { font-size: 14px; color: var(--muted); margin-top: 14px; }
+  .soloios { display: none; }
+  body.ios .soloios { display: block; }
+  body.ios .btn-play { display: none; }
+
+  /* aparatos */
+  .aparatos { position: relative; padding-bottom: 8%; }
+  .compu { position: relative; width: 100%; }
+  .compu .pantalla { background: var(--marco); border-radius: 16px 16px 6px 6px; padding: 2.2%; box-shadow: 0 30px 60px -30px rgba(20,40,30,.45); }
+  .compu img { display: block; width: 100%; height: auto; border-radius: 6px; aspect-ratio: 16 / 10; }
+  .compu .base { height: 14px; margin: 0 -6%; background: #CDD3D0; border-radius: 0 0 14px 14px; position: relative; }
+  .compu .base::after { content: ""; position: absolute; left: 50%; top: 0; width: 18%; height: 6px; transform: translateX(-50%);
+    background: #B7BEBB; border-radius: 0 0 6px 6px; }
+  .cel { position: absolute; right: -2%; bottom: 0; width: 30%; background: var(--marco); border-radius: 26px; padding: 2.4%;
+    box-shadow: 0 30px 50px -20px rgba(20,40,30,.5); }
+  .cel img { display: block; width: 100%; height: auto; border-radius: 20px; aspect-ratio: 390 / 844; }
+
+  /* lista de si */
+  .bloque { padding-block: 64px; }
+  h2 { font-size: clamp(30px, 4.6vw, 44px); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; margin: 0 0 30px; text-wrap: balance; }
+  .preguntas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .preguntas li { background: var(--panel); border: 1px solid var(--linea); border-radius: 18px; padding: 20px 22px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .preguntas .q { font-weight: 600; font-size: 18px; line-height: 1.3; }
+  .preguntas .d { display: block; font-weight: 400; font-size: 15px; color: var(--muted); margin-top: 4px; }
+  .si { flex: none; background: var(--verde-suave); color: var(--verde-osc); font-weight: 700; font-size: 15px;
+    border-radius: 999px; padding: 5px 14px; }
+
+  /* se conectan */
+  .conectan { background: var(--verde-osc); color: #fff; border-radius: 28px; padding: 48px 44px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .conectan h2 { color: #fff; }
+  .conectan p { color: rgba(255,255,255,.82); margin: 0 0 22px; font-size: 18px; }
+  .sincro { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .sincro li { display: flex; gap: 14px; align-items: flex-start; font-size: 17px; }
+  .sincro b { display: block; font-weight: 600; }
+  .sincro span { color: rgba(255,255,255,.75); font-size: 15px; }
+  .tilde { flex: none; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.14);
+    display: grid; place-items: center; margin-top: 1px; }
+  .diagrama { display: flex; align-items: center; justify-content: center; gap: 0; }
+  .nodo { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 20px; padding: 22px 18px;
+    text-align: center; width: 150px; }
+  .nodo svg { display: block; margin: 0 auto 10px; }
+  .nodo b { font-weight: 600; font-size: 16px; }
+  .cable { flex: 1; max-width: 120px; height: 2px; position: relative; background: rgba(255,255,255,.25); }
+  .cable i { position: absolute; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #7FE0BE;
+    animation: viaja 2.4s ease-in-out infinite; }
+  .cable i:nth-child(2) { animation-direction: reverse; animation-delay: 1.2s; background: #fff; }
+  @keyframes viaja { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+
+  .final { text-align: center; padding-block: 72px 56px; }
+  .final h2 { margin-bottom: 12px; }
+  .final .bajada { margin: 0 auto 28px; }
+  .final .botones { margin: 0 auto; }
+  .final .nota { text-align: center; }
+
+  footer { border-top: 1px solid var(--linea); padding-block: 26px 40px; font-size: 14px; color: var(--muted); text-align: center; }
+  footer a { color: var(--muted); }
+
+  /* capa captcha */
+  #capaCaptcha { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.45);
+    align-items: center; justify-content: center; padding: 20px; }
+  #capaCaptcha .caja { background: var(--panel); border-radius: 20px; padding: 30px; max-width: 380px; width: 100%; text-align: center; }
+
+  @media (max-width: 860px) {
+    .gancho { grid-template-columns: 1fr; gap: 40px; padding-block: 28px 40px; }
+    .pregunta { min-height: 4.4em; }
+    .botones { max-width: none; }
+    .aparatos { max-width: 560px; margin: 0 auto; width: 100%; }
+    .preguntas { grid-template-columns: 1fr; }
+    .conectan { grid-template-columns: 1fr; padding: 36px 24px; }
+    .bloque { padding-block: 44px; }
+  }
+  @media (max-width: 420px) {
+    .nodo { width: 120px; padding: 18px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cable i, .cursor { animation: none; }
+    .respuesta.on { animation: none; transform: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="cont">
+  <a class="logo" href="/">Caja<span>Viva</span></a>
+</header>
+
+<main>
+  <section class="cont gancho">
+    <div>
+      <h1 class="pregunta" id="pregunta" aria-label="¿Querés manejar tu negocio desde el celular o desde la compu?"><span id="tipeo"></span><span class="cursor" aria-hidden="true"></span></h1>
+      <div class="respuesta" id="respuesta" aria-hidden="true">Los dos</div>
+      <p class="bajada">Ventas, stock, fiado y caja en una sola app. <b>Probala 20 días gratis</b>, sin tarjeta.</p>
+      <div class="botones">
+        <button class="btn btn-web" onclick="empezar()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <span class="txt">Empezar gratis en la web<small>Sin descargar nada</small></span>
+        </button>
+        <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener">
+          <svg width="22" height="24" viewBox="0 0 22 24" aria-hidden="true"><path d="M2 1.5 L20 12 L2 22.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <span class="txt">Descargar en Google Play<small>App para Android</small></span>
+        </a>
+      </div>
+      <p class="nota soloios">En iPhone usala desde el navegador: funciona igual.</p>
+    </div>
+
+    <div class="aparatos" aria-hidden="true">
+      <div class="compu">
+        <div class="pantalla"><img src="/img/empezar-pc.webp" alt="" width="1200" height="750"></div>
+        <div class="base"></div>
+      </div>
+      <div class="cel"><img src="/img/empezar-cel.webp" alt="" width="600" height="1298"></div>
+    </div>
+  </section>
+
+  <section class="cont bloque">
+    <h2>Lo que nos preguntan siempre</h2>
+    <ul class="preguntas">
+      <li><span class="q">¿Se conecta con Mercado Libre?<span class="d">Stock y pedidos en el mismo lugar.</span></span><span class="si">Sí</span></li>
+      <li><span class="q">¿Tengo mi propia tienda online?<span class="d">Un link para compartir y recibir pedidos.</span></span><span class="si">Sí</span></li>
+      <li><span class="q">¿Sirve para cualquier rubro?<span class="d">Kiosco, ropa, turnos, comida, alquileres y más.</span></span><span class="si">Sí</span></li>
+      <li><span class="q">¿Funciona sin internet?<span class="d">Seguís vendiendo y se sube solo cuando vuelve.</span></span><span class="si">Sí</span></li>
+      <li><span class="q">¿Se aprende en 5 minutos?<span class="d">Tocás el producto, cobrás y listo.</span></span><span class="si">Sí</span></li>
+      <li><span class="q">¿Cuesta menos que un café por día?<span class="d">El plan mensual sale $400 por día.</span></span><span class="si">Sí</span></li>
+    </ul>
+  </section>
+
+  <section class="cont">
+    <div class="conectan">
+      <div>
+        <h2>La web y la app se conectan</h2>
+        <p>Es la misma cuenta. Empezá donde quieras y seguí en el otro: entrás con tu usuario y ves todo igual.</p>
+        <ul class="sincro">
+          <li><span class="tilde"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Mismos productos y stock</b><span>Cargás un producto en la compu y ya está en el celular.</span></div></li>
+          <li><span class="tilde"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Mismas ventas y caja</b><span>Lo que vendés en uno lo ves en el otro.</span></div></li>
+          <li><span class="tilde"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Se actualiza solo</b><span>No tenés que pasar nada a mano.</span></div></li>
+        </ul>
+      </div>
+      <div class="diagrama" aria-hidden="true">
+        <div class="nodo">
+          <svg width="44" height="36" viewBox="0 0 44 36" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><rect x="5" y="3" width="34" height="23" rx="3"/><path d="M1 31h42" stroke-linecap="round"/></svg>
+          <b>Web</b>
+        </div>
+        <div class="cable"><i></i><i></i></div>
+        <div class="nodo">
+          <svg width="26" height="40" viewBox="0 0 26 40" fill="none" stroke="#fff" stroke-width="2.2"><rect x="2" y="2" width="22" height="36" rx="5"/><path d="M10 33h6" stroke-linecap="round"/></svg>
+          <b>App</b>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cont final">
+    <h2>Probala hoy en tu negocio</h2>
+    <p class="bajada">20 días gratis con todas las funciones. Si no te gusta, no pagás nada.</p>
+    <div class="botones">
+      <button class="btn btn-web" onclick="empezar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+        <span class="txt">Empezar gratis en la web<small>Sin descargar nada</small></span>
+      </button>
+      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener">
+        <svg width="22" height="24" viewBox="0 0 22 24" aria-hidden="true"><path d="M2 1.5 L20 12 L2 22.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span class="txt">Descargar en Google Play<small>App para Android</small></span>
+      </a>
+    </div>
+    <p class="nota">Sin tarjeta. Tus datos no se pierden nunca.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="cont">
+    <a href="/">CajaViva</a> &middot; <a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">Términos</a>
+  </div>
+</footer>
+
+<div id="capaCaptcha">
+  <div class="caja">
+    <div style="font-size:18px; font-weight:600; margin-bottom:8px;">Un segundo...</div>
+    <div style="font-size:14px; color:var(--muted); margin-bottom:20px;">Estamos preparando tu cuenta.</div>
+    <div id="cajaTs" style="display:flex; justify-content:center; min-height:70px;"></div>
+    <div id="msgTs" style="font-size:13.5px; color:#C0392B; margin-top:12px;"></div>
+    <button onclick="document.getElementById('capaCaptcha').style.display='none'"
+            style="margin-top:16px; background:none; border:none; color:var(--muted); font-size:13.5px; cursor:pointer;">Cancelar</button>
+  </div>
+</div>
+
+<script>
+  // iPhone: no hay app en Google Play, se usa la web
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) document.body.classList.add('ios');
+
+  // la pregunta se escribe sola y aparece "Los dos"
+  (function () {
+    const texto = '¿Querés manejar tu negocio desde el celular o desde la compu?';
+    const el = document.getElementById('tipeo'), h = document.getElementById('pregunta'), r = document.getElementById('respuesta');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = texto; r.classList.add('on'); return; }
+    let i = 0; h.classList.add('escribiendo');
+    setTimeout(function paso() {
+      el.textContent = texto.slice(0, ++i);
+      if (i < texto.length) setTimeout(paso, 30 + Math.random() * 40);
+      else { h.classList.remove('escribiendo'); setTimeout(function () { r.classList.add('on'); }, 280); }
+    }, 350);
+  })();
+
+  const SITE_KEY = '0x4AAAAAAEk7-h70wv1ylyfn';
+  let idTs = null;
+
+  function empezar() {
+    // si ya tiene cuenta en este navegador, va directo a la app
+    try { if (localStorage.getItem('cajaviva_token')) { location.href = '/app'; return; } } catch (e) {}
+    const capa = document.getElementById('capaCaptcha');
+    document.getElementById('msgTs').textContent = '';
+    capa.style.display = 'flex';
+    if (idTs !== null) { turnstile.reset(idTs); return; }
+    idTs = turnstile.render('#cajaTs', {
+      sitekey: SITE_KEY,
+      callback: crearCuenta,
+      'error-callback': function () { document.getElementById('msgTs').textContent = 'No se pudo verificar. Proba de nuevo.'; }
+    });
+  }
+
+  async function crearCuenta(tokenTs) {
+    try {
+      const r = await fetch('/api/auth/nueva', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captcha: tokenTs })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'No se pudo crear la cuenta');
+      localStorage.setItem('cajaviva_token', d.token);
+      localStorage.setItem('cajaviva_ya_uso', '1');
+      localStorage.setItem('cajaviva_recien', '1');
+      location.href = '/app';
+    } catch (e) {
+      document.getElementById('msgTs').textContent = e.message;
+      if (idTs !== null) turnstile.reset(idTs);
+    }
+  }
+</script>
+</body>
+</html>

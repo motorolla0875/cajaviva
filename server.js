@@ -74,7 +74,7 @@ app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-for (const pag of ['privacidad', 'terminos', 'borrar-cuenta']) {
+for (const pag of ['privacidad', 'terminos', 'borrar-cuenta', 'empezar']) {
   app.get('/' + pag, (req, res) => res.sendFile(path.join(__dirname, 'public', pag + '.html')));
 }
 app.use(express.static(path.join(__dirname, 'public')));
