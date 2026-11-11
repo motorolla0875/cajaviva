@@ -15064,8 +15064,8 @@ function pintarPrecios(idCont, estilo) {
         '<div style="color:var(--muted); font-size:12px; margin-top:2px;">' + nota + '</div></div>';
     };
     cont.innerHTML =
-      caja('Mensual', mens, 'por mes', 'Se cobra cada mes.', false) +
-      caja('Anual', anual, 'por año', 'Se cobra una vez por año.', true);
+      caja('Mensual', mens, 'por mes', !enApp && enWeb() ? 'Un mes con todas las funciones.' : 'Se cobra cada mes.', false) +
+      caja('Anual', anual, 'por año', !enApp && enWeb() ? 'Un año entero, sale más barato.' : 'Se cobra una vez por año.', true);
   };
   dibujar();
   if (enApp && !PAGOS.paquetes.mensual && !PAGOS.paquetes.anual) iniciarPagos().then(function () { if (document.getElementById(idCont)) dibujar(); });
@@ -15119,7 +15119,9 @@ async function cargarMP() {
 // al entrar: si volvió de pagar o le toca un cobro, se revisa en Mercado Pago
 async function mpRevisar() {
   if (!enWeb() || !usuario || esEmpleado) return;
-  const volvio = new URLSearchParams(location.search).get('mp') === 'volvio';
+  const q = new URLSearchParams(location.search);
+  const volvio = q.get('mp') === 'volvio';
+  if (q.get('mp') === 'fallo') { history.replaceState(null, '', location.pathname); avisar('El pago no se completó. Podés probar de nuevo desde Mi plan.', true, 7000); }
   await cargarMP();
   const cerca = MPINFO.hasta && (new Date(MPINFO.hasta) - Date.now()) < 3 * 864e5;
   if (volvio || (MPINFO.debito && cerca) || (MPINFO.activo && cerca)) {
@@ -15134,11 +15136,27 @@ async function mpRevisar() {
       else avisar('Si ya pagaste, en unos minutos se activa tu plan. Podés cerrar y volver a entrar.', false, 7000);
     }
   }
+  if (q.get('renovar') === '1') { history.replaceState(null, '', location.pathname); setTimeout(abrirPlan, 400); }
+  else if (MPINFO.activo && !MPINFO.debito && (new Date(MPINFO.hasta) - Date.now()) < 5 * 864e5) avisar('Tu plan vence el ' + fechaCorta(MPINFO.hasta) + '. Renovalo desde Mi plan.', false, 7000);
   pintarPlan();
   pintarPrecios('finPruebaPrecios', 'plan');
   pintarPagos('finPruebaPagos');
   const pl = document.getElementById('modalPlan');
   if (pl && pl.classList.contains('on')) abrirPlan();
+}
+function botonesMP() {
+  return '<button class="btn-ppal" style="margin-top:10px; width:100%;" id="mpAnual">Pagar por año · ' + pesosAR(MPINFO.precios.anual) + '</button>' +
+    '<button class="btn-sec" style="margin-top:8px; width:100%;" id="mpMensual">Pagar por mes · ' + pesosAR(MPINFO.precios.mensual) + '</button>';
+}
+function conectarMP() {
+  const pagar = async function (ciclo, btn) {
+    btn.disabled = true; const t = btn.textContent; btn.textContent = 'Abriendo Mercado Pago…';
+    try { const d = await api('POST', '/pagos/mp/pagar', { ciclo: ciclo }); location.href = d.init_point; }
+    catch (e) { avisar(e.message, true); btn.disabled = false; btn.textContent = t; }
+  };
+  const a = document.getElementById('mpAnual'), m = document.getElementById('mpMensual');
+  if (a) a.onclick = function () { pagar('anual', this); };
+  if (m) m.onclick = function () { pagar('mensual', this); };
 }
 function pintarPagosMP(cont) {
   const dibujar = function () {
@@ -15147,8 +15165,9 @@ function pintarPagosMP(cont) {
       cont.innerHTML =
         '<div class="rep-resumen" style="text-align:left; margin-top:12px;"><div class="lbl">Mercado Pago</div>' +
         '<div class="val" style="font-size:16px;">Plan ' + (MPINFO.ciclo === 'anual' ? 'anual' : 'mensual') + ' activo</div>' +
-        '<div style="font-size:12.5px; color:var(--muted); margin-top:4px;">' + (MPINFO.debito ? 'Se renueva solo. Próximo cobro cerca del ' : 'Débito automático dado de baja. Tenés todas las funciones hasta el ') + fechaCorta(MPINFO.hasta) + '.</div></div>' +
-        (MPINFO.debito ? '<button class="btn-sec" style="margin-top:8px; width:100%;" id="mpBaja">Dar de baja el débito automático</button><div id="mpBajaOk"></div>' : '');
+        '<div style="font-size:12.5px; color:var(--muted); margin-top:4px;">' + (MPINFO.debito ? 'Se renueva solo. Próximo cobro cerca del ' : 'Tenés todas las funciones hasta el ') + fechaCorta(MPINFO.hasta) + '.</div></div>' +
+        (MPINFO.debito ? '<button class="btn-sec" style="margin-top:8px; width:100%;" id="mpBaja">Dar de baja el débito automático</button><div id="mpBajaOk"></div>'
+          : '<div class="seccion" style="margin-top:14px;">Renovar</div><p class="hint" style="margin:0 0 4px;">Si pagás ahora, se suma al tiempo que ya tenés.</p>' + botonesMP());
       const b = document.getElementById('mpBaja');
       if (b) b.onclick = function () {
         document.getElementById('mpBajaOk').innerHTML = '<p class="hint" style="margin:8px 0 6px;">No se te va a cobrar más. Seguís con todas las funciones hasta el ' + fechaCorta(MPINFO.hasta) + '.</p>' +
@@ -15161,26 +15180,13 @@ function pintarPagosMP(cont) {
           dibujar();
         };
       };
+      conectarMP();
       return;
     }
-    const mail = MPINFO.email || (usuario && usuario.email) || '';
-    cont.innerHTML =
-      '<label for="mpMail" style="display:block; font-size:13px; color:var(--muted); margin:12px 0 4px;">Mail de tu cuenta de Mercado Pago</label>' +
-      '<input type="email" id="mpMail" autocomplete="email" placeholder="tu@mail.com" style="width:100%; box-sizing:border-box;">' +
-      '<button class="btn-ppal" style="margin-top:10px; width:100%;" id="mpAnual">Pagar por año · ' + pesosAR(MPINFO.precios.anual) + '</button>' +
-      '<button class="btn-sec" style="margin-top:8px; width:100%;" id="mpMensual">Pagar por mes · ' + pesosAR(MPINFO.precios.mensual) + '</button>' +
-      '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">Se paga con Mercado Pago (tarjeta o dinero en cuenta) con débito automático: se renueva solo al mismo precio hasta que lo des de baja, cuando quieras, desde acá. ' +
+    cont.innerHTML = botonesMP() +
+      '<p class="hint" style="font-size:11.5px; line-height:1.5; margin-top:10px;">Pagás una vez con Mercado Pago (tarjeta, débito o dinero en cuenta) y se activa al instante. No se debita solo: antes de que se termine te avisamos para renovar. ' +
       '<a href="/privacidad" target="_blank">Privacidad</a> · <a href="/terminos" target="_blank">Términos</a></p>';
-    document.getElementById('mpMail').value = mail;
-    const pagar = async function (ciclo, btn) {
-      const email = document.getElementById('mpMail').value.trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { avisar('Escribí el mail de tu cuenta de Mercado Pago.', true); document.getElementById('mpMail').focus(); return; }
-      btn.disabled = true; const t = btn.textContent; btn.textContent = 'Abriendo Mercado Pago…';
-      try { const d = await api('POST', '/pagos/mp/crear', { ciclo: ciclo, email: email }); location.href = d.init_point; }
-      catch (e) { avisar(e.message, true); btn.disabled = false; btn.textContent = t; }
-    };
-    document.getElementById('mpAnual').onclick = function () { pagar('anual', this); };
-    document.getElementById('mpMensual').onclick = function () { pagar('mensual', this); };
+    conectarMP();
   };
   if (!MPINFO.cargado) { cont.innerHTML = '<p class="hint" style="margin-top:12px;">Cargando…</p>'; cargarMP().then(function () { if (document.getElementById(cont.id)) { dibujar(); } }); return; }
   dibujar();

@@ -51,4 +51,4 @@ function mailRecuperar(para, usuario, link) {
     'Si no fuiste vos, ignora este mail: tu contrasena sigue igual.</p>'));
 }
 
-module.exports = { mandar, mailBienvenida, mailRecuperar };
+module.exports = { mandar, envolver, mailBienvenida, mailRecuperar };

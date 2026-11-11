@@ -147,7 +147,7 @@ app.use('/api/asistente', function (req, res, next) {
 }, require('./routes/asistente'));
 app.use('/api/exportar', requiereAuth, require('./routes/exportar'));
 app.use('/api/pagos', function (req, res, next) {
-  if (req.path === '/revenuecat') return next();
+  if (req.path === '/revenuecat' || req.path === '/mp/webhook') return next();
   return requiereAuth(req, res, next);
 }, require('./routes/pagos'));
 app.use('/api/cuenta', requiereAuth, require('./routes/cuenta'));

@@ -28,12 +28,12 @@ async function suscripcionActiva(userId) {
   return !e.expires_date || new Date(e.expires_date) > new Date();
 }
 
-/* ══ Mercado Pago: suscripción desde la web (cajaviva.app en el navegador) ══
+/* ══ Mercado Pago: pago desde la web (cajaviva.app en el navegador) ══
    Solo se ofrece fuera de la app: dentro de Android/iPhone se paga con la tienda.
-   Débito automático (preapproval). El plan queda activo hasta mp_hasta; cada cobro aprobado suma un período.
-   Mercado Pago avisa al webhook de la app de tujuego (misma cuenta), así que acá se verifica:
-   al volver del pago, al entrar a la app y cada 6 horas. */
-for (const col of ['mp_preapproval TEXT', 'mp_estado TEXT', 'mp_ciclo TEXT', 'mp_hasta TEXT', 'mp_pagos TEXT', 'mp_email TEXT']) {
+   Pago con link directo (Checkout Pro): no pide mail, vuelve solo a CajaViva y Mercado Pago avisa a /api/pagos/mp/webhook.
+   Cada pago aprobado suma un mes o un año (mp_hasta). Unos días antes de vencer se avisa para renovar.
+   (Quedó también el débito automático por si alguna cuenta lo usó.) */
+for (const col of ['mp_preapproval TEXT', 'mp_estado TEXT', 'mp_ciclo TEXT', 'mp_hasta TEXT', 'mp_pagos TEXT', 'mp_email TEXT', 'mp_aviso TEXT']) {
   try { db.exec('ALTER TABLE users ADD COLUMN ' + col); } catch (e) {}
 }
 const fs = require('fs');
@@ -59,8 +59,9 @@ function mpVigente(u) { return !!(u && u.mp_hasta && new Date(u.mp_hasta) > new 
 
 // vuelve a mirar en Mercado Pago la suscripción del usuario y ajusta el plan
 async function verificarMP(userId) {
+  if (MP) await buscarPagosMP(userId);
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-  if (!u || !u.mp_preapproval || !MP) return u;
+  if (!u || !u.mp_preapproval || !MP) { aplicar(userId, null); return u; }
   const pre = await mp('/preapproval/' + encodeURIComponent(u.mp_preapproval));
   if (String(pre.external_reference || '') !== 'cv:' + userId) return u;
   const ciclo = PLANES_MP[u.mp_ciclo] ? u.mp_ciclo : 'mensual';
@@ -82,6 +83,35 @@ async function verificarMP(userId) {
     .run(pre.status || u.mp_estado, hasta ? hasta.toISOString() : null, JSON.stringify(pagos.slice(-60)), userId);
   aplicar(userId, null);
   return db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+}
+
+// un pago único aprobado: suma el período al usuario (una sola vez por pago)
+function aplicarPagoMP(pago) {
+  const m = String(pago.external_reference || '').match(/^cv:([^:]+):(mensual|anual)$/);
+  if (!m || pago.status !== 'approved') return false;
+  const userId = m[1], ciclo = m[2];
+  const u = db.prepare('SELECT mp_hasta, mp_pagos, mp_email FROM users WHERE id = ?').get(userId);
+  if (!u) return false;
+  const pagos = JSON.parse(u.mp_pagos || '[]');
+  if (pagos.indexOf(String(pago.id)) >= 0) return false;
+  if (+pago.transaction_amount < PLANES_MP[ciclo].monto * 0.9) { console.error('[mp] monto bajo', pago.id); return false; }
+  const ahora = new Date(), antes = u.mp_hasta ? new Date(u.mp_hasta) : null;
+  const hasta = new Date(antes && antes > ahora ? antes : ahora);
+  hasta.setMonth(hasta.getMonth() + PLANES_MP[ciclo].meses);
+  pagos.push(String(pago.id));
+  const email = (pago.payer && pago.payer.email) || u.mp_email || null;
+  db.prepare('UPDATE users SET mp_hasta = ?, mp_pagos = ?, mp_ciclo = ?, mp_email = ?, mp_aviso = NULL WHERE id = ?')
+    .run(hasta.toISOString(), JSON.stringify(pagos.slice(-60)), ciclo, email, userId);
+  aplicar(userId, null);
+  console.log('[mp] pago ' + pago.id + ' aprobado → usuario ' + userId + ' activo hasta ' + hasta.toISOString());
+  return true;
+}
+// busca en Mercado Pago los pagos del usuario (por si el aviso no llegó)
+async function buscarPagosMP(userId) {
+  for (const ciclo of ['mensual', 'anual']) {
+    const r = await mp('/v1/payments/search?sort=date_created&criteria=desc&limit=20&external_reference=' + encodeURIComponent('cv:' + userId + ':' + ciclo)).catch(function () { return { results: [] }; });
+    for (const p of (r.results || [])) aplicarPagoMP(p);
+  }
 }
 
 // pone el plan según la tienda (activa = true/false) y Mercado Pago; activa = null: solo recalcula con Mercado Pago
@@ -145,6 +175,32 @@ router.get('/mp', function (req, res) {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño de la cuenta puede manejar la suscripción.' });
   res.json(estadoMP(req.userId));
 });
+router.post('/mp/pagar', async function (req, res) {
+  if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño de la cuenta puede manejar la suscripción.' });
+  if (!MP) return res.status(503).json({ error: 'El pago con Mercado Pago todavía no está disponible.' });
+  const ciclo = PLANES_MP[req.body && req.body.ciclo] ? req.body.ciclo : 'mensual', pl = PLANES_MP[ciclo];
+  try {
+    const pref = await mp('/checkout/preferences', 'POST', {
+      items: [{ id: 'cajaviva-' + ciclo, title: pl.nombre, quantity: 1, unit_price: pl.monto, currency_id: 'ARS' }],
+      external_reference: 'cv:' + req.userId + ':' + ciclo,
+      back_urls: { success: APP_URL + '/?mp=volvio', pending: APP_URL + '/?mp=volvio', failure: APP_URL + '/?mp=fallo' },
+      auto_return: 'approved',
+      notification_url: APP_URL + '/api/pagos/mp/webhook',
+      statement_descriptor: 'CAJAVIVA'
+    });
+    res.json({ init_point: pref.init_point });
+  } catch (e) { res.status(400).json({ error: 'No pudimos abrir Mercado Pago. Probá de nuevo en un ratito.' }); }
+});
+// aviso de Mercado Pago (sin sesión): se vuelve a pedir el pago a Mercado Pago, no se confía en lo que llega
+router.post('/mp/webhook', async function (req, res) {
+  res.json({ ok: true });
+  const tipo = (req.body && (req.body.type || req.body.topic)) || req.query.type || req.query.topic;
+  const id = (req.body && req.body.data && req.body.data.id) || req.query['data.id'] || req.query.id;
+  if (!MP || !id || (tipo !== 'payment' && tipo !== 'merchant_order')) return;
+  try {
+    if (tipo === 'payment') aplicarPagoMP(await mp('/v1/payments/' + encodeURIComponent(id)));
+  } catch (e) {}
+});
 router.post('/mp/crear', async function (req, res) {
   if (req.esEmpleado) return res.status(403).json({ error: 'Solo el dueño de la cuenta puede manejar la suscripción.' });
   if (!MP) return res.status(503).json({ error: 'El pago con Mercado Pago todavía no está disponible.' });
@@ -179,10 +235,23 @@ router.post('/mp/baja', async function (req, res) {
 });
 
 // cada 6 horas: revisa a quienes pagan con Mercado Pago (cobros nuevos o vencimientos)
-if (MP) setInterval(function () {
-  const lista = db.prepare("SELECT id FROM users WHERE mp_preapproval IS NOT NULL AND (mp_estado = 'authorized' OR plan = 'pro')").all();
-  (async function () { for (const u of lista) { try { await verificarMP(u.id); } catch (e) {} } })();
-}, 6 * 3600 * 1000);
+const { mandar, envolver } = require('../mail');
+async function revisarTodos() {
+  const lista = db.prepare("SELECT id FROM users WHERE mp_hasta IS NOT NULL OR (mp_preapproval IS NOT NULL AND (mp_estado = 'authorized' OR plan = 'pro'))").all();
+  for (const u of lista) { try { await verificarMP(u.id); } catch (e) {} }
+  // aviso por mail 3 días antes de que venza lo pagado con link (una vez por vencimiento)
+  const pronto = new Date(Date.now() + 3 * 864e5).toISOString(), ahora = new Date().toISOString();
+  const avisar = db.prepare("SELECT id, mp_email, mp_hasta, mp_ciclo FROM users WHERE mp_hasta > ? AND mp_hasta < ? AND mp_email IS NOT NULL AND (mp_aviso IS NULL OR mp_aviso != mp_hasta) AND (mp_estado IS NULL OR mp_estado != 'authorized')").all(ahora, pronto);
+  for (const u of avisar) {
+    const f = new Date(u.mp_hasta).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' });
+    await mandar(u.mp_email, 'Tu plan de CajaViva vence el ' + f, envolver('Tu plan vence el ' + f,
+      '<p style="font-size:15px;line-height:1.55;">Para seguir usando CajaViva con todas las funciones, renová tu plan antes de esa fecha. Lo que cargaste queda guardado.</p>' +
+      '<p style="margin:24px 0;"><a href="' + APP_URL + '/?renovar=1" style="background:#1E7A5A;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:15px;display:inline-block;">Renovar mi plan</a></p>' +
+      '<p style="font-size:13.5px;color:#6B7975;">Entrá con tu usuario, tocá "Renovar" y pagás con Mercado Pago.</p>'));
+    db.prepare('UPDATE users SET mp_aviso = mp_hasta WHERE id = ?').run(u.id);
+  }
+}
+if (MP) { setInterval(function () { revisarTodos().catch(function () {}); }, 6 * 3600 * 1000); setTimeout(function () { revisarTodos().catch(function () {}); }, 60 * 1000); }
 
 module.exports = router;
 module.exports.verificarMP = verificarMP;
