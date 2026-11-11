@@ -263,9 +263,9 @@
     let i = 0; h.classList.add('escribiendo');
     setTimeout(function paso() {
       el.textContent = texto.slice(0, ++i);
-      if (i < texto.length) setTimeout(paso, 30 + Math.random() * 40);
-      else { h.classList.remove('escribiendo'); setTimeout(function () { r.classList.add('on'); }, 280); }
-    }, 350);
+      if (i < texto.length) setTimeout(paso, 16 + Math.random() * 14);
+      else { h.classList.remove('escribiendo'); setTimeout(function () { r.classList.add("on"); }, 180); }
+    }, 200);
   })();
 
   const SITE_KEY = '0x4AAAAAAEk7-h70wv1ylyfn';
