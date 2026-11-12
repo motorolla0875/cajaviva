@@ -15,7 +15,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <style>
   :root {
     --bg: #F7F8F6; --panel: #FFFFFF; --txt: #22302A; --muted: #6B7975; --linea: #E4EAE7;
@@ -244,9 +243,8 @@
   <div class="caja">
     <div style="font-size:18px; font-weight:600; margin-bottom:8px;">Un segundo...</div>
     <div style="font-size:14px; color:var(--muted); margin-bottom:20px;">Estamos preparando tu cuenta.</div>
-    <div id="cajaTs" style="display:flex; justify-content:center; min-height:70px;"></div>
     <div id="msgTs" style="font-size:13.5px; color:#C0392B; margin-top:12px;"></div>
-    <button onclick="document.getElementById('capaCaptcha').style.display='none'"
+    <button onclick="document.getElementById('capaCaptcha').style.display='none'; creando=false;"
             style="margin-top:16px; background:none; border:none; color:var(--muted); font-size:13.5px; cursor:pointer;">Cancelar</button>
   </div>
 </div>
@@ -268,37 +266,34 @@
     }, 200);
   })();
 
-  const SITE_KEY = '0x4AAAAAAEk7-h70wv1ylyfn';
-  let idTs = null;
+  let creando = false;
 
   function empezar() {
     // si ya tiene cuenta en este navegador, va directo a la app
     try { if (localStorage.getItem('cajaviva_token')) { location.href = '/app'; return; } } catch (e) {}
-    const capa = document.getElementById('capaCaptcha');
+    if (creando) return;
+    creando = true;
     document.getElementById('msgTs').textContent = '';
-    capa.style.display = 'flex';
-    if (idTs !== null) { turnstile.reset(idTs); return; }
-    idTs = turnstile.render('#cajaTs', {
-      sitekey: SITE_KEY,
-      callback: crearCuenta,
-      'error-callback': function () { document.getElementById('msgTs').textContent = 'No se pudo verificar. Proba de nuevo.'; }
-    });
+    document.getElementById('capaCaptcha').style.display = 'flex';
+    crearCuenta();
   }
 
-  async function crearCuenta(tokenTs) {
+  async function crearCuenta() {
     try {
       const r = await fetch('/api/auth/nueva', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captcha: tokenTs })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ origen: 'empezar' })
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'No se pudo crear la cuenta');
-      localStorage.setItem('cajaviva_token', d.token);
-      localStorage.setItem('cajaviva_ya_uso', '1');
-      localStorage.setItem('cajaviva_recien', '1');
+      try {
+        localStorage.setItem('cajaviva_token', d.token);
+        localStorage.setItem('cajaviva_ya_uso', '1');
+        localStorage.setItem('cajaviva_recien', '1');
+      } catch (e) {}
       location.href = '/app';
     } catch (e) {
-      document.getElementById('msgTs').textContent = e.message;
-      if (idTs !== null) turnstile.reset(idTs);
+      document.getElementById('msgTs').textContent = (e.message || 'No se pudo crear la cuenta') + ' Proba de nuevo.';
+      creando = false;
     }
   }
 </script>

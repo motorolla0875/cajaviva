@@ -52,15 +52,42 @@ async function captchaOk(token, ip) {
   }
 }
 
+// ── limite de cuentas nuevas por conexion (en vez de captcha visible) ──
+const cuentasPorIp = new Map();
+const LIMITE_CUENTAS = 5;              // por conexion
+const VENTANA_MS = 60 * 60 * 1000;     // en una hora
+
+function superaLimite(ip) {
+  const ahora = Date.now();
+  const lista = (cuentasPorIp.get(ip) || []).filter(t => ahora - t < VENTANA_MS);
+  if (lista.length >= LIMITE_CUENTAS) { cuentasPorIp.set(ip, lista); return true; }
+  lista.push(ahora);
+  cuentasPorIp.set(ip, lista);
+  return false;
+}
+
+setInterval(() => {
+  const ahora = Date.now();
+  for (const [ip, lista] of cuentasPorIp) {
+    const viva = lista.filter(t => ahora - t < VENTANA_MS);
+    if (viva.length) cuentasPorIp.set(ip, viva); else cuentasPorIp.delete(ip);
+  }
+}, 10 * 60 * 1000).unref();
+
 // ── cuenta automatica: primera vez que se abre la app ──
 router.post('/nueva', async (req, res) => {
-  // la APK y otros clientes sin captcha mandan origen
+  const ip = req.headers['cf-connecting-ip'] ||
+             (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+             req.ip;
+
+  if (superaLimite(ip)) {
+    return res.status(429).json({ error: 'Se crearon muchas cuentas desde esta conexion. Espera un rato.' });
+  }
+
+  // la app web vieja todavia manda captcha; la pagina /empezar y la APK no
   const desdeWeb = req.body?.captcha !== undefined;
 
   if (desdeWeb) {
-    const ip = req.headers['cf-connecting-ip'] ||
-               (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-               req.ip;
     const ok = await captchaOk(req.body.captcha, ip);
     if (!ok) return res.status(400).json({ error: 'No pudimos verificar que seas una persona. Recarga la pagina.' });
   }
