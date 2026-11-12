@@ -162,7 +162,7 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
           <span class="txt">Empezar gratis en la web<small>Sin descargar nada</small></span>
         </button>
-        <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener">
+        <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener" onclick="irAPlay(this)">
           <svg width="22" height="24" viewBox="0 0 22 24" aria-hidden="true"><path d="M2 1.5 L20 12 L2 22.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
           <span class="txt">Descargar en Google Play<small>App para Android</small></span>
         </a>
@@ -224,7 +224,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
         <span class="txt">Empezar gratis en la web<small>Sin descargar nada</small></span>
       </button>
-      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener">
+      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.cajaviva.app" target="_blank" rel="noopener" onclick="irAPlay(this)">
         <svg width="22" height="24" viewBox="0 0 22 24" aria-hidden="true"><path d="M2 1.5 L20 12 L2 22.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
         <span class="txt">Descargar en Google Play<small>App para Android</small></span>
       </a>
@@ -266,6 +266,27 @@
     }, 200);
   })();
 
+  // de donde viene la visita: los anuncios de Meta agregan fbclid al link
+  const ORIGEN = /[?&]fbclid=/.test(location.search) ? 'anuncio-meta' : 'directo';
+
+  // cuenta visitas y botones tocados (no frena nada si falla)
+  function contar(evento) {
+    try {
+      const datos = new Blob([JSON.stringify({ evento: evento, origen: ORIGEN })], { type: 'application/json' });
+      if (!navigator.sendBeacon || !navigator.sendBeacon('/api/clic', datos)) {
+        fetch('/api/clic', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ evento: evento, origen: ORIGEN }), keepalive: true }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+  contar('vista');
+
+  // link de Google Play con etiqueta de campaña, asi Play Console separa lo que viene del anuncio
+  function irAPlay(a) {
+    contar('play');
+    a.href = 'https://play.google.com/store/apps/details?id=com.cajaviva.app&referrer=' +
+      encodeURIComponent('utm_source=' + (ORIGEN === 'anuncio-meta' ? 'meta' : 'web') + '&utm_medium=empezar&utm_campaign=' + ORIGEN);
+  }
+
   let creando = false;
 
   function empezar() {
@@ -273,6 +294,7 @@
     try { if (localStorage.getItem('cajaviva_token')) { location.href = '/app'; return; } } catch (e) {}
     if (creando) return;
     creando = true;
+    contar('web');
     document.getElementById('msgTs').textContent = '';
     document.getElementById('capaCaptcha').style.display = 'flex';
     crearCuenta();

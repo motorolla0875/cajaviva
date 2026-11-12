@@ -92,6 +92,23 @@ app.get('/c/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
 });
 
+// ── contador de la pagina /empezar: visitas y botones tocados ──
+db.exec(`CREATE TABLE IF NOT EXISTS clics_empezar (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  evento TEXT NOT NULL,
+  origen TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
+const EVENTOS_EMPEZAR = ['vista', 'web', 'play'];
+app.post('/api/clic', (req, res) => {
+  const evento = String(req.body?.evento || '');
+  const origen = String(req.body?.origen || '').slice(0, 30);
+  if (EVENTOS_EMPEZAR.includes(evento)) {
+    try { db.prepare('INSERT INTO clics_empezar (evento, origen) VALUES (?, ?)').run(evento, origen); } catch (e) {}
+  }
+  res.status(204).end();
+});
+
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true, app: 'CajaViva', hora: new Date().toISOString() });
 });
