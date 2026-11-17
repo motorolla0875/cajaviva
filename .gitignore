@@ -7,3 +7,5 @@ cajaviva.db-shm
 cajaviva.db-wal
 
 *.bak
+
+public/guias/

@@ -4,3 +4,4 @@ Disallow: /app
 Disallow: /api/
 
 Sitemap: https://cajaviva.app/sitemap.xml
+Sitemap: https://cajaviva.app/guias/sitemap.xml

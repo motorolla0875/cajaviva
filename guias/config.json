@@ -1,0 +1,27 @@
+{
+  "sitio": "https://cajaviva.app",
+  "base": "/guias",
+  "marca": "CajaViva",
+  "marcaSub": "guías",
+  "autor": "CajaViva",
+  "icono": "/icon-192.png",
+  "datos": "/root/cajaviva-guias",
+  "web": "/root/cajaviva/public/guias",
+  "colores": { "papel": "#FAFAF7", "tinta": "#2C2C2A", "tinta2": "#5F5E5A", "acento": "#1D9E75", "linea": "#E4E2DC", "promo": "#1D9E75", "promoLink": "#ffffff" },
+  "fuente": "Inter",
+  "fuenteUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap",
+  "promo": "<b>¿Querés llevar tu negocio sin cuaderno?</b> Con CajaViva vendés en un toque, controlás el stock, anotás el fiado y ves cuánto ganás. Funciona hasta sin internet. <a href=\"/empezar?ref=guias\">Probala gratis 20 días →</a>",
+  "portadaTitulo": "Guías para negocios: precios, caja, fiado, stock y ventas",
+  "portadaDesc": "Consejos prácticos para kioscos, almacenes, verdulerías y todo comercio chico: cómo poner precios, cerrar la caja, llevar el fiado, ordenar el stock y vender más.",
+  "contexto": "Es el blog de CajaViva, una app de gestión para comercios chicos de Latinoamérica (vender, stock, fiado, caja, reportes, catálogo online con pedidos por WhatsApp, turnos, empleados; funciona sin internet). El lector es dueño de un kiosco, almacén, verdulería, local de ropa u otro comercio chico. Dale consejos prácticos con ejemplos y números simples en pesos. Podés mencionar al final, una sola vez y de forma natural, que con una app como CajaViva se puede hacer eso más fácil, pero la guía tiene que servir aunque no use ninguna app. No inventes funciones de CajaViva. NO des consejos de impuestos, ARCA, AFIP, monotributo, facturación legal, leyes, préstamos ni inversiones.",
+  "excluir": "\\b(afip|arca|monotributo|impuesto|iva|factura electronica|ley|prestamo|credito|inversion|cripto|bitcoin|trabajo desde casa|ganar dinero rapido|curso|plantilla excel gratis|tesis|monografia)\\b",
+  "grandes": ["treinta.", "tiendanube.", "mercadopago.", "shopify.", "hubspot.", "gob.ar", "afip."],
+  "categorias": {
+    "precios-y-ganancias": { "nombre": "Precios y ganancias", "desc": "Cómo calcular precios de venta, márgenes y la ganancia real de tu negocio.", "semillas": ["como calcular el precio de venta", "como calcular la ganancia de", "que porcentaje de ganancia", "como saber si mi negocio", "margen de ganancia en"] },
+    "caja-y-ventas": { "nombre": "Caja y ventas", "desc": "Cierre de caja, control de ventas y manejo del efectivo en el día a día.", "semillas": ["como hacer un cierre de caja", "como controlar las ventas de", "por que no me cierra la caja", "como llevar la caja de", "como registrar las ventas"] },
+    "fiado-y-clientes": { "nombre": "Fiado y clientes", "desc": "Cómo llevar el fiado, cobrar deudas y fidelizar a tus clientes.", "semillas": ["como llevar el fiado", "como cobrarle a un cliente que", "como fidelizar clientes de", "como atender clientes en", "libreta de fiado"] },
+    "stock-y-compras": { "nombre": "Stock y compras", "desc": "Inventario, reposición, proveedores y qué hacer con la mercadería que no sale.", "semillas": ["como hacer inventario de", "como controlar el stock de", "como comprar a proveedores", "que hacer con mercaderia", "como organizar un deposito"] },
+    "vender-mas": { "nombre": "Vender más", "desc": "Ideas para atraer clientes, promocionar tu negocio y vender por WhatsApp e Instagram.", "semillas": ["como vender mas en", "como promocionar mi", "como vender por whatsapp", "ideas para atraer clientes a", "como armar promociones en"] },
+    "abrir-un-negocio": { "nombre": "Abrir un negocio", "desc": "Qué tener en cuenta para abrir y organizar un kiosco, almacén, verdulería u otro comercio.", "semillas": ["como abrir un kiosco", "como abrir un almacen", "como abrir una verduleria", "que necesito para abrir", "como organizar un"] }
+  }
+}
