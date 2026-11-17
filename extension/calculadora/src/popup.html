@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Calculadora de precios · CajaViva</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header>
+  <div class="logo">Caja<span>Viva</span></div>
+  <div class="sub">Calculadora de precios</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="on" data-modo="precio" role="tab">Sacar el precio</button>
+  <button data-modo="ganancia" role="tab">Ver mi ganancia</button>
+</nav>
+
+<main>
+  <section id="m-precio">
+    <label>¿Cuánto te costó?
+      <div class="campo"><span>$</span><input id="p-costo" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+    </label>
+    <label>¿Cuánto querés ganar?
+      <div class="campo"><input id="p-pct" inputmode="decimal" placeholder="30" autocomplete="off"><span>%</span></div>
+    </label>
+    <div class="tipo">
+      <label><input type="radio" name="tipo" value="recargo" checked> Sobre el costo</label>
+      <label><input type="radio" name="tipo" value="margen"> Sobre el precio de venta</label>
+    </div>
+    <div class="tipo">
+      Redondear:
+      <select id="p-red"><option value="1">no</option><option value="10" selected>a $10</option><option value="50">a $50</option><option value="100">a $100</option></select>
+    </div>
+    <div class="res" id="p-res"><small>Precio de venta</small><b>$ 0</b><em>Ganás $ 0 por unidad</em></div>
+    <p class="ayuda" id="p-ayuda"></p>
+  </section>
+
+  <section id="m-ganancia" hidden>
+    <label>¿Cuánto te costó?
+      <div class="campo"><span>$</span><input id="g-costo" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+    </label>
+    <label>¿A cuánto lo vendés?
+      <div class="campo"><span>$</span><input id="g-precio" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+    </label>
+    <label>¿Cuántos vendés por mes? <small>(opcional)</small>
+      <div class="campo"><input id="g-cant" inputmode="numeric" placeholder="0" autocomplete="off"><span>u.</span></div>
+    </label>
+    <div class="res" id="g-res"><small>Ganás por unidad</small><b>$ 0</b><em>&nbsp;</em></div>
+    <div class="dos"><div><small>Sobre el costo</small><b id="g-rec">0%</b></div><div><small>Sobre el precio</small><b id="g-mar">0%</b></div></div>
+  </section>
+
+  <section class="hist" id="hist" hidden>
+    <h2>Últimos cálculos <button id="borrar" title="Borrar">borrar</button></h2>
+    <ul id="lista"></ul>
+  </section>
+</main>
+
+<a class="cta" id="cta" href="https://cajaviva.app/empezar?ref=extension" target="_blank" rel="noopener">
+  <b>¿Querés esto para todos tus productos?</b>
+  CajaViva calcula la ganancia de cada venta, controla el stock y el fiado. <u>Probala gratis →</u>
+</a>
+<script src="calc.js"></script>
+</body>
+</html>

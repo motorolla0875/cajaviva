@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Calculadora de precio y ganancia - CajaViva",
+  "short_name": "Precio y ganancia",
+  "description": "Calculá el precio de venta con tu porcentaje de ganancia, o cuánto ganás con cada producto. Para kioscos, almacenes y comercios.",
+  "version": "1.0.0",
+  "icons": { "16": "iconos/16.png", "32": "iconos/32.png", "48": "iconos/48.png", "128": "iconos/128.png" },
+  "action": { "default_popup": "popup.html", "default_title": "Calculadora de precio y ganancia", "default_icon": { "16": "iconos/16.png", "32": "iconos/32.png" } },
+  "homepage_url": "https://cajaviva.app/"
+}

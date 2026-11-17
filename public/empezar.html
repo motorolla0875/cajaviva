@@ -267,7 +267,7 @@
   })();
 
   // de donde viene la visita: los anuncios de Meta agregan fbclid al link
-  const ORIGEN = /[?&]ref=guias/.test(location.search) ? 'guias' : /[?&]fbclid=/.test(location.search) ? 'anuncio-meta' : 'directo';
+  const ORIGEN = /[?&]ref=guias/.test(location.search) ? 'guias' : /[?&]ref=extension/.test(location.search) ? 'extension' : /[?&]fbclid=/.test(location.search) ? 'anuncio-meta' : 'directo';
 
   // cuenta visitas y botones tocados (no frena nada si falla)
   function contar(evento) {
