@@ -82,7 +82,8 @@ const log = (...a) => console.log(new Date().toISOString().slice(0, 16), ...a);
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 const azar = a => a[Math.floor(Math.random() * a.length)];
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
-const slugDe = s => norm(s).replace(/ñ/g, 'n').split(' ').filter(Boolean).slice(0, 9).join('-');
+const CORTAS = new Set(['a', 'al', 'de', 'del', 'el', 'la', 'las', 'los', 'en', 'y', 'o', 'para', 'por', 'con', 'un', 'una', 'que', 'su', 'tu']);
+const slugDe = s => { const w = norm(s).replace(/ñ/g, 'n').split(' ').filter(Boolean).slice(0, 9); while (w.length > 3 && CORTAS.has(w[w.length - 1])) w.pop(); return w.join('-'); };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------- 1. Buscar ideas: autocompletado de Google ----------
