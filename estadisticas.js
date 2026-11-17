@@ -7,7 +7,7 @@ const desde = process.argv[2] || '2026-11-12';
 
 console.log('\n--- CLICS EN /empezar ---');
 console.table(db.prepare(`SELECT date(created_at,'-3 hours') AS dia, origen,
-  SUM(evento='vista') AS visitas, SUM(evento='web') AS toco_web, SUM(evento='play') AS toco_play
+  SUM(evento='vista') AS visitas, SUM(evento='web') AS toco_web, SUM(evento='play') AS toco_play, SUM(evento='ios') AS toco_ios
   FROM clics_empezar GROUP BY dia, origen ORDER BY dia DESC`).all());
 
 console.log('\n--- CUENTAS NUEVAS desde ' + desde + ' ---');

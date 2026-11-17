@@ -99,7 +99,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS clics_empezar (
   origen TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 )`);
-const EVENTOS_EMPEZAR = ['vista', 'web', 'play'];
+const EVENTOS_EMPEZAR = ['vista', 'web', 'play', 'ios'];
 app.post('/api/clic', (req, res) => {
   const evento = String(req.body?.evento || '');
   const origen = String(req.body?.origen || '').slice(0, 30);

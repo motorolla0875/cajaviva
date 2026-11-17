@@ -32,6 +32,7 @@
   "operatingSystem": "Web, Android, iOS",
   "description": "Sistema de ventas e inventario para pequenos negocios. Control de stock, fiado, caja, turnos y tienda online. Funciona sin internet.",
   "url": "https://cajaviva.app/",
+  "downloadUrl": ["https://play.google.com/store/apps/details?id=com.cajaviva.app", "https://apps.apple.com/ar/app/id6822923200"],
   "inLanguage": "es",
   "offers": [
     { "@type": "Offer", "name": "Mensual", "price": "9.99", "priceCurrency": "USD" },
@@ -422,6 +423,10 @@
   .cierre h2 { font-size: 35px; font-weight: 600; letter-spacing: -.7px; margin-bottom: 14px; }
   .cierre p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
 
+  .nota-tiendas { font-size: 14px; color: var(--muted); margin: 18px 0 8px; }
+  .tiendas { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .tiendas.centro { justify-content: center; margin-top: 18px; }
+  .tiendas img { height: 45px; width: auto; display: block; }
   footer {
     border-top: 1px solid var(--line); padding: 32px 0;
     text-align: center; color: var(--muted); font-size: 13.5px;
@@ -562,6 +567,8 @@
         <a href="#funciones" class="btn btn-g btn-linea">Ver que hace</a>
       </div>
       <p class="nota-hero">Sin tarjeta. Sin instalar nada. Entras y ya estas usandola.</p>
+      <p class="nota-tiendas">También en tu celular:</p>
+      <div class="tiendas"><a href="https://play.google.com/store/apps/details?id=com.cajaviva.app&referrer=utm_source%3Dweb%26utm_medium%3Dlanding" target="_blank" rel="noopener"><img src="/img/badges/google-play-es.svg" alt="Disponible en Google Play" width="150" height="45"></a><a href="https://apps.apple.com/ar/app/id6822923200" target="_blank" rel="noopener"><img src="/img/badges/app-store-es.svg" alt="Descárgalo en el App Store" width="135" height="45"></a></div>
     </div>
     <div>
       <div class="marco mockup-hero hero-img">
@@ -824,6 +831,7 @@
     <h2>Empeza hoy, te lleva dos minutos</h2>
     <p>Sin tarjeta, sin instalar nada, sin compromiso.</p>
     <button class="btn btn-g" onclick="empezar()">Probar 20 dias gratis</button>
+    <div class="tiendas centro"><a href="https://play.google.com/store/apps/details?id=com.cajaviva.app&referrer=utm_source%3Dweb%26utm_medium%3Dlanding" target="_blank" rel="noopener"><img src="/img/badges/google-play-es.svg" alt="Disponible en Google Play" width="150" height="45"></a><a href="https://apps.apple.com/ar/app/id6822923200" target="_blank" rel="noopener"><img src="/img/badges/app-store-es.svg" alt="Descárgalo en el App Store" width="135" height="45"></a></div>
   </div>
 </div>
 
