@@ -34,5 +34,8 @@ label small{font-weight:400;color:var(--gris)}
 .hist li:hover{color:var(--verde)}
 .cta{display:block;margin:10px 12px 12px;padding:10px 12px;border-radius:12px;background:#fff;border:1.5px solid var(--verde);color:var(--tinta);text-decoration:none;font-size:12.5px}
 .cta b{display:block;color:var(--verde);font-size:13px}
-.cta u{color:var(--verde);font-weight:700}
+.bajar{display:flex;gap:6px;margin-top:8px}
+.bajar a{flex:1;text-align:center;padding:7px 4px;border-radius:9px;border:1.5px solid var(--verde);color:var(--verde);font-weight:700;font-size:12px;text-decoration:none}
+.bajar a.web{background:var(--verde);color:#fff}
+.bajar a:hover{background:#eaf7f1}.bajar a.web:hover{background:var(--verde2)}
 [hidden]{display:none!important}
