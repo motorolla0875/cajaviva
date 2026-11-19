@@ -99,7 +99,8 @@ const tema = t => new Set(norm(t).split(' ').filter(w => w && !VACIAS.has(w)).ma
 function parecidas(a, b) {
   const A = tema(a), B = tema(b); if (!A.size || !B.size) return false;
   let c = 0; A.forEach(w => B.has(w) && c++);
-  return c / Math.min(A.size, B.size) >= 0.75 || c / (A.size + B.size - c) >= 0.6;
+  // mismo tema: todas las palabras de una están en la otra, o casi todas coinciden ("hojas amarillas del potus" y "del jazmín" NO son iguales)
+  return c === Math.min(A.size, B.size) || c / (A.size + B.size - c) >= 0.75;
 }
 const yaHay = (texto, guias) => guias.find(g => parecidas(texto, g.busqueda) || parecidas(texto, g.titulo));
 
