@@ -92,7 +92,8 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const VACIAS = new Set([...CORTAS, 'como', 'hacer', 'hago', 'paso', 'pasos', 'guia', 'facil', 'faciles', 'simple', 'mejor', 'mejores', 'forma', 'formas',
   'manera', 'maneras', 'tips', 'consejos', 'saber', 'cual', 'cuales', 'cuanto', 'cuanta', 'mi', 'mis', 'tus', 'sus', 'es', 'se', 'son', 'sin', 'mas', 'muy', 'todo', 'todos',
   'negocio', 'negocios', 'comercio', 'comercios', 'local', 'locales', 'tienda', 'tiendas', 'emprendimiento', 'pequeno', 'pequenos', 'chico', 'chicos', 'pyme', 'pymes',
-  'kiosco', 'kioscos', 'almacen', 'almacenes', 'despensa', 'minimercado', 'productos', 'producto', 'excel', 'app', 'aplicacion', 'gratis', 'ejemplo', 'ejemplos']);
+  'kiosco', 'kioscos', 'almacen', 'almacenes', 'despensa', 'minimercado', 'productos', 'producto', 'excel', 'app', 'aplicacion', 'gratis', 'ejemplo', 'ejemplos',
+  'receta', 'recetas', 'casera', 'caseras', 'casero', 'caseros', 'rica', 'rico', 'ricas', 'ricos', 'rapida', 'rapido', 'sencilla', 'sencillo', 'preparar', 'cocinar']);
 const raiz = w => w.length > 4 && w.endsWith('es') ? w.slice(0, -2) : w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w;
 const tema = t => new Set(norm(t).split(' ').filter(w => w && !VACIAS.has(w)).map(raiz));
 function parecidas(a, b) {
