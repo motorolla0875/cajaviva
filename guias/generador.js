@@ -86,6 +86,22 @@ const CORTAS = new Set(['a', 'al', 'de', 'del', 'el', 'la', 'las', 'los', 'en', 
 const slugDe = s => { const w = norm(s).replace(/ñ/g, 'n').split(' ').filter(Boolean).slice(0, 9); while (w.length > 3 && CORTAS.has(w[w.length - 1])) w.pop(); return w.join('-'); };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// ---------- Temas parecidos (para no repetir guías con otras palabras) ----------
+// "cómo hacer inventario de un negocio paso a paso" y "cómo hacer inventario de productos paso a paso" son el mismo tema:
+// se comparan solo las palabras que dicen de qué se trata (sin "cómo", "hacer", "paso", "negocio", etc.).
+const VACIAS = new Set([...CORTAS, 'como', 'hacer', 'hago', 'paso', 'pasos', 'guia', 'facil', 'faciles', 'simple', 'mejor', 'mejores', 'forma', 'formas',
+  'manera', 'maneras', 'tips', 'consejos', 'saber', 'cual', 'cuales', 'cuanto', 'cuanta', 'mi', 'mis', 'tus', 'sus', 'es', 'se', 'son', 'sin', 'mas', 'muy', 'todo', 'todos',
+  'negocio', 'negocios', 'comercio', 'comercios', 'local', 'locales', 'tienda', 'tiendas', 'emprendimiento', 'pequeno', 'pequenos', 'chico', 'chicos', 'pyme', 'pymes',
+  'kiosco', 'kioscos', 'almacen', 'almacenes', 'despensa', 'minimercado', 'productos', 'producto', 'excel', 'app', 'aplicacion', 'gratis', 'ejemplo', 'ejemplos']);
+const raiz = w => w.length > 4 && w.endsWith('es') ? w.slice(0, -2) : w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w;
+const tema = t => new Set(norm(t).split(' ').filter(w => w && !VACIAS.has(w)).map(raiz));
+function parecidas(a, b) {
+  const A = tema(a), B = tema(b); if (!A.size || !B.size) return false;
+  let c = 0; A.forEach(w => B.has(w) && c++);
+  return c / Math.min(A.size, B.size) >= 0.75 || c / (A.size + B.size - c) >= 0.6;
+}
+const yaHay = (texto, guias) => guias.find(g => parecidas(texto, g.busqueda) || parecidas(texto, g.titulo));
+
 // ---------- 1. Buscar ideas: autocompletado de Google ----------
 async function sugerencias(q) {
   if (MOCK) return [q + ' facil', q + ' casera paso a paso', q + ' sin horno'];
@@ -98,7 +114,8 @@ async function sugerencias(q) {
 
 async function ideas(cat, cuantas = 25) {
   const usadas = new Set(leer(ARCH_USADAS, []));
-  const hechas = new Set(leer(ARCH, []).map(g => norm(g.busqueda)));
+  const guiasHechas = leer(ARCH, []);
+  const hechas = new Set(guiasHechas.map(g => norm(g.busqueda)));
   const out = new Map();
   const semillas = CATEGORIAS[cat].semillas.slice().sort(() => Math.random() - .5).slice(0, 3);
   for (const s of semillas) {
@@ -110,6 +127,7 @@ async function ideas(cat, cuantas = 25) {
         if (n.split(' ').length < 4 || n.length > 80 || usadas.has(n) || hechas.has(n)) continue;
         if (/\b(precio|comprar|venta|online gratis|pdf|descargar|cerca de mi|hoy|letra|cancion|acordes|lyrics|serie|pelicula|capitulo|meme|cuento|frases|imagenes|dibujo|tiktok|youtube|wikipedia)\b/.test(n)) continue;
         if (CFG.excluir && new RegExp(CFG.excluir).test(n)) continue;
+        if (yaHay(n, guiasHechas) || [...out.keys()].some(o => parecidas(o, n))) continue; // mismo tema que una guía que ya está
         out.set(n, sug);
       }
       await dormir(400);
@@ -279,6 +297,8 @@ async function escribir(busqueda, cat) {
     d = JSON.parse(t.trim().replace(/^```(json)?/, '').replace(/```$/, ''));
   }
   if (!d.titulo || !Array.isArray(d.secciones) || d.secciones.length < 2) throw new Error('Gemini devolvió una guía incompleta');
+  const igual = yaHay(d.titulo, guias);
+  if (igual) throw Object.assign(new Error(`salió parecida a "${igual.titulo}": no se publica`), { repetida: true });
   let slug = slugDe(d.titulo) || slugDe(busqueda);
   while (guias.some(g => g.slug === slug)) slug += '-2';
   const g = {
@@ -400,10 +420,14 @@ async function publicarUna() {
   // va rotando categorías: le toca a la que tiene menos guías
   const cat = Object.keys(CATEGORIAS).sort((a, b) => guias.filter(g => g.cat === a).length - guias.filter(g => g.cat === b).length || Math.random() - .5)[0];
   log(`categoría: ${cat}`);
-  const b = await elegirBusqueda(cat);
-  if (!b) { log('  no encontré una búsqueda ganable esta vez'); return null; }
-  log(`  escribiendo: "${b}"`);
-  const g = await escribir(b, cat);
+  let g = null;
+  for (let intento = 0; intento < 3 && !g; intento++) {
+    const b = await elegirBusqueda(cat);
+    if (!b) { log('  no encontré una búsqueda ganable esta vez'); return null; }
+    log(`  escribiendo: "${b}"`);
+    try { g = await escribir(b, cat); } catch (e) { if (!e.repetida) throw e; log('  ' + e.message); }
+  }
+  if (!g) return null;
   generarPaginas();
   log(`  ✅ publicada: ${SITIO}${BASE}/${g.cat}/${g.slug}/`);
   return g;
@@ -436,6 +460,12 @@ function visitas() {
     const q = process.argv[3] || ''; const g = leer(ARCH, []); const quedan = g.filter(x => !q || !x.slug.includes(q));
     if (!q || quedan.length === g.length) return console.log('No encontré esa guía');
     guardar(ARCH, quedan); generarPaginas(); return console.log('Borradas:', g.length - quedan.length);
+  }
+  if (a === '--repetidas') { // lista pares de guías que tratan el mismo tema
+    const g = leer(ARCH, []); let n = 0;
+    for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++)
+      if (parecidas(g[i].titulo, g[j].titulo) || parecidas(g[i].busqueda, g[j].busqueda)) { n++; console.log(`${g[i].cat}/${g[i].slug}\n  = ${g[j].cat}/${g[j].slug}  (la más nueva es la de abajo)`); }
+    return console.log(n ? `${n} repetidas` : 'No hay guías repetidas');
   }
   if (a === '--lista') return leer(ARCH, []).forEach(g => console.log(`${g.fecha.slice(0, 10)}  ${g.cat}/${g.slug}`));
   if (a === '--visitas') return visitas();
